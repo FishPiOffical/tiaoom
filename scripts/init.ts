@@ -23,12 +23,14 @@ async function main() {
 
   console.info(`Let's config.`);
 
+  // config['domain'] = await inputData('Set host url', config.domain || '127.0.0.1');
+
   fs.writeFile(path.join(__dirname, '../config.json'),
       JSON.stringify(config, null, 4),
       (err) => {
-          if (err) console.error(`[Error] Save robot config failed: ${err.message}`);
+          if (err) console.error(`[Error] Save config failed: ${err.message}`);
           else {
-            console.info('[Success] Save robot config finish.');  
+            console.info('[Success] Save config done.');  
           }
       });
   rl.close();

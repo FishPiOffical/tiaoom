@@ -14,13 +14,16 @@
     "glob": "^10.2.3",
     "node-fetch": "<3.0.0",
     "node-schedule": "^2.1.1",
+    "socket.io": "^4.7.1",
     "ts-node": "^10.9.1",
     "tsconfig-paths": "^4.2.0",
-    "typescript": "^5.0.4"
+    "typescript": "^5.0.4",
+    "ws": "^8.13.0"
   },
   "devDependencies": {
     "@types/node": "^18.15.11",
     "@types/node-fetch": "^2.6.3",
-    "@types/node-schedule": "^2.1.0"
+    "@types/node-schedule": "^2.1.0",
+    "@types/ws": "^8.5.5"
   }
 }
