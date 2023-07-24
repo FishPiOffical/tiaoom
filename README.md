@@ -2,7 +2,7 @@
   <img width="200" src="logo.png">
 </p>
 
-<h1 align="center">Game Room</h1>
+<h1 align="center">Tiaoom</h1>
 <p align="center">组件化游戏房间管理系统</p>
 
 ## ✨功能
