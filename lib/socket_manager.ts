@@ -1,28 +1,26 @@
 import { Server } from "socket.io";
 import { WebSocketServer } from "ws";
+import { EventEmitter } from "events";
+import { SocketEvents } from "./events/socket_events";
 
-const server = new WebSocketServer({ port: 27020 });
-export default {
-  init() {
-    console.log('init socket manager');
+var server: WebSocketServer;
+export class SocketManager extends EventEmitter {
+  // listen on events
+  on<K extends keyof SocketEvents>(event: K, listener: SocketEvents[K]): this {
+    return super.on(event, listener);
+  }
+  // init socket manager
+  init(port: number) {
+    server = new WebSocketServer({ port: port });
+    console.log("Tiaoom:init socket manager");
     server.on("connection", (socket) => {
-      // send a message to the client
-      socket.send(JSON.stringify({
-        type: "hello from server",
-        content: [1, "2"]
-      }));
-
-      // receive a message from the client
+      this.emit("init");
+      // // receive a message from the client
       socket.on("message", (data: any) => {
-        console.log('receive from client:');
-        console.log(data);
         const packet = JSON.parse(data);
+        console.log("SocketManager:receive message from client:");
         console.log(packet);
-        // switch (packet.type) {
-        //   case "hello from client":
-        //     // ...
-        //     break;
-        // }
+        this.emit("message", packet);
       });
     });
   }
