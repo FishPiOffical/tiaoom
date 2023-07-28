@@ -1,0 +1,63 @@
+<html>
+
+<head>
+    <title>
+        <%=title%>
+    </title>
+    <script>
+        let Socket = null;
+        let timerPingInterval = null;
+
+        var createRoomMessage = {
+            type: 'createRoom',
+            data: { size: 10 },
+        };
+
+        function onOpen() {
+            console.log('websocket:onopen');
+        }
+        function onMessage(msg) {
+            console.log('websocket:onMessage');
+            console.log(msg);
+        }
+        function onError(err) {
+            console.log('websocket:onError');
+            console.log(err);
+        }
+        function onClose() {
+            console.log('websocket:onClose');
+        }
+
+        function sendMessage() {
+            Socket.send(JSON.stringify(obj))
+        }
+
+        function connectToServer() {
+            address = document.getElementById('address').value;
+            Socket = new WebSocket(address);
+            Socket.onopen = onOpen;
+            Socket.onmessage = onMessage;
+            Socket.onerror = onError;
+            Socket.onclose = onClose;
+            console.log(address);
+        }
+        function createRoomCommand() {
+            commandField = document.getElementById('command');
+            commandField.value = JSON.stringify(createRoomMessage);
+        }
+    </script>
+</head>
+
+<body>
+    <form method="post">
+        服务器地址:<input id="address" value="<%=address%>" />
+        <button onclick="connectToServer()">连接</button>
+        <br />
+        <p>选择操作： <input type="button" value="创建房间" onclick="createRoomCommand()" /></p>
+        <input name="command" id="command" maxlength="2000" style="height:200px;width:400px;" />
+        <br />
+        <button type="submit">确定操作</button>
+    </form>
+</body>
+
+</html>

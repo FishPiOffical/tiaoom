@@ -10,11 +10,12 @@ export interface TiaoomEvents {
   //房间加入回调
   userJoin: (roomId: string, userId: string) => void;
   //房间退出回调
-  userExit: (roomId: string, userId: string) => void;
+  playerQuit: (roomId: string, userId: string) => void;
   //用户准备回调
-  userReady: (roomId: string, userId: string) => void;
+  playerReady: (roomId: string, userId: string) => void;
   //用户取消准备回调
-  userNotReady: (roomId: string, userId: string) => void;
+  playerNotReady: (roomId: string, userId: string) => void;
   //用户消息回调
   message: (data: any) => void;
+  error: (message: string) => void;
 }
