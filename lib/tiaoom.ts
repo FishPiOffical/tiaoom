@@ -1,18 +1,26 @@
 import { EventEmitter } from "events";
-import { TiaoomEvents } from "./events/tiaoom_events";
-import { RoomManager } from "./manager/room_manager";
-import { SocketManager } from "./manager/socket_manager";
-import { PlayerManager } from "./manager/player_manager";
+import { TiaoomEvents } from "./events/tiaoom";
+import { RoomManager } from "./manager/room";
+import { SocketManager } from "./manager/socket";
+import { PlayerManager } from "./manager/player";
 import { Message } from "./models/message";
 
 export class Tiaoom extends EventEmitter {
-  port: number = 27015;
   playerManager: PlayerManager = PlayerManager.getInstance();
   roomManager: RoomManager = RoomManager.getInstance();
   private socketManager?: SocketManager;
+  options: any = {
+    port: 27015,
+  };
+
+  constructor(options: any={}) {
+    super();
+    this.options = { ...this.options, ...options };
+    this.init(this.options.port)
+  }
+
   //初始化服务
   init(port: number) {
-    this.port = port;
     this.socketManager = new SocketManager();
     this.socketManager.on("init", () => {
       this.emit("init");
