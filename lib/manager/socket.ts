@@ -1,7 +1,7 @@
 import { Server } from "socket.io";
 import { WebSocketServer } from "ws";
 import { EventEmitter } from "events";
-import { SocketEvents } from "../events/socket_events";
+import { SocketEvents } from "../events/socket";
 import { Message } from "@lib/models/message";
 
 var server: WebSocketServer;

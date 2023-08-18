@@ -1,6 +1,5 @@
 import { Room } from "@lib/models/room";
 import { Tiaoom } from "@lib/tiaoom";
-import { Tester } from "./tester";
 
 export async function main() {
   var roomList = new Array<string>();
@@ -36,9 +35,6 @@ export async function main() {
   });
   // init tiaoom
   tiaoom.init(27015);
-
-  var tester = new Tester();
-  tester.init();
 }
 
 main();
