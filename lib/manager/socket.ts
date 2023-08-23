@@ -11,9 +11,10 @@ export class SocketManager extends EventEmitter {
     return super.on(event, listener);
   }
   // init socket manager
-  init(port: number) {
-    server = new WebSocketServer({ port: port });
-    console.log("TiaoomSocketManager:listen on port:", port);
+  constructor() {
+    super();
+    server = new WebSocketServer({ port: 27015 });
+    console.log("Socket listen on port:", 27015);
     server.on("connection", (socket) => {
       this.emit("init");
       // // receive a message from the client
@@ -24,8 +25,8 @@ export class SocketManager extends EventEmitter {
           if (message) {
             this.emit("message", message);
           }
-        } catch (ex) {
-          this.emit("message", { type: "error", message: ex });
+        } catch (err) {
+          this.emit("error", err);
         }
       });
     });
@@ -35,7 +36,7 @@ export class SocketManager extends EventEmitter {
     server.close();
   }
 
-  sendMessage(message: string) {
+  send(message: string) {
     // send a message to the client
     console.log(server.clients);
     server.clients.forEach((client) => {
