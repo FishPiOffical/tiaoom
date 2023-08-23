@@ -1,29 +1,26 @@
 import { Room } from "@lib/models/room";
 import { BaseEvents } from "./base";
+import { Player } from "@lib/models/player";
 
 export interface RoomEvents extends BaseEvents {
   /**
-   * 房间完成初始化
-   **/ 
-  ready: () => void;
-  /**
-   * 销毁房间
-   **/ 
-  destoryed: () => void;
-  /**
    * 加入房间
    **/ 
-  join: (userId: string) => void;
+  join: (player: Player) => void;
   /**
    * 离开房间
    **/ 
-  leave: (userId: string) => void;
+  leave: (player: Player) => void;
   /**
    * 房间状态变化
    **/ 
   status: (status: string) => void;
   /**
-   * 加入房间
+   * 房间聊天
    **/ 
-  data: (data: any) => void;
+  message: (data: string) => void;
+  /**
+   * 房间命令
+   */
+  command: (message: { type: string, data: any }) => void;
 }
