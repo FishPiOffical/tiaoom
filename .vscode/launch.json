@@ -16,7 +16,7 @@
           "ts-node/register"
       ],
       "args": [
-          "${workspaceRoot}/src/index.ts"
+          "${workspaceRoot}/sample/spy/index.ts"
       ],
       "env": { "TS_NODE_PROJECT": "tsconfig.json" },
       "sourceMaps": true,
