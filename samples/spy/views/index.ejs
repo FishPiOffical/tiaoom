@@ -4,48 +4,7 @@
     <title>
         <%=title%>
     </title>
-    <script>
-        let Socket = null;
-        let timerPingInterval = null;
-
-        var createRoomMessage = {
-            type: 'createRoom',
-            data: { size: 10 },
-        };
-
-        function onOpen() {
-            console.log('websocket:onopen');
-        }
-        function onMessage(msg) {
-            console.log('websocket:onMessage');
-            console.log(msg);
-        }
-        function onError(err) {
-            console.log('websocket:onError');
-            console.log(err);
-        }
-        function onClose() {
-            console.log('websocket:onClose');
-        }
-
-        function sendMessage() {
-            Socket.send(JSON.stringify(obj))
-        }
-
-        function connectToServer() {
-            address = document.getElementById('address').value;
-            Socket = new WebSocket(address);
-            Socket.onopen = onOpen;
-            Socket.onmessage = onMessage;
-            Socket.onerror = onError;
-            Socket.onclose = onClose;
-            console.log(address);
-        }
-        function createRoomCommand() {
-            commandField = document.getElementById('command');
-            commandField.value = JSON.stringify(createRoomMessage);
-        }
-    </script>
+    <script src="tiaoom.js"></script>
 </head>
 
 <body>

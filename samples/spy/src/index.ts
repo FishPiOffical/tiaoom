@@ -10,11 +10,12 @@ const questions = [
 ];
 
 export class Controller {
-  tiao = new Tiaoom({ socket: new SocketManager()});
+  tiao?: Tiaoom;
   constructor() {
   }
 
-  run() {
+  run(port: number) {
+    this.tiao = new Tiaoom({ socket: new SocketManager(port)});
     this.tiao.run().on("room", (room: Room) => {
       console.log("room:", room);
       const players: RoomPlayer[] = [];
