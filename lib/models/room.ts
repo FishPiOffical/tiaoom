@@ -122,6 +122,7 @@ export class Room extends EventEmitter implements IRoom {
     if (!roomPlayer) {
       roomPlayer = new RoomPlayer(player);
       this.players.push(roomPlayer);
+      this.emit("join", roomPlayer);
     }
     return roomPlayer;
   }

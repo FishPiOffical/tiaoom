@@ -43,7 +43,7 @@ export class Tiaoom extends EventEmitter {
           case "player.ready":
             return this.readyPlayer(message.data), cb?.(null);
           case "player.unready":
-            return this.unreadyPlayer(message.data), cb?.(null);
+            return this.unReadyPlayer(message.data), cb?.(null);
           case "player.command":
             return this.searchPlayer(message.data)?.emit("command", message.data), cb?.(null);
           case "room.command":
@@ -75,26 +75,32 @@ export class Tiaoom extends EventEmitter {
     return this.rooms.find((target) => target.id === roomId);
   }
 
-  private createRoom(options: RoomOptions, cb?: (room: Room) => void) {
+  createRoom(options: RoomOptions, cb?: (room: Room) => void) {
+    const roomInstance = this.searchRoom(options);
+    if (roomInstance) {
+      throw new Error('room already exists.');
+    }
+
     const room = new Room(options);
     room.setSender((type, message) => {
       this.messageInstance?.send({ type: `room.${type}`, data: message, sender: room });
     });
     this.rooms.push(room);
-    cb?.(room);
-    return this.emit("room", room);
+    this.messageInstance?.send({ type: `room.create`, data: room });
+    return this.emit("room", room), cb?.(room);
   }
 
-  private startRoom(room: IRoom) {
-    const roomInstance = this.rooms.find((r) => r.id === room.id);
+  startRoom(room: IRoom) {
+    const roomInstance = this.searchRoom(room);
     if (!roomInstance) {
       throw new Error('room not found.');
     }
 
+    this.messageInstance?.send({ type: `room.start`, data: room });
     return roomInstance.start();
   }
 
-  private closeRoom(room: IRoom) {
+  closeRoom(room: IRoom) {
     const roomIndex = this.rooms.findIndex((r) => r.id === room.id);
     const roomInstance = this.rooms[roomIndex];
     if (!roomInstance) {
@@ -102,10 +108,12 @@ export class Tiaoom extends EventEmitter {
     }
 
     this.rooms.splice(roomIndex, 1);
+
+    this.messageInstance?.send({ type: `room.close`, data: room });
     return roomInstance.emit('close');    
   }
 
-  private joinPlayer(player: RoomPlayerOptions, cb?: (data: { room: Room, player: RoomPlayer }) => void) {
+  joinPlayer(player: RoomPlayerOptions, cb?: (data: { room: Room, player: RoomPlayer }) => void) {
     let playerInstance = this.searchPlayer(player);
     if (!playerInstance) {
       playerInstance = new Player(player);
@@ -135,7 +143,7 @@ export class Tiaoom extends EventEmitter {
     return room.emit("join", roomPlayer);
   }
 
-  private leavePlayer(player: IRoomPlayer) {
+  leavePlayer(player: IRoomPlayer) {
     const playerInstance = this.searchPlayer(player);
     if (!playerInstance) {
       throw new Error('player not found.');
@@ -153,7 +161,7 @@ export class Tiaoom extends EventEmitter {
     return room.emit("leave", room.kickPlayer(playerInstance));
   }
 
-  private readyPlayer(player: IRoomPlayer) {
+  readyPlayer(player: IRoomPlayer) {
     const playerInstance = this.searchPlayer(player);
     if (!playerInstance) {
       throw new Error('player not found.');
@@ -185,7 +193,7 @@ export class Tiaoom extends EventEmitter {
     return room.emit("player-ready", roomPlayer);
   }
     
-  private unreadyPlayer(player: IRoomPlayer) {
+  unReadyPlayer(player: IRoomPlayer) {
     const playerInstance = this.searchPlayer(player);
     if (!playerInstance) {
       throw new Error('player not found.');
