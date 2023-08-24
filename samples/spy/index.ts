@@ -1,8 +1,10 @@
 import express, { Express, Request, Response } from "express";
-import { main } from "./src";
+import { Controller, main } from "./src";
+import path from "path";
 
-export class Tester {
+export class SpyGame {
   app: Express = express();
+  controller = new Controller();
   init() {
     const title = "Who is Spy?";
     const address = "ws://127.0.0.1:27015";
@@ -11,6 +13,7 @@ export class Tester {
     this.app.set("views", "./views");
     // 设置渲染引擎为html
     this.app.set("view engine", "ejs");
+    this.app.use(express.static(path.join(__dirname, 'public')));
 
     // 调用路由，进行页面渲染
     this.app.get("/", function (req: any, res: any) {
@@ -29,7 +32,6 @@ export class Tester {
       });
     });
     this.app.listen(27016);
+    this.controller.run();
   }
 }
-
-main().catch((err) => console.error(err));

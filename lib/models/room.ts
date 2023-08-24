@@ -1,4 +1,4 @@
-import { IPlayer, Player, PlayerOptions } from "./player";
+import { IPlayer, Player, PlayerOptions, PlayerStatus } from "./player";
 import EventEmitter from "events";
 import { RoomEvents } from "@lib/events";
 
@@ -26,31 +26,40 @@ export enum PlayerRole {
   watcher = 'watcher',
 }
 
+export enum RoomStatus {
+  waiting = 'waiting',
+  ready = 'ready',
+  playing = 'playing',
+}
 
 export interface IRoom extends RoomOptions {
-  players: IPlayer[];
+  players: RoomPlayer[];
 }
 
 export interface RoomPlayerOptions extends PlayerOptions {
   roomId?: string;
 }
+export interface IRoomPlayer extends RoomPlayerOptions, IPlayer {
+  id: string;
+  isReady: boolean;
+  role: PlayerRole;
+}
 
-export class RoomPlayer extends Player {
+export class RoomPlayer extends Player implements IRoomPlayer {
   isReady: boolean = false;
   role: PlayerRole = PlayerRole.player;
 
-  constructor(player: Player, role: PlayerRole = PlayerRole.player) {
+  constructor(player: IPlayer | Player, role: PlayerRole = PlayerRole.player) {
     super(player);
     this.role = role;
+    if (player instanceof Player) this.sender = player.sender;
   }
 
   toJSON() {
     return {
-      id: this.id,
-      name: this.name,
+      ...super.toJSON(),
       role: this.role,
       isReady: this.isReady,
-      attributes: this.attributes,
     };
   }
 }
@@ -69,7 +78,9 @@ export class Room extends EventEmitter implements IRoom {
   name: string = ''; // room name
   minSize: number = 2; // room min size
 
-  players: Array<RoomPlayer> = []; // player list
+  players: RoomPlayer[] = []; // player list
+
+  private sender?: (type: string, ...message: any) => void;
 
   get isReady(): boolean {
     return this.players.length >= this.minSize
@@ -105,32 +116,61 @@ export class Room extends EventEmitter implements IRoom {
     this.minSize = minSize;
   }
 
-  addPlayer(player: Player) {
+  addPlayer(player: IPlayer | Player) {
     if (this.isFull) return;
     let roomPlayer = this.searchPlayer(player);
-    if (!player) {
+    if (!roomPlayer) {
       roomPlayer = new RoomPlayer(player);
       this.players.push(roomPlayer);
     }
     return roomPlayer;
   }
 
-  kickPlayer(playerId: string): void;
-  kickPlayer(player: Player): void;
+  kickPlayer(playerId: string): RoomPlayer;
+  kickPlayer(player: IPlayer): RoomPlayer;
 
-  kickPlayer(player: Player | string) {
+  kickPlayer(player: IPlayer | string) {
     const playerId = typeof player === "string" ? player : player.id;
     const index = this.players.findIndex((p) => p.id == playerId);
+    const roomPlayer = this.players[index];
     if (index > -1) {
       this.players.splice(index, 1);
     }
+    return roomPlayer;
   }
 
   searchPlayer(playerId: string): RoomPlayer | undefined;
-  searchPlayer(playerId: Player): RoomPlayer | undefined;
+  searchPlayer(playerId: IPlayer): RoomPlayer | undefined;
 
-  searchPlayer(player: string | Player) {
+  searchPlayer(player: string | IPlayer) {
     const playerId = typeof player === "string" ? player : player.id;
     return this.players.find((player) => player.id == playerId);
+  }
+
+  start() {
+    this.players.forEach((player) => {
+      if (player.role != PlayerRole.player) return;
+      player.emit('status', PlayerStatus.playing);
+    });
+    return this.emit("start");
+  }
+
+  end() {
+    this.players.forEach((player) => {
+      if (player.role != PlayerRole.player) return;
+      player.emit('status', PlayerStatus.unready);
+    });
+    return this.emit("end");
+  }
+
+  setSender(sender: (type: string, ...message: any) => void) {
+    const events: Array<keyof RoomEvents> = ['message', 'command', 'start', 'end', 'close', 'error', 'all-ready'];
+    this.sender = sender;
+    events.forEach((event) => {
+      this.on(event, (...data: any) => {
+        this.sender!(event, ...data);
+      });
+    });
+    return this;
   }
 }
