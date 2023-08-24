@@ -1,12 +1,7 @@
 import EventEmitter from "events";
-import { Player, PlayerOptions } from "./player";
-import { Room, RoomOptions } from "./room";
+import { IPlayer, PlayerOptions } from "./player";
+import { IRoom, IRoomPlayer, RoomOptions } from "./room";
 import { MessageEvents } from "@lib/events/message";
-
-export interface MessageOptions {
-  port?: number;
-  socket?: EventEmitter;
-}
 
 export enum MessageTypes {
   RoomCreate = "room.create",
@@ -25,11 +20,10 @@ export enum MessageTypes {
 }
 
 export interface MessagePackage {
-  type: MessageTypes;
-  data?: PlayerOptions | RoomOptions | any;
-  sender?: Player | Room;
+  type: MessageTypes | string;
+  data?: PlayerOptions | RoomOptions | IPlayer | IRoom | IRoomPlayer | any;
+  sender?: IPlayer | IRoom | IRoomPlayer;
 }
-
 
 export interface Message extends EventEmitter {
   on<K extends keyof MessageEvents>(event: K, listener: MessageEvents[K]): this;
