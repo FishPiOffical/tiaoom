@@ -36,6 +36,12 @@ class Tiaoom {
     this.socket.on("room.create", (room) => {
       this.rooms.push(new Room(room));
     });
+    this.socket.on("room.list", (rooms) => {
+      this.rooms = rooms.map(room => new Room(room));
+    });
+    this.socket.on("play.list", (players) => {
+      this.players = players.map(player => new Player(player)); 
+    });
   }
 
   createRoom({ name, size, minSize }) {

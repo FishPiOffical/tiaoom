@@ -1,7 +1,6 @@
-import { WebSocketServer } from "ws";
+import { WebSocketServer, WebSocket } from "ws";
 import { EventEmitter } from "events";
-import {  } from "@lib/events/message";
-import { Room, Player, Message, MessagePackage, MessageEvents } from "@lib/index";
+import { Room, Player, Message, MessagePackage, MessageEvents, PlayerStatus } from "@lib/index";
 
 let server: WebSocketServer;
 export class SocketManager extends EventEmitter implements Message {
@@ -16,6 +15,7 @@ export class SocketManager extends EventEmitter implements Message {
   constructor(port: number) {
     super();
     server = new WebSocketServer({ port });
+    const sockets: Array<{ socket: WebSocket; player: Player }> = [];
     console.log("Socket listen on port:", port);
     server.on("connection", (socket) => {
       this.emit("ready");
@@ -29,13 +29,25 @@ export class SocketManager extends EventEmitter implements Message {
               message.data.attributes.client = socket;
             }
             this.emit("message", message, (err: Error | null, ...params: any) => {
-              if (err) socket.send(JSON.stringify({ type: 'error', data: params }));
+              if (err) return socket.send(JSON.stringify({ type: 'error', data: params }));
               else socket.send(JSON.stringify({ type: message.type, data: params }));
+              if (message.type == 'player.login') {
+                sockets.push({ socket, player: message.data.player });
+              }
             });
           }
         } catch (err) {
           this.emit("error", err as Error);
         }
+      });
+
+      socket.on("close", () => {
+        const index = sockets.findIndex((target) => target.socket == socket);
+        if (index > -1) {
+          sockets[index].player.emit("status", PlayerStatus.offline);
+          sockets.splice(index, 1);
+        }
+        this.emit("close");
       });
     });
   }
