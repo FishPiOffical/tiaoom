@@ -8,15 +8,16 @@
 </head>
 
 <body>
-    <form method="post">
-        服务器地址:<input id="address" value="<%=address%>" />
-        <button onclick="connectToServer()">连接</button>
-        <br />
-        <p>选择操作： <input type="button" value="创建房间" onclick="createRoomCommand()" /></p>
-        <input name="command" id="command" maxlength="2000" style="height:200px;width:400px;" />
-        <br />
-        <button type="submit">确定操作</button>
-    </form>
+    <section>
+      <p>Welcome~ <%=player.name=%></p>
+      <input type="button" value="logout" onclick="location.href='/logout'"/>
+      <input type="hidden" id="playerId" value="<%=player.id=%>"/>
+    </section>
+    <section>
+      <p>Online Players</p>
+      <ul id="onlinePlayers">
+      </ul>
+    </section>
 </body>
 
 </html>

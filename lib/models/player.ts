@@ -11,6 +11,7 @@ export enum PlayerStatus {
   ready = 'ready',
   unready = 'unready',
   online = 'online',
+  offline = 'offline',
   playing = 'playing',
 }
 

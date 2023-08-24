@@ -4,6 +4,7 @@ import { IRoom, IRoomPlayer, RoomOptions } from "./room";
 import { MessageEvents } from "@lib/events/message";
 
 export enum MessageTypes {
+  RoomList = "room.list",
   RoomCreate = "room.create",
   RoomReady = "room.ready",
   RoomStart = "room.start",
@@ -12,6 +13,10 @@ export enum MessageTypes {
   RoomAllReady = "room.allready",
   RoomCommand = "room.command",
   RoomMessage = "room.message",
+  PlayerOffline = "player.offline",
+  PlayerList = "player.list",
+  PlayerLogin = "player.login",
+  PlayerLogout = "player.logout",
   PlayerJoin = "player.join",
   PlayerLeave = "player.leave",
   PlayerReady = "player.ready",
