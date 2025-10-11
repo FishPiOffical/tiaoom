@@ -9,9 +9,10 @@
 
 <body>
     <section>
-      <p>Welcome~ <%=player.name=%></p>
+      <p>Welcome~ <%=player.name%></p>
       <input type="button" value="logout" onclick="location.href='/logout'"/>
-      <input type="hidden" id="playerId" value="<%=player.id=%>"/>
+      <input type="hidden" id="playerId" value="<%=player.id%>"/>
+      <input type="hidden" id="playerName" value="<%=player.name%>"/>
     </section>
     <section>
       <p>Online Players</p>
@@ -19,6 +20,8 @@
       </ul>
     </section>
     <footer>
+      <script src="socket.js"></script>
+      <script src="api.js"></script>
       <script src="main.js"></script>
     </footer>
 </body>

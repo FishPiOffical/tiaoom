@@ -19,7 +19,8 @@ export class Tiaoom extends EventEmitter {
   }
 
   on<K extends keyof TiaoomEvents>(event: K, listener: TiaoomEvents[K]): this {
-    return super.on(event, listener);
+    super.on(event, listener);
+    return this
   }
 
   emit<K extends keyof TiaoomEvents>(event: K, ...args: Parameters<TiaoomEvents[K]>): boolean {
@@ -97,6 +98,8 @@ export class Tiaoom extends EventEmitter {
     });
     this.rooms.push(room);
     this.messageInstance?.send({ type: `room.create`, data: room });
+    this.emit("rooms", this.rooms);
+    this.messageInstance?.send({ type: `room.list`, data: this.rooms });
     return this.emit("room", room), cb?.(room);
   }
 
@@ -120,10 +123,12 @@ export class Tiaoom extends EventEmitter {
     this.rooms.splice(roomIndex, 1);
 
     this.messageInstance?.send({ type: `room.close`, data: room });
-    return roomInstance.emit('close');    
+    this.emit("rooms", this.rooms);
+    this.messageInstance?.send({ type: `room.list`, data: this.rooms });
+    return roomInstance.emit('close');
   }
 
-  loginPlayer (player: PlayerOptions, cb: (data: { player: Player }) => void): void {
+  loginPlayer (player: PlayerOptions, cb?: (data: { player: Player }) => void): Player {
     let playerInstance = this.searchPlayer(player);
     if (!playerInstance) {
       playerInstance = new Player(player);
@@ -132,22 +137,19 @@ export class Tiaoom extends EventEmitter {
       });
       this.players.push(playerInstance);
       this.emit("player", playerInstance);
+      this.emit("players", this.players);
+      this.messageInstance?.send({ type: `player.list`, data: this.players });
     }
     
     playerInstance.emit("status", PlayerStatus.online);
-    cb({ player: playerInstance });
+    cb?.({ player: playerInstance });
+    return playerInstance
   }
 
   joinPlayer(player: RoomPlayerOptions, cb?: (data: { room: Room, player: RoomPlayer }) => void) {
     let playerInstance = this.searchPlayer(player);
     if (!playerInstance) {
-      playerInstance = new Player(player);
-      playerInstance.setSender((type, message) => {
-        this.messageInstance?.send({ type: `player.${type}`, data: message, sender: playerInstance });
-      });
-      this.players.push(playerInstance);
-      this.emit("player", playerInstance);
-      playerInstance.emit("status", PlayerStatus.online);
+      playerInstance = this.loginPlayer(player);
     }
 
     if (!player.roomId) {
@@ -250,6 +252,8 @@ export class Tiaoom extends EventEmitter {
     if (playerIndex > -1) {
       this.players.splice(playerIndex, 1);
     }
+    this.emit("players", this.players);
+    this.messageInstance?.send({ type: `player.list`, data: this.players });
   }
 }
 

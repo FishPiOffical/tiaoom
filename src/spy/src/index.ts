@@ -1,3 +1,4 @@
+import http from "http";
 import express, { Express, Request, Response } from "express";
 import session from 'express-session';
 import sessionStore from 'session-file-store';
@@ -5,6 +6,7 @@ import { Controller } from "./controller";
 import cookieParser from 'cookie-parser';
 
 import path from "path";
+import { threadId } from "worker_threads";
 const FileStore = sessionStore(session);
 
 declare module 'express-session' {
@@ -14,25 +16,27 @@ declare module 'express-session' {
 }
 export class SpyGame {
   app: Express = express();
-  controller = new Controller();
+  controller?: Controller;
   run () {
-    const socketPort = 27015;
+    const serverPort = 27016;
     const domain = "127.0.0.1";
     const title = "Who is Spy?";
-    const address = `ws://${domain}:${socketPort}`;
+    const address = `ws://${domain}:${serverPort}`;
 
     // 设置渲染文件的目录
-    this.app.set("views", "./views");
+    this.app.set("views", path.join(__dirname, '..', 'views'));
     // 设置渲染引擎为html
     this.app.set("view engine", "ejs");
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: false }));
     this.app.use(cookieParser());
-    this.app.use(express.static(path.join(__dirname, 'public')));
+    this.app.use(express.static(path.join(__dirname, '..', 'public')));
     this.app.use(session({
       name: 'Spy-Game',
       secret: 'SPY_GAME',
-      store: new FileStore(),
+      store: new FileStore({
+        path: path.join(__dirname, '..', 'sessions')
+      }),
       saveUninitialized: false,
       resave: false,
       cookie: {
@@ -52,23 +56,26 @@ export class SpyGame {
       res.redirect("/");
     });
     this.app.get("/api/room/:id", (req: Request, res: Response) => {
-      const room = this.controller.tiao?.rooms.find((room) => room.id == req.params.id);
+      const room = this.controller?.rooms.find((room) => room.id == req.params.id);
       if (room) res.json({ code: 0, data: room });
       else res.json({ code: 1, message: "room not found" });
     });
     this.app.get("/api/player/:id", (req: Request, res: Response) => {
-      const player = this.controller.tiao?.players.find((player) => player.id == req.params.id);
+      const player = this.controller?.players.find((player) => player.id == req.params.id);
       if (player) res.json({ code: 0, data: player });
       else res.json({ code: 1, message: "player not found" });
     });
     this.app.get("/api/players", (req: Request, res: Response) => {
-      res.json({ code: 0, data: this.controller.tiao?.players });
+      res.json({ code: 0, data: this.controller?.players });
     });
     this.app.get("/api/rooms", (req: Request, res: Response) => {
-      res.json({ code: 0, data: this.controller.tiao?.rooms });
+      res.json({ code: 0, data: this.controller?.rooms });
     });
-    this.app.listen(27016);
-    this.controller.run(socketPort);
+    const server = http.createServer(this.app);
+    server.listen(serverPort);
+    this.controller = new Controller(server);
+    this.controller?.run();
+    console.log(`Server running at http://${domain}:${serverPort}/`);
   }
 }
 
