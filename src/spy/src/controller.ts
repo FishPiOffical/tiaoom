@@ -1,3 +1,4 @@
+import http from "http";
 import { IPlayer, Player } from "@lib/models/player";
 import { MessagePackage, Room, RoomPlayer, Tiaoom } from "@lib/index";
 import { SocketManager } from "./socket";
@@ -9,14 +10,13 @@ const questions = [
   ['洗发露','护发素']
 ];
 
-export class Controller {
-  tiao?: Tiaoom;
-  constructor() {
+export class Controller extends Tiaoom {
+  constructor(server: http.Server) {
+    super({ socket: new SocketManager(server) });
   }
 
-  run(port: number) {
-    this.tiao = new Tiaoom({ socket: new SocketManager(port)});
-    this.tiao.run().on("room", (room: Room) => {
+  run() {
+    return super.run().on("room", (room: Room) => {
       console.log("room:", room);
       const players: RoomPlayer[] = [];
       const alivePlayers: RoomPlayer[] = [];
@@ -131,18 +131,13 @@ export class Controller {
       room.on('error', (error: any) => {
         console.log("room error:", error);
       });
-    });
-    this.tiao.on('player', (player: Player) => {
+    }).on('player', (player: Player) => {
       console.log("player:", player);
       player.on('command', (message: any) => {
         console.log("player command:", message);
       });
-    })
-    this.tiao.on("error", (error: any) => {
+    }).on("error", (error: any) => {
       console.log("error:", error);
-    });  
+    });
   }
-}
-
-export async function main() {
 }
