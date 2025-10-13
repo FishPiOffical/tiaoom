@@ -1,11 +1,15 @@
 Vue.createApp({
   setup() {
-    const { ref } = Vue;
+    const { ref, computed } = Vue;
 
     const players = ref([]);
     const rooms = ref([]);
 
     const game = new SpyGame("./");
+
+    const isInRoom = computed(() => {
+      return rooms.value.some(room => room.players.some(player => player.id === playerId));
+    });
 
     const playerId = document.getElementById("playerId").value;
     const playerName = document.getElementById("playerName").value;
@@ -63,6 +67,7 @@ Vue.createApp({
       room,
       game,
       player: { id: playerId, name: playerName },
+      isInRoom,
       createRoom,
     }
   }
