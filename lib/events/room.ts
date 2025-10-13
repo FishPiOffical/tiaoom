@@ -1,4 +1,4 @@
-import { RoomPlayer, RoomStatus } from "@lib/models/room";
+import { IRoom, RoomPlayer, RoomStatus } from "@lib/models/room";
 import { BaseEvents } from "./base";
 import { Player } from "@lib/models/player";
 import { MessagePackage } from "..";
@@ -24,6 +24,10 @@ export interface RoomEvents extends BaseEvents {
    * 房间命令
    */
   command: (message: MessagePackage) => void;
+  /**
+   * 房间更新
+   */
+  update: (room: IRoom) => void;
   /**
    * 玩家准备
    */

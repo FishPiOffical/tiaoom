@@ -64,6 +64,13 @@ class Tiaoom {
       this.rooms = this.rooms.filter(r => r.id !== room.id);
       this.emit('onRoomList', this.rooms);
     });
+    this.on("room.update", (room) => {
+      const updatedRoom = this.rooms.find(r => r.id === room.id);
+      if (updatedRoom) {
+        Object.assign(updatedRoom, room);
+        this.emit('onRoomList', this.rooms);
+      }
+    });
 
     return this;
   }

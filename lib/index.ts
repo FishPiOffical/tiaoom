@@ -41,6 +41,8 @@ export class Tiaoom extends EventEmitter {
             return this.joinPlayer(message.sender, message.data);
           case "player.leave":
             return this.leavePlayer(message.sender, message.data);
+          case "room.get":
+            return cb?.(null, this.searchRoom(message.data));
           case "room.start":
             return this.startRoom(message.sender, message.data);
           case "room.close":
