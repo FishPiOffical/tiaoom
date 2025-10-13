@@ -6,7 +6,6 @@ import { Controller } from "./controller";
 import cookieParser from 'cookie-parser';
 
 import path from "path";
-import { threadId } from "worker_threads";
 const FileStore = sessionStore(session);
 
 declare module 'express-session' {
@@ -22,6 +21,7 @@ export class SpyGame {
     const domain = "127.0.0.1";
     const title = "Who is Spy?";
     const address = `ws://${domain}:${serverPort}`;
+    const gameName = "Spy-Game";
 
     // 设置渲染文件的目录
     this.app.set("views", path.join(__dirname, '..', 'views'));
@@ -32,8 +32,8 @@ export class SpyGame {
     this.app.use(cookieParser());
     this.app.use(express.static(path.join(__dirname, '..', 'public')));
     this.app.use(session({
-      name: 'Spy-Game',
-      secret: 'SPY_GAME',
+      name: gameName,
+      secret: gameName.replace(/-/g, '_').toUpperCase(),
       store: new FileStore({
         path: path.join(__dirname, '..', 'sessions')
       }),
@@ -50,6 +50,13 @@ export class SpyGame {
     });
     this.app.get("/login", (req: Request, res: Response) => {
       res.render("login", { title });
+    });
+    this.app.get("/logout", (req: Request, res: Response) => {
+      req.session.destroy((err) => {
+        if (err) return res.redirect("/");
+        res.clearCookie(gameName);
+        res.redirect("/login");
+      });
     });
     this.app.post("/login", (req: Request, res: Response) => {
       req.session.player = { name: req.body.name, id: new Date().getTime().toString() };
@@ -75,7 +82,7 @@ export class SpyGame {
     server.listen(serverPort);
     this.controller = new Controller(server);
     this.controller?.run();
-    console.log(`Server running at http://${domain}:${serverPort}/`);
+    console.info(`Server running at http://${domain}:${serverPort}/`);
   }
 }
 

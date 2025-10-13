@@ -1,31 +1,69 @@
-const socket = new Socket("./");
-const tiaoom = new Tiaoom({ socket });
+Vue.createApp({
+  setup() {
+    const { ref } = Vue;
 
-class Game {
-  constructor() {
-    this.tiaoom = new Tiaoom({ socket });
-  }
-  
-  static connect() {
+    const players = ref([]);
+    const rooms = ref([]);
+
+    const game = new SpyGame("./");
+
     const playerId = document.getElementById("playerId").value;
     const playerName = document.getElementById("playerName").value;
-    tiaoom.connect({ id: playerId, name: playerName, attributes: {} }).then(() => {
-      api.getPlayers().then(players => {
-        tiaoom.players = players.map(player => new Player(player));
-        this.updatePlayers(tiaoom.players);
+
+    game.run()
+      .onReady(() => {
+        game.login({ id: playerId, name: playerName, attributes: {} });
+      })
+      .onPlayerList(data => {
+        console.log('Player List:', data);
+        players.value = data
+      })
+      .onRoomList(data => {
+        console.log('Room List:', data);
+        rooms.value = data
+      })
+      .onPlayerJoin(data => {
+        console.log('Player Join:', data);
+        const roomId = data.roomId;
+        const room = rooms.value.find(r => r.id === roomId);
+        if (room) {
+          room.players.push(data);
+        } else {
+          getRooms();
+        }
+      })
+      .onPlayerLeave(data => {
+        const roomId = data.roomId;
+        const room = rooms.value.find(r => r.id === roomId);
+        if (room) {
+          room.players = room.players.filter(p => p.id !== data.id);
+        } else {
+          getRooms();
+        }
       });
-    });
-    tiaoom.onPlayerList(players => {
-      tiaoom.players = players.map(player => new Player(player));
-      this.updatePlayers(tiaoom.players);
-    });
-  }
 
-  static updatePlayers(players) {
-    const ele = document.getElementById('onlinePlayers');
-    if (!ele) return;
-    ele.innerHTML = players.map(p => `<li>${p.name}</li>`).join('');
-  }
-}
+    function getRooms() {
+      api.getRooms().then(data => rooms.value = data);
+    }
 
-Game.connect();
+    const room = ref({
+      name: '',
+      size: 3,
+      minSize: 3
+    })
+    function createRoom() {
+      game.createRoom(room.value).then(() => {
+        alert('Room created');
+      });
+    }
+
+    return {
+      players,
+      rooms,
+      room,
+      game,
+      player: { id: playerId, name: playerName },
+      createRoom,
+    }
+  }
+}).mount('#app')
