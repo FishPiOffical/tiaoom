@@ -191,6 +191,18 @@ class Tiaoom {
     return this;
   }
 
+  onRoomMessage(cb, on=true) {
+    if (on) this.on("room.message", cb);
+    else this.off("room.message", cb);
+    return this;
+  }
+
+  onCommand(cb, on=true) {
+    if (on) this.on("command", cb);
+    else this.off("command", cb);
+    return this;
+  }
+
   on(event, listener) {
     this.listeners[event] = this.listeners[event] || [];
     this.listeners[event].push(listener);

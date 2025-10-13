@@ -164,6 +164,12 @@ export class Room extends EventEmitter implements IRoom {
   }
 
   start() {
+    if (!this.isReady) {
+      throw new Error('room is not ready.');
+    }
+    if (this.status === RoomStatus.playing) {
+      throw new Error('room is already started.');
+    }
     this.players.forEach((player) => {
       if (player.role != PlayerRole.player) return;
       player.emit('status', PlayerStatus.playing);
