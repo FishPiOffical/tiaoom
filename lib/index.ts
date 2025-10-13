@@ -108,6 +108,10 @@ export class Tiaoom extends EventEmitter {
       throw new Error('room already exists.');
     }
 
+    if (this.rooms.some(r => r.players.some(p => p.id === sender.id))) {
+      throw new Error('you are already in a room.');
+    }
+
     const room = new Room(options, sender.id);
     room.setSender((type, message) => {
       this.messageInstance?.send({ type: `room.${type}`, data: message, sender: room });
