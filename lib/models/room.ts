@@ -180,7 +180,7 @@ export class Room extends EventEmitter implements IRoom {
   }
 
   setSender(sender: (type: string, ...message: any) => void) {
-    const events: Array<keyof RoomEvents> = ['message', 'command', 'start', 'end', 'close', 'error', 'all-ready', 'join', 'leave'];
+    const events: Array<keyof RoomEvents> = ['message', 'command', 'start', 'end', 'close', 'error', 'all-ready', 'player-unready', 'player-ready', 'join', 'leave'];
     this.sender = sender;
     events.forEach((event) => {
       this.on(event, (...data: any) => {

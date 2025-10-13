@@ -1,19 +1,20 @@
 <html>
 
 <head>
-    <title>
-        <%=title%>
-    </title>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <script src="tiaoom.js"></script>
+  <title>
+    <%=title%>
+  </title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="tiaoom.js"></script>
 </head>
 
 <body>
   <article id="app">
     <section>
-      <p>Welcome~ <%=player.name%></p>
+      <p>Welcome~ <%=player.name%>
+      </p>
       <p>
-        <input type="button" value="Logout" onclick="location.href='/logout'"/>
+        <input type="button" value="Logout" onclick="location.href='/logout'" />
       </p>
     </section>
     <section>
@@ -24,7 +25,7 @@
     </section>
     <form name="room" id="room">
       <h2>Create Room</h2>
-      <p><input type="text" name="name" placeholder="Room Name" v-model="room.name"/></p>
+      <p><input type="text" name="name" placeholder="Room Name" v-model="room.name" /></p>
       <p>
         <select name="size" v-model="room.size">
           <option value="3">3 Players</option>
@@ -34,10 +35,10 @@
         </select>
       </p>
       <p>
-        <input type="number" name="minSize" placeholder="Min Size" v-model="room.minSize" min="3" :max="room.size"/>
+        <input type="number" name="minSize" placeholder="Min Size" v-model="room.minSize" min="3" :max="room.size" />
       </p>
       <p>
-        <input type="button" value="Create" @click="createRoom" :disabled="isInRoom"/>
+        <input type="button" value="Create" @click="createRoom" :disabled="!!roomPlayer" />
       </p>
       <h3>Online Rooms</h3>
       <ul>
@@ -45,25 +46,35 @@
           <b v-if="r.players.some(p => p.id == player.id)">{{ r.name }} ({{ r.players.length }}/{{ r.size }})</b>
           <span v-else>{{ r.name }} ({{ r.players.length }}/{{ r.size }})</span>
           <span v-if="r.players.length < r.size && !r.players.some(p => p.id == player.id)">
-            <input 
-              type="button" value="Join" 
-              @click="game.joinRoom(r.id)"
-            />
+            <input type="button" value="Join" @click="game.joinRoom(r.id)" />
           </span>
           <span v-else-if="r.players.some(p => p.id == player.id)">
-            <input 
-              type="button" value="Leave" 
-              @click="game.leaveRoom(r.id)"
-            />
+            <input type="button" value="Leave" @click="game.leaveRoom(r.id)" />
           </span>
           <span v-else>[Full]</span>
         </li>
       </ul>
+      <section v-if="roomPlayer">
+        <h3>My Room: {{ roomPlayer.room.name }} ({{ roomPlayer.room.players.length }}/{{ roomPlayer.room.size }})</h3>
+        <ul>
+          <li v-for="p in roomPlayer.room.players" :key="p.id">
+            [{{p.isReady ? `Ready` : `Unready`}}]
+            {{ p.name }}
+          </li>
+        </ul>
+        <p>
+          <input type="button" value="Leave" @click="game.leaveRoom(roomPlayer.room.id)" />
+          <input type="button" :value="roomPlayer.isReady ? `Unready` : `Ready`"
+            @click="game.ready(roomPlayer.room.id, !roomPlayer.isReady)" />
+          <input type="button" value="Start" @click="game.startGame(roomPlayer.room.id)" :disabled="!isAllReady" />
+        </p>
+      </section>
     </form>
   </article>
   <footer>
-    <input type="hidden" id="playerId" value="<%=player.id%>"/>
-    <input type="hidden" id="playerName" value="<%=player.name%>"/>
+    <script>
+      var currentPlayer = <%- JSON.stringify(player) %>;
+    </script>
     <script src="core.js"></script>
     <script src="api.js"></script>
     <script src="main.js"></script>
