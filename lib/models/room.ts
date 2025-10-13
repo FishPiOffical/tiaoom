@@ -149,6 +149,7 @@ export class Room extends EventEmitter implements IRoom {
       this.players.splice(index, 1);
       if (roomPlayer.isCreator && this.players.length > 0) {
         this.players[0].isCreator = true;
+        this.emit("update", this);
       }
     }
     return roomPlayer;
