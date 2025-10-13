@@ -1,22 +1,30 @@
 Vue.createApp({
   setup() {
-    const { ref, computed } = Vue;
+    const { ref, computed, reactive } = Vue;
 
+    const player = reactive(currentPlayer);
     const players = ref([]);
     const rooms = ref([]);
 
     const game = new SpyGame("./");
 
-    const isInRoom = computed(() => {
-      return rooms.value.some(room => room.players.some(player => player.id === playerId));
+    const roomPlayer = computed(() => {
+      for (const room of rooms.value) {
+        const rp = room.players.find(p => p.id === player.id);
+        if (rp) return { ...rp, room };
+      }
+      return null;
     });
 
-    const playerId = document.getElementById("playerId").value;
-    const playerName = document.getElementById("playerName").value;
+    const isAllReady = computed(() => {
+      if (!roomPlayer.value) return false;
+      return roomPlayer.value.room.players.length >= roomPlayer.value.room.minSize &&
+        roomPlayer.value.room.players.every(p => p.isReady);
+    });
 
     game.run()
       .onReady(() => {
-        game.login({ id: playerId, name: playerName, attributes: {} });
+        game.login(player);
       })
       .onPlayerList(data => {
         console.log('Player List:', data);
@@ -44,10 +52,25 @@ Vue.createApp({
         } else {
           getRooms();
         }
-      });
+      })
+      .onPlayerReady(onPlayerReady)
+      .onPlayerUnready(onPlayerReady)
 
     function getRooms() {
       api.getRooms().then(data => rooms.value = data);
+    }
+
+    function onPlayerReady(data) {
+      const roomId = data.roomId;
+      const room = rooms.value.find(r => r.id === roomId)
+      if (room) {
+        const player = room.players.find(p => p.id === data.id)
+        if (player) {
+          player.isReady = data.isReady;
+        }
+      } else {
+        getRooms();
+      }
     }
 
     const room = ref({
@@ -66,8 +89,9 @@ Vue.createApp({
       rooms,
       room,
       game,
-      player: { id: playerId, name: playerName },
-      isInRoom,
+      player,
+      roomPlayer,
+      isAllReady,
       createRoom,
     }
   }

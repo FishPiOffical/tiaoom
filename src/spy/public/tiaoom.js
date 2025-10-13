@@ -29,6 +29,7 @@ class Tiaoom {
     this.listeners = {};
     this.rooms = [];
     this.players = [];
+    this.currentPlayer = null;
   }
 
   run() {
@@ -84,6 +85,7 @@ class Tiaoom {
   }
 
   login(player) {
+    this.currentPlayer = new Player(player);
     this.send({ type: "player.login", data: player });
     return this;
   }
@@ -145,14 +147,20 @@ class Tiaoom {
   }
 
   onPlayerReady(cb, on=true) {
-    if (on) this.on("player.ready", cb);
-    else this.off("player.ready", cb);
+    if (on) this.on("room.player-ready", cb);
+    else this.off("room.player-ready", cb);
     return this;
   }
 
   onPlayerUnready(cb, on=true) {
-    if (on) this.on("player.unready", cb);
-    else this.off("player.unready", cb);
+    if (on) this.on("room.player-unready", cb);
+    else this.off("room.player-unready", cb);
+    return this;
+  }
+
+  onPlayerStatus(cb, on=true) {
+    if (on) this.on("player.status", cb);
+    else this.off("player.status", cb);
     return this;
   }
 
