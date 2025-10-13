@@ -27,10 +27,13 @@ export class SocketManager extends EventEmitter implements Message {
           if (message) {
             if (message.type == 'player.login') {
               this.sockets.push({ socket, player: message.data });
+            } else {
+              const player = this.sockets.find(s => s.socket == socket)?.player;
+              message.sender = player;
             }
-            this.emit("message", message, (err: Error | null, ...params: any) => {
+            this.emit("message", message, (err: Error | null, data?: any) => {
               if (err) return socket.send(JSON.stringify({ type: 'error', data: err.message, stack: err.stack }));
-              else socket.send(JSON.stringify({ type: message.type, data: params }));
+              else socket.send(JSON.stringify({ type: message.type, data }));
             });
           }
         } catch (err) {
@@ -40,10 +43,12 @@ export class SocketManager extends EventEmitter implements Message {
 
       socket.on("close", () => {
         const index = this.sockets.findIndex((target) => target.socket == socket);
+        const player = this.sockets[index]?.player;
         if (index > -1) {
-          this.emit("message", { type: 'player.logout', data: this.sockets[index].player });
           this.sockets.splice(index, 1);
         }
+        if (!this.sockets.some(s => s.player.id === player.id)) 
+          this.emit("message", { type: 'player.logout', data: player });
         this.emit("close");
       });
     });

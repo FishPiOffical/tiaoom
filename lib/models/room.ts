@@ -36,18 +36,19 @@ export interface IRoom extends RoomOptions {
   players: RoomPlayer[];
 }
 
-export interface RoomPlayerOptions extends PlayerOptions {
+export interface IRoomPlayerOptions extends PlayerOptions {
   roomId?: string;
 }
-export interface IRoomPlayer extends RoomPlayerOptions, IPlayer {
-  id: string;
+export interface IRoomPlayer extends IRoomPlayerOptions, IPlayer {
   isReady: boolean;
   role: PlayerRole;
+  isCreator: boolean;
 }
 
 export class RoomPlayer extends Player implements IRoomPlayer {
   isReady: boolean = false;
   role: PlayerRole = PlayerRole.player;
+  isCreator: boolean = false;
 
   constructor(player: IPlayer | Player, role: PlayerRole = PlayerRole.player) {
     super(player);
@@ -60,6 +61,7 @@ export class RoomPlayer extends Player implements IRoomPlayer {
       ...super.toJSON(),
       role: this.role,
       isReady: this.isReady,
+      isCreator: this.isCreator,
     };
   }
 }
@@ -87,6 +89,12 @@ export class Room extends EventEmitter implements IRoom {
       && this.players.findIndex((target) => target.isReady === false) != -1; // is all player ready
   }
 
+  get status(): RoomStatus {
+    if (!this.isReady) return RoomStatus.waiting;
+    if (this.players.findIndex((target) => target.status === PlayerStatus.playing) != -1) return RoomStatus.playing;
+    return RoomStatus.ready;
+  }
+
   // is room full
   get isFull(): boolean {
     return this.players.length == this.size;
@@ -98,6 +106,7 @@ export class Room extends EventEmitter implements IRoom {
       name: this.name,
       size: this.size || 10,
       minSize: this.minSize,
+      status: this.status,
       players: this.players.map((player) => player.toJSON()),
     }
   }
@@ -108,7 +117,7 @@ export class Room extends EventEmitter implements IRoom {
 
   constructor({
     id = new Date().getTime().toString(), name = '', size = 10, minSize = 2
-  }: RoomOptions) {
+  }: RoomOptions, creater: string) {
     super();
     this.id = id;
     this.name = name;
@@ -116,11 +125,12 @@ export class Room extends EventEmitter implements IRoom {
     this.minSize = minSize;
   }
 
-  addPlayer(player: IPlayer | Player) {
+  addPlayer(player: IPlayer | Player, isCreator: boolean = false) {
     if (this.isFull) return;
     let roomPlayer = this.searchPlayer(player);
     if (!roomPlayer) {
       roomPlayer = new RoomPlayer(player);
+      roomPlayer.isCreator = isCreator;
       this.players.push(roomPlayer);
       this.emit("join", roomPlayer);
     }
@@ -135,7 +145,11 @@ export class Room extends EventEmitter implements IRoom {
     const index = this.players.findIndex((p) => p.id == playerId);
     const roomPlayer = this.players[index];
     if (index > -1) {
+      this.emit("leave", roomPlayer);
       this.players.splice(index, 1);
+      if (roomPlayer.isCreator && this.players.length > 0) {
+        this.players[0].isCreator = true;
+      }
     }
     return roomPlayer;
   }
@@ -165,7 +179,7 @@ export class Room extends EventEmitter implements IRoom {
   }
 
   setSender(sender: (type: string, ...message: any) => void) {
-    const events: Array<keyof RoomEvents> = ['message', 'command', 'start', 'end', 'close', 'error', 'all-ready'];
+    const events: Array<keyof RoomEvents> = ['message', 'command', 'start', 'end', 'close', 'error', 'all-ready', 'join', 'leave'];
     this.sender = sender;
     events.forEach((event) => {
       this.on(event, (...data: any) => {

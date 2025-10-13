@@ -2,7 +2,7 @@ import { PlayerEvents } from "@lib/events/player";
 import EventEmitter from "events";
 
 export interface PlayerOptions {
-  id?: string;
+  id: string;
   name: string;
   attributes?: any;
 }
@@ -11,12 +11,10 @@ export enum PlayerStatus {
   ready = 'ready',
   unready = 'unready',
   online = 'online',
-  offline = 'offline',
   playing = 'playing',
 }
 
 export interface IPlayer extends PlayerOptions {
-  id: string;
   status: PlayerStatus;
 }
 
