@@ -70,28 +70,28 @@ export class Controller extends Tiaoom {
         switch (message.type) {
           case 'say':
             if (gameStatus == 'voting') {
-              sender.emit('message', `[System]: It's voting time, you cannot talk.`);
+              sender.emit('message', `[系统消息]: 现在是投票时间，你不能说话。`);
               return;
             }
             if (gameStatus == 'talking' && sender.id != currentTalkPlayer.id) {
-              sender.emit('message', `[System]: It's not your turn to talk.`);
+              sender.emit('message', `[系统消息]: 现在不是你的发言时间。`);
               return;
             }
             room.emit('message', `[${sender.name}]: ${message.data}`);
             break;
           case 'talked':
             if (gameStatus != 'talking') {
-              sender.emit('message', `[System]: It's not talking time.`);
+              sender.emit('message', `[系统消息]: 现在不是发言时间。`);
               return;
             }
             if (sender.id != currentTalkPlayer.id) {
-              sender.emit('message', `[System]: It's not your turn to talk.`);
+              sender.emit('message', `[系统消息]: 现在不是你的发言时间。`);
               return;
             }
             const playIndex = players.findIndex((p) => p.id == sender.id);
             const nextPlayer = (cannotVotePlayer.length ? cannotVotePlayer : alivePlayers).slice(playIndex + 1)[0];
             if (!nextPlayer) {
-              room.emit('message', `[System]: Players all over talk. vote begin.`);
+              room.emit('message', `[系统消息]: 所有玩家都已发言，投票开始。`);
               if (cannotVotePlayer.length) {
                 alivePlayers.forEach((p) => {
                   if (!cannotVotePlayer.includes(p)) p.emit('command', { type: 'vote', data: cannotVotePlayer });
@@ -103,31 +103,31 @@ export class Controller extends Tiaoom {
               return;
             }
             currentTalkPlayer = nextPlayer;
-            room.emit('message', `[System]: Player ${sender.name} over talk. Player ${nextPlayer.name} talking.`);
+            room.emit('message', `[系统消息]: 玩家 ${sender.name} 发言结束。玩家 ${nextPlayer.name} 开始发言。`);
             room.emit('command', { type: 'talk', data: { player: nextPlayer } });
             break;
           case 'voted':
             if (gameStatus != 'voting') {
-              sender.emit('message', `[System]: It's not voting time.`);
+              sender.emit('message', `[系统消息]: 现在不是投票时间。`);
               return;
             }
             if (votePlayers.includes(sender)) {
-              sender.emit('message', `[System]: You have already voted.`);
+              sender.emit('message', `[系统消息]: 你已经投票过了。`);
               return;
             }
             if (cannotVotePlayer.includes(sender)) {
-              sender.emit('message', `[System]: You cannot vote this round.`);
+              sender.emit('message', `[系统消息]: 你不能在这一轮投票。`);
               return;
             }
 
             const votePlayer = players.find((p) => p.id == message.data.id)
             if (votePlayer && (cannotVotePlayer.length ? cannotVotePlayer : players).includes(votePlayer)) vote.push(votePlayer);
-            else if (votePlayer) return sender.emit('message', `[System]: Player ${votePlayer?.name} is can not be vote.`);
-            else return sender.emit('message', `[System]: Player you voted is not in room.`);
+            else if (votePlayer) return sender.emit('message', `[系统消息]: 玩家 ${votePlayer?.name} 不能被投票。`);
+            else return sender.emit('message', `[系统消息]: 你投票的玩家不在房间内。`);
 
             votePlayers.push(sender);
             sender.emit('command', { type: 'voted' });
-            room.emit('message', `[System]: Player ${sender.name} voted.`);
+            room.emit('message', `[系统消息]: 玩家 ${sender.name} 投票。`);
             if (votePlayers.length != alivePlayers.length - cannotVotePlayer.length) return;
   
             const voteResult: { [key: string]: number } = vote.reduce((result, player) => {
@@ -137,7 +137,7 @@ export class Controller extends Tiaoom {
             const maxVote = Math.max(...Object.values(voteResult));
             const maxVotePlayer = Object.keys(voteResult).filter((id) => voteResult[id] == maxVote).map((id) => players.find((p) => p.id == id)!);
             if (maxVotePlayer.length > 1) {
-              room.emit('message', `[System]: Player ${maxVotePlayer.map(p => p!.name).join(',')} are same votes. please let them talk again.`);
+              room.emit('message', `[系统消息]: 玩家 ${maxVotePlayer.map(p => p!.name).join(',')} 投票相同。请让他们再次发言。`);
               vote.splice(0, vote.length);
               votePlayers.splice(0, votePlayers.length);
               cannotVotePlayer.push(...maxVotePlayer);
@@ -157,12 +157,12 @@ export class Controller extends Tiaoom {
             alivePlayers.splice(alivePlayers.findIndex((p) => p.id == deadPlayer.id), 1);
   
             if (deadPlayer == spyPlayer) {
-              room.emit('message', `[System]: Player ${deadPlayer.name} is dead. Spy is dead. Players win.`);
+              room.emit('message', `[系统消息]: 玩家 ${deadPlayer.name} 死亡。间谍死亡。玩家胜利。`);
             } else if (alivePlayers.length == 3) {
-              room.emit('message', `[System]: Player ${deadPlayer.name} is dead. Spy ${spyPlayer.name} win.`);
+              room.emit('message', `[系统消息]: 玩家 ${deadPlayer.name} 死亡。间谍 ${spyPlayer.name} 胜利。`);
             } else {
               gameStatus = 'talking';
-              return room.emit('message', `[System]: Player ${deadPlayer.name} is dead. Game continue.`);
+              return room.emit('message', `[系统消息]: 玩家 ${deadPlayer.name} 死亡。游戏继续。`);
             }
             room.end();
             break;
@@ -199,7 +199,7 @@ export class Controller extends Tiaoom {
         gameStatus = 'waiting';
         
         if (players.length < room.minSize) {
-          return room.emit('message', `[System]: Not enough players to start the game.`);
+          return room.emit('message', `[系统消息]: Not enough players to start the game.`);
         }
 
         const mainWordIndex = Math.floor(Math.random() * 2);
@@ -213,7 +213,7 @@ export class Controller extends Tiaoom {
           player.emit('command', { type: 'word', data: { word: words[index] } });
           alivePlayers.push(player);
         })
-        room.emit('message', `[System]: Game start. Player ${players[0].name} talking first.`);
+        room.emit('message', `[系统消息]: Game start. Player ${players[0].name} talking first.`);
         room.emit('command', { type: 'talk', data: { player: currentTalkPlayer = players[0] } });
         gameStatus = 'talking';
       });
