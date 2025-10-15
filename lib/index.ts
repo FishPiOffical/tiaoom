@@ -56,9 +56,11 @@ export class Tiaoom extends EventEmitter {
           case "player.unready":
             return this.unReadyPlayer(message.sender, message.data);
           case "player.command":
-            return this.searchPlayer(message.data)?.emit("command", message.data);
+            return this.searchPlayer(message.data)?.emit("command", { ...message.data , sender: message.sender });
           case "room.command":
-            return this.searchRoom(message.data)?.emit("command", message.data);
+            return this.searchRoom(message.data)?.emit("command", { ...message.data , sender: message.sender });
+          case "room.player-command":
+            return this.searchRoom(message.data)?.emit("player-command", { ...message.data , sender: message.sender });
           case "room.message":
             return this.searchRoom(message.data)?.emit("message", message.data);
         }
@@ -77,6 +79,10 @@ export class Tiaoom extends EventEmitter {
 
     this.on('room', (room) => {
       this.messageInstance?.send({ type: 'room.create', data: room });
+    });
+
+    this.on('room-player', (room) => {
+      this.messageInstance?.send({ type: 'room.update', data: room });
     });
 
     this.on('rooms', (rooms) => {
@@ -112,13 +118,15 @@ export class Tiaoom extends EventEmitter {
       throw new Error('you are already in a room.');
     }
 
-    const room = new Room(options, sender.id);
+    const room = new Room(options);
     room.setSender((type, message) => {
       this.messageInstance?.send({ type: `room.${type}`, data: message, sender: room });
     });
-    this.rooms.push(room);
-    this.joinPlayer(sender, { roomId: room.id, ...sender }, true);
+    
     this.emit("room", room);
+    this.rooms.push(room);
+
+    this.joinPlayer(sender, { roomId: room.id, ...sender }, true);
     return room;
   }
 
@@ -128,7 +136,6 @@ export class Tiaoom extends EventEmitter {
       throw new Error('room not found.');
     }
 
-    this.messageInstance?.send({ type: `room.start`, data: room });
     return roomInstance.start();
   }
 
@@ -141,9 +148,7 @@ export class Tiaoom extends EventEmitter {
 
     room = this.rooms.splice(roomIndex, 1)[0];
 
-    this.messageInstance?.send({ type: `room.close`, data: room });
     this.emit("rooms", this.rooms);
-    this.messageInstance?.send({ type: `room.list`, data: this.rooms });
     roomInstance.emit('close');
     return room;
   }
@@ -184,6 +189,8 @@ export class Tiaoom extends EventEmitter {
       throw new Error('room is full.');
     }
 
+    this.emit("room-player", room);
+
     return roomPlayer;
   }
 
@@ -202,7 +209,11 @@ export class Tiaoom extends EventEmitter {
       throw new Error('player not in room.');
     }
 
-    return room.kickPlayer(playerInstance);
+    const roomPlayer = room.kickPlayer(playerInstance);
+
+    if (roomPlayer) this.emit("room-player", room);
+
+    return roomPlayer;
   }
 
   readyPlayer(sender: IPlayer, player: IRoomPlayer) {
@@ -234,7 +245,7 @@ export class Tiaoom extends EventEmitter {
 
     playerInstance.emit("status", PlayerStatus.ready);
 
-    room.emit("player-ready", roomPlayer);
+    room.emit("player-ready", { ...player, ...roomPlayer });
 
     return this;
   }
@@ -275,6 +286,7 @@ export class Tiaoom extends EventEmitter {
       this.emit("player", player, false);
       if (this.rooms.some(r => r.searchPlayer(player))) {
         setTimeout(() => {
+          if (this.players.some(p => p.id === sender.id)) return; // player is online
           this.rooms.filter(r => r.searchPlayer(player)).forEach(r => {
             this.leavePlayer(sender, { ...sender, roomId: r.id });
           });

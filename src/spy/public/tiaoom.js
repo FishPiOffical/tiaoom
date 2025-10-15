@@ -34,31 +34,40 @@ class Tiaoom {
 
   run() {
     this.connect();
-    this.on("room.list", (rooms) => {
-      this.rooms = rooms.map(room => new Room(room));
-    });
-    this.on("player.list", (players) => {
-      this.players = players.map(player => new Player(player)); 
-    });
     this.onReady(() => {
       this.send({ type: "room.list" });
       this.send({ type: "player.list" });
     });
 
-    this.on("player.list", (players) => this.emit('onPlayerList', players.map(player => new Player(player))));
+    this.on("player.list", (players) => {
+      this.players = players.map(player => new Player(player));
+      this.emit('onPlayerList', [...this.players]);
+    });
     this.on("player.login", (player) => {
       this.players.push(new Player(player));
-      this.emit('onPlayerList', this.players);
+      this.emit('onPlayerList', [...this.players]);
     });
     this.on("player.logout", (player) => {
       this.players = this.players.filter(p => p.id !== player.id);
-      this.emit('onPlayerList', this.players);
+      this.emit('onPlayerList', [...this.players]);
     });
 
 
-    this.on("room.list", (rooms) => this.emit('onRoomList', (rooms.map(room => new Room(room)))));
+    this.on("room.list", (rooms) => {
+      this.rooms = rooms.map(room => new Room(room));
+      this.emit('onRoomList', [...this.rooms]);
+    });
     this.on("room.create", (room) => {
       this.rooms.push(new Room(room));
+      this.emit('onRoomList', this.rooms);
+    });
+    this.on("room.update", (room) => {
+      const existingRoom = this.rooms.find(r => r.id === room.id);
+      if (!existingRoom) {
+        this.rooms.push(new Room(room));
+      } else {
+        Object.assign(existingRoom, room);
+      }
       this.emit('onRoomList', this.rooms);
     });
     this.on("room.close", (room) => {
@@ -109,13 +118,18 @@ class Tiaoom {
     return this;
   }
 
-  startGame(roomId) {
-    this.send({ type: "room.start", data: { roomId } });
+  startGame(id) {
+    this.send({ type: "room.start", data: { id } });
     return this;
   }
 
   ready(roomId, isReady=true) {
     this.send({ type: isReady ? "player.ready" : "player.unready", data: { roomId } });
+    return this;
+  }
+
+  command(roomId, command) {
+    this.send({ type: "room.player-command", data: { id: roomId, ...command } });
     return this;
   }
 
@@ -197,9 +211,21 @@ class Tiaoom {
     return this;
   }
 
-  onCommand(cb, on=true) {
-    if (on) this.on("command", cb);
-    else this.off("command", cb);
+  onPlayerMessage(cb, on=true) {
+    if (on) this.on("player.message", cb);
+    else this.off("player.message", cb);
+    return this;
+  }
+
+  onRoomCommand(cb, on=true) {
+    if (on) this.on("room.command", cb);
+    else this.off("room.command", cb);
+    return this;
+  }
+
+  onPlayerCommand(cb, on=true) {
+    if (on) this.on("player.command", cb);
+    else this.off("player.command", cb);
     return this;
   }
 
