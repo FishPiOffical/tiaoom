@@ -8,6 +8,7 @@ import { Player } from "@lib/models/player";
 export interface TiaoomEvents extends BaseEvents {
   room: (room: Room) => void;
   rooms: (rooms: Room[]) => void;
+  'room-player': (room: Room) => void;
   player: (player: Player, online: boolean) => void;
   players: (players: Player[]) => void;
 }

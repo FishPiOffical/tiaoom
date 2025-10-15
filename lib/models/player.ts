@@ -5,6 +5,7 @@ export interface PlayerOptions {
   id: string;
   name: string;
   attributes?: any;
+  sender?: (type: string, ...message: any) => void;
 }
 
 export enum PlayerStatus {
@@ -33,15 +34,23 @@ export class Player extends EventEmitter implements IPlayer {
   status: PlayerStatus = PlayerStatus.online;
   sender?: (type: string, ...message: any) => void;
 
-  constructor({ id = new Date().getTime().toString(), name = '', attributes }: PlayerOptions) {
+  constructor({ id = new Date().getTime().toString(), name = '', attributes, sender }: PlayerOptions) {
     super();
     this.id = id;
     this.name = name;
     this.attributes = attributes;
+    this.sender = sender;
 
     this.on('status', (status: PlayerStatus) => {
       this.status = status;
     });
+    
+    const events: Array<keyof PlayerEvents> = ['command', 'message', 'join', 'leave', 'status'];
+    events.forEach((event) => {
+      this.on(event, (...data: any) => {
+        this.sender?.(event, ...data);
+      });
+    });  
   }
 
   toJSON() {
@@ -57,13 +66,7 @@ export class Player extends EventEmitter implements IPlayer {
   }
 
   setSender(sender: (type: string, ...message: any) => void) {
-    const events: Array<keyof PlayerEvents> = ['command', 'message', 'join', 'leave', 'status'];
     this.sender = sender;
-    events.forEach((event) => {
-      this.on(event, (...data: any) => {
-        this.sender!(event, ...data);
-      });
-    });
     return this;
   }
 }

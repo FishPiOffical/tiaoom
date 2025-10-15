@@ -34,4 +34,28 @@ class SpyGame extends Tiaoom {
     this.socket.send(JSON.stringify({ type, data }));
     return this;
   }
+
+  say(message, roomId) {
+    this.command(roomId, { type: 'say', data: message });
+  }
+
+  talked(roomId) {
+    this.command(roomId, { type: 'talked' });
+  }
+
+  voted(roomId, playerId) {
+    this.command(roomId, { type: 'voted', data: { id: playerId } });
+  }
+
+  onCommand(cb, on=true) {
+    this.onPlayerCommand(cb, on);
+    this.onRoomCommand(cb, on);
+    return this;
+  }
+
+  onMessage(cb, on=true) {
+    this.onPlayerMessage(cb, on);
+    this.onRoomMessage(cb, on);
+    return this;
+  }
 }

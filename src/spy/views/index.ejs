@@ -6,6 +6,17 @@
   </title>
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
   <script src="tiaoom.js"></script>
+  <style>
+    body {
+      background-color: #181a1b;
+      color: white;
+    }
+    input, select {
+      background-color: #3b3b3b;
+      color: white;
+      border: 1px solid #5b5b5b;
+    }
+  </style>
 </head>
 
 <body>
@@ -28,14 +39,13 @@
       <p><input type="text" name="name" placeholder="Room Name" v-model="room.name" /></p>
       <p>
         <select name="size" v-model="room.size">
-          <option value="3">3 Players</option>
           <option value="4">4 Players</option>
           <option value="5">5 Players</option>
           <option value="6">6 Players</option>
         </select>
       </p>
       <p>
-        <input type="number" name="minSize" placeholder="Min Size" v-model="room.minSize" min="3" :max="room.size" />
+        <input type="number" name="minSize" placeholder="Min Size" v-model="room.minSize" min="4" :max="room.size" />
       </p>
       <p>
         <input type="button" value="Create" @click="createRoom" :disabled="!!roomPlayer" />
@@ -58,16 +68,27 @@
         <h3>My Room: {{ roomPlayer.room.name }} ({{ roomPlayer.room.players.length }}/{{ roomPlayer.room.size }})</h3>
         <ul>
           <li v-for="p in roomPlayer.room.players" :key="p.id">
-            [{{p.isReady ? `Ready` : `Unready`}}]
-            {{ p.name }}
+            <span>[{{p.isReady ? `Ready` : `Unready`}}]</span>
+            <span v-if="!p.isDead">{{ p.name }}</span>
+            <del v-else>{{ p.name }} (Dead)</del>
+            <input type="button" v-if="voting && !voted && canVotePlayer.includes(p.id)" @click="votePlayer(p.id)" value="Vote" />
           </li>
         </ul>
-        <p>
-          <input type="button" value="Leave" @click="game.leaveRoom(roomPlayer.room.id)" />
+        <p v-if="gameStatus != 'waiting'">{{ word }}</p>
+        <p v-if="gameStatus == 'waiting'">
+          <input type="button" value="Leave" @click="game.leaveRoom(roomPlayer.room.id)" :disabled="roomPlayer.isReady"/>
           <input type="button" :value="roomPlayer.isReady ? `Unready` : `Ready`"
             @click="game.ready(roomPlayer.room.id, !roomPlayer.isReady)" />
           <input type="button" value="Start" @click="game.startGame(roomPlayer.room.id)" :disabled="!isAllReady" />
         </p>
+        <p>
+          <input type="text" v-model="msg" @keyup.enter="sendMessage" />
+          <input type="button" value="Send" @click="sendMessage" :disabled="!canSpeak" />
+          <input type="button" value="Finish" @click="sendTalked" v-if="canSpeak" />
+        </p>
+        <section>
+          <p v-for="msg in roomMessages">{{ msg }}</p>
+        </section>
       </section>
     </form>
   </article>
