@@ -22,35 +22,35 @@
 <body>
   <article id="app">
     <section>
-      <p>Welcome~ <%=player.name%>
+      <p>欢迎回来~ <%=player.name%>
       </p>
       <p>
         <input type="button" value="Logout" onclick="location.href='/logout'" />
       </p>
     </section>
     <section>
-      <h2>Online Players</h2>
+      <h2>在线玩家</h2>
       <ul>
         <li v-for="p in players" :key="p.id">{{ p.name }}</li>
       </ul>
     </section>
     <form name="room" id="room">
-      <h2>Create Room</h2>
-      <p><input type="text" name="name" placeholder="Room Name" v-model="room.name" /></p>
+      <h2>创建房间</h2>
+      <p><input type="text" name="name" placeholder="房间名称" v-model="room.name" /></p>
       <p>
         <select name="size" v-model="room.size">
-          <option value="4">4 Players</option>
-          <option value="5">5 Players</option>
-          <option value="6">6 Players</option>
+          <option value="4">4 玩家</option>
+          <option value="5">5 玩家</option>
+          <option value="6">6 玩家</option>
         </select>
       </p>
       <p>
-        <input type="number" name="minSize" placeholder="Min Size" v-model="room.minSize" min="4" :max="room.size" />
+        <input type="number" name="minSize" placeholder="最小人数" v-model="room.minSize" min="4" :max="room.size" />
       </p>
       <p>
-        <input type="button" value="Create" @click="createRoom" :disabled="!!roomPlayer" />
+        <input type="button" value="创建" @click="createRoom" :disabled="!!roomPlayer" />
       </p>
-      <h3>Online Rooms</h3>
+      <h3>在线房间</h3>
       <ul>
         <li :id="`room${r.id}`" v-for="r in rooms" :key="r.id">
           <b v-if="r.players.some(p => p.id == player.id)">{{ r.name }} ({{ r.players.length }}/{{ r.size }})</b>
@@ -65,26 +65,26 @@
         </li>
       </ul>
       <section v-if="roomPlayer">
-        <h3>My Room: {{ roomPlayer.room.name }} ({{ roomPlayer.room.players.length }}/{{ roomPlayer.room.size }})</h3>
+        <h3>我的房间: {{ roomPlayer.room.name }} ({{ roomPlayer.room.players.length }}/{{ roomPlayer.room.size }})</h3>
         <ul>
           <li v-for="p in roomPlayer.room.players" :key="p.id">
-            <span>[{{p.isReady ? `Ready` : `Unready`}}]</span>
+            <span>[{{p.isReady ? `准备好了` : `未准备`}}]</span>
             <span v-if="!p.isDead">{{ p.name }}</span>
-            <del v-else>{{ p.name }} (Dead)</del>
-            <input type="button" v-if="voting && !voted && canVotePlayer.includes(p.id)" @click="votePlayer(p.id)" value="Vote" />
+            <del v-else>{{ p.name }} (已死亡)</del>
+            <input type="button" v-if="voting && !voted && canVotePlayer.includes(p.id)" @click="votePlayer(p.id)" value="投票" />
           </li>
         </ul>
         <p v-if="gameStatus != 'waiting'">{{ word }}</p>
         <p v-if="gameStatus == 'waiting'">
           <input type="button" value="Leave" @click="game.leaveRoom(roomPlayer.room.id)" :disabled="roomPlayer.isReady"/>
-          <input type="button" :value="roomPlayer.isReady ? `Unready` : `Ready`"
+          <input type="button" :value="roomPlayer.isReady ? `准备` : `取消准备`"
             @click="game.ready(roomPlayer.room.id, !roomPlayer.isReady)" />
           <input type="button" value="Start" @click="game.startGame(roomPlayer.room.id)" :disabled="!isAllReady" />
         </p>
         <p>
           <input type="text" v-model="msg" @keyup.enter="sendMessage" />
-          <input type="button" value="Send" @click="sendMessage" :disabled="!canSpeak" />
-          <input type="button" value="Finish" @click="sendTalked" v-if="canSpeak" />
+          <input type="button" value="发送" @click="sendMessage" :disabled="!canSpeak" />
+          <input type="button" value="结束" @click="sendTalked" v-if="canSpeak" />
         </p>
         <section>
           <p v-for="msg in roomMessages">{{ msg }}</p>
