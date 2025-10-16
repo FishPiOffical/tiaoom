@@ -55,7 +55,7 @@
               <span v-else>[围观中]</span>
               <span v-if="!p.isDead">{{ p.name }}</span>
               <del v-else>{{ p.name }} (已死亡)</del>
-              <input v-if="roomPlayer.role == 'player' && p.role == 'player'" type="button" v-if="voting && !voted && canVotePlayer.includes(p.id)" @click="votePlayer(p.id)"
+              <input v-if="roomPlayer.role == 'player' && p.role == 'player' && voting && !voted && canVotePlayer.includes(p.id)" type="button" @click="votePlayer(p.id)"
                 value="投票" />
             </li>
           </ul>
