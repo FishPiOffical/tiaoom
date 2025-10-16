@@ -5,12 +5,19 @@ Vue.createApp({
     const player = reactive(currentPlayer);
     const players = ref([]);
     const rooms = ref([]);
+    const playerStatus = computed(() => roomPlayer.value?.status || players.value.find(p => p.id === player.id)?.status || 'offline');
 
     const game = new SpyGame("./");
 
     game.run()
       .onReady(() => {
         game.login(player);
+      })
+      .onPlayerStatus((data) => {
+        const player = players.value.find(p => p.id === data.id);
+        if (player) {
+          player.status = data.status;
+        }
       })
       .onPlayerList(data => {
         console.log('Player List:', data);
@@ -161,6 +168,7 @@ Vue.createApp({
     });
 
     return {
+      playerStatus,
       players,
       rooms,
       room,
