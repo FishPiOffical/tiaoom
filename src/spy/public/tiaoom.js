@@ -3,6 +3,7 @@ class Player {
     this.id = player.id;
     this.name = player.name;
     this.attributes = player.attributes;
+    this.status = player.status;
   }
 }
 
@@ -11,6 +12,7 @@ class RoomPlayer extends Player {
     super(player);
     this.role = player.role;
     this.isReady = player.isReady;
+    this.isCreator = player.isCreator;
   }
 }
 
@@ -21,6 +23,7 @@ class Room {
     this.players = room.players.map(player => new RoomPlayer(player));
     this.size = room.size;
     this.minSize = room.minSize;
+    this.status = room.status;
   }
 }
 

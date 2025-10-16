@@ -135,8 +135,9 @@ export class Tiaoom extends EventEmitter {
     if (!roomInstance) {
       throw new Error('room not found.');
     }
+    roomInstance.start();
 
-    return roomInstance.start();
+    return this.emit("room-player", roomInstance);
   }
 
   closeRoom(sender: IPlayer, room: IRoom) {
