@@ -59,14 +59,16 @@
                 value="投票" />
             </li>
           </ul>
-          <p v-if="gameStatus != 'waiting' &&  roomPlayer.role == 'player'" id="word"><b>你的词：</b><span>{{ word }}</span></p>
-          <p v-if="gameStatus == 'waiting' &&  roomPlayer.role == 'player'" class="group">
+          <p v-if="gameStatus != 'waiting' && roomPlayer.role == 'player'" id="word"><b>你的词：</b><span>{{ word }}</span></p>
+          <p v-if="gameStatus == 'waiting' && roomPlayer.role == 'player'" class="group">
             <input type="button" value="离开" @click="game.leaveRoom(roomPlayer.room.id)"
               :disabled="roomPlayer.isReady" />
             <input type="button" :value="roomPlayer.isReady ? `取消准备` : `准备`"
               @click="game.ready(roomPlayer.room.id, !roomPlayer.isReady)" />
             <input type="button" value="开始游戏" @click="game.startGame(roomPlayer.room.id)" :disabled="!isAllReady" />
           </p>
+          <p v-if="roomPlayer.role == 'watcher'"><input type="button" value="离开" @click="game.leaveRoom(roomPlayer.room.id)"
+              :disabled="roomPlayer.isReady" /></p>
           <p class="flex-middle group" v-if="roomPlayer.role == 'player'">
             <input type="text" v-model="msg" @keyup.enter="sendMessage" placeholder="聊天或说明你的词语" />
             <input type="button" value="发送" @click="sendMessage" :disabled="!canSpeak" />
