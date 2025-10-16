@@ -10,6 +10,7 @@ const FileStore = sessionStore(session);
 
 declare module 'express-session' {
   export interface SessionData {
+    error: string;
     player: { id: string, name: string };
   }
 }
@@ -46,10 +47,17 @@ export class SpyGame {
 
     this.app.get("/", (req: Request, res: Response) => {
       if (!req.session.player) return res.redirect("/login");
+      if (this.controller?.players.some((player) => player.name == req.session.player?.name && player.id != req.session.player?.id)) {
+        req.session.player = undefined;
+        req.session.error = "昵称已被占用";
+        return res.redirect("/login");
+      }
       res.render("index", { title, address, player: req.session.player });
     });
     this.app.get("/login", (req: Request, res: Response) => {
-      res.render("login", { title });
+      const error = req.session.error || '';
+      req.session.error = '';
+      res.render("login", { title, message: error });
     });
     this.app.get("/logout", (req: Request, res: Response) => {
       req.session.destroy((err) => {
@@ -59,6 +67,9 @@ export class SpyGame {
       });
     });
     this.app.post("/login", (req: Request, res: Response) => {
+      if (this.controller?.players.some((player) => player.name == req.body.name)) {
+        return res.render("login", { title, message: "昵称已被使用", ...req.body });
+      }
       req.session.player = { name: req.body.name, id: new Date().getTime().toString() };
       res.redirect("/");
     });

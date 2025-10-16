@@ -43,9 +43,7 @@ Vue.createApp({
       minSize: 4
     })
     function createRoom() {
-      game.createRoom(room.value).then(() => {
-        alert('Room created');
-      });
+      game.createRoom(room.value);
     }
 
     function onPlayerReady(data) {
