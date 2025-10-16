@@ -47,7 +47,6 @@ export class Controller extends Tiaoom {
 
       const vote: RoomPlayer[] = [];
       const votePlayers: RoomPlayer[] = [];
-      const cannotVotePlayer: RoomPlayer[] = [];
 
       room.on('join', (player: IRoomPlayer) => {
         console.log("player join:", player);
@@ -104,16 +103,10 @@ export class Controller extends Tiaoom {
               return;
             }
             const playIndex = room.validPlayers.findIndex((p) => p.id == sender.id);
-            const nextPlayer = (cannotVotePlayer.length ? cannotVotePlayer : alivePlayers).slice(playIndex + 1)[0];
+            const nextPlayer = alivePlayers.slice(playIndex + 1)[0];
             if (!nextPlayer) {
               room.emit('message', `[系统消息]: 所有玩家都已发言，投票开始。`);
-              if (cannotVotePlayer.length) {
-                alivePlayers.forEach((p) => {
-                  if (!cannotVotePlayer.includes(p)) p.emit('command', { type: 'vote', data: cannotVotePlayer });
-                })
-                sender.emit('command', { type: 'vote', data: [] });
-              }
-              else room.emit('command', { type: 'vote' });
+              room.emit('command', { type: 'vote' });
               gameStatus = 'voting';
               return;
             }
@@ -130,17 +123,13 @@ export class Controller extends Tiaoom {
               sender.emit('message', `[系统消息]: 你已经投票过了。`);
               return;
             }
-            if (cannotVotePlayer.includes(sender)) {
-              sender.emit('message', `[系统消息]: 你不能在这一轮投票。`);
-              return;
-            }
-            if (!(cannotVotePlayer.length ? cannotVotePlayer : alivePlayers).some((p) => p.id == sender.id)) {
+            if (!alivePlayers.some((p) => p.id == sender.id)) {
               sender.emit('message', `[系统消息]: 你不是房间内的玩家，不能投票。`);
               return;
             }
 
             const votePlayer = room.validPlayers.find((p) => p.id == message.data.id)
-            if (votePlayer && (cannotVotePlayer.length ? cannotVotePlayer : room.validPlayers).includes(votePlayer)) {
+            if (votePlayer && alivePlayers.includes(votePlayer)) {
               vote.push(votePlayer);
             } else if (votePlayer) {
               return sender.emit('message', `[系统消息]: 玩家 ${votePlayer?.name} 不能被投票。`);
@@ -149,7 +138,7 @@ export class Controller extends Tiaoom {
             votePlayers.push(sender);
             sender.emit('command', { type: 'voted' });
             room.emit('message', `[系统消息]: 玩家 ${sender.name} 已投票。`);
-            if (votePlayers.length != alivePlayers.length - cannotVotePlayer.length) return;
+            if (votePlayers.length != alivePlayers.length) return;
 
             const voteResult: { [key: string]: number } = vote.reduce((result, player) => {
               result[player.id] = (result[player.id] || 0) + 1;
@@ -158,18 +147,17 @@ export class Controller extends Tiaoom {
             const maxVote = Math.max(...Object.values(voteResult));
             const maxVotePlayer = Object.keys(voteResult).filter((id) => voteResult[id] == maxVote).map((id) => room.validPlayers.find((p) => p.id == id)!);
             if (maxVotePlayer.length > 1) {
-              room.emit('message', `[系统消息]: 玩家 ${maxVotePlayer.map(p => p!.name).join(',')} 投票相同。请让他们再次发言。`);
+              room.emit('message', `[系统消息]: 玩家 ${maxVotePlayer.map(p => p!.name).join(',')} 投票相同。无人死亡。`);
               vote.splice(0, vote.length);
               votePlayers.splice(0, votePlayers.length);
-              cannotVotePlayer.push(...maxVotePlayer);
-              currentTalkPlayer = cannotVotePlayer[0];
+              currentTalkPlayer = alivePlayers[0];
               room.emit('command', { type: 'talk', data: { player: currentTalkPlayer } });
               gameStatus = 'talking';
+              room.emit('message', `[系统消息]: 游戏继续。玩家 ${currentTalkPlayer.name} 发言。`);
               return;
             }
 
             vote.splice(0, vote.length);
-            cannotVotePlayer.splice(0, cannotVotePlayer.length);
             votePlayers.splice(0, votePlayers.length);
             gameStatus = 'waiting';
 
@@ -202,7 +190,7 @@ export class Controller extends Tiaoom {
                 talk: currentTalkPlayer,
                 voted: votePlayers.some((p) => p.id == player.id),
                 deadPlayers: room.status == RoomStatus.playing ? room.validPlayers.filter((p) => !alivePlayers.some(a => p.id == a.id)) : [],
-                canVotePlayers: cannotVotePlayer.length ? cannotVotePlayer : alivePlayers,
+                canVotePlayers: alivePlayers,
                 messageHistory,
               }
             });
@@ -215,12 +203,12 @@ export class Controller extends Tiaoom {
         console.log("room start");
 
         vote.splice(0, vote.length);
-        cannotVotePlayer.splice(0, cannotVotePlayer.length);
         votePlayers.splice(0, votePlayers.length);
         alivePlayers.splice(0, alivePlayers.length);
         currentTalkPlayer = undefined!;
         spyPlayer = undefined!;
         gameStatus = 'waiting';
+        messageHistory = [];
 
         if (room.validPlayers.length < room.minSize) {
           return room.emit('message', `[系统消息]: 玩家人数不足，无法开始游戏。`);
