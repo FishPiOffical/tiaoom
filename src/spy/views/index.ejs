@@ -11,7 +11,8 @@
     <section class="container">
       <aside class="aside">
         <p class="header">
-          <span>欢迎回来~ <%=player.name%></span> <input type="button" value="退出" onclick="location.href='/logout'" />
+          <span>欢迎回来~ <%=player.name%></span>
+          <input :title="playerStatus == 'playing' ? '游戏中不可退出账号' : ''" :disabled="playerStatus == 'playing'" type="button" value="退出" onclick="location.href='/logout'" />
         </p>
         <h2>在线玩家</h2>
         <ul class="list">

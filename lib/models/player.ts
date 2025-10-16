@@ -58,6 +58,7 @@ export class Player extends EventEmitter implements IPlayer {
       id: this.id,
       name: this.name,
       attributes: this.attributes,
+      status: this.status,
     };
   }
 
