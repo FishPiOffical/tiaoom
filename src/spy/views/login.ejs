@@ -1,16 +1,18 @@
 <html>
 
 <head>
-    <title>
-        <%=title%>
-    </title>
+  <%- include('header') %>
 </head>
 
 <body>
-    <form action="#" method="post">
-      <p><label for="name"></label><input id="name" name="name"/></p>
-      <p><input type="submit" value="login" /></p>
-    </form>
+  <form action="#" method="post" id="app" class="flex-center">
+    <h1>
+      <%=title%>
+    </h1>
+    <p class="group flex-middle">
+      <input id="name" name="name" placeholder="用户名" /><input type="submit" value="登录" />
+    </p>
+  </form>
 </body>
 
 </html>

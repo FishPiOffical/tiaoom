@@ -1,0 +1,135 @@
+* {
+  box-sizing: border-box;
+}
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background-color: #181a1b;
+  color: white;
+  font-family: "Chill Pixels Mono", "Pixel32", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  font-size: 14px;
+}
+input, select {
+  background-color: #3b3b3b;
+  color: white;
+  border: 2px dashed #aaa;
+  height: 2em;
+  line-height: 2em;
+  padding: 0 5px;
+  font-family: inherit;
+  font-size: 14px;
+}
+input::placeholder {
+  font-family: inherit;
+}
+input[type="button"]:hover, button:hover, input[type="submit"]:hover {
+  background-color: #5b5b5b;
+}
+input[type="button"], button, input[type="submit"] {
+  cursor: pointer;
+  border-radius: 5px;
+  padding: 0 10px;
+}
+input:disabled, select:disabled {
+  background-color: #2b2b2b;
+  color: #777;
+  border: 2px dashed #444;
+  cursor: not-allowed;
+}
+input:disabled:hover {
+  background-color: #2b2b2b;
+}
+.group {
+  font-size: 0;
+}
+.group input, .group select {
+  border-radius: 0;
+  border-left-width: 0;
+}
+.group input:first-child, .group select:first-child {
+  border-top-left-radius: 5px;
+  border-bottom-left-radius: 5px;
+  border-left-width: 1px;
+}
+.group input:last-child, .group select:last-child {
+  border-top-right-radius: 5px;
+  border-bottom-right-radius: 5px;
+}
+#app {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+}
+.container {
+  display: flex;
+  height: 100%;
+  flex-direction: row;
+}
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px;
+}
+.aside {
+  width: 300px;
+  border-right: 3px dashed #ccc;
+  padding: 10px;
+  flex: none;
+}
+.my-2 {
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+.space-x-2 > * + * {
+  margin-left: 8px;
+}
+.space-y-2 > * + * {
+  margin-top: 8px;
+}
+.flex-middle {
+  display: flex;
+  align-items: center;
+}
+.flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+.main {
+  flex: 1;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+}
+.list {
+  list-style: none;
+  padding: 5px;
+  margin: 0;
+}
+.list li {
+  border-radius: 5px;
+  padding: 5px;
+}
+.list li::before {
+  content: "- ";
+}
+.list li:hover {
+  background-color: #3b3b3b;
+}
+.list li + li {
+  margin-top: 4px;
+}
+
+@media (max-width: 600px) {
+  .container {
+    flex-direction: column;
+  }
+  .aside {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #ccc;
+  }
+}

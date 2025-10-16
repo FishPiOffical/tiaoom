@@ -55,14 +55,14 @@ export class Tiaoom extends EventEmitter {
             return this.readyPlayer(message.sender, message.data);
           case "player.unready":
             return this.unReadyPlayer(message.sender, message.data);
-          case "player.command":
-            return this.searchPlayer(message.data)?.emit("command", { ...message.data , sender: message.sender });
-          case "room.command":
-            return this.searchRoom(message.data)?.emit("command", { ...message.data , sender: message.sender });
           case "room.player-command":
             return this.searchRoom(message.data)?.emit("player-command", { ...message.data , sender: message.sender });
           case "room.message":
             return this.searchRoom(message.data)?.emit("message", message.data);
+          case "global.command":
+            return this.emit("command", { ...message.data , sender: message.sender });
+          default:
+            throw new Error('unknown message type.');
         }
       } catch (error) {
         cb?.(error as Error);
@@ -144,6 +144,10 @@ export class Tiaoom extends EventEmitter {
     const roomInstance = this.rooms[roomIndex];
     if (!roomInstance) {
       throw new Error('room not found.');
+    }
+
+    if (roomInstance.players.length && !roomInstance.players.some(p => p.id === sender.id && p.isCreator)) {
+      throw new Error('only room creator can close the room.');
     }
 
     room = this.rooms.splice(roomIndex, 1)[0];
