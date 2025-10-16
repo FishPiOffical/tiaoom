@@ -83,6 +83,14 @@ export class Room extends EventEmitter implements IRoom {
 
   players: RoomPlayer[] = []; // player list
 
+  get validPlayers() {
+    return this.players.filter((player) => player.role === PlayerRole.player);
+  }
+
+  get watchers() {
+    return this.players.filter((player) => player.role === PlayerRole.watcher);
+  }
+
   private sender?: (type: string, ...message: any) => void;
 
   get isReady(): boolean {
@@ -96,9 +104,13 @@ export class Room extends EventEmitter implements IRoom {
     return RoomStatus.ready;
   }
 
+  get isPlaying(): boolean {
+    return this.status === RoomStatus.playing;
+  }
+
   // is room full
   get isFull(): boolean {
-    return this.players.length == this.size;
+    return this.validPlayers.length == this.size;
   }
 
   toJSON() {
@@ -135,9 +147,10 @@ export class Room extends EventEmitter implements IRoom {
 
   addPlayer(player: Player, isCreator: boolean = false) {
     if (this.isFull) return;
+    if (this.players.some((p) => p.id == player.id)) return;
     let roomPlayer = this.searchPlayer(player);
     if (!roomPlayer) {
-      roomPlayer = new RoomPlayer(player);
+      roomPlayer = new RoomPlayer(player, this.isPlaying ? PlayerRole.watcher : PlayerRole.player);
       roomPlayer.isCreator = isCreator;
       roomPlayer.roomId = this.id;
       this.players.push(roomPlayer);

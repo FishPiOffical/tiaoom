@@ -127,6 +127,7 @@ Vue.createApp({
               if (p) p.isDead = true;
             }
           }
+          roomMessages.value = cmd.data.messageHistory || [];
           break;
         case 'voted':
           voted.value = true;
@@ -136,13 +137,14 @@ Vue.createApp({
           break;
       }
     }).onMessage((msg) => {
-      roomMessages.value.push(`${msg}`);
+      roomMessages.value.unshift(`${msg}`);
     });
 
     const msg = ref('');
     const word = ref('');
     function sendMessage() {
       game.say(msg.value, roomPlayer.value.room.id);
+      msg.value = '';
     }
     function sendTalked() {
       game.talked(roomPlayer.value.room.id);

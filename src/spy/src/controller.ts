@@ -1,13 +1,33 @@
 import http from "http";
 import { IPlayer, Player, PlayerStatus } from "@lib/models/player";
-import { IRoomPlayer, MessagePackage, Room, RoomPlayer, Tiaoom } from "@lib/index";
+import { IRoomPlayer, MessagePackage, Room, RoomPlayer, RoomStatus, Tiaoom } from "@lib/index";
 import { SocketManager } from "./socket";
 
 const questions = [
   ['蝴蝶', '蜜蜂'],
   ['婚纱', '喜服'],
   ['小笼包', '灌汤包'],
-  ['洗发露','护发素']
+  ['洗发露', '护发素'],
+  ["苹果", "梨"],
+  ["香蕉", "芒果"],
+  ["咖啡", "拿铁"],
+  ["茶", "奶茶"],
+  ["汉堡", "热狗"],
+  ["披萨", "意大利面"],
+  ["衬衫", "T恤"],
+  ["牛仔裤", "休闲裤"],
+  ["自行车", "摩托车"],
+  ["飞机", "火车"],
+  ["牙刷", "牙线"],
+  ["手表", "手链"],
+  ["沙发", "扶手椅"],
+  ["雨伞", "雨衣"],
+  ["电脑", "平板"],
+  ["太阳", "月亮"],
+  ["春天", "秋天"],
+  ["篮球", "足球"],
+  ["玫瑰", "郁金香"],
+  ["医生", "护士"],
 ];
 
 export class Controller extends Tiaoom {
@@ -19,41 +39,31 @@ export class Controller extends Tiaoom {
     return super.run().on("room", (room: Room) => {
       console.log("room:", room);
       let words: string[] = [];
-      let players: RoomPlayer[] = [];
+      let messageHistory: string[] = [];
       const alivePlayers: RoomPlayer[] = [];
       let currentTalkPlayer: RoomPlayer;
       let spyPlayer: RoomPlayer;
       let gameStatus: 'waiting' | 'talking' | 'voting' = 'waiting';
-              
+
       const vote: RoomPlayer[] = [];
       const votePlayers: RoomPlayer[] = [];
       const cannotVotePlayer: RoomPlayer[] = [];
 
       room.on('join', (player: IRoomPlayer) => {
         console.log("player join:", player);
-        players.push(new RoomPlayer(player));
-      })
-      room.on('leave', (player: IRoomPlayer) => {
+      }).on('leave', (player: IRoomPlayer) => {
         console.log("player leave:", player);
-        players.splice(players.findIndex((p) => p.id == player.id), 1);
-      });
-      room.on('player-ready', (player: IRoomPlayer) => {
+      }).on('player-ready', (player: IRoomPlayer) => {
         console.log("player ready:", player);
-        const p = players.find((p) => p.id == player.id);
-        if (p) Object.assign(p, new RoomPlayer(player));
-      });
-      room.on('all-ready', (allPlayers: IRoomPlayer[]) => {
+      }).on('all-ready', (allPlayers: IRoomPlayer[]) => {
         console.log("all player ready:", allPlayers);
-        players = allPlayers.map((p) => new RoomPlayer(p));
-      });
-      room.on('player-unready', (player: IRoomPlayer) => {
+      }).on('player-unready', (player: IRoomPlayer) => {
         console.log("player unready:", player);
         const p = this.players.find((p) => p.id == player.id);
         if (p) Object.assign(p, new RoomPlayer(player));
-      });
-      room.on('player-command', (message: MessagePackage) => {
+      }).on('player-command', (message: MessagePackage) => {
         console.log("room message:", message);
-        const sender = players.find((p) => p.id == message.sender?.id)!;
+        const sender = room.validPlayers.find((p) => p.id == message.sender?.id)!;
         /**
          * # room command
          * - say: player say something
@@ -77,6 +87,11 @@ export class Controller extends Tiaoom {
               sender.emit('message', `[系统消息]: 现在不是你的发言时间。`);
               return;
             }
+            if (room.status == RoomStatus.playing) {
+              words.forEach((word) => {
+                message.data = message.data.replace(new RegExp(word, 'ig'), ''.padStart(word.length, '*'));
+              });
+            }
             room.emit('message', `[${sender.name}]: ${message.data}`);
             break;
           case 'talked':
@@ -88,7 +103,7 @@ export class Controller extends Tiaoom {
               sender.emit('message', `[系统消息]: 现在不是你的发言时间。`);
               return;
             }
-            const playIndex = players.findIndex((p) => p.id == sender.id);
+            const playIndex = room.validPlayers.findIndex((p) => p.id == sender.id);
             const nextPlayer = (cannotVotePlayer.length ? cannotVotePlayer : alivePlayers).slice(playIndex + 1)[0];
             if (!nextPlayer) {
               room.emit('message', `[系统消息]: 所有玩家都已发言，投票开始。`);
@@ -119,23 +134,29 @@ export class Controller extends Tiaoom {
               sender.emit('message', `[系统消息]: 你不能在这一轮投票。`);
               return;
             }
+            if (!(cannotVotePlayer.length ? cannotVotePlayer : alivePlayers).some((p) => p.id == sender.id)) {
+              sender.emit('message', `[系统消息]: 你不是房间内的玩家，不能投票。`);
+              return;
+            }
 
-            const votePlayer = players.find((p) => p.id == message.data.id)
-            if (votePlayer && (cannotVotePlayer.length ? cannotVotePlayer : players).includes(votePlayer)) vote.push(votePlayer);
-            else if (votePlayer) return sender.emit('message', `[系统消息]: 玩家 ${votePlayer?.name} 不能被投票。`);
-            else return sender.emit('message', `[系统消息]: 你投票的玩家不在房间内。`);
+            const votePlayer = room.validPlayers.find((p) => p.id == message.data.id)
+            if (votePlayer && (cannotVotePlayer.length ? cannotVotePlayer : room.validPlayers).includes(votePlayer)) {
+              vote.push(votePlayer);
+            } else if (votePlayer) {
+              return sender.emit('message', `[系统消息]: 玩家 ${votePlayer?.name} 不能被投票。`);
+            } else return sender.emit('message', `[系统消息]: 你投票的玩家不在房间内。`);
 
             votePlayers.push(sender);
             sender.emit('command', { type: 'voted' });
-            room.emit('message', `[系统消息]: 玩家 ${sender.name} 投票。`);
+            room.emit('message', `[系统消息]: 玩家 ${sender.name} 已投票。`);
             if (votePlayers.length != alivePlayers.length - cannotVotePlayer.length) return;
-  
+
             const voteResult: { [key: string]: number } = vote.reduce((result, player) => {
               result[player.id] = (result[player.id] || 0) + 1;
               return result;
             }, {} as { [key: string]: number });
             const maxVote = Math.max(...Object.values(voteResult));
-            const maxVotePlayer = Object.keys(voteResult).filter((id) => voteResult[id] == maxVote).map((id) => players.find((p) => p.id == id)!);
+            const maxVotePlayer = Object.keys(voteResult).filter((id) => voteResult[id] == maxVote).map((id) => room.validPlayers.find((p) => p.id == id)!);
             if (maxVotePlayer.length > 1) {
               room.emit('message', `[系统消息]: 玩家 ${maxVotePlayer.map(p => p!.name).join(',')} 投票相同。请让他们再次发言。`);
               vote.splice(0, vote.length);
@@ -146,7 +167,7 @@ export class Controller extends Tiaoom {
               gameStatus = 'talking';
               return;
             }
-  
+
             vote.splice(0, vote.length);
             cannotVotePlayer.splice(0, cannotVotePlayer.length);
             votePlayers.splice(0, votePlayers.length);
@@ -155,8 +176,8 @@ export class Controller extends Tiaoom {
             const deadPlayer = maxVotePlayer[0]!;
             deadPlayer.emit('command', { type: 'dead' });
             alivePlayers.splice(alivePlayers.findIndex((p) => p.id == deadPlayer.id), 1);
-  
-            if (deadPlayer == spyPlayer) {
+
+            if (deadPlayer.name == spyPlayer.name) {
               room.emit('message', `[系统消息]: 玩家 ${deadPlayer.name} 死亡。间谍死亡。玩家胜利。`);
             } else if (alivePlayers.length == 3) {
               room.emit('message', `[系统消息]: 玩家 ${deadPlayer.name} 死亡。间谍 ${spyPlayer.name} 胜利。`);
@@ -164,11 +185,14 @@ export class Controller extends Tiaoom {
               gameStatus = 'talking';
               return room.emit('message', `[系统消息]: 玩家 ${deadPlayer.name} 死亡。游戏继续。`);
             }
+            room.validPlayers.forEach((player, index) => {
+              alivePlayers.push(player);
+            })
             room.end();
             break;
           case 'status': {
-            const playerIndex = players.findIndex((p) => p.id == message.data.id);
-            const player = players[playerIndex];
+            const playerIndex = room.validPlayers.findIndex((p) => p.id == message.data.id);
+            const player = room.validPlayers[playerIndex];
             if (!player) break;
             player.emit('command', {
               type: 'status',
@@ -177,8 +201,9 @@ export class Controller extends Tiaoom {
                 status: gameStatus,
                 talk: currentTalkPlayer,
                 voted: votePlayers.some((p) => p.id == player.id),
-                deadPlayers: players.filter((p) => !alivePlayers.includes(p)),
-                canVotePlayers: cannotVotePlayer.length ? cannotVotePlayer : alivePlayers
+                deadPlayers: room.status == RoomStatus.playing ? room.validPlayers.filter((p) => !alivePlayers.some(a => p.id == a.id)) : [],
+                canVotePlayers: cannotVotePlayer.length ? cannotVotePlayer : alivePlayers,
+                messageHistory,
               }
             });
             break;
@@ -186,8 +211,7 @@ export class Controller extends Tiaoom {
           default:
             break;
         }
-      });
-      room.on('start', () => {
+      }).on('start', () => {
         console.log("room start");
 
         vote.splice(0, vote.length);
@@ -197,35 +221,35 @@ export class Controller extends Tiaoom {
         currentTalkPlayer = undefined!;
         spyPlayer = undefined!;
         gameStatus = 'waiting';
-        
-        if (players.length < room.minSize) {
+
+        if (room.validPlayers.length < room.minSize) {
           return room.emit('message', `[系统消息]: 玩家人数不足，无法开始游戏。`);
         }
 
         const mainWordIndex = Math.floor(Math.random() * 2);
         const spyWordIndex = mainWordIndex == 0 ? 1 : 0;
         const questWord = questions[Math.floor(Math.random() * questions.length)];
-        words = Array(players.length).fill(questWord[mainWordIndex]);
-        const spyIndex = Math.floor(Math.random() * players.length);
+        words = Array(room.validPlayers.length).fill(questWord[mainWordIndex]);
+        const spyIndex = Math.floor(Math.random() * room.validPlayers.length);
         words[spyIndex] = questWord[spyWordIndex];
-        spyPlayer = players[spyIndex];
-        players.forEach((player, index) => {
+        spyPlayer = room.validPlayers[spyIndex];
+        room.validPlayers.forEach((player, index) => {
           player.emit('command', { type: 'word', data: { word: words[index] } });
           alivePlayers.push(player);
         })
-        room.emit('message', `[系统消息]: 游戏开始。玩家 ${players[0].name} 首先发言。`);
-        room.emit('command', { type: 'talk', data: { player: currentTalkPlayer = players[0] } });
+        room.emit('message', `[系统消息]: 游戏开始。玩家 ${room.validPlayers[0].name} 首先发言。`);
+        room.emit('command', { type: 'talk', data: { player: currentTalkPlayer = room.validPlayers[0] } });
         gameStatus = 'talking';
-      });
-      room.on('end', () => {
+      }).on('end', () => {
         console.log("room end");
         room.emit('command', { type: 'end' });
-      });
-      room.on('close', () => {
+      }).on('close', () => {
         console.log("room close");
-      });
-      room.on('error', (error: any) => {
+      }).on('error', (error: any) => {
         console.log("room error:", error);
+      }).on('message', (message: string) => {
+        messageHistory.unshift(message);
+        if (messageHistory.length > 100) messageHistory.splice(messageHistory.length - 100);
       });
     }).on('player', (player: Player) => {
       console.log("player:", player);
