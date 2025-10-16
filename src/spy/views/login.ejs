@@ -9,8 +9,9 @@
     <h1>
       <%=title%>
     </h1>
+    <p id="message"><%= locals.message %></p>
     <p class="group flex-middle">
-      <input id="name" name="name" placeholder="用户名" /><input type="submit" value="登录" />
+      <input id="name" name="name" value="<%=locals.name%>" placeholder="起个名字吧" /><input type="submit" value="登录" />
     </p>
   </form>
 </body>
