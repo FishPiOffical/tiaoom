@@ -47,6 +47,11 @@ class SpyGame extends Tiaoom {
     this.command(roomId, { type: 'voted', data: { id: playerId } });
   }
 
+  init(roomId, player) {
+    this.send({ type: "room.player-command", data: { id: roomId, type: 'status', data: player } });
+    return this;
+  }
+
   onCommand(cb, on=true) {
     this.onPlayerCommand(cb, on);
     this.onRoomCommand(cb, on);

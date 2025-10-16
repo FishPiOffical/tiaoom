@@ -29,7 +29,7 @@ Vue.createApp({
       if (isInit) return;
       isInit = true;
       if (roomPlayer.value) {
-        game.send({ type: 'room.command', data: { id: roomPlayer.value.room.id, type: 'status', data: currentPlayer } });
+        game.init(roomPlayer.value.room.id, currentPlayer);
       }
     }
 

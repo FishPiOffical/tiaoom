@@ -199,7 +199,7 @@ export class Controller extends Tiaoom {
         gameStatus = 'waiting';
         
         if (players.length < room.minSize) {
-          return room.emit('message', `[系统消息]: Not enough players to start the game.`);
+          return room.emit('message', `[系统消息]: 玩家人数不足，无法开始游戏。`);
         }
 
         const mainWordIndex = Math.floor(Math.random() * 2);
@@ -213,7 +213,7 @@ export class Controller extends Tiaoom {
           player.emit('command', { type: 'word', data: { word: words[index] } });
           alivePlayers.push(player);
         })
-        room.emit('message', `[系统消息]: Game start. Player ${players[0].name} talking first.`);
+        room.emit('message', `[系统消息]: 游戏开始。玩家 ${players[0].name} 首先发言。`);
         room.emit('command', { type: 'talk', data: { player: currentTalkPlayer = players[0] } });
         gameStatus = 'talking';
       });
@@ -232,6 +232,12 @@ export class Controller extends Tiaoom {
       player.on('command', (message: any) => {
         console.log("player command:", message);
       });
+    }).on('room-player', (room: Room) => {
+      console.log("room update:", room);
+      if (room.players.length == 0) {
+        console.log("room empty, close it.");
+        this.closeRoom({} as IPlayer, room);
+      }
     }).on("error", (error: any) => {
       console.log("error:", error);
     });
