@@ -141,15 +141,17 @@ export default function onRoom(room: Room) {
         gameStatus = 'waiting';
 
         const deadPlayer = maxVotePlayer[0]!;
-        deadPlayer.emit('command', { type: 'dead' });
+        room.emit('command', { type: 'dead', data: { player: deadPlayer } });
         alivePlayers.splice(alivePlayers.findIndex((p) => p.id == deadPlayer.id), 1);
 
         if (deadPlayer.name == spyPlayer.name) {
           room.emit('message', `[系统消息]: 玩家 ${deadPlayer.name} 死亡。间谍死亡。玩家胜利。`);
-        } else if (alivePlayers.length == 3) {
+        } else if (alivePlayers.length == 2) {
           room.emit('message', `[系统消息]: 玩家 ${deadPlayer.name} 死亡。间谍 ${spyPlayer.name} 胜利。`);
         } else {
           gameStatus = 'talking';
+          currentTalkPlayer = alivePlayers[0];
+          room.emit('command', { type: 'talk', data: { player: currentTalkPlayer } });
           return room.emit('message', `[系统消息]: 玩家 ${deadPlayer.name} 死亡。游戏继续。`);
         }
         room.validPlayers.forEach((player, index) => {

@@ -1,0 +1,29 @@
+<section class="messages">
+  <section>
+    <section class="checkerboard">
+      <div class="row" v-for="(row, rowIndex) in checkerboard" :key="rowIndex">
+        <div class="cell" v-for="(cell, colIndex) in row" :key="colIndex" :class="cellClass(cell)" @click="makeMove(rowIndex, colIndex)">
+          <span v-if="cell === 1" class="black-piece"></span>
+          <span v-else-if="cell === 2" class="white-piece"></span>
+        </div>
+      </div>
+    </section>
+  </section>
+  <section>
+    <ul class="list">
+      <li v-for="p in roomPlayer.room.players" :key="p.id" class="space-x-2" :class="{ watcher: p.role == 'watcher' }">
+        <span v-if="p.role == 'player'">[{{p.isReady ? `准备好了` : `未准备`}}]</span>
+        <span v-else>[围观中]</span>
+        <span v-if="!p.isDead">{{ p.name }}</span>
+        <del v-else>{{ p.name }} (已死亡)</del>
+        <input v-if="roomPlayer.role == 'player' && p.role == 'player' && voting && !voted && canVotePlayer.includes(p.id)" type="button" @click="votePlayer(p.id)"
+          value="投票" />
+      </li>
+    </ul>
+    <hr />
+    <section class="messages">
+      <p v-for="msg in roomMessages">{{ msg }}</p>
+    </section>
+  </section>
+</section>
+  

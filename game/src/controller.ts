@@ -1,5 +1,5 @@
 import http from "http";
-import { IPlayer, Player, } from "@lib/models/player";
+import { IPlayer, Player, PlayerStatus, } from "@lib/models/player";
 import { Room, Tiaoom } from "@lib/index";
 import { SocketManager } from "./socket";
 import Games from "../games";
@@ -12,9 +12,17 @@ export class Controller extends Tiaoom {
   run() {
     return super.run().on("room", (room: Room) => {
       const gameType = room.attrs?.type;
+      console.dir(Games);
       if (gameType && Games[gameType])
         Games[gameType](room);
       else console.error("game not found:", room);
+      room.on('end', () => {
+        room.players.forEach(p => {
+          p.isReady = false;
+          p.emit('status', PlayerStatus.unready);
+        });
+        this.emit('room-player', room);
+      });
     }).on('player', (player: Player) => {
       console.log("player:", player);
       player.on('command', (message: any) => {

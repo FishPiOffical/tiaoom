@@ -1,4 +1,4 @@
-class SpyGame extends Tiaoom {
+class GameCore extends Tiaoom {
   constructor(address) {
     super();
     this.address = address;
