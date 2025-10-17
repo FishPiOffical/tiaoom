@@ -14,15 +14,15 @@ declare module 'express-session' {
     player: { id: string, name: string };
   }
 }
-export class SpyGame {
+export class Game {
   app: Express = express();
   controller?: Controller;
   run () {
     const serverPort = 27016;
     const domain = "127.0.0.1";
-    const title = "Who is Spy?";
+    const title = "Game Rooms";
     const address = `ws://${domain}:${serverPort}`;
-    const gameName = "Spy-Game";
+    const gameName = "Game-Rooms";
 
     // 设置渲染文件的目录
     this.app.set("views", path.join(__dirname, '..', 'views'));

@@ -47,7 +47,8 @@ Vue.createApp({
     const room = ref({
       name: '',
       size: 4,
-      minSize: 4
+      minSize: 4,
+      attrs: { type: 'spy' },
     })
     function createRoom() {
       game.createRoom(room.value);

@@ -44,5 +44,5 @@ pm2 start -n fishpi-bot npm -- start
 - .vscode - VSCode 调试配置
 - lib - 自定义类库
 - script - 初始化脚本 
-- src - 入口
+- game - 游戏示例入口
 - config.json - 运行配置档案
