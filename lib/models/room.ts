@@ -18,7 +18,11 @@ export interface RoomOptions {
   /**
    * 最小容量
    */
-  minSize?: number
+  minSize?: number,
+  /**
+   * 其他属性
+   */
+  attrs?: Record<string, any>,
 }
 
 export enum PlayerRole {
@@ -80,7 +84,7 @@ export class Room extends EventEmitter implements IRoom {
   size: number = 10; // room size
   name: string = ''; // room name
   minSize: number = 2; // room min size
-
+  attrs?: Record<string, any>; // other attributes
   players: RoomPlayer[] = []; // player list
 
   get validPlayers() {
@@ -121,6 +125,7 @@ export class Room extends EventEmitter implements IRoom {
       minSize: this.minSize,
       status: this.status,
       players: this.players.map((player) => player.toJSON()),
+      attrs: this.attrs,
     }
   }
 
@@ -129,13 +134,14 @@ export class Room extends EventEmitter implements IRoom {
   }
 
   constructor({
-    id = new Date().getTime().toString(), name = '', size = 10, minSize = 2
+    id = new Date().getTime().toString(), name = '', size = 10, minSize = 2, attrs
   }: RoomOptions) {
     super();
     this.id = id;
     this.name = name;
     this.size = size;
     this.minSize = minSize;
+    this.attrs = attrs;
     
     const events: Array<keyof RoomEvents> = ['message', 'command', 'start', 'end', 'close', 'error', 'all-ready', 'player-unready', 'player-ready', 'join', 'leave'];
     events.forEach((event) => {

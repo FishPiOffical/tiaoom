@@ -102,9 +102,9 @@ class Tiaoom {
     return this;
   }
 
-  createRoom({ name, size, minSize }) {
+  createRoom({ name, size, minSize, attrs }) {
     return new Promise((resolve) => {
-      this.send({ type: "room.create", data: { name, size, minSize } });
+      this.send({ type: "room.create", data: { name, size, minSize, attrs } });
       this.on("room.create", (room) => {
         resolve();
       });

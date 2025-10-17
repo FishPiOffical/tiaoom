@@ -38,7 +38,11 @@
           <h3>创建房间</h3>
           <p class="group flex-middle">
             <input type="text" name="name" placeholder="房间名称" v-model="room.name" />
-            <select name="size" v-model="room.size">
+            <select name="type" v-model="room.attrs.type">
+              <option value="spy">谁是卧底？</option>
+              <option value="gobang">五子棋</option>
+            </select>
+            <select v-if="room.attrs.type === 'gobang'" name="size" v-model="room.size">
               <option value="4">4 玩家</option>
               <option value="5">5 玩家</option>
               <option value="6">6 玩家</option>
