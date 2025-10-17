@@ -1,0 +1,30 @@
+          <ul class="list">
+            <li v-for="p in roomPlayer.room.players" :key="p.id" class="space-x-2" :class="{ watcher: p.role == 'watcher' }">
+              <span v-if="p.role == 'player'">[{{spy.getPlayerStatus(p)}}]</span>
+              <span v-else>[围观中]</span>
+              <span v-if="!p.isDead">{{ p.name }}</span>
+              <del v-else>{{ p.name }} (已死亡)</del>
+              <input v-if="roomPlayer.role == 'player' && p.role == 'player' && spy.voting && !spy.voted && spy.canVotePlayer.includes(p.id)" 
+                type="button" @click="spy.votePlayer(p.id)"
+                value="投票" />
+            </li>
+          </ul>
+          <p v-if="spy.gameStatus != 'waiting' && roomPlayer.role == 'player'" id="word"><b>你的词：</b><span>{{ spy.word }}</span></p>
+          <p v-if="spy.gameStatus == 'waiting' && roomPlayer.role == 'player'" class="group">
+            <input type="button" value="离开" @click="game.leaveRoom(roomPlayer.room.id)"
+              :disabled="roomPlayer.isReady" />
+            <input type="button" :value="roomPlayer.isReady ? `取消准备` : `准备`"
+              @click="game.ready(roomPlayer.room.id, !roomPlayer.isReady)" />
+            <input type="button" value="开始游戏" @click="game.startGame(roomPlayer.room.id)" :disabled="!isAllReady" />
+          </p>
+          <p v-if="roomPlayer.role == 'watcher'"><input type="button" value="离开" @click="game.leaveRoom(roomPlayer.room.id)"
+              :disabled="roomPlayer.isReady" /></p>
+          <p class="flex-middle group" v-if="roomPlayer.role == 'player'">
+            <input type="text" v-model="spy.msg" @keyup.enter="spy.sendMessage" placeholder="聊天或说明你的词语" />
+            <input type="button" value="发送" @click="spy.sendMessage" :disabled="!spy.canSpeak" />
+            <input type="button" value="结束" @click="spy.sendTalked" v-if="spy.canSpeak" />
+          </p>
+          <hr v-if="roomPlayer.role != 'player'" />
+          <section class="messages">
+            <p v-for="msg in spy.roomMessages">{{ msg }}</p>
+          </section>

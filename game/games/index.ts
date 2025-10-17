@@ -12,7 +12,7 @@ files.forEach(async (file) => {
   file = './' + name;
   const game = await import(file);
   if (!game) return;
-  games[name] = game;
+  games[name] = game.default;
 });
 
 export default games;

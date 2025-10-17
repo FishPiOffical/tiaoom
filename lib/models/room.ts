@@ -99,7 +99,7 @@ export class Room extends EventEmitter implements IRoom {
 
   get isReady(): boolean {
     return this.players.length >= this.minSize
-      && this.players.every((target) => target.isReady); // is all player ready
+      && this.players.every((target) => target.isReady || target.role === PlayerRole.watcher); // is all player ready
   }
 
   get status(): RoomStatus {
@@ -152,11 +152,10 @@ export class Room extends EventEmitter implements IRoom {
   }
 
   addPlayer(player: Player, isCreator: boolean = false) {
-    if (this.isFull) return;
     if (this.players.some((p) => p.id == player.id)) return;
     let roomPlayer = this.searchPlayer(player);
     if (!roomPlayer) {
-      roomPlayer = new RoomPlayer(player, this.isPlaying ? PlayerRole.watcher : PlayerRole.player);
+      roomPlayer = new RoomPlayer(player, this.isFull || this.isPlaying ? PlayerRole.watcher : PlayerRole.player);
       roomPlayer.isCreator = isCreator;
       roomPlayer.roomId = this.id;
       this.players.push(roomPlayer);

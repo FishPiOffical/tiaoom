@@ -24,6 +24,7 @@ class Room {
     this.size = room.size;
     this.minSize = room.minSize;
     this.status = room.status;
+    this.attrs = room.attrs;
   }
 }
 
