@@ -51,7 +51,9 @@ Vue.createApp({
       attrs: { type: 'spy' },
     })
     function createRoom() {
-      game.createRoom(room.value);
+      const r = { ...room.value };
+      if (room.value.attrs.type != 'spy') r.minSize = r.size = 2;
+      game.createRoom(r);
     }
 
     function onPlayerReady(data) {
@@ -82,6 +84,7 @@ Vue.createApp({
     });
 
     const spy = useSpyGame(roomPlayer, game);
+    const gobang = useGobangGame(roomPlayer, game);
 
     return {
       playerStatus,
@@ -94,6 +97,7 @@ Vue.createApp({
       isAllReady,
       createRoom,
       spy: reactive(spy),
+      gobang: reactive(gobang),
     }
   }
 }).mount('#app')

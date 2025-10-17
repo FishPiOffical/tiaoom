@@ -9,7 +9,7 @@
 <body>
   <article id="app">
     <section class="container">
-      <aside class="aside">
+      <aside class="aside border-r">
         <p class="header">
           <span>欢迎回来~ <%=player.name%></span>
           <input :title="playerStatus == 'playing' ? '游戏中不可退出账号' : ''" :disabled="playerStatus == 'playing'" type="button" value="退出" onclick="location.href='/logout'" />
@@ -30,7 +30,7 @@
         </ul>
         <span v-if="rooms.length == 0">暂无房间</span>
       </aside>
-      <main class="main">
+      <main class="main h-full">
         <form name="room" id="room" v-if="!roomPlayer">
           <h3>创建房间</h3>
           <p class="group flex-middle">
@@ -39,12 +39,12 @@
               <option value="spy">谁是卧底？</option>
               <option value="gobang">五子棋</option>
             </select>
-            <select v-if="room.attrs.type === 'gobang'" name="size" v-model="room.size">
+            <select v-if="room.attrs.type === 'spy'" name="size" v-model="room.size">
               <option value="4">4 玩家</option>
               <option value="5">5 玩家</option>
               <option value="6">6 玩家</option>
             </select>
-            <input type="number" name="minSize" title="最小开始人数" placeholder="最小人数" v-model="room.minSize" min="4" :max="room.size" />
+            <input v-if="room.attrs.type === 'spy'" type="number" name="minSize" title="最小开始人数" placeholder="最小人数" v-model="room.minSize" min="4" :max="room.size" />
             <input type="button" value="创建" @click="createRoom" :disabled="!!roomPlayer" />
           </p>
         </form>
@@ -52,6 +52,9 @@
           <h3>我的房间: {{ roomPlayer.room.name }} ({{ roomPlayer.room.players.filter(p => p.role == 'player').length }}/{{ roomPlayer.room.size }})</h3>
           <template v-if="roomPlayer.room.attrs?.type === 'spy'">
             <%- include('games/spy') %>
+          </template>
+          <template v-if="roomPlayer.room.attrs?.type === 'gobang'">
+            <%- include('games/gobang') %>
           </template>
         </section>
       </main>
@@ -63,6 +66,7 @@
     </script>
     <script src="core.js"></script>
     <script src="games/spy.js"></script>
+    <script src="games/gobang.js"></script>
     <script src="api.js"></script>
     <script src="main.js"></script>
   </footer>
