@@ -3,7 +3,7 @@
               <span v-if="p.role == 'player'">[{{spy.getPlayerStatus(p)}}]</span>
               <span v-else>[围观中]</span>
               <span v-if="!p.isDead">{{ p.name }}</span>
-              <del v-else>{{ p.name }} (已死亡)</del>
+              <del v-else>{{ p.name }}</del>
               <input v-if="roomPlayer.role == 'player' && p.role == 'player' && spy.voting && !spy.voted && spy.canVotePlayer.includes(p.id)" 
                 type="button" @click="spy.votePlayer(p.id)"
                 value="投票" />

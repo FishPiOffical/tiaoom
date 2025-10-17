@@ -45,10 +45,10 @@ function useSpyGame(roomPlayer, game) {
    * - vote: begin vote
    * - voted: the player voted
    * - end: game end
+   * - dead: player dead
    * 
    * # player command
    * - word: send word to player
-   * - dead: player dead
    */
   function onCommand(cmd) {
     switch (cmd.type) {
@@ -119,6 +119,5 @@ function useSpyGame(roomPlayer, game) {
     sendMessage,
     sendTalked,
     votePlayer,
-    onCommand,
   }
 }
