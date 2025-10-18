@@ -169,7 +169,7 @@ hr {
   justify-content: center;
   align-items: center;
 }
-.cell::after {
+.row .cell::after {
   content: '';
   display: block;
   width: 100%;
@@ -201,6 +201,30 @@ hr {
 .white-piece {
   background-color: white;
   box-shadow: 0 0 5px #fffa;
+}
+.cursor-point {
+  cursor: pointer;
+}
+.current-turn {
+  margin-top: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #555;
+}
+.table th, .table td {
+  border: 1px solid #555;
+  padding: 5px;
+  text-align: center;
+}
+.table th {
+  background-color: #2b2b2b;
+  color: white;
 }
 @media (max-width: 600px) {
   .container {

@@ -51,10 +51,10 @@
         <section v-if="roomPlayer" class="space-y-2">
           <h3>我的房间: {{ roomPlayer.room.name }} ({{ roomPlayer.room.players.filter(p => p.role == 'player').length }}/{{ roomPlayer.room.size }})</h3>
           <template v-if="roomPlayer.room.attrs?.type === 'spy'">
-            <%- include('games/spy') %>
+            <spy-room :game="game" :room-player="roomPlayer"></spy-room>
           </template>
           <template v-if="roomPlayer.room.attrs?.type === 'gobang'">
-            <%- include('games/gobang') %>
+            <gobang-room :game="game" :room-player="roomPlayer"></gobang-room>
           </template>
         </section>
       </main>
@@ -63,6 +63,8 @@
   <footer>
     <script>
       var currentPlayer = <%- JSON.stringify(player) %>;
+      var spyTemplate = `<%- include('games/spy') %>`;
+      var gobangTemplate = `<%- include('games/gobang') %>`;
     </script>
     <script src="core.js"></script>
     <script src="games/spy.js"></script>
