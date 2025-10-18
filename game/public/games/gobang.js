@@ -1,66 +1,115 @@
-function useGobangGame(roomPlayer, game) {
-  const { ref, computed } = Vue;
-  const gameStatus = ref('waiting'); // waiting, playing
-  const currentPlayer = ref();
-  const board = ref(Array(19).fill(0).map(() => Array(19).fill(0)));
+var GobangRoom = {
+  template: gobangTemplate,
+  props: {
+    roomPlayer: Object,
+    game: Object,
+  },
+  setup(props) {
+    const { ref, computed } = Vue;
+    const gameStatus = ref('waiting'); // waiting, playing
+    const currentPlayer = ref();
+    const board = ref(Array(19).fill(0).map(() => Array(19).fill(0)));
+    const achivents = ref({});
 
-  const msg = ref('');
-  function sendMessage() {
-    game.command(roomPlayer.value.room.id, { type: 'say', data: msg.value });
-    msg.value = '';
-  }
-
-  const roomMessages = ref([]);
-  game.onRoomStart(() => {
-    roomMessages.value = [];
-    gameStatus.value = 'playing';
-  }).onRoomEnd(() => {
-    gameStatus.value = 'waiting';
-    currentTalkPlayer.value = null;
-  }).onCommand(onCommand).onMessage((msg) => {
-    roomMessages.value.unshift(`${msg}`);
-  });
-
-  /**
-   * # room command
-   * - say: player say something
-   * - status: game status update
-   * - place: place piece
-   * - request-draw: request draw
-   * - draw: game draw
-   * - end: game end
-   */
-  function onCommand(cmd) {
-    switch (cmd.type) {
-      case 'status':
-        gameStatus.value = cmd.data.status;
-        currentPlayer.value = cmd.data.current;
-        roomMessages.value = cmd.data.messageHistory || [];
-        break;
+    const msg = ref('');
+    function sendMessage() {
+      props.game.command(props.roomPlayer.room.id, { type: 'say', data: msg.value });
+      msg.value = '';
     }
-  }
 
-  function getPlayerStatus(p) {
-    if (!p.isReady) return '未准备';
-    if (gameStatus.value === 'waiting') return '准备好了';
-    if (p.id == currentPlayer.value?.id) return '思考中';
-    if (gameStatus.value === 'playing') return '等待中';
-    return '准备好了';
-  }
+    const roomMessages = ref([]);
+    props.game.onRoomStart(() => {
+      roomMessages.value = [];
+      gameStatus.value = 'playing';
+    }).onRoomEnd(() => {
+      gameStatus.value = 'waiting';
+      currentPlayer.value = null;
+    }).onCommand(onCommand).onMessage((msg) => {
+      roomMessages.value.unshift(`${msg}`);
+    });
 
-  let piece = true;
-  function placePiece(row, col) {
-    board.value[row][col] = piece ? 1 : 2;
-    piece = !piece;
-  }
+    /**
+     * # room command
+     * - status: props.game status update
+     * - board: board update
+     * - request-draw: request draw
+     * - place: current player to place piece
+     * - achivents: achivements update
+     */
+    function onCommand(cmd) {
+      if (props.roomPlayer.room.attrs.type !== 'gobang') return;
+      switch (cmd.type) {
+        case 'status':
+          gameStatus.value = cmd.data.status;
+          currentPlayer.value = cmd.data.current;
+          roomMessages.value = cmd.data.messageHistory || [];
+          board.value = cmd.data.board;
+          achivents.value = cmd.data.achivents || {};
+          break;
+        case 'board':
+          board.value = cmd.data;
+          break;
+        case 'request-draw':
+          confirm(`玩家 ${cmd.data.player.name} 请求和棋。是否同意？`) && props.game.command(props.roomPlayer.room.id, { type: 'draw' });
+          break;
+        case 'place':
+          currentPlayer.value = cmd.data.player;
+          gameStatus.value = 'playing';
+          break;
+        case 'achivements':
+          achivents.value = cmd.data;
+          break;
+        default:
+          break;
+      }
+    }
 
-  return {
-    board,
-    placePiece,
-    msg,
-    gameStatus,
-    roomMessages,
-    getPlayerStatus,
-    sendMessage,
+    function getPlayerStatus(p) {
+      if (!p.isReady) return '未准备';
+      if (gameStatus.value === 'waiting') return '准备好了';
+      if (p.id == currentPlayer.value?.id) return '思考中';
+      if (gameStatus.value === 'playing') return '等待中';
+      return '准备好了';
+    }
+
+    function placePiece(row, col) {
+      if (gameStatus.value !== 'playing') return;
+      if (currentPlayer.value.id !== props.roomPlayer.id) return;
+      if (board.value[row][col] !== 0) return;
+      props.game.command(props.roomPlayer.room.id, { type: 'place', data: { x: row, y: col } });
+      board.value[row][col] = currentPlayer.value.attributes?.color;
+    }
+
+    function requestDraw() {
+      if (gameStatus.value !== 'playing') return;
+      props.game.command(props.roomPlayer.room.id, { type: 'request-draw' });
+    }
+
+    function requestLose() {
+      if (gameStatus.value !== 'playing') return;
+      props.game.command(props.roomPlayer.room.id, { type: 'request-lose' });
+    }
+
+    const isAllReady = computed(() => {
+      if (!props.roomPlayer) return false;
+      return props.roomPlayer.room.players.filter(p => p.role == 'player').length >= props.roomPlayer.room.minSize &&
+        props.roomPlayer.room.players.every(p => p.isReady || p.role == 'watcher');
+    });
+
+
+    return {
+      achivents,
+      isAllReady,
+      board,
+      placePiece,
+      requestDraw,
+      requestLose,
+      msg,
+      gameStatus,
+      currentPlayer,
+      roomMessages,
+      getPlayerStatus,
+      sendMessage,
+    }
   }
 }

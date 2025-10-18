@@ -83,9 +83,6 @@ Vue.createApp({
         roomPlayer.value.room.players.every(p => p.isReady || p.role == 'watcher');
     });
 
-    const spy = useSpyGame(roomPlayer, game);
-    const gobang = useGobangGame(roomPlayer, game);
-
     return {
       playerStatus,
       players,
@@ -96,8 +93,6 @@ Vue.createApp({
       roomPlayer,
       isAllReady,
       createRoom,
-      spy: reactive(spy),
-      gobang: reactive(gobang),
     }
   }
-}).mount('#app')
+}).component('spy-room', SpyRoom).component('gobang-room', GobangRoom).mount('#app')
