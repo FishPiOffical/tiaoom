@@ -5,15 +5,13 @@ class GameCore extends Tiaoom {
   }
 
   connect() {
-    this.socket = new WebSocket(this.address);
+    this.socket = new ReconnectingWebSocket(this.address, null, {debug: true, reconnectInterval: 3000});
     this.socket.onopen = () => {
-      console.log("Socket connect:", this.address);
       this.emit('sys.ready');
     };
     this.socket.onmessage = ({ data: msg }) => {
       const message = JSON.parse(msg);
       const { type, data, sender } = message;
-      console.log(type, data, sender);
       this.emit(type, data, sender);
     };
     this.socket.onerror = (err) => {
@@ -21,7 +19,6 @@ class GameCore extends Tiaoom {
       this.emit('sys.error', err);
     };
     this.socket.onclose = () => {
-      console.log("Socket close");
       this.emit('sys.close');
     };
   }

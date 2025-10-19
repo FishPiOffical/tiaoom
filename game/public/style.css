@@ -226,6 +226,32 @@ hr {
   background-color: #2b2b2b;
   color: white;
 }
+.login-btn {
+  display: flex;
+  align-items: center;
+  background-color: #f0d263;
+  color: #181417;
+  height: 2em;
+  font-size: 20px;
+  line-height: 2em;
+  padding: 10px 5px;
+  font-family: inherit;
+  cursor: pointer;
+  border-radius: 5px;
+  margin-left: 10px;
+  box-shadow: 0 0 5px #ec8e33aa;
+  font-weight: bold;
+  border: none;
+  border: 4px dashed #f0d263;
+}
+.login-btn:hover {
+  background-color: #f0d263;
+  border: 4px dashed #ec8e33;
+}
+.login-btn img {
+  height: 1.5em;
+  width: auto;
+}
 @media (max-width: 600px) {
   .container {
     flex-direction: column;

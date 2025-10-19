@@ -2,7 +2,8 @@
 
 <head>
 <%- include('header') %>
-  <script src="https://cdn.bootcdn.net/ajax/libs/vue/3.5.20/vue.global.min.js"></script>
+  <script src="https://cdn.bootcdn.net/ajax/libs/vue/3.5.20/vue.global.prod.js"></script>
+  <script src="https://cdn.bootcdn.net/ajax/libs/reconnecting-websocket/1.0.0/reconnecting-websocket.min.js"></script>
   <script src="tiaoom.js"></script>
 </head>
 
@@ -34,15 +35,19 @@
         <form name="room" id="room" v-if="!roomPlayer">
           <h3>创建房间</h3>
           <p class="group flex-middle">
-            <input type="text" name="name" placeholder="房间名称" v-model="room.name" />
+            <input type="text" name="name" placeholder="房间名称" v-model="room.name" required />
             <select name="type" v-model="room.attrs.type">
               <option value="spy">谁是卧底？</option>
               <option value="gobang">五子棋</option>
             </select>
-            <select v-if="room.attrs.type === 'spy'" name="size" v-model="room.size">
+            <select v-if="room.attrs.type === 'spy'" name="size" v-model="room.size" @change="room.minSize = Math.min(room.minSize, room.size)">
               <option value="4">4 玩家</option>
               <option value="5">5 玩家</option>
               <option value="6">6 玩家</option>
+              <option value="7">7 玩家</option>
+              <option value="8">8 玩家</option>
+              <option value="9">9 玩家</option>
+              <option value="10">10 玩家</option>
             </select>
             <input v-if="room.attrs.type === 'spy'" type="number" name="minSize" title="最小开始人数" placeholder="最小人数" v-model="room.minSize" min="4" :max="room.size" />
             <input type="button" value="创建" @click="createRoom" :disabled="!!roomPlayer" />
