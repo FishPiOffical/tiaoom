@@ -4,6 +4,7 @@ import session from 'express-session';
 import sessionStore from 'session-file-store';
 import { Controller } from "./controller";
 import cookieParser from 'cookie-parser';
+import { login as fishpiLogin } from "./login/fishpi";
 
 import path from "path";
 const FileStore = sessionStore(session);
@@ -59,6 +60,7 @@ export class Game {
       req.session.error = '';
       res.render("login", { title, message: error });
     });
+    this.app.get("/login/fishpi", fishpiLogin);
     this.app.get("/logout", (req: Request, res: Response) => {
       req.session.destroy((err) => {
         if (err) return res.redirect("/");

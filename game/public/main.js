@@ -52,6 +52,10 @@ Vue.createApp({
     })
     function createRoom() {
       const r = { ...room.value };
+      if (!r.name) {
+        alert('请填写房间名称');
+        return;
+      }
       if (room.value.attrs.type != 'spy') r.minSize = r.size = 2;
       game.createRoom(r);
     }
