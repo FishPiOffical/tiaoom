@@ -10,6 +10,7 @@ var GobangRoom = {
     const currentPlayer = ref();
     const board = ref(Array(19).fill(0).map(() => Array(19).fill(0)));
     const achivents = ref({});
+    const currentPlace = ref(null);
 
     const msg = ref('');
     function sendMessage() {
@@ -52,12 +53,16 @@ var GobangRoom = {
         case 'request-draw':
           confirm(`玩家 ${cmd.data.player.name} 请求和棋。是否同意？`) && props.game.command(props.roomPlayer.room.id, { type: 'draw' });
           break;
-        case 'place':
+        case 'place-turn':
           currentPlayer.value = cmd.data.player;
           gameStatus.value = 'playing';
           break;
         case 'achivements':
           achivents.value = cmd.data;
+          break;
+        case 'place':
+          const { x, y } = cmd.data;
+          currentPlace.value = { x, y };
           break;
         default:
           break;
@@ -98,6 +103,7 @@ var GobangRoom = {
 
 
     return {
+      currentPlace,
       achivents,
       isAllReady,
       board,

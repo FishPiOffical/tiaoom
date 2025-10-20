@@ -162,6 +162,16 @@ export default function onRoom(room: Room) {
         }
         const color = sender.attributes?.color;
         const result = gomokuJudge(board, { x, y }, color);
+        if (result === -1) {
+          sender.emit('command', { type: 'board', data: board });
+          sender.emit('message', `[系统消息]: 玩家 ${sender.name} 触发禁手，撤回落子！`);
+          return;
+        }
+
+        board[x][y] = color;
+        room.emit('command', { type: 'board', data: board });
+        room.emit('command', { type: 'place', data: { x, y } });
+
         if (result === color) {
           room.emit('message', `[系统消息]: 玩家 ${sender.name} 获胜！`);
           lastLosePlayer = room.validPlayers.find((p) => p.id != sender.id)!;
@@ -179,18 +189,12 @@ export default function onRoom(room: Room) {
           room.emit('command', { type: 'achivements', data: achivents });
           room.end();
           return;
-        } else if (result === -1) {
-          sender.emit('command', { type: 'board', data: board });
-          sender.emit('message', `[系统消息]: 玩家 ${sender.name} 触发禁手，撤回落子！`);
-          return;
         }
-        board[x][y] = color;
-        room.emit('command', { type: 'board', data: board });
         // 切换当前玩家
         const current = room.validPlayers.find((p) => p.id != currentPlayer.id);
         if (current) {
           currentPlayer = current;
-          room.emit('command', { type: 'place', data: { player: currentPlayer } });
+          room.emit('command', { type: 'place-turn', data: { player: currentPlayer } });
         }
         break;
       }
