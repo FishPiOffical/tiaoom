@@ -252,6 +252,9 @@ hr {
   height: 1.5em;
   width: auto;
 }
+.current-piece {
+  box-shadow: 0 0 10px 5px #f00a;
+}
 @media (max-width: 600px) {
   .container {
     flex-direction: column;

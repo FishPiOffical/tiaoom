@@ -109,7 +109,7 @@ export class Tiaoom extends EventEmitter {
   }
 
   createRoom(sender: IPlayer, options: RoomOptions) {
-    if (!options.id || !options.name) {
+    if (!options.name) {
       throw new Error('missing room id or name.');
     }
     const roomInstance = this.searchRoom(options);

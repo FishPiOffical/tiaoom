@@ -3,7 +3,7 @@
     <section class="checkerboard">
       <div class="row" v-for="(row, rowIndex) in board" :key="rowIndex">
         <div class="cell" v-for="(cell, colIndex) in row" :key="colIndex" @click="placePiece(rowIndex, colIndex)" :class="{ 'cursor-point': currentPlayer?.id == roomPlayer.id }">
-          <span class="piece" :class="{ 'black-piece': cell === 1, 'white-piece': cell === 2 }"></span>
+          <span class="piece" :class="{ 'black-piece': cell === 1, 'white-piece': cell === 2, 'current-piece': currentPlace?.x === rowIndex && currentPlace?.y === colIndex }"></span>
         </div>
       </div>
       <span v-if="gameStatus == 'playing'" class="current-turn space-x-2">
