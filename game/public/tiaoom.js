@@ -133,7 +133,12 @@ class Tiaoom {
   }
 
   command(roomId, command) {
-    this.send({ type: "room.player-command", data: { id: roomId, ...command } });
+    if (typeof roomId != 'string') {
+      command = roomId;
+      this.send({ type: "global.command", data: command });
+    } else {
+      this.send({ type: "room.player-command", data: { id: roomId, ...command } });
+    }
     return this;
   }
 
