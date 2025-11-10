@@ -53,6 +53,16 @@
             <input type="button" value="创建" @click="createRoom" :disabled="!!roomPlayer" />
           </p>
         </form>
+        <section>
+          <hr />
+          <p class="flex-middle group">
+            <input type="text" v-model="msg" @keyup.enter="sendMessage" placeholder="随便聊聊" />
+            <input type="button" value="发送" @click="sendMessage" />
+          </p>
+          <section class="messages">
+            <p v-for="msg in globalMessages">{{ msg }}</p>
+          </section>
+        </section>
         <section v-if="roomPlayer" class="space-y-2">
           <h3>我的房间: {{ roomPlayer.room.name }} ({{ roomPlayer.room.players.filter(p => p.role == 'player').length }}/{{ roomPlayer.room.size }})</h3>
           <template v-if="roomPlayer.room.attrs?.type === 'spy'">

@@ -248,7 +248,9 @@ export default function onRoom(room: Room) {
     if (room.validPlayers.length < room.minSize) {
       return room.emit('message', `[系统消息]: 玩家人数不足，无法开始游戏。`);
     }
-
+    if (!room.validPlayers.some((p) => p.id == lastLosePlayer?.id)) {
+      lastLosePlayer = undefined;
+    }
     currentPlayer = lastLosePlayer || room.validPlayers[0];
     board = Array.from({ length: 19 }, () => Array(19).fill(0));
     gameStatus = 'playing';
@@ -270,7 +272,7 @@ export default function onRoom(room: Room) {
     });
     room.emit('command', { type: 'achivements', data: achivents });
     room.emit('message', `[系统消息]: 游戏开始。玩家 ${room.validPlayers[0].name} 执黑先行。`);
-    room.emit('command', { type: 'place', data: { player: currentPlayer } });
+    room.emit('command', { type: 'place-turn', data: { player: currentPlayer } });
     room.emit('command', { type: 'board', data: board });
   }).on('end', () => {
     console.log("room end");

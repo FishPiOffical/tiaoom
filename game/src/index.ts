@@ -64,6 +64,12 @@ export class Game {
     this.app.get("/logout", (req: Request, res: Response) => {
       req.session.destroy((err) => {
         if (err) return res.redirect("/");
+        this.controller?.rooms.forEach((room) => {
+          const player = room.validPlayers.find((p) => p.name == req.session?.player?.name && p.id == req.session?.player?.id);
+          if (player) {
+            room.kickPlayer(player);
+          }
+        });
         res.clearCookie(gameName);
         res.redirect("/login");
       });

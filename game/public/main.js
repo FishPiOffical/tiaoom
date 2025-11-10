@@ -87,7 +87,23 @@ Vue.createApp({
         roomPlayer.value.room.players.every(p => p.isReady || p.role == 'watcher');
     });
 
+    const msg = ref('');
+    const globalMessages = ref([]);
+    game.on('global.command', (cmd) => {
+      if (cmd.type === 'say') {
+        globalMessages.value.push(`[${cmd.sender.name}]: ${cmd.data}`);
+      }
+    });
+    function sendMessage() {
+      game.command({ type: 'say', data: msg.value });
+      msg.value = '';
+    }
+
+
     return {
+      msg,
+      globalMessages,
+      sendMessage,
       playerStatus,
       players,
       rooms,

@@ -89,6 +89,10 @@ export class Tiaoom extends EventEmitter {
       this.messageInstance?.send({ type: 'room.list', data: rooms });
     });
 
+    this.on('command', (data) => {
+      this.messageInstance?.send({ type: 'global.command', data });
+    });
+
     return this;
   }
 
