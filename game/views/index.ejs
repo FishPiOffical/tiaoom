@@ -2,7 +2,7 @@
 
 <head>
 <%- include('header') %>
-  <script src="https://cdn.bootcdn.net/ajax/libs/vue/3.5.20/vue.global.prod.js"></script>
+  <script src="https://cdn.bootcdn.net/ajax/libs/vue/3.5.22/vue.global.prod.min.js"></script>
   <script src="https://cdn.bootcdn.net/ajax/libs/reconnecting-websocket/1.0.0/reconnecting-websocket.min.js"></script>
   <script src="tiaoom.js"></script>
 </head>
@@ -39,6 +39,7 @@
             <select name="type" v-model="room.attrs.type">
               <option value="spy">谁是卧底？</option>
               <option value="gobang">五子棋</option>
+              <option value="othello">黑白棋</option>
             </select>
             <select v-if="room.attrs.type === 'spy'" name="size" v-model="room.size" @change="room.minSize = Math.min(room.minSize, room.size)">
               <option value="4">4 玩家</option>
@@ -53,7 +54,7 @@
             <input type="button" value="创建" @click="createRoom" :disabled="!!roomPlayer" />
           </p>
         </form>
-        <section>
+        <section v-if="!roomPlayer">
           <hr />
           <p class="flex-middle group">
             <input type="text" v-model="msg" @keyup.enter="sendMessage" placeholder="随便聊聊" />
@@ -71,6 +72,9 @@
           <template v-if="roomPlayer.room.attrs?.type === 'gobang'">
             <gobang-room :game="game" :room-player="roomPlayer"></gobang-room>
           </template>
+          <template v-if="roomPlayer.room.attrs?.type === 'othello'">
+            <othello-room :game="game" :room-player="roomPlayer"></othello-room>
+          </template>
         </section>
       </main>
     </section>
@@ -78,12 +82,14 @@
   <footer>
     <script>
       var currentPlayer = <%- JSON.stringify(player) %>;
-      var spyTemplate = `<%- include('games/spy') %>`;
-      var gobangTemplate = `<%- include('games/gobang') %>`;
+      var spyTemplate = `<%- include('games/spy').replace(/(`|\$)/g, '\\$1') %>`;
+      var gobangTemplate = `<%- include('games/gobang').replace(/(`|\$)/g, '\\$1') %>`;
+      var othelloTemplate = `<%- include('games/othello').replace(/(`|\$)/g, '\\$1') %>`;
     </script>
     <script src="core.js"></script>
     <script src="games/spy.js"></script>
     <script src="games/gobang.js"></script>
+    <script src="games/othello.js"></script>
     <script src="api.js"></script>
     <script src="main.js"></script>
   </footer>

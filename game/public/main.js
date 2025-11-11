@@ -115,4 +115,8 @@ Vue.createApp({
       createRoom,
     }
   }
-}).component('spy-room', SpyRoom).component('gobang-room', GobangRoom).mount('#app')
+})
+.component('spy-room', SpyRoom)
+.component('gobang-room', GobangRoom)
+.component('othello-room', OthelloRoom)
+.mount('#app')

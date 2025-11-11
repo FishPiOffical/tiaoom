@@ -1,5 +1,5 @@
-var GobangRoom = {
-  template: gobangTemplate,
+var OthelloRoom = {
+  template: othelloTemplate,
   props: {
     roomPlayer: Object,
     game: Object,
@@ -8,9 +8,26 @@ var GobangRoom = {
     const { ref, computed } = Vue;
     const gameStatus = ref('waiting'); // waiting, playing
     const currentPlayer = ref();
-    const board = ref(Array(19).fill(0).map(() => Array(19).fill(0)));
+    const board = ref(Array(8).fill(0).map(() => Array(8).fill(-1)));
     const achivents = ref({});
     const currentPlace = ref(null);
+
+    // 初始化黑白棋起始位置
+    board.value[3][3] = 2;
+    board.value[3][4] = 1;
+    board.value[4][3] = 1;
+    board.value[4][4] = 2;
+
+    // 标记所有可落子的位置
+    board.value[2][4] = 0;
+    board.value[4][2] = 0;
+    board.value[2][3] = 0;
+    board.value[3][2] = 0;
+    board.value[4][5] = 0;
+    board.value[5][4] = 0;
+    board.value[5][3] = 0;
+    board.value[3][5] = 0;
+
 
     const msg = ref('');
     function sendMessage() {
@@ -39,7 +56,7 @@ var GobangRoom = {
      * - achivents: achivements update
      */
     function onCommand(cmd) {
-      if (props.roomPlayer.room.attrs.type !== 'gobang') return;
+      if (props.roomPlayer.room.attrs.type !== 'othello') return;
       switch (cmd.type) {
         case 'status':
           gameStatus.value = cmd.data.status;
@@ -101,7 +118,6 @@ var GobangRoom = {
       return props.roomPlayer.room.players.filter(p => p.role == 'player').length >= props.roomPlayer.room.minSize &&
         props.roomPlayer.room.players.every(p => p.isReady || p.role == 'watcher');
     });
-
 
     return {
       currentPlace,
