@@ -7,7 +7,7 @@
           v-for="(cell, colIndex) in row" 
           :key="colIndex" 
           @click="placePiece(rowIndex, colIndex)" 
-          :class="{ 'cursor-point': currentPlayer?.id == roomPlayer.id && cell === 0 }"
+          :class="{ 'cursor-point can-place': currentPlayer?.id == roomPlayer.id && cell === 0 }"
         >
           <span 
             class="piece" 
@@ -93,11 +93,15 @@
       background: white;
       color: black;
       transform: rotateY(0deg);
+      box-shadow: none;
+      border: 1px solid #555;
     }
     .black-piece {
       background: black;
       color: white;
       transform: rotateY(180deg);
+      box-shadow: none;
+      border: 1px solid #555;
     }
     .row .cell::after {
       content: '';
@@ -116,6 +120,12 @@
     }
     .row:last-child .cell::after {
       display: block;
+    }
+    .cell {
+      margin: -1px -1px 0 0;
+    }
+    .row .can-place::after {
+      border-color: #4CAF50;
     }
 
   </component>
