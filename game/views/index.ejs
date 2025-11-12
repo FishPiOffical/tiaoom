@@ -69,18 +69,7 @@
         </section>
         <section v-if="roomPlayer" class="space-y-2">
           <h3>我的房间: {{ roomPlayer.room.name }} ({{ roomPlayer.room.players.filter(p => p.role == 'player').length }}/{{ roomPlayer.room.size }})</h3>
-          <template v-if="roomPlayer.room.attrs?.type === 'spy'">
-            <spy-room :game="game" :room-player="roomPlayer"></spy-room>
-          </template>
-          <template v-if="roomPlayer.room.attrs?.type === 'gobang'">
-            <gobang-room :game="game" :room-player="roomPlayer"></gobang-room>
-          </template>
-          <template v-if="roomPlayer.room.attrs?.type === 'othello'">
-            <othello-room :game="game" :room-player="roomPlayer"></othello-room>
-          </template>
-          <template v-if="roomPlayer.room.attrs?.type === 'connect4'">
-            <connect4-room :game="game" :room-player="roomPlayer"></connect4-room>
-          </template>
+          <component :is="`${roomPlayer.room.attrs?.type}-room`" :game="game" :room-player="roomPlayer"></component>
         </section>
       </main>
     </section>

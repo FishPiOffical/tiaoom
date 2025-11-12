@@ -135,10 +135,7 @@ function bootstrap() {
     const gameComponent = `${game.slice(0, 1).toUpperCase()}${game.slice(1)}Room`;
     if (!window[gameComponent]) {
       window[gameComponent] = {
-        template: window[`${game}Template`],
-        setup() {
-          return {};
-        }
+        template: window[`${game}Template`]
       }
     }
     app.component(`${game}-room`, window[gameComponent]);

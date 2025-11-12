@@ -4,5 +4,5 @@ var games = <%- JSON.stringify(locals.games) %>;
 var <%=game%>Template = `<%- include(game).replace(/(`|\$)/g, '\\$1') %>`;
 <%} catch (e) {%>
     <div>未找到此游戏模板</div>`;
-    console.error(`Failed to include template for game: <%=game%>`, `<%=e%>`);
+    console.error(`Failed to include template for game: <%=game%>`, `<%-e%>`);
 <%}});%>
