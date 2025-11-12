@@ -48,7 +48,7 @@ Vue.createApp({
       name: '',
       size: 4,
       minSize: 4,
-      attrs: { type: 'spy' },
+      attrs: { type: 'othello' },
     })
     function createRoom() {
       const r = { ...room.value };
@@ -119,4 +119,5 @@ Vue.createApp({
 .component('spy-room', SpyRoom)
 .component('gobang-room', GobangRoom)
 .component('othello-room', OthelloRoom)
+.component('connect4-room', Connect4Room)
 .mount('#app')
