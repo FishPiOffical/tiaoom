@@ -6,7 +6,7 @@ export async function login(req: Request, res: Response) {
     const userId = await verify(req);
     if (userId) {
       const userInfo = await getUserInfo(userId);
-      req.session.player = { name: userInfo.data.userNickname, id: userId };
+      req.session.player = { name: userInfo.data.userNickname || userInfo.data.userName, id: userId };
       return res.redirect("/");
     } else {
       req.session.error = "登录验证失败，请重试";
