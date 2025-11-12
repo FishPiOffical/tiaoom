@@ -132,12 +132,16 @@ function bootstrap() {
   })
 
   for (const game in games) {
-    if (!window[`${game.slice(0, 1).toUpperCase()}${game.slice(1)}Room`]) {
-      window[`${game.slice(0, 1).toUpperCase()}${game.slice(1)}Room`] = {
+    const gameComponent = `${game.slice(0, 1).toUpperCase()}${game.slice(1)}Room`;
+    if (!window[gameComponent]) {
+      window[gameComponent] = {
         template: window[`${game}Template`],
+        setup() {
+          return {};
+        }
       }
     }
-    app.component(`${game}-room`, window[`${game.slice(0, 1).toUpperCase()}${game.slice(1)}Room`]);
+    app.component(`${game}-room`, window[gameComponent]);
   }
   app.mount('#app');
 }

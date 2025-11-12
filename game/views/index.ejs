@@ -41,10 +41,7 @@
               v-model="room.attrs.type" 
               @change="onTypeChange"
             >
-              <option value="othello">黑白棋</option>
-              <option value="gobang">五子棋</option>
-              <option value="connect4">四子棋</option>
-              <option value="spy">谁是卧底？</option>
+              <option v-for="(game, key) in games" :key="key" :value="key">{{ game.name }}</option>
             </select>
             <select v-if="games[room.attrs.type]?.minSize != games[room.attrs.type]?.maxSize" name="size" v-model="room.size" @change="room.minSize = Math.min(room.minSize, room.size)">
               <option 
