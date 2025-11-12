@@ -32,6 +32,8 @@
 1. 执行`npm install`;
 2. 使用 Visual Studio Code 运行调试（直接按下`F5`即可）。
 
+> 本地调试可移除 `game/src/index.ts` 中的`login: 'fishpi'`，即可切换为用户名登录模式。
+
 ## 📁 目录与文件
 - .vscode - VSCode 调试配置
 - lib - 核心类库

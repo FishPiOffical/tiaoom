@@ -63,7 +63,7 @@ export class Game {
     this.app.get("/login", (req: Request, res: Response) => {
       const error = req.session.error || '';
       req.session.error = '';
-      res.render("login", { title, message: error });
+      res.render("login", { title, message: error, login: 'fishpi' });
     });
     this.app.get("/login/fishpi", fishpiLogin);
     this.app.get("/logout", (req: Request, res: Response) => {
