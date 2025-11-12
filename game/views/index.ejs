@@ -24,7 +24,7 @@
           <li :id="`room${r.id}`" v-for="r in rooms" :key="r.id" class="space-x-2">
             <b v-if="r.players.some(p => p.id == player.id)">{{ r.name }} ({{ r.players.filter(p => p.role == 'player').length }}/{{ r.size }})</b>
             <span v-else>{{ r.name }} ({{ r.players.length }}/{{ r.size }})</span>
-            <span v-if="!r.players.some(p => p.id == player.id)">
+            <span v-if="!roomPlayer">
               <input type="button" :value="r.status == 'waiting' && r.players.length < r.size ? '进入' : '围观'" @click="game.joinRoom(r.id)" />
             </span>
           </li>
