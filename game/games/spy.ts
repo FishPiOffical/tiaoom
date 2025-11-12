@@ -217,3 +217,9 @@ export default function onRoom(room: Room) {
     if (messageHistory.length > 100) messageHistory.splice(messageHistory.length - 100);
   });
 }
+
+export const name = '谁是卧底？';
+export const minSize = 4;
+export const maxSize = 12;
+export const description = `玩家中有一名卧底，其他玩家获得相同的词语，卧底获得不同的词语。
+通过轮流发言和投票找出卧底，卧底则需隐藏身份存活到最后。`;

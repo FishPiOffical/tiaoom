@@ -369,3 +369,9 @@ export default function onRoom(room: Room) {
     if (messageHistory.length > 100) messageHistory.splice(messageHistory.length - 100);
   });
 }
+
+export const name = '黑白棋';
+export const minSize = 2;
+export const maxSize = 2;
+export const description = `两个玩家轮流在8x8的棋盘上放置黑白棋子，通过夹击对方棋子将其翻转为己方颜色。
+游戏结束时，棋盘上棋子数量多的一方获胜。`;

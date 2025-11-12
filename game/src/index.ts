@@ -1,3 +1,4 @@
+import path from "path";
 import http from "http";
 import express, { Express, Request, Response } from "express";
 import session from 'express-session';
@@ -6,7 +7,6 @@ import { Controller } from "./controller";
 import cookieParser from 'cookie-parser';
 import { login as fishpiLogin } from "./login/fishpi";
 
-import path from "path";
 const FileStore = sessionStore(session);
 
 declare module 'express-session' {
@@ -53,7 +53,12 @@ export class Game {
         req.session.error = "昵称已被占用";
         return res.redirect("/login");
       }
-      res.render("index", { title, address, player: req.session.player });
+      res.render("index", { title, address, player: req.session.player, games: this.controller?.games});
+    });
+    this.app.get("/templates.js", (req: Request, res: Response) => {
+      if (!req.session.player) return res.status(403).send("Forbidden");
+      res.setHeader('Content-Type', 'application/javascript');
+      res.render("games/templates", { games: this.controller?.games, player: req.session.player });
     });
     this.app.get("/login", (req: Request, res: Response) => {
       const error = req.session.error || '';

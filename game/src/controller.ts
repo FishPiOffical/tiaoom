@@ -2,19 +2,30 @@ import http from "http";
 import { IPlayer, Player, PlayerStatus, } from "@lib/models/player";
 import { Room, Tiaoom } from "@lib/index";
 import { SocketManager } from "./socket";
-import Games from "../games";
+import Games, { IGameInfo } from "../games";
 
 export class Controller extends Tiaoom {
   constructor(server: http.Server) {
     super({ socket: new SocketManager(server) });
   }
 
+  get games() {
+    return Object.keys(Games).reduce((obj, key) => {
+      obj[key] = {
+        name: Games[key].name,
+        minSize: Games[key].minSize,
+        maxSize: Games[key].maxSize,
+        description: Games[key].description,
+      };
+      return obj;
+    }, {} as Record<string, IGameInfo>);
+  }
+
   run() {
     return super.run().on("room", (room: Room) => {
       const gameType = room.attrs?.type;
-      console.dir(Games);
       if (gameType && Games[gameType])
-        Games[gameType](room);
+        Games[gameType].default(room);
       else console.error("game not found:", room);
       room.on('end', () => {
         room.players.forEach(p => {

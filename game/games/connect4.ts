@@ -270,3 +270,9 @@ export default function onRoom(room: Room) {
     if (messageHistory.length > 100) messageHistory.splice(messageHistory.length - 100);
   });
 }
+
+export const name = '四子棋';
+export const minSize = 2;
+export const maxSize = 2;
+export const description = `两个玩家轮流在棋盘上放置自己的棋子，率先将四个棋子连成一线（横、竖、斜均可）的一方获胜。
+棋子只能放置在底部或已有棋子之上。`;

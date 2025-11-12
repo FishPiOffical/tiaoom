@@ -1,0 +1,8 @@
+var currentPlayer = <%- JSON.stringify(locals.player) %>;
+var games = <%- JSON.stringify(locals.games) %>;
+<% Object.entries(locals.games).forEach(function([game, template]) { try {%>
+var <%=game%>Template = `<%- include(game).replace(/(`|\$)/g, '\\$1') %>`;
+<%} catch (e) {%>
+    var <%=game%>Template = `<div>未找到此游戏模板</div>`;
+    console.error(`Failed to include template for game: ${game}`, e);
+<%}});%>

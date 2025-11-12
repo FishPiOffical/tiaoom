@@ -10,7 +10,7 @@
 <body>
   <article id="app">
     <section class="container">
-      <aside class="aside border-r">
+      <aside class="aside border-r overflow-auto">
         <p class="header">
           <span>欢迎回来~ <%=player.name%></span>
           <input :title="playerStatus == 'playing' ? '游戏中不可退出账号' : ''" :disabled="playerStatus == 'playing'" type="button" value="退出" onclick="location.href='/logout'" />
@@ -36,24 +36,29 @@
           <h3>创建房间</h3>
           <p class="group flex-middle">
             <input type="text" name="name" placeholder="房间名称" v-model="room.name" required />
-            <select name="type" v-model="room.attrs.type">
+            <select 
+              name="type" 
+              v-model="room.attrs.type" 
+              @change="onTypeChange"
+            >
               <option value="othello">黑白棋</option>
               <option value="gobang">五子棋</option>
               <option value="connect4">四子棋</option>
               <option value="spy">谁是卧底？</option>
             </select>
-            <select v-if="room.attrs.type === 'spy'" name="size" v-model="room.size" @change="room.minSize = Math.min(room.minSize, room.size)">
-              <option value="4">4 玩家</option>
-              <option value="5">5 玩家</option>
-              <option value="6">6 玩家</option>
-              <option value="7">7 玩家</option>
-              <option value="8">8 玩家</option>
-              <option value="9">9 玩家</option>
-              <option value="10">10 玩家</option>
+            <select v-if="games[room.attrs.type]?.minSize != games[room.attrs.type]?.maxSize" name="size" v-model="room.size" @change="room.minSize = Math.min(room.minSize, room.size)">
+              <option 
+                v-for="i in games[room.attrs.type]?.maxSize - games[room.attrs.type]?.minSize" 
+                :key="i"
+                :value="i + games[room.attrs.type]?.minSize - 1"
+              >
+                {{ i + games[room.attrs.type]?.minSize - 1 }} 玩家
+              </option>
             </select>
-            <input v-if="room.attrs.type === 'spy'" type="number" name="minSize" title="最小开始人数" placeholder="最小人数" v-model="room.minSize" min="4" :max="room.size" />
+            <input v-if="games[room.attrs.type]?.minSize != games[room.attrs.type]?.maxSize" type="number" name="minSize" title="最小开始人数" placeholder="最小人数" v-model="room.minSize" min="4" :max="room.size" />
             <input type="button" value="创建" @click="createRoom" :disabled="!!roomPlayer" />
           </p>
+          <p class="description">{{ games[room.attrs.type]?.description }}</p>
         </form>
         <section v-if="!roomPlayer">
           <hr />
@@ -84,18 +89,11 @@
     </section>
   </article>
   <footer>
-    <script>
-      var currentPlayer = <%- JSON.stringify(player) %>;
-      var spyTemplate = `<%- include('games/spy').replace(/(`|\$)/g, '\\$1') %>`;
-      var gobangTemplate = `<%- include('games/gobang').replace(/(`|\$)/g, '\\$1') %>`;
-      var othelloTemplate = `<%- include('games/othello').replace(/(`|\$)/g, '\\$1') %>`;
-      var connect4Template = `<%- include('games/connect4').replace(/(`|\$)/g, '\\$1') %>`;
-    </script>
     <script src="core.js"></script>
-    <script src="games/spy.js"></script>
-    <script src="games/gobang.js"></script>
-    <script src="games/othello.js"></script>
-    <script src="games/connect4.js"></script>
+    <script src="templates.js"></script>
+    <% Object.keys(locals.games).forEach(function(game) { %>
+    <script src="games/<%=game%>.js"></script>
+    <% }); %>
     <script src="api.js"></script>
     <script src="main.js"></script>
   </footer>

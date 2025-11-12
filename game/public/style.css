@@ -79,6 +79,9 @@ input:disabled:hover {
 .border-l {
   border-left: 3px dashed #ccc;
 }
+.overflow-auto {
+  overflow: auto;
+}
 .aside {
   width: 300px;
   padding: 10px;
@@ -122,6 +125,7 @@ input:disabled:hover {
   padding: 10px;
   display: flex;
   flex-direction: column;
+  overflow: auto;
 }
 .list {
   list-style: none;
@@ -140,11 +144,6 @@ input:disabled:hover {
 }
 .list li + li {
   margin-top: 4px;
-}
-
-.messages {
-  max-height: 200px;
-  overflow-y: auto;
 }
 
 .watcher {
@@ -255,13 +254,37 @@ hr {
 .current-piece {
   box-shadow: 0 0 10px 5px #f00a;
 }
+.aside.border-r {
+  margin-right: 10px;
+}
+.aside.border-l {
+  margin-left: 10px;
+}
+.description {
+  font-style: italic;
+  color: #aaaa;
+  white-space: pre-wrap;
+}
 @media (max-width: 600px) {
   .container {
     flex-direction: column;
   }
   .aside {
     width: 100%;
+  }
+  .aside.border-r {
     border-right: none;
-    border-bottom: 1px solid #ccc;
+    border-bottom: 1px dashed #ccc;
+    margin-right: 0;
+    margin-bottom: 10px;
+  }
+  .aside.border-l {
+    border-left: none;
+    border-top: 1px dashed #ccc;
+    margin-left: 0;
+    margin-top: 10px;
+  }
+  #app {
+    height: auto;
   }
 }
