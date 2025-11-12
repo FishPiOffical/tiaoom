@@ -15,11 +15,11 @@
 
 实现新的游戏只需编写三个文件：
 
-- game/games/yourgame.js - 游戏逻辑入口；
+- game/games/yourgame.js - 游戏逻辑入口与配置信息；
 - game/public/games/yourgame.js - 游戏前端组件；
 - game/views/games/yourgame.ejs - 游戏视图；
 
-完成后修改 game/public/main.js 载入编写的前端组件，以及在 game/views/index.ejs `我的房间`下方添加游戏组件，游戏前端组件在最下方添加 script 引入。
+完成后重启服务即可在前端选择运行游戏。
 
 目前已内置：
 
