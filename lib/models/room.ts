@@ -2,7 +2,7 @@ import { IPlayer, Player, PlayerOptions, PlayerStatus } from "./player";
 import EventEmitter from "events";
 import { RoomEvents } from "@lib/events";
 
-export interface RoomOptions {
+export interface IRoomOptions {
   /**
    * 房间号
    */
@@ -36,7 +36,7 @@ export enum RoomStatus {
   playing = 'playing',
 }
 
-export interface IRoom extends RoomOptions {
+export interface IRoom extends IRoomOptions {
   players: RoomPlayer[];
 }
 
@@ -135,7 +135,7 @@ export class Room extends EventEmitter implements IRoom {
 
   constructor({
     id = new Date().getTime().toString(), name = '', size = 10, minSize = 2, attrs
-  }: RoomOptions) {
+  }: IRoomOptions) {
     super();
     this.id = id;
     this.name = name;

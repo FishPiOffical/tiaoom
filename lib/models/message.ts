@@ -1,6 +1,6 @@
 import EventEmitter from "events";
 import { IPlayer, PlayerOptions } from "./player";
-import { IRoom, IRoomPlayer, RoomOptions } from "./room";
+import { IRoom, IRoomPlayer, IRoomOptions } from "./room";
 import { MessageEvents } from "@lib/events/message";
 
 export enum MessageTypes {
@@ -26,7 +26,7 @@ export enum MessageTypes {
 
 export interface MessagePackage {
   type: MessageTypes | string;
-  data?: PlayerOptions | RoomOptions | IPlayer | IRoom | IRoomPlayer | any;
+  data?: PlayerOptions | IRoomOptions | IPlayer | IRoom | IRoomPlayer | any;
   sender?: IPlayer | IRoom | IRoomPlayer;
 }
 

@@ -1,10 +1,10 @@
 import { EventEmitter } from "events";
 import { TiaoomEvents } from "./events";
 import { Message } from "./models/message";
-import { IRoom, IRoomPlayer, Room, RoomOptions, IRoomPlayerOptions } from "./models/room";
+import { IRoom, IRoomPlayer, Room, IRoomOptions, IRoomPlayerOptions } from "./models/room";
 import { IPlayer, Player, PlayerOptions, PlayerStatus } from "./models/player";
 
-export interface TiaoomOptions {
+export interface ITiaoomOptions {
   socket: Message;
 }
 
@@ -13,7 +13,7 @@ export class Tiaoom extends EventEmitter {
   players: Player[] = []; // player list
   messageInstance?: Message;
 
-  constructor({ socket }: TiaoomOptions) {
+  constructor({ socket }: ITiaoomOptions) {
     super();
     this.messageInstance = socket;
   }
@@ -105,14 +105,14 @@ export class Tiaoom extends EventEmitter {
   }
 
   searchRoom(room: string): Room | undefined;
-  searchRoom(room: RoomOptions): Room | undefined;
+  searchRoom(room: Partial<IRoomOptions>): Room | undefined;
 
-  searchRoom(room: RoomOptions | string) {
+  searchRoom(room: Partial<IRoomOptions> | string) {
     const roomId = typeof room === "string" ? room : room.id;
     return this.rooms.find((target) => target.id === roomId);
   }
 
-  createRoom(sender: IPlayer, options: RoomOptions) {
+  createRoom(sender: IPlayer, options: IRoomOptions) {
     if (!options.name) {
       throw new Error('missing room id or name.');
     }
