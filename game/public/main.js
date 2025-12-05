@@ -57,6 +57,10 @@ function bootstrap() {
           alert('请填写房间名称');
           return;
         }
+        const currentGame = games[room.value.attrs.type];
+        r.minSize = Math.min(r.minSize, currentGame.minSize);
+        r.size = Math.min(r.size, currentGame.maxSize);
+        r.size = Math.max(r.size, r.minSize);
         game.createRoom(r);
       }
       function onTypeChange() {
