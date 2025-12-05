@@ -2,9 +2,12 @@
   "name": "tiaoom",
   "version": "0.0.1",
   "description": "",
-  "main": "./game/index.ts",
+  "main": "./dist/node/index.cjs",
+  "module": "./dist/node/index.mjs",
+  "types": "./dist/node/index.d.ts",
   "scripts": {
-    "test": "node -r tsconfig-paths/register -r ts-node/register ./game/index.ts"
+    "test": "node -r tsconfig-paths/register -r ts-node/register ./game/index.ts",
+    "build": "tsdown"
   },
   "keywords": [],
   "author": "",
@@ -30,6 +33,22 @@
     "express-session": "^1.17.3",
     "glob": "^11.0.3",
     "session-file-store": "^1.5.0",
+    "tsdown": "^0.17.0-beta.5",
     "ws": "^8.13.0"
+  },
+  "unpkg": "./dist/browser/client.iife.js",
+  "jsdelivr": "./dist/browser/client.iife.js",
+  "exports": {
+    ".": {
+      "types": "./dist/node/index.d.ts",
+      "import": "./dist/node/index.mjs",
+      "require": "./dist/node/index.cjs"
+    },
+    "./client": {
+      "types": "./dist/browser/client.d.ts",
+      "import": "./dist/browser/client.mjs",
+      "require": "./dist/browser/client.cjs",
+      "default": "./dist/browser/client.iife.js"
+    }
   }
 }
