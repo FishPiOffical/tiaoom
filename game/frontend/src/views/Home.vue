@@ -87,7 +87,7 @@
               </button>
             </li>
           </ul>
-          <span v-if="gameStore.rooms.length === 0" class="text-sm text-secondary">暂无房间</span>
+          <span v-if="roomList.length === 0" class="text-sm text-secondary">暂无房间</span>
         </div>
         
         <div class="flex-shrink-1 overflow-auto">

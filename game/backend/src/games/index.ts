@@ -1,7 +1,7 @@
 import { Room } from 'tiaoom';
 import * as glob from 'glob';
 import * as path from "path";
-const files = glob.sync(path.join(__dirname, '*.ts').replace(/\\/g, '/'));
+const files = glob.sync(path.join(__dirname, '*.*').replace(/\\/g, '/')).filter(f => f.endsWith('.ts') || f.endsWith('.js'));
 
 export interface IGame extends IGameInfo {
   default: (room: Room) => any;

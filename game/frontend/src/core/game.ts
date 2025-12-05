@@ -1,5 +1,5 @@
 import ReconnectingWebSocket from 'reconnecting-websocket'
-import { Player, Tiaoom, TiaoomEvents } from 'tiaoom/client'
+import { Tiaoom, TiaoomEvents } from 'tiaoom/client'
 import type { Message } from '@/types'
 import { IUser } from '@/api'
 

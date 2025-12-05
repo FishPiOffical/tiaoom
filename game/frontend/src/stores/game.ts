@@ -49,7 +49,7 @@ export const useGameStore = defineStore('game', () => {
   function initGame() {
     if (game.value) return
 
-    game.value = new GameCore('ws://192.168.50.200:27015')
+    game.value = new GameCore('/ws')
     
     game.value.run()
       .onReady(() => {

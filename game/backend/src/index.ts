@@ -19,6 +19,7 @@ export class Game {
     const domain = "127.0.0.1";
     const gameName = "Game-Rooms";
 
+    this.app.use(express.static(path.join(__dirname, "public")));
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: false }));
     this.app.use(cookieParser());
