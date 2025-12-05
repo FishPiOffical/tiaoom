@@ -1,0 +1,278 @@
+import { MessagePackage, Room, RoomPlayer, RoomStatus } from "tiaoom";
+
+/**
+ * 四子棋落子与胜负检查
+ * @param {number[][]} board - 当前棋盘二维数组
+ * @param {number} y - 当前落子列
+ * @param {number} player - 当前落子的棋子（1 黑棋，2 白棋）
+ * @returns {false|true|number[][]} 不合法返回 false，胜利返回 true，否则返回最新棋盘
+ */
+function checkFourConnect(board: number[][], y: number, player: number): false | true | number[][] {
+  const N = board.length;    // 行数
+  const M = board[0].length; // 列数
+
+  // 检查列是否合法
+  if (y < 0 || y >= M) return false;
+
+  // 找到该列最底部可落子的位置
+  let x = -1;
+  for (let i = N - 1; i >= 0; i--) {
+    if (board[i][y] === 0) {
+      x = i;
+      break;
+    }
+  }
+  // 如果该列已满或最底部不可落子
+  if (x === -1 || board[x][y] === -1) return false;
+
+  // 落子
+  const newBoard = board.map(row => row.slice());
+  newBoard[x][y] = player;
+
+  // 检查四连
+  const directions = [
+    { dx: 0, dy: 1 },  // 横向
+    { dx: 1, dy: 0 },  // 纵向
+    { dx: 1, dy: 1 },  // 主对角
+    { dx: 1, dy: -1 }, // 副对角
+  ];
+  function count(dx: number, dy: number) {
+    let cnt = 1; // 当前落子的这一颗计入
+
+    // 正方向
+    for (let step = 1; step < 4; step++) {
+      let nx = x + dx * step;
+      let ny = y + dy * step;
+      if (
+        nx >= 0 && nx < N &&
+        ny >= 0 && ny < M &&
+        newBoard[nx][ny] === player
+      ) {
+        cnt++;
+      } else {
+        break;
+      }
+    }
+
+    // 反方向
+    for (let step = 1; step < 4; step++) {
+      let nx = x - dx * step;
+      let ny = y - dy * step;
+      if (
+        nx >= 0 && nx < N &&
+        ny >= 0 && ny < M &&
+        newBoard[nx][ny] === player
+      ) {
+        cnt++;
+      } else {
+        break;
+      }
+    }
+
+    return cnt;
+  }
+  for (const { dx, dy } of directions) {
+    if (count(dx, dy) >= 4) return true;
+  }
+
+  return newBoard;
+}
+
+export default function onRoom(room: Room) {
+  console.log("room:", room);
+  let messageHistory: string[] = [];
+  let currentPlayer: RoomPlayer;
+  let lastLosePlayer: RoomPlayer | undefined;
+  let gameStatus: 'waiting' | 'playing' = 'waiting';
+  let board: number[][] = Array.from({ length: 19 }, () => Array(19).fill(0));
+  let achivents: Record<string, { win: number; lost: number; draw: number }> = {};
+
+  room.on('join', (player) => {
+    room.validPlayers.find((p) => p.id === player.id)?.emit('command', {
+      type: 'achivents',
+      data: achivents
+    });
+  }).on('player-command', (message: MessagePackage) => {
+    console.log("room message:", message);
+    const sender = room.validPlayers.find((p) => p.id == message.sender?.id)!;
+    /**
+     * # room command
+     * - say: player say something
+     * - status: game status update
+     * - place: place piece
+     * - request-draw: request draw
+     * - request-lose: request lose
+     * - draw: game draw
+     * 
+     * # player command
+     * - color: send color to player
+     * - request-draw: player request draw
+     */
+    switch (message.type) {
+      case 'say':
+        room.emit('message', `[${sender.name}]: ${message.data}`);
+        break;
+      case 'status': {
+        const playerIndex = room.validPlayers.findIndex((p) => p.id == message.data.id);
+        const player = room.validPlayers[playerIndex];
+        if (!player) break;
+        player.emit('command', {
+          type: 'status',
+          data: {
+            status: gameStatus,
+            current: currentPlayer,
+            messageHistory,
+            board,
+            color: player.attributes?.color,
+            achivents: achivents
+          }
+        });
+        break;
+      }
+      case 'place': {
+        if (gameStatus !== 'playing') {
+          sender.emit('message', `[系统消息]: 游戏未开始，无法落子。`);
+          break;
+        }
+        if (sender.id !== currentPlayer.id) {
+          sender.emit('message', `[系统消息]: 轮到玩家 ${currentPlayer.name} 落子。`);
+          break;
+        }
+
+        const { x, y } = message.data;
+        if (board[x][y] !== 0) {
+          sender.emit('message', `[系统消息]: 该位置已有棋子，请重新落子。`);
+          break;
+        }
+
+        const color = sender.attributes?.color;
+        const result = checkFourConnect(board, y, color);
+
+        if (!result) {
+          sender.emit('command', { type: 'board', data: board });
+          sender.emit('message', `[系统消息]: 无效落子！`);
+          return;
+        }
+
+        if (result == true) {
+          room.emit('message', `[系统消息]: 玩家 ${sender.name} 获胜！`);
+          lastLosePlayer = room.validPlayers.find((p) => p.id != sender.id)!;
+          gameStatus = 'waiting';
+          room.validPlayers.forEach((player) => {
+            if (!achivents[player.name]) {
+              achivents[player.name] = { win: 0, lost: 0, draw: 0 };
+            }
+            if (player.id == sender.id) {
+              achivents[player.name].win += 1;
+            } else {
+              achivents[player.name].lost += 1;
+            }
+          });
+          room.emit('command', { type: 'achivements', data: achivents });
+          room.end();
+          return;
+        }
+        
+        board = result;
+        room.emit('command', { type: 'board', data: board });
+        room.emit('command', { type: 'place', data: { x, y } });
+
+        // 切换当前玩家
+        const current = room.validPlayers.find((p) => p.id != currentPlayer.id);
+        if (current) {
+          currentPlayer = current;
+          room.emit('command', { type: 'place-turn', data: { player: currentPlayer } });
+        }
+        break;
+      }
+      case 'request-draw': {
+        room.emit('message', `[系统消息]: 玩家 ${sender.name} 请求和棋。`);
+        lastLosePlayer = sender;
+        const otherPlayer = room.validPlayers.find((p) => p.id != sender.id)!;
+        otherPlayer.emit('command', {
+          type: 'request-draw',
+          data: { player: sender }
+        });
+        room.emit('command', { type: 'achivements', data: achivents });
+        break;
+      }
+      case 'request-lose': {
+        room.emit('message', `[系统消息]: 玩家 ${sender.name} 认输。`);
+        gameStatus = 'waiting';
+        room.validPlayers.forEach((player) => {
+          if (!achivents[player.name]) {
+            achivents[player.name] = { win: 0, lost: 0, draw: 0 };
+          }
+          if (player.id == sender.id) {
+            achivents[player.name].lost += 1;
+          } else {
+            achivents[player.name].win += 1;
+          }
+        });
+        room.emit('command', { type: 'achivements', data: achivents });
+        room.end();
+        break;
+      }
+      case 'draw': {
+        room.emit('message', `[系统消息]: 玩家 ${sender.name} 同意和棋，游戏结束。`);
+        lastLosePlayer = room.validPlayers.find((p) => p.id != sender.id)!;
+        gameStatus = 'waiting';
+        room.validPlayers.forEach((player) => {
+          if (!achivents[player.name]) {
+            achivents[player.name] = { win: 0, lost: 0, draw: 0 };
+          }
+          achivents[player.name].draw += 1;
+        });
+        room.end();
+        break;
+      }
+      default:
+        break;
+    }
+  }).on('start', () => {
+    console.log("room start");
+
+    if (room.validPlayers.length < room.minSize) {
+      return room.emit('message', `[系统消息]: 玩家人数不足，无法开始游戏。`);
+    }
+    if (!room.validPlayers.some((p) => p.id == lastLosePlayer?.id)) {
+      lastLosePlayer = undefined;
+    }
+    currentPlayer = lastLosePlayer || room.validPlayers[0];
+    board = Array.from({ length: 8 }, () => Array(8).fill(-1));
+    board[board.length - 1] = board[board.length - 1].map(() => 0);
+    gameStatus = 'playing';
+    messageHistory = [];
+    currentPlayer.attributes = { color: 1 }; // 黑子先行
+    room.validPlayers.forEach((player) => {
+      if (player.id !== currentPlayer.id) {
+        player.attributes = { color: 2 }; // 白子
+        player.emit('command', {
+          type: 'color',
+          data: { color: 2 }
+        });
+      } else {
+        player.emit('command', {
+          type: 'color',
+          data: { color: 1 }
+        });
+      }
+    });
+    room.emit('command', { type: 'achivements', data: achivents });
+    room.emit('message', `[系统消息]: 游戏开始。玩家 ${room.validPlayers[0].name} 执黑先行。`);
+    room.emit('command', { type: 'place-turn', data: { player: currentPlayer } });
+    room.emit('command', { type: 'board', data: board });
+  }).on('end', () => {
+    console.log("room end");
+    room.emit('command', { type: 'end' });
+  }).on('message', (message: string) => {
+    messageHistory.unshift(message);
+    if (messageHistory.length > 100) messageHistory.splice(messageHistory.length - 100);
+  });
+}
+
+export const name = '四子棋';
+export const minSize = 2;
+export const maxSize = 2;
+export const description = `两个玩家轮流在棋盘上放置自己的棋子，率先将四个棋子连成一线（横、竖、斜均可）的一方获胜。
+棋子只能放置在底部或已有棋子之上。`;

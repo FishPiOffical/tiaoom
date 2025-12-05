@@ -1,0 +1,39 @@
+{
+  "compilerOptions": {
+    /* Language and Environment */
+    "target": "esnext", /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */
+    "experimentalDecorators": true, /* Enable experimental support for legacy experimental decorators. */
+    "emitDecoratorMetadata": true, /* Emit design-type metadata for decorated declarations in source files. */
+    /* Modules */
+    "module": "CommonJS", /* Specify what module code is generated. */
+    "rootDir": "src", /* Specify the root folder within your source files. */
+    "typeRoots": [
+      "./types",
+      "./node_modules/@types"
+    ], /* Specify multiple folders that act like './node_modules/@types'. */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "src/*"
+      ],
+      "#/*": [
+        "types/*"
+      ]
+    },
+    "outDir": "dist", /* Specify an output folder for all emitted files. */
+    "esModuleInterop": true, /* Emit additional JavaScript to ease support for importing CommonJS modules. This enables 'allowSyntheticDefaultImports' for type compatibility. */
+    "forceConsistentCasingInFileNames": true, /* Ensure that casing is correct in imports. */
+    /* Type Checking */
+    "strict": true, /* Enable all strict type-checking options. */
+    "strictPropertyInitialization": false, /* Check for class properties that are declared but not set in the constructor. */
+    "skipLibCheck": true /* Skip type checking all .d.ts files. */
+  },
+  "include": [
+    "src/**/*",
+    "types/**/*" 
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}

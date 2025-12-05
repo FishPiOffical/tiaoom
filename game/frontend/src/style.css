@@ -1,0 +1,71 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-background text-primary font-sans antialiased;
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+/* Minimalist Input Styles */
+input, select {
+  @apply bg-surface text-primary border border-border rounded px-3 py-1 outline-none transition-colors;
+}
+
+input:focus, select:focus {
+  @apply border-primary;
+}
+
+input::placeholder {
+  @apply text-secondary;
+}
+
+/* Minimalist Button Styles */
+button, 
+input[type="button"], 
+input[type="submit"] {
+  @apply bg-surface-light text-primary border border-border rounded px-4 py-1 cursor-pointer transition-all duration-200 text-sm;
+}
+
+button:hover, 
+input[type="button"]:hover, 
+input[type="submit"]:hover {
+  @apply bg-border border-primary;
+}
+
+button:disabled,
+input:disabled {
+  @apply opacity-50 cursor-not-allowed hover:bg-surface-light hover:border-border;
+}
+
+.icon-btn {
+  @apply bg-transparent text-base text-primary border-none border-border rounded-full p-0 cursor-pointer transition-all duration-200 inline-flex items-center justify-center;
+}
+
+.icon-btn:hover {
+  @apply -m-2 p-2 bg-border;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-background;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-surface-light rounded;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-border;
+}

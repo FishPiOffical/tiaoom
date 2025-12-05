@@ -7,7 +7,7 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Launch",
+      "name": "Launch Game",
       "runtimeArgs": [
           "--nolazy",
           "-r",
@@ -16,11 +16,11 @@
           "ts-node/register"
       ],
       "args": [
-          "${workspaceRoot}/game/index.ts"
+          "${workspaceRoot}/game/backend/src/index.ts"
       ],
-      "env": { "TS_NODE_PROJECT": "tsconfig.json" },
+      "env": { "TS_NODE_PROJECT": "${workspaceRoot}/game/backend/tsconfig.json" },
       "sourceMaps": true,
-      "cwd": "${workspaceRoot}"
-  }
+      "cwd": "${workspaceRoot}/game/backend"
+    }
   ]
 }
