@@ -3,16 +3,16 @@ import { defineConfig } from 'tsdown';
 export default defineConfig([
   {
     entry: { index: 'lib/index.ts' },
-    outDir: 'dist/node',
+    outDir: 'src/',
     format: ['cjs', 'esm'],
     dts: true,
-    target: 'node18',
+    target: 'node16',
     sourcemap: true,
     clean: true,
   },
   {
     entry: { client: 'lib/client.ts' },
-    outDir: 'dist/browser',
+    outDir: 'src/',
     format: ['cjs', 'esm', 'iife'],
     globalName: 'Tiaoom',
     dts: true,

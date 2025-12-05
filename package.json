@@ -1,15 +1,26 @@
 {
   "name": "tiaoom",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "",
-  "main": "./dist/node/index.cjs",
-  "module": "./dist/node/index.mjs",
-  "types": "./dist/node/index.d.ts",
+  "main": "./src/index.cjs",
+  "module": "./src/index.mjs",
+  "types": "./src/index.d.cts",
+  "typesVersions": {
+    "*": {
+      "client": [
+        "./src/client.d.ts"
+      ]
+    }
+  },
   "scripts": {
     "prepare": "npm run build",
     "test": "node -r tsconfig-paths/register -r ts-node/register ./game/index.ts",
     "build": "tsdown"
   },
+  "files": [
+    "src",
+    "README.md"
+  ],
   "keywords": [],
   "author": "",
   "license": "MIT",
@@ -37,19 +48,19 @@
     "tsdown": "^0.17.0-beta.5",
     "ws": "^8.13.0"
   },
-  "unpkg": "./dist/browser/client.iife.js",
-  "jsdelivr": "./dist/browser/client.iife.js",
+  "unpkg": "./src/client.iife.js",
+  "jsdelivr": "./src/client.iife.js",
   "exports": {
     ".": {
-      "types": "./dist/node/index.d.ts",
-      "import": "./dist/node/index.mjs",
-      "require": "./dist/node/index.cjs"
+      "types": "./src/index.d.ts",
+      "import": "./src/index.mjs",
+      "require": "./src/index.cjs"
     },
     "./client": {
-      "types": "./dist/browser/client.d.ts",
-      "import": "./dist/browser/client.mjs",
-      "require": "./dist/browser/client.cjs",
-      "default": "./dist/browser/client.iife.js"
+      "types": "./src/client.d.ts",
+      "import": "./src/client.mjs",
+      "require": "./src/client.cjs",
+      "default": "./src/client.iife.js"
     }
   }
 }

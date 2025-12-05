@@ -150,11 +150,11 @@ export class Player {
   name: string;
   attributes: Record<string, any>;
   status: string;
-  constructor(player: Player) {
-    this.id = player.id;
-    this.name = player.name;
-    this.attributes = player.attributes;
-    this.status = player.status;
+  constructor(player: Partial<Player>) {
+    this.id = player.id || Date.now().toString();
+    this.name = player.name || '玩家' + this.id;
+    this.attributes = player.attributes || {};
+    this.status = player.status || 'online';
   }
 }
 
