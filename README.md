@@ -42,7 +42,7 @@ class YourGameClient extends Tiaoom {
 
 ## 🎮 实现游戏示例
 
-本仓库内置一个基于 Websocket 为通信协议的游戏服务，实现新的游戏只需编写三个文件：
+本仓库内置一个基于 Websocket 为通信协议的游戏服务，实现新的游戏只需编写两个文件：
 
 - game/backend/src/games/yourgame.js - 游戏逻辑入口与配置信息；
 - game/frontend/src/components/yourgame/YourGameRoom.vue - 游戏前端组件；
@@ -56,9 +56,10 @@ class YourGameClient extends Tiaoom {
 - 黑白棋
 - 谁是卧底
   
-## ⚙️ 调试
-1. 执行`npm install`;
-2. 使用 Visual Studio Code 运行调试（直接按下`F5`即可）。
+## ⚙️ 调试/运行
+1. cd 到 `game`, 执行 `npm install`;
+2. 使用 Visual Studio Code 运行调试（直接按下`F5`即可），或执行 `npm run dev:backend` 启动后端开发服务器。
+3. 执行 `npm run dev:frontend` 启动前端开发服务器，访问 `http://localhost:5173`。
 
 > 本地调试可修改 `game/frontend/src/views/Login.vue` 中的`const loginType = ref('fishpi')` 为 `normal`，即可切换为用户名登录模式。
 
