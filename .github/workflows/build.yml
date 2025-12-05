@@ -1,4 +1,4 @@
-name: Deploy To Server
+name: Build Package and Demo
 
 on:
   push:
@@ -25,3 +25,5 @@ jobs:
         cd game
         npm ci
         npm run build
+        cd dist
+        npm ci --omit=dev
