@@ -18,6 +18,7 @@ jobs:
 
     - name: Install dependencies and build
       run: |
+        npm ci
         cd game
         npm ci
         npm run build

@@ -1,5 +1,3 @@
-import { Message } from "@lib/models/message";
-
 export interface BaseEvents {
   //服务初始化回调
   ready : () => void;

@@ -3,6 +3,12 @@ name: Build Package and Demo
 on:
   push:
     branches: [ master ]
+    paths:
+      - 'game/**'
+      - 'lib/**'
+      - package*.json
+      - tsconfig.json
+      - tsdown.config.json
   workflow_dispatch:
   
 jobs:
