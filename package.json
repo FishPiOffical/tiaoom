@@ -14,7 +14,6 @@
   },
   "scripts": {
     "prepare": "npm run build",
-    "test": "node -r tsconfig-paths/register -r ts-node/register ./game/index.ts",
     "build": "tsdown"
   },
   "files": [
