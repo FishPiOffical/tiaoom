@@ -33,7 +33,7 @@ jobs:
         username: ${{ secrets.SSH_USERNAME }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: ${{ secrets.SSH_PORT || 22 }}
-        source: "game/dist/*"
+        source: "game/dist"
         target: ${{ secrets.DEPLOY_PATH }}
         strip_components: 1
         tar_tmp_path: /tmp/
