@@ -52,18 +52,20 @@
           <button @click="isDesktopSidebarCollapsed = true" class="icon-btn-hidden hidden md:flex">
             <Icon icon="ep:fold" />
           </button>
-          <div 
-            v-if="gameStore.player?.avatar"
-            class="w-[1.2em] h-[1.2em] rounded-full bg-surface border border-border flex items-center justify-center text-xl font-bold relative"
-          >
-            <img 
+          <section class="inline-flex items-center gap-2">
+            <span 
               v-if="gameStore.player?.avatar"
-              :src="gameStore.player?.avatar" 
-              alt="avatar" 
-              class="w-full h-full object-cover rounded-full"
-            />
-          </div>
-          <span class="font-medium">{{ gameStore.player?.name }}</span>
+              class="w-[1.2em] h-[1.2em] rounded-full bg-surface border border-border inline-flex items-center justify-center text-xl font-bold relative"
+            >
+              <img 
+                v-if="gameStore.player?.avatar"
+                :src="gameStore.player?.avatar" 
+                alt="avatar" 
+                class="w-full h-full object-cover rounded-full"
+              />
+            </span>
+            <span class="font-medium">{{ gameStore.player?.name }}</span>
+          </section>
           <div class="flex items-center gap-2">
             <button 
               @click="handleLogout"
@@ -80,7 +82,7 @@
           <section class="flex justify-between mb-2">
             <h2 class="text-sm font-bold text-secondary uppercase tracking-wider mb-2 flex items-center gap-1">
               <Icon icon="fluent:chess-16-filled" size="1.5em"/>
-              <span>在线房间</span>
+              <span>在线房间 ({{ gameStore.rooms.length }})</span>
             </h2>
             <select v-model="gameType" class="text-xs">
               <option value="">全部游戏</option>
@@ -114,7 +116,7 @@
         <div class="flex-shrink-1 overflow-auto">
           <h2 class="text-sm font-bold text-secondary uppercase tracking-wider mb-2 flex items-center gap-1">
             <Icon icon="fluent:people-16-filled" size="1.5em"/>
-            <span>在线玩家</span>
+            <span>在线玩家 ({{ gameStore.players.length }})</span>
           </h2>
           <ul class="space-y-1">
             <li v-for="p in gameStore.players" :key="p.id" class="text-sm text-primary/80">
