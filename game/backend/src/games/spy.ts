@@ -35,9 +35,31 @@ export default function onRoom(room: Room) {
   let currentTalkPlayer: RoomPlayer;
   let spyPlayer: RoomPlayer;
   let gameStatus: 'waiting' | 'talking' | 'voting' = 'waiting';
+  let talkTimeout: NodeJS.Timeout | null = null;
 
   const vote: RoomPlayer[] = [];
   const votePlayers: RoomPlayer[] = [];
+
+  function handleTalkEnd(sender: RoomPlayer) {
+    if (talkTimeout) {
+      clearTimeout(talkTimeout);
+      talkTimeout = null;
+    }
+
+    // Fix: Use alivePlayers to find next player
+    const currentAliveIndex = alivePlayers.findIndex((p) => p.id == sender.id);
+    const nextPlayer = alivePlayers[currentAliveIndex + 1];
+
+    if (!nextPlayer) {
+      room.emit('message', `[系统消息]: 所有玩家都已发言，投票开始。`);
+      room.emit('command', { type: 'vote' });
+      gameStatus = 'voting';
+      return;
+    }
+    currentTalkPlayer = nextPlayer;
+    room.emit('message', `[系统消息]: 玩家 ${sender.name} 发言结束。玩家 ${nextPlayer.name} 开始发言。`);
+    room.emit('command', { type: 'talk', data: { player: nextPlayer } });
+  }
 
   room.on('player-command', (message: MessagePackage) => {
     console.log("room message:", message);
@@ -71,6 +93,15 @@ export default function onRoom(room: Room) {
           });
         }
         room.emit('message', `[${sender.name}]: ${message.data}`);
+
+        // 倒计时逻辑
+        if (gameStatus == 'talking' && sender.id == currentTalkPlayer.id) {
+          if (talkTimeout) clearTimeout(talkTimeout);
+          talkTimeout = setTimeout(() => {
+            handleTalkEnd(sender);
+          }, 30000);
+          sender.emit('command', { type: 'talk-countdown', data: { seconds: 30 } });
+        }
         break;
       case 'talked':
         if (gameStatus != 'talking') {
@@ -81,17 +112,7 @@ export default function onRoom(room: Room) {
           sender.emit('message', `[系统消息]: 现在不是你的发言时间。`);
           return;
         }
-        const playIndex = room.validPlayers.findIndex((p) => p.id == sender.id);
-        const nextPlayer = alivePlayers.slice(playIndex + 1)[0];
-        if (!nextPlayer) {
-          room.emit('message', `[系统消息]: 所有玩家都已发言，投票开始。`);
-          room.emit('command', { type: 'vote' });
-          gameStatus = 'voting';
-          return;
-        }
-        currentTalkPlayer = nextPlayer;
-        room.emit('message', `[系统消息]: 玩家 ${sender.name} 发言结束。玩家 ${nextPlayer.name} 开始发言。`);
-        room.emit('command', { type: 'talk', data: { player: nextPlayer } });
+        handleTalkEnd(sender);
         break;
       case 'voted':
         if (gameStatus != 'voting') {
@@ -133,6 +154,10 @@ export default function onRoom(room: Room) {
           room.emit('command', { type: 'talk', data: { player: currentTalkPlayer } });
           gameStatus = 'talking';
           room.emit('message', `[系统消息]: 游戏继续。玩家 ${currentTalkPlayer.name} 发言。`);
+          if (talkTimeout) {
+            clearTimeout(talkTimeout);
+            talkTimeout = null;
+          }
           return;
         }
 
@@ -152,6 +177,10 @@ export default function onRoom(room: Room) {
           gameStatus = 'talking';
           currentTalkPlayer = alivePlayers[0];
           room.emit('command', { type: 'talk', data: { player: currentTalkPlayer } });
+          if (talkTimeout) {
+            clearTimeout(talkTimeout);
+            talkTimeout = null;
+          }
           return room.emit('message', `[系统消息]: 玩家 ${deadPlayer.name} 死亡。游戏继续。`);
         }
         room.validPlayers.forEach((player, index) => {
@@ -190,6 +219,10 @@ export default function onRoom(room: Room) {
     spyPlayer = undefined!;
     gameStatus = 'waiting';
     messageHistory = [];
+    if (talkTimeout) {
+      clearTimeout(talkTimeout);
+      talkTimeout = null;
+    }
 
     if (room.validPlayers.length < room.minSize) {
       return room.emit('message', `[系统消息]: 玩家人数不足，无法开始游戏。`);
@@ -211,6 +244,10 @@ export default function onRoom(room: Room) {
     gameStatus = 'talking';
   }).on('end', () => {
     console.log("room end");
+    if (talkTimeout) {
+      clearTimeout(talkTimeout);
+      talkTimeout = null;
+    }
     room.emit('command', { type: 'end' });
   }).on('message', (message: string) => {
     messageHistory.unshift(message);

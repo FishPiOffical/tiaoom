@@ -12,7 +12,7 @@
         <div 
           v-for="p in roomPlayer.room.players" 
           :key="p.id" 
-          class="relative bg-surface-light border border-border p-4 rounded-lg shadow-md flex flex-col items-center gap-2 transition-all"
+          class="group relative bg-surface-light border border-border p-4 rounded-lg shadow-md flex flex-col items-center gap-2 transition-all"
           :class="{ 
             'opacity-50 grayscale': p.isDead,
             'ring-2 ring-primary': currentTalkPlayer?.id === p.id,
@@ -20,7 +20,7 @@
           }"
         >
           <!-- 头像/状态图标 -->
-          <div class="w-12 h-12 rounded-full bg-surface border border-border flex items-center justify-center text-xl font-bold">
+          <div class="w-12 h-12 rounded-full bg-surface border border-border flex items-center justify-center text-xl font-bold relative">
             <span v-if="!p.attributes.avatar">{{ p.name.substring(0, 1).toUpperCase() }}</span>
             <img 
               v-else 
@@ -28,6 +28,14 @@
               alt="avatar" 
               class="w-full h-full object-cover rounded-full"
             />
+            <!-- 房主标记 -->
+            <span 
+              v-if="p.isCreator" 
+              class="absolute -top-2 -right-2 text-[10px] px-1 rounded-full shadow-sm"
+              title="房主"
+            >
+              👑
+            </span>
           </div>
           
           <div class="text-center w-full">
@@ -46,6 +54,27 @@
           >
             投票
           </button>
+
+          <!-- 房主操作按钮 -->
+          <div 
+            v-if="roomPlayer.isCreator && p.id !== roomPlayer.id && gameStatus === 'waiting'" 
+            class="absolute top-3 right-3 flex gap-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+          >
+            <button 
+              @click="transferOwner(p.id)"
+              class="icon-btn "
+              title="转让房主"
+            >
+              <Icon icon="mdi:crown" />
+            </button>
+            <button 
+              @click="kickPlayer(p.id)"
+              class="icon-btn "
+              title="踢出玩家"
+            >
+              <Icon icon="mdi:account-remove" />
+            </button>
+          </div>
         </div>
       </div>
     </section>
@@ -81,13 +110,12 @@
         </div>
 
         <!-- 发言控制 -->
-        <div v-if="roomPlayer.role === 'player' && canSpeak && gameStatus === 'talking'" class="group flex gap-2">
+        <div v-if="roomPlayer.role === 'player' && canSpeak && gameStatus === 'talking'" class="group flex flex-col gap-2">
            <button @click="sendTalked" class="w-full bg-green-600 hover:bg-green-700">
-            结束发言
+            结束发言 {{ countdown > 0 ? `(${countdown}s)` : '' }}
           </button>
-        </div>
-        
-        <hr class="border-border" />
+          <hr class="border-border" />
+        </div>        
         
         <!-- 聊天 -->
         <div v-if="roomPlayer.role === 'player'" class="group flex gap-2">
@@ -129,6 +157,8 @@ const msg = ref('')
 const word = ref('')
 const roomMessages = ref<string[]>([])
 const currentPlayer = computed(() => props.roomPlayer.id)
+const countdown = ref(0)
+let countdownTimer: any = null
 
 const voting = computed(() => gameStatus.value === 'voting')
 
@@ -154,10 +184,24 @@ function onCommand(cmd: any) {
     case 'talk':
       currentTalkPlayer.value = cmd.data.player
       gameStatus.value = 'talking'
+      if (countdownTimer) clearInterval(countdownTimer)
+      countdown.value = 0
+      break
+    case 'talk-countdown':
+      countdown.value = cmd.data.seconds
+      if (countdownTimer) clearInterval(countdownTimer)
+      countdownTimer = setInterval(() => {
+        countdown.value--
+        if (countdown.value <= 0) {
+          clearInterval(countdownTimer)
+        }
+      }, 1000)
       break
     case 'vote':
       gameStatus.value = 'voting'
       voted.value = false
+      if (countdownTimer) clearInterval(countdownTimer)
+      countdown.value = 0
       if (cmd.data) {
         canVotePlayer.value = cmd.data.map((p: any) => p.id)
       } else {
@@ -215,11 +259,23 @@ function sendMessage() {
 
 function sendTalked() {
   props.game?.command(props.roomPlayer.room.id, { type: 'talked' })
+  if (countdownTimer) clearInterval(countdownTimer)
+  countdown.value = 0
 }
 
 function votePlayer(playerId: string) {
   if (voted.value) return
   props.game?.command(props.roomPlayer.room.id, { type: 'voted', data: { id: playerId } })
+}
+
+function kickPlayer(playerId: string) {
+  if (!confirm('确定要踢出该玩家吗？')) return
+  props.game?.kickPlayer(props.roomPlayer.room.id, playerId)
+}
+
+function transferOwner(playerId: string) {
+  if (!confirm('确定要转让房主给该玩家吗？')) return
+  props.game?.transferRoom(props.roomPlayer.room.id, playerId)
 }
 
 const isAllReady = computed(() => {
