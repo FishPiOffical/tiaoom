@@ -124,6 +124,12 @@
             离开
           </button>
           <button 
+            v-if="roomPlayer.role === 'watcher' && !isRoomFull" 
+            @click="game?.joinRoom(roomPlayer.room.id)"
+          >
+            加入游戏
+          </button>
+          <button 
             v-if="gameStatus === 'playing' && roomPlayer.role === 'player'"
             @click="requestDraw"
             :disabled="currentPlayer?.id !== roomPlayer.id"
@@ -272,6 +278,11 @@ function sendMessage() {
   props.game?.command(props.roomPlayer.room.id, { type: 'say', data: msg.value })
   msg.value = ''
 }
+
+const isRoomFull = computed(() => {
+  if (!props.roomPlayer) return true
+  return props.roomPlayer.room.players.filter((p: any) => p.role === 'player').length >= props.roomPlayer.room.size
+})
 
 const isAllReady = computed(() => {
   if (!props.roomPlayer) return false

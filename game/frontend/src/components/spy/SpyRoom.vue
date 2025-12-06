@@ -107,6 +107,12 @@
           <button @click="game?.leaveRoom(roomPlayer.room.id)" :disabled="roomPlayer.isReady">
             离开
           </button>
+          <button 
+            v-if="!isRoomFull" 
+            @click="game?.joinRoom(roomPlayer.room.id)"
+          >
+            加入游戏
+          </button>
         </div>
 
         <!-- 发言控制 -->
@@ -321,6 +327,11 @@ function transferOwner(playerId: string) {
   if (!confirm('确定要转让房主给该玩家吗？')) return
   props.game?.transferRoom(props.roomPlayer.room.id, playerId)
 }
+
+const isRoomFull = computed(() => {
+  if (!props.roomPlayer) return true
+  return props.roomPlayer.room.players.filter((p: any) => p.role === 'player').length >= props.roomPlayer.room.size
+})
 
 const isAllReady = computed(() => {
   if (!props.roomPlayer) return false

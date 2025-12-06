@@ -256,18 +256,19 @@ export class Room extends EventEmitter implements IRoom {
   }
 
   /**
-   * 
+   * 添加玩家
    * @param {Player} player 玩家
    * @param {boolean} isCreator 是否房主
    * @returns 玩家实例 
    */
   addPlayer(player: Player, isCreator: boolean = false) {
-    if (this.players.some((p) => p.id == player.id)) return;
     let roomPlayer = this.searchPlayer(player);
-    if (roomPlayer) return;
-
-    if (this.isFull && !isCreator) {
-      throw new Error('room is full.');
+    if (roomPlayer) {
+      if (roomPlayer.role === PlayerRole.watcher && !this.isFull && !this.isPlaying) {
+        roomPlayer.role = PlayerRole.player;
+        this.emit("update", this);
+      }
+      return roomPlayer;
     }
 
     if (isCreator) {

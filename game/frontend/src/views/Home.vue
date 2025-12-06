@@ -104,7 +104,7 @@
                 @click="gameStore.game?.joinRoom(r.id); isSidebarOpen = false"
                 class="px-2 py-1 text-xs whitespace-nowrap"
               >
-                {{ r.status === 'waiting' && r.players.length < r.size ? '进入' : '围观' }}
+                {{ r.status === 'waiting' && r.players.filter(p => p.role === 'player').length < r.size ? '进入' : '围观' }}
               </button>
             </li>
           </ul>
