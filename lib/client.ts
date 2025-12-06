@@ -295,7 +295,7 @@ export class Tiaoom {
    * @param {number} minSize 房间人数下限
    * @param {object} attrs 房间属性
    */
-  createRoom({ name, size, minSize, attrs }: IRoomOptions) {
+  createRoom({ name, size, minSize, attrs }: Omit<IRoomOptions, 'id'>) {
     return new Promise<void>((resolve) => {
       this.send({ type: "room.create", data: { name, size, minSize, attrs } });
       this.on("room.create", (room) => {
