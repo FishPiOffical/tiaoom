@@ -20,6 +20,10 @@ export class GameCore extends Tiaoom {
       debug: true,
       connectionTimeout: 3000
     })
+
+    window.addEventListener('beforeunload', () => {
+      this.close()
+    })
     
     this.socket.onopen = () => {
       this.emit('sys.ready')

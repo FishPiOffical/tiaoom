@@ -321,6 +321,26 @@ export class Tiaoom {
   }
 
   /**
+   * 踢出玩家
+   * @param {string} roomId 房间ID
+   * @param {string} playerId 玩家ID
+   */
+  kickPlayer(roomId: string, playerId: string) {
+    this.send({ type: "room.kick", data: { roomId, playerId } });
+    return this;
+  }
+
+  /**
+   * 转让房主
+   * @param {string} roomId 房间ID
+   * @param {string} playerId 目标玩家ID
+   */
+  transferRoom(roomId: string, playerId: string) {
+    this.send({ type: "room.transfer", data: { roomId, playerId } });
+    return this;
+  }
+
+  /**
    * 开始游戏
    * @param {string} id 房间ID
    */

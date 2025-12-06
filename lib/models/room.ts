@@ -2,6 +2,9 @@ import { IPlayer, Player, PlayerOptions, PlayerStatus } from "./player";
 import EventEmitter from "events";
 import { RoomEvents } from "@lib/events";
 
+/**
+ * 房间选项接口
+ */
 export interface IRoomOptions {
   /**
    * 房间号
@@ -25,30 +28,79 @@ export interface IRoomOptions {
   attrs?: Record<string, any>,
 }
 
+/**
+ * 房间玩家角色
+ */
 export enum PlayerRole {
+  /**
+   * 玩家
+   */
   player = 'player',
+  /**
+   * 观众
+   */
   watcher = 'watcher',
 }
 
+/**
+ * 房间状态
+ */
 export enum RoomStatus {
+  /**
+   * 等待中
+   */
   waiting = 'waiting',
+  /**
+   * 已准备
+   */
   ready = 'ready',
+  /**
+   * 游戏中
+   */
   playing = 'playing',
 }
 
+/**
+ * 房间接口
+ */
 export interface IRoom extends IRoomOptions {
+  /**
+   * 房间玩家列表
+   */
   players: RoomPlayer[];
 }
 
+/**
+ * 房间玩家选项接口
+ */
 export interface IRoomPlayerOptions extends PlayerOptions {
+  /**
+   * 房间Id
+   */
   roomId?: string;
 }
+
+/**
+ * 房间玩家接口
+ */
 export interface IRoomPlayer extends IRoomPlayerOptions, IPlayer {
+  /**
+   * 是否已准备
+   */
   isReady: boolean;
+  /**
+   * 玩家角色
+   */
   role: PlayerRole;
+  /**
+   * 是否为房主
+   */
   isCreator: boolean;
 }
 
+/**
+ * 房间玩家
+ */
 export class RoomPlayer extends Player implements IRoomPlayer {
   isReady: boolean = false;
   role: PlayerRole = PlayerRole.player;
@@ -71,48 +123,83 @@ export class RoomPlayer extends Player implements IRoomPlayer {
   }
 }
 
+/**
+ * 房间
+ */
 export class Room extends EventEmitter implements IRoom {
+  /**
+   * 监听房间事件
+   * @param event 事件名，具体见 RoomEvents
+   * @param listener 监听器
+   * @returns this
+   */
   on<K extends keyof RoomEvents>(event: K, listener: RoomEvents[K]): this {
     return super.on(event, listener);
   }
 
+  /**
+   * 触发房间事件
+   * @param event 事件名，具体见 RoomEvents
+   * @param args 参数
+   * @returns 是否有监听器被触发
+   */
   emit<K extends keyof RoomEvents>(event: K, ...args: Parameters<RoomEvents[K]>): boolean {
     return super.emit(event, ...args);
   }
 
-  id: string; // room id
-  size: number = 10; // room size
-  name: string = ''; // room name
-  minSize: number = 2; // room min size
-  attrs?: Record<string, any>; // other attributes
-  players: RoomPlayer[] = []; // player list
+  id: string;
+  size: number = 10;
+  name: string = '';
+  minSize: number = 2;
+  attrs?: Record<string, any>;
+  players: RoomPlayer[] = [];
 
+  /**
+   * 有效玩家列表(非观众)
+   */
   get validPlayers() {
     return this.players.filter((player) => player.role === PlayerRole.player);
   }
 
+  /**
+   * 观众列表
+   */
   get watchers() {
     return this.players.filter((player) => player.role === PlayerRole.watcher);
   }
 
+  /**
+   * 消息发送器
+   */
   private sender?: (type: string, ...message: any) => void;
 
+  /**
+   * 房间玩家是否已准备好
+   */
   get isReady(): boolean {
     return this.players.length >= this.minSize
       && this.players.every((target) => target.isReady || target.role === PlayerRole.watcher); // is all player ready
   }
 
+  /**
+   * 房间状态
+   */
   get status(): RoomStatus {
     if (!this.isReady) return RoomStatus.waiting;
     if (this.players.findIndex((target) => target.status === PlayerStatus.playing) != -1) return RoomStatus.playing;
     return RoomStatus.ready;
   }
 
+  /**
+   * 房间是否在游戏中
+   */
   get isPlaying(): boolean {
     return this.status === RoomStatus.playing;
   }
 
-  // is room full
+  /**
+   * 房间是否已满
+   */
   get isFull(): boolean {
     return this.validPlayers.length == this.size;
   }
@@ -151,22 +238,58 @@ export class Room extends EventEmitter implements IRoom {
     });
   }
 
+  /**
+   * 设置房主
+   * @param {Player} player 玩家
+   * @returns this
+   */
+  setCreator(player: Player) {
+    const roomPlayer = this.searchPlayer(player);
+    if (roomPlayer) {
+      this.players.forEach((p) => {
+        p.isCreator = false;
+      });
+      roomPlayer.isCreator = true;
+      this.emit("update", this);
+    }
+    return this;
+  }
+
+  /**
+   * 
+   * @param {Player} player 玩家
+   * @param {boolean} isCreator 是否房主
+   * @returns 玩家实例 
+   */
   addPlayer(player: Player, isCreator: boolean = false) {
     if (this.players.some((p) => p.id == player.id)) return;
     let roomPlayer = this.searchPlayer(player);
-    if (!roomPlayer) {
-      roomPlayer = new RoomPlayer(player, this.isFull || this.isPlaying ? PlayerRole.watcher : PlayerRole.player);
-      roomPlayer.isCreator = isCreator;
-      roomPlayer.roomId = this.id;
-      this.players.push(roomPlayer);
-      this.emit("join", { roomId: this.id, ...roomPlayer });
+    if (roomPlayer) return;
+
+    if (this.isFull && !isCreator) {
+      throw new Error('room is full.');
     }
+
+    if (isCreator) {
+      this.players.forEach((p) => {
+        p.isCreator = false;
+      });
+    }
+    roomPlayer = new RoomPlayer(player, this.isFull || this.isPlaying ? PlayerRole.watcher : PlayerRole.player);
+    roomPlayer.isCreator = isCreator;
+    roomPlayer.roomId = this.id;
+    this.players.push(roomPlayer);
+    this.emit("join", { roomId: this.id, ...roomPlayer });
+    
     return roomPlayer;
   }
 
+  /**
+   * 踢出玩家
+   * @param {string | IPlayer} player 玩家 / 玩家 id
+   */
   kickPlayer(playerId: string): RoomPlayer;
   kickPlayer(player: IPlayer): RoomPlayer;
-
   kickPlayer(player: IPlayer | string) {
     const playerId = typeof player === "string" ? player : player.id;
     const index = this.players.findIndex((p) => p.id == playerId);
@@ -182,14 +305,20 @@ export class Room extends EventEmitter implements IRoom {
     return roomPlayer;
   }
 
+  /**
+   * 搜索玩家
+   * @param {string | IPlayer} player 玩家 / 玩家 id
+   */
   searchPlayer(playerId: string): RoomPlayer | undefined;
-  searchPlayer(playerId: IPlayer): RoomPlayer | undefined;
-
+  searchPlayer(player: IPlayer): RoomPlayer | undefined;
   searchPlayer(player: string | IPlayer) {
     const playerId = typeof player === "string" ? player : player.id;
     return this.players.find((player) => player.id == playerId);
   }
 
+  /**
+   * 开始游戏
+   */
   start() {
     if (!this.isReady) {
       throw new Error('room is not ready.');
@@ -205,6 +334,9 @@ export class Room extends EventEmitter implements IRoom {
     return this.emit("start", this);
   }
 
+  /**
+   * 结束游戏
+   */
   end() {
     this.players.forEach((player) => {
       if (player.role != PlayerRole.player) return;
@@ -214,6 +346,10 @@ export class Room extends EventEmitter implements IRoom {
     return this.emit("end", this);
   }
 
+  /**
+   * 设置消息发送器
+   * @param sender 消息发送器
+   */
   setSender(sender: (type: string, ...message: any) => void) {
     this.sender = sender;
     return this;

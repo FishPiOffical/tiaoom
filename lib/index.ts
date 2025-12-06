@@ -45,6 +45,10 @@ export class Tiaoom extends EventEmitter {
             return cb?.(null, this.searchRoom(message.data));
           case "room.start":
             return this.startRoom(message.sender, message.data);
+          case "room.kick":
+            return this.kickPlayer(message.sender, message.data);
+          case "room.transfer":
+            return this.transferOwner(message.sender, message.data);
           case "room.close":
             return this.closeRoom(message.sender, message.data);
           case "player.login":
@@ -165,6 +169,54 @@ export class Tiaoom extends EventEmitter {
     return room;
   }
 
+  kickPlayer(sender: IPlayer, data: { roomId: string, playerId: string }) {
+    const room = this.searchRoom(data.roomId);
+    if (!room) {
+      throw new Error('room not found.');
+    }
+
+    const senderInRoom = room.searchPlayer(sender);
+    if (!senderInRoom || !senderInRoom.isCreator) {
+      throw new Error('permission denied.');
+    }
+
+    const targetPlayer = room.players.find(p => p.id === data.playerId);
+    if (!targetPlayer) {
+      throw new Error('player not found in room.');
+    }
+
+    const roomPlayer = room.kickPlayer(targetPlayer);
+    if (roomPlayer) this.emit("room-player", room);
+    return roomPlayer;
+  }
+
+  transferOwner(sender: IPlayer, data: { roomId: string, playerId: string }) {
+    const room = this.searchRoom(data.roomId);
+    if (!room) {
+      throw new Error('room not found.');
+    }
+
+    const senderInRoom = room.searchPlayer(sender);
+    if (!senderInRoom || !senderInRoom.isCreator) {
+      throw new Error('permission denied.');
+    }
+
+    const targetPlayer = room.players.find(p => p.id === data.playerId);
+    if (!targetPlayer) {
+      throw new Error('player not found in room.');
+    }
+
+    if (targetPlayer.id === sender.id) {
+      return;
+    }
+
+    senderInRoom.isCreator = false;
+    targetPlayer.isCreator = true;
+
+    this.emit("room-player", room);
+    return room;
+  }
+
   loginPlayer (player: PlayerOptions, cb?: (data: { player: Player }) => void): Player {
     let playerInstance = this.searchPlayer(player);
     if (!playerInstance) {
@@ -197,11 +249,9 @@ export class Tiaoom extends EventEmitter {
     }
 
     const roomPlayer = room.addPlayer(playerInstance, isCreator);
-    if (!roomPlayer) {
-      throw new Error('room is full.');
+    if (roomPlayer) {
+      this.emit("room-player", room);
     }
-
-    this.emit("room-player", room);
 
     return roomPlayer;
   }
