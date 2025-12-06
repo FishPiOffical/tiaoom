@@ -162,7 +162,7 @@
               <li>4. 所有玩家发言结束后进行投票，票数最多者出局。</li>
               <li>5. 卧底出局则平民胜利，仅剩2人且含卧底则卧底胜利。</li>
             </ul>
-            <button @click="showRules = false" class="mt-6 w-full bg-border text-primary py-2 rounded hover:bg-primary/90">
+            <button @click="showRules = false" class="mt-6 w-full bg-border text-primary py-2 rounded hover:bg-border/50">
               知道了
             </button>
           </div>
