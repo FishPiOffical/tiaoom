@@ -15,8 +15,8 @@
   "scripts": {
     "prepare": "npm run build",
     "build": "tsdown",
-    "build:docs": "cd docs && npm run docs:build",
-    "dev:docs": "cd docs && npm run docs:dev"
+    "docs:build": "cd docs && npm run docs:build",
+    "docs:dev": "cd docs && npm run docs:dev"
   },
   "files": [
     "src",
