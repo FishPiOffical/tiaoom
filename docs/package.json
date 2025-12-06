@@ -1,0 +1,16 @@
+{
+  "name": "tiaoom-docs",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Documentation for tiaoom game engine",
+  "scripts": {
+    "docs:dev": "vitepress dev --host",
+    "docs:build": "vitepress build",
+    "docs:preview": "vitepress preview"
+  },
+  "devDependencies": {
+    "vitepress": "^1.0.0-rc.31",
+    "vitepress-plugin-pagefind": "^0.4.16",
+    "vue": "^3.4.0"
+  }
+}
