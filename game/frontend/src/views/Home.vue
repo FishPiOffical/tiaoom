@@ -6,7 +6,17 @@
         <button @click="isSidebarOpen = true" class="text-lg icon-btn">
           <Icon icon="mingcute:menu-fill" />
         </button>
-        <span class="font-medium truncate">欢迎回来~ {{ gameStore.player?.name }}</span>
+        <div 
+          v-if="gameStore.player?.avatar"
+          class="w-[1.2em] h-[1.2em] rounded-full bg-surface border border-border flex items-center justify-center text-xl font-bold relative"
+        >
+          <img
+            :src="gameStore.player?.avatar" 
+            alt="avatar" 
+            class="w-full h-full object-cover rounded-full"
+          />
+        </div>
+        <span class="font-medium truncate">{{ gameStore.player?.name }}</span>
       </div>
       <button 
         @click="handleLogout"
@@ -39,10 +49,21 @@
       >
         <div class="flex justify-between items-center pb-2 border-b border-border">
           <!-- PC端折叠按钮 -->
-          <button @click="isDesktopSidebarCollapsed = true" class="icon-btn hidden md:flex">
+          <button @click="isDesktopSidebarCollapsed = true" class="icon-btn-hidden hidden md:flex">
             <Icon icon="ep:fold" />
           </button>
-          <span class="font-medium">欢迎回来~ {{ gameStore.player?.name }}</span>
+          <div 
+            v-if="gameStore.player?.avatar"
+            class="w-[1.2em] h-[1.2em] rounded-full bg-surface border border-border flex items-center justify-center text-xl font-bold relative"
+          >
+            <img 
+              v-if="gameStore.player?.avatar"
+              :src="gameStore.player?.avatar" 
+              alt="avatar" 
+              class="w-full h-full object-cover rounded-full"
+            />
+          </div>
+          <span class="font-medium">{{ gameStore.player?.name }}</span>
           <div class="flex items-center gap-2">
             <button 
               @click="handleLogout"

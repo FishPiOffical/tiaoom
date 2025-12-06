@@ -39,6 +39,72 @@ export default function onRoom(room: Room) {
 
   const vote: RoomPlayer[] = [];
   const votePlayers: RoomPlayer[] = [];
+  const TURN_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+
+  function startTurn(player: RoomPlayer) {
+    currentTalkPlayer = player;
+    room.emit('command', { type: 'talk', data: { player } });
+    room.emit('command', { type: 'talk-countdown', data: { seconds: TURN_TIMEOUT / 1000 } });
+    
+    if (talkTimeout) clearTimeout(talkTimeout);
+    talkTimeout = setTimeout(() => {
+      room.emit('message', `[系统消息]: 玩家 ${player.name} 发言超时，判定死亡。`);
+      handlePlayerDeath(player);
+    }, TURN_TIMEOUT);
+  }
+
+  function handlePlayerDeath(deadPlayer: RoomPlayer) {
+    if (talkTimeout) {
+      clearTimeout(talkTimeout);
+      talkTimeout = null;
+    }
+
+    room.emit('command', { type: 'dead', data: { player: deadPlayer } });
+    const deadIndex = alivePlayers.findIndex((p) => p.id == deadPlayer.id);
+    if (deadIndex > -1) alivePlayers.splice(deadIndex, 1);
+
+    if (deadPlayer.name == spyPlayer.name) {
+      room.emit('message', `[系统消息]: 玩家 ${deadPlayer.name} 死亡。间谍死亡。玩家胜利。`);
+      room.validPlayers.forEach((player) => {
+        if (!alivePlayers.some(p => p.id === player.id)) alivePlayers.push(player);
+      });
+      room.end();
+    } else if (alivePlayers.length == 2) {
+      room.emit('message', `[系统消息]: 玩家 ${deadPlayer.name} 死亡。间谍 ${spyPlayer.name} 胜利。`);
+      room.validPlayers.forEach((player) => {
+        if (!alivePlayers.some(p => p.id === player.id)) alivePlayers.push(player);
+      });
+      room.end();
+    } else {
+      // If game continues
+      if (gameStatus === 'voting') {
+        // If death happened during voting (e.g. voted out), we need to start next round
+        gameStatus = 'talking';
+        startTurn(alivePlayers[0]);
+        room.emit('message', `[系统消息]: 玩家 ${deadPlayer.name} 死亡。游戏继续。玩家 ${alivePlayers[0].name} 发言。`);
+      } else {
+        // If death happened during talking (timeout), move to next player
+        // We need to find who is next. Since deadPlayer is removed, we need to be careful.
+        // If deadPlayer was currentTalkPlayer, we need the next one in list.
+        // But alivePlayers is already updated.
+        // If deadPlayer was at index i, the new player at index i is the next one.
+        // Unless deadPlayer was last, then index i is out of bounds?
+        // Actually, handleTalkEnd logic was: find index, take index+1.
+        // Here we removed the player. So the player at `deadIndex` is the next player.
+        
+        let nextPlayer = alivePlayers[deadIndex];
+        if (!nextPlayer) {
+           // If we reached end of list, start voting
+           room.emit('message', `[系统消息]: 所有玩家都已发言，投票开始。`);
+           room.emit('command', { type: 'vote' });
+           gameStatus = 'voting';
+        } else {
+           startTurn(nextPlayer);
+           room.emit('message', `[系统消息]: 玩家 ${deadPlayer.name} 死亡。游戏继续。玩家 ${nextPlayer.name} 发言。`);
+        }
+      }
+    }
+  }
 
   function handleTalkEnd(sender: RoomPlayer) {
     if (talkTimeout) {
@@ -56,9 +122,9 @@ export default function onRoom(room: Room) {
       gameStatus = 'voting';
       return;
     }
-    currentTalkPlayer = nextPlayer;
+    
     room.emit('message', `[系统消息]: 玩家 ${sender.name} 发言结束。玩家 ${nextPlayer.name} 开始发言。`);
-    room.emit('command', { type: 'talk', data: { player: nextPlayer } });
+    startTurn(nextPlayer);
   }
 
   room.on('player-command', (message: MessagePackage) => {
@@ -150,14 +216,9 @@ export default function onRoom(room: Room) {
           room.emit('message', `[系统消息]: 玩家 ${maxVotePlayer.map(p => p!.name).join(',')} 投票相同。无人死亡。`);
           vote.splice(0, vote.length);
           votePlayers.splice(0, votePlayers.length);
-          currentTalkPlayer = alivePlayers[0];
-          room.emit('command', { type: 'talk', data: { player: currentTalkPlayer } });
           gameStatus = 'talking';
-          room.emit('message', `[系统消息]: 游戏继续。玩家 ${currentTalkPlayer.name} 发言。`);
-          if (talkTimeout) {
-            clearTimeout(talkTimeout);
-            talkTimeout = null;
-          }
+          room.emit('message', `[系统消息]: 游戏继续。玩家 ${alivePlayers[0].name} 发言。`);
+          startTurn(alivePlayers[0]);
           return;
         }
 
@@ -166,27 +227,7 @@ export default function onRoom(room: Room) {
         gameStatus = 'waiting';
 
         const deadPlayer = maxVotePlayer[0]!;
-        room.emit('command', { type: 'dead', data: { player: deadPlayer } });
-        alivePlayers.splice(alivePlayers.findIndex((p) => p.id == deadPlayer.id), 1);
-
-        if (deadPlayer.name == spyPlayer.name) {
-          room.emit('message', `[系统消息]: 玩家 ${deadPlayer.name} 死亡。间谍死亡。玩家胜利。`);
-        } else if (alivePlayers.length == 2) {
-          room.emit('message', `[系统消息]: 玩家 ${deadPlayer.name} 死亡。间谍 ${spyPlayer.name} 胜利。`);
-        } else {
-          gameStatus = 'talking';
-          currentTalkPlayer = alivePlayers[0];
-          room.emit('command', { type: 'talk', data: { player: currentTalkPlayer } });
-          if (talkTimeout) {
-            clearTimeout(talkTimeout);
-            talkTimeout = null;
-          }
-          return room.emit('message', `[系统消息]: 玩家 ${deadPlayer.name} 死亡。游戏继续。`);
-        }
-        room.validPlayers.forEach((player, index) => {
-          alivePlayers.push(player);
-        })
-        room.end();
+        handlePlayerDeath(deadPlayer);
         break;
       case 'status': {
         const playerIndex = room.validPlayers.findIndex((p) => p.id == message.data.id);
@@ -240,8 +281,8 @@ export default function onRoom(room: Room) {
       alivePlayers.push(player);
     })
     room.emit('message', `[系统消息]: 游戏开始。玩家 ${room.validPlayers[0].name} 首先发言。`);
-    room.emit('command', { type: 'talk', data: { player: currentTalkPlayer = room.validPlayers[0] } });
     gameStatus = 'talking';
+    startTurn(room.validPlayers[0]);
   }).on('end', () => {
     console.log("room end");
     if (talkTimeout) {

@@ -48,7 +48,11 @@ input:disabled {
   @apply bg-transparent text-base text-primary border-none border-border rounded-full p-0 cursor-pointer transition-all duration-200 inline-flex items-center justify-center;
 }
 
-.icon-btn:hover {
+.icon-btn-hidden {
+  @apply bg-transparent text-base text-primary border-none border-border rounded-full p-0 cursor-pointer transition-all duration-200 items-center justify-center;
+}
+
+.icon-btn:hover, .icon-btn-hidden:hover {
   @apply -m-2 p-2 bg-border;
 }
 

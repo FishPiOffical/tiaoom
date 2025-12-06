@@ -118,7 +118,14 @@
         </div>        
         
         <!-- 聊天 -->
-        <div v-if="roomPlayer.role === 'player'" class="group flex gap-2">
+        <div v-if="roomPlayer.role === 'player'" class="group flex gap-2 items-center">
+          <button 
+            @click="showRules = !showRules" 
+            class="icon-btn text-secondary hover:text-primary"
+            title="游戏规则"
+          >
+            <Icon icon="mdi:information-outline" />
+          </button>
           <input 
             v-model="msg" 
             type="text"
@@ -127,6 +134,32 @@
             class="flex-1"
           />
           <button @click="sendMessage" :disabled="!canSpeak">发送</button>
+        </div>
+
+        <!-- 规则弹窗 -->
+        <div v-if="showRules" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="showRules = false">
+          <div class="bg-surface p-6 rounded-lg shadow-xl max-w-md w-full mx-4">
+            <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
+              <Icon icon="mdi:book-open-variant" /> 游戏规则
+            </h3>
+            <ul class="space-y-2 text-sm text-secondary">
+              <li>1. 玩家分为平民和卧底，平民词语相同，卧底词语不同。</li>
+              <li>2. 玩家轮流发言，描述自己的词语，但不能直接说出词语。</li>
+              <li>3. <strong>发言计时机制：</strong>
+                <ul class="pl-4 mt-1 list-disc">
+                  <li>轮到发言时，有 <strong>5分钟</strong> 时间准备和输入。</li>
+                  <li>超时未发言将被判定为死亡（出局）。</li>
+                  <li>一旦开始发言（发送消息），剩余时间将缩短为 <strong>30秒</strong>。</li>
+                  <li>30秒内未结束发言（点击结束按钮），系统将自动结束你的发言。</li>
+                </ul>
+              </li>
+              <li>4. 所有玩家发言结束后进行投票，票数最多者出局。</li>
+              <li>5. 卧底出局则平民胜利，仅剩2人且含卧底则卧底胜利。</li>
+            </ul>
+            <button @click="showRules = false" class="mt-6 w-full bg-border text-primary py-2 rounded hover:bg-primary/90">
+              知道了
+            </button>
+          </div>
         </div>
       </section>
       
@@ -158,6 +191,7 @@ const word = ref('')
 const roomMessages = ref<string[]>([])
 const currentPlayer = computed(() => props.roomPlayer.id)
 const countdown = ref(0)
+const showRules = ref(false)
 let countdownTimer: any = null
 
 const voting = computed(() => gameStatus.value === 'voting')
@@ -186,7 +220,17 @@ function onCommand(cmd: any) {
       gameStatus.value = 'talking'
       if (countdownTimer) clearInterval(countdownTimer)
       countdown.value = 0
-      break
+      if (currentTalkPlayer.value?.id === currentPlayer.value) {
+        // 如果是自己发言，开始倒计时
+        countdown.value = 300
+        countdownTimer = setInterval(() => {
+          countdown.value--
+          if (countdown.value <= 0) {
+            clearInterval(countdownTimer)
+          }
+        }, 1000)
+      }
+      break;
     case 'talk-countdown':
       countdown.value = cmd.data.seconds
       if (countdownTimer) clearInterval(countdownTimer)
