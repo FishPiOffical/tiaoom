@@ -8,12 +8,12 @@
             v-for="(cell, colIndex) in row" 
             :key="colIndex" 
             @click="placePiece(rowIndex, colIndex)" 
-            class="relative w-[10vw] h-[10vw] md:w-6 md:h-6 flex items-center justify-center border border-white/10"
+            class="relative w-[10vw] h-[10vw] md:w-8 md:h-8 flex items-center justify-center border border-white/10"
             :class="{ 'cursor-pointer hover:bg-white/5': currentPlayer?.id === roomPlayer.id && cell === 0 }"
           >
             <span 
               v-if="cell > 0"
-              class="w-[9vw] h-[9vw] md:w-4 md:h-4 rounded-full transition-all duration-500"
+              class="w-[9vw] h-[9vw] md:w-7 md:h-7 rounded-full transition-all duration-500"
               :class="[
                 cell === 1 ? 'black-piece border border-gray-700 shadow-lg' : 'white-piece shadow-lg',
                 currentPlace?.x === rowIndex && currentPlace?.y === colIndex ? 'ring-2 ring-red-500 scale-105' : ''
@@ -25,9 +25,9 @@
       
       <!-- 当前回合 -->
       <div v-if="gameStatus === 'playing'" class="flex items-center justify-center gap-3 mt-4 text-lg">
-        <div class="w-5 h-5 flex items-center justify-center bg-surface-light rounded-full border border-border">
+        <div class="w-6 h-6 flex items-center justify-center bg-surface-light rounded-full border border-border">
           <span 
-            class="w-4 h-4 rounded-full"
+            class="w-5 h-5 rounded-full"
             :class="currentPlayer?.attributes.color === 1 ? 'bg-black border border-gray-700 shadow-md' : 'bg-white shadow-md'"
           />
         </div>

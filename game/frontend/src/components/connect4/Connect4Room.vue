@@ -1,27 +1,44 @@
 <template>
   <section class="flex flex-col md:flex-row gap-4 md:h-full">
-    <section class="flex-1 md:h-full flex flex-col items-center justify-start md:justify-center overflow-auto p-4">
+    <section class="flex-1 md:h-full flex flex-col items-center justify-start md:justify-center overflow-hidden p-4">
       <!-- 棋盘 -->
-      <div class="inline-block bg-surface-light border border-border p-2 rounded shadow-2xl m-auto">
-        <div v-for="(row, rowIndex) in board" :key="rowIndex" class="flex">
-          <div 
-            v-for="(cell, colIndex) in row" 
-            :key="colIndex" 
-            @click="placePiece(rowIndex, colIndex)" 
-            class="relative w-[10vw] h-[10vw] md:w-12 md:h-12 flex items-center justify-center border border-white/10"
-            :class="{ 
-              'cursor-pointer hover:bg-white/5': currentPlayer?.id === roomPlayer.id && cell === 0,
-              'can-place': cell === 0 
-            }"
-          >
-            <span 
-              v-if="cell > 0"
-              class="w-[8vw] h-[8vw] md:w-9 md:h-9 rounded-full transition-all duration-200"
-              :class="[
-                cell === 1 ? 'bg-black border border-gray-700 shadow-lg' : 'bg-white shadow-lg',
-                currentPlace?.x === rowIndex && currentPlace?.y === colIndex ? 'ring-2 ring-red-500 scale-90' : ''
-              ]"
-            />
+      <div class="relative inline-block bg-gray-800 p-3 rounded-lg shadow-2xl m-auto select-none">
+        <div class="flex flex-col bg-gray-700 rounded border-4 border-gray-600 overflow-hidden relative">
+          <div v-for="(row, rowIndex) in board" :key="rowIndex" class="flex">
+            <div 
+              v-for="(cell, colIndex) in row" 
+              :key="colIndex" 
+              @click="handleColumnClick(colIndex)"
+              @mouseenter="hoverCol = colIndex"
+              @mouseleave="hoverCol = -1"
+              class="relative w-12 h-12 md:w-16 md:h-16 flex items-center justify-center border border-gray-600/20"
+              :class="{ 
+                'cursor-pointer': isMyTurn && cell !== -1,
+                'bg-white/5': hoverCol === colIndex && isMyTurn
+              }"
+            >
+              <!-- 孔洞背景 -->
+              <div class="w-10 h-10 md:w-14 md:h-14 rounded-full bg-gray-900/40 shadow-inner"></div>
+
+              <!-- 真实棋子 -->
+              <transition name="drop">
+                <span 
+                  v-if="cell > 0"
+                  class="absolute w-10 h-10 md:w-14 md:h-14 rounded-full shadow-lg"
+                  :class="[
+                    cell === 1 ? 'bg-black border border-gray-700' : 'bg-white border border-gray-200',
+                    currentPlace?.x === rowIndex && currentPlace?.y === colIndex ? 'ring-2 ring-red-500' : ''
+                  ]"
+                />
+              </transition>
+
+              <!-- 预览棋子 -->
+              <span 
+                v-if="cell === 0 && hoverCol === colIndex && isMyTurn"
+                class="absolute w-10 h-10 md:w-14 md:h-14 rounded-full opacity-40"
+                :class="currentPlayer?.attributes.color === 1 ? 'bg-black' : 'bg-white'"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -161,6 +178,12 @@ const achivents = ref<Record<string, any>>({})
 const currentPlace = ref<{ x: number; y: number } | null>(null)
 const msg = ref('')
 const roomMessages = ref<string[]>([])
+const hoverCol = ref<number>(-1)
+
+const isMyTurn = computed(() => 
+  gameStatus.value === 'playing' && 
+  currentPlayer.value?.id === props.roomPlayer.id
+)
 
 // 初始化最底行为可落子位置
 board.value[board.value.length - 1] = board.value[board.value.length - 1].map(() => 0)
@@ -216,12 +239,22 @@ function getPlayerStatus(p: any) {
   return '准备好了'
 }
 
+function handleColumnClick(col: number) {
+  if (!isMyTurn.value) return
+  // 找到该列值为 0 的行 (可落子位置)
+  const row = board.value.findIndex(r => r[col] === 0)
+  if (row !== -1) {
+    placePiece(row, col)
+  }
+}
+
 function placePiece(row: number, col: number) {
   if (gameStatus.value !== 'playing') return
   if (currentPlayer.value?.id !== props.roomPlayer.id) return
   if (board.value[row][col] !== 0) return
   props.game?.command(props.roomPlayer.room.id, { type: 'place', data: { x: row, y: col } })
-  board.value[row][col] = currentPlayer.value.attributes?.color
+  // 本地乐观更新，等待服务器确认
+  // board.value[row][col] = currentPlayer.value.attributes?.color
 }
 
 function requestDraw() {
@@ -248,7 +281,18 @@ const isAllReady = computed(() => {
 </script>
 
 <style scoped>
-.can-place::after {
-  border-color: #4CAF50 !important;
+.drop-enter-active {
+  animation: drop-in 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+@keyframes drop-in {
+  0% {
+    transform: translateY(-600px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 </style>

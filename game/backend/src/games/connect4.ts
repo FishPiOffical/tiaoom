@@ -29,6 +29,11 @@ function checkFourConnect(board: number[][], y: number, player: number): false |
   const newBoard = board.map(row => row.slice());
   newBoard[x][y] = player;
 
+  // 激活上方格子
+  if (x - 1 >= 0 && newBoard[x - 1][y] === -1) {
+    newBoard[x - 1][y] = 0;
+  }
+
   // 检查四连
   const directions = [
     { dx: 0, dy: 1 },  // 横向
@@ -72,7 +77,10 @@ function checkFourConnect(board: number[][], y: number, player: number): false |
     return cnt;
   }
   for (const { dx, dy } of directions) {
-    if (count(dx, dy) >= 4) return true;
+    if (count(dx, dy) >= 4) {
+      board[x][y] = player;
+      return true;
+    }
   }
 
   return newBoard;
@@ -84,7 +92,7 @@ export default function onRoom(room: Room) {
   let currentPlayer: RoomPlayer;
   let lastLosePlayer: RoomPlayer | undefined;
   let gameStatus: 'waiting' | 'playing' = 'waiting';
-  let board: number[][] = Array.from({ length: 19 }, () => Array(19).fill(0));
+  let board: number[][] = Array.from({ length: 8 }, () => Array(8).fill(-1));
   let achivents: Record<string, { win: number; lost: number; draw: number }> = {};
 
   room.on('join', (player) => {
@@ -140,12 +148,8 @@ export default function onRoom(room: Room) {
         }
 
         const { x, y } = message.data;
-        if (board[x][y] !== 0) {
-          sender.emit('message', `[系统消息]: 该位置已有棋子，请重新落子。`);
-          break;
-        }
 
-        const color = sender.attributes?.color;
+        const color = currentPlayer.attributes?.color;
         const result = checkFourConnect(board, y, color);
 
         if (!result) {
@@ -155,6 +159,7 @@ export default function onRoom(room: Room) {
         }
 
         if (result == true) {
+          room.emit('command', { type: 'board', data: board });
           room.emit('message', `[系统消息]: 玩家 ${sender.name} 获胜！`);
           lastLosePlayer = room.validPlayers.find((p) => p.id != sender.id)!;
           gameStatus = 'waiting';

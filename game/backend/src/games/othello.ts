@@ -143,12 +143,13 @@ function isWin(board: number[][]): number | null {
 }
 
 export default function onRoom(room: Room) {
-  console.log("room:", room);
+  const size = 8;
   let messageHistory: string[] = [];
   let currentPlayer: RoomPlayer;
   let lastLosePlayer: RoomPlayer | undefined;
   let gameStatus: 'waiting' | 'playing' = 'waiting';
-  let board: number[][] = Array.from({ length: 19 }, () => Array(19).fill(0));
+  let board: number[][] = Array.from({ length: size }, () => Array(size).fill(-1));
+
   let achivents: Record<string, { win: number; lost: number; draw: number }> = {};
 
   room.on('join', (player) => {
@@ -324,7 +325,6 @@ export default function onRoom(room: Room) {
       lastLosePlayer = undefined;
     }
     currentPlayer = lastLosePlayer || room.validPlayers[0];
-    const size = 8;
     board = Array.from({ length: size }, () => Array(size).fill(-1));
     // 初始化黑白棋起始位置
     board[size / 2 - 1][size / 2 - 1] = 2; // 白

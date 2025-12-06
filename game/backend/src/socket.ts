@@ -76,15 +76,16 @@ export class SocketManager extends EventEmitter implements Message {
     else if (message.type.startsWith('room.') && message.sender) {
       const room = message.sender as Room;
       room.players.forEach(p => {
-        const socket = this.sockets.find(s => s.player.id === p.id)?.socket;
-        if (socket && socket.readyState === WebSocket.OPEN) {
-          // send to each player in the room
-          socket.send(JSON.stringify({ 
-            type: message.type, 
-            data: message.data, 
-            sender: p 
-          }));
-        }
+        this.sockets.filter(s => s.player.id === p.id).forEach(({ socket }) => {
+          if (socket && socket.readyState === WebSocket.OPEN) {
+            // send to each player in the room
+            socket.send(JSON.stringify({ 
+              type: message.type, 
+              data: message.data, 
+              sender: p 
+            }));
+          }
+        })
       });
     }
     else wsServer.clients.forEach((client) => {
