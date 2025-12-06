@@ -1,11 +1,11 @@
 <p align="center">
-  <img width="200" src="logo.png">
+  <img width="200" src="https://github.com/FishPiOffical/tiaoom/blob/master/logo.png?raw=true">
 </p>
 
 <h1 align="center">Tiaoom - a Tiaoable project</h1>
-<p align="center">组件化游戏房间管理开发包</p>
+<p align="center">轻量级游戏房间引擎</p>
+<p align="center"><a target="_blank" href="https://room-docs.adventext.fun">📃在线文档</a></p>
 
-[📃在线文档](https://room-docs.adventext.fun)
 
 ## ✨功能
 - 玩家注册与登录；
