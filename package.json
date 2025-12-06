@@ -1,6 +1,6 @@
 {
   "name": "tiaoom",
-  "version": "0.0.4",
+  "version": "0.0.6",
   "description": "",
   "main": "./src/index.cjs",
   "module": "./src/index.mjs",
@@ -14,7 +14,9 @@
   },
   "scripts": {
     "prepare": "npm run build",
-    "build": "tsdown"
+    "build": "tsdown",
+    "build:docs": "cd docs && npm run docs:build",
+    "dev:docs": "cd docs && npm run docs:dev"
   },
   "files": [
     "src",

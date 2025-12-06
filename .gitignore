@@ -2,3 +2,5 @@ node_modules
 dist
 sessions
 /src
+cache
+.DS_Store

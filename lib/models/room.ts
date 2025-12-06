@@ -9,19 +9,19 @@ export interface IRoomOptions {
   /**
    * 房间号
    */
-  id?: string, 
+  id: string, 
   /**
    * 房间名称
    */
-  name?: string,
+  name: string,
   /**
    * 房间容量
    */
-  size?: number, 
+  size: number, 
   /**
    * 最小容量
    */
-  minSize?: number,
+  minSize: number,
   /**
    * 其他属性
    */
@@ -204,6 +204,14 @@ export class Room extends EventEmitter implements IRoom {
     return this.validPlayers.length == this.size;
   }
 
+  /**
+   * 房主
+   */
+  get owner(): RoomPlayer | undefined {
+    const creator = this.players.find((player) => player.isCreator);
+    return creator;
+  }
+
   toJSON() {
     return {
       id: this.id,
@@ -222,7 +230,7 @@ export class Room extends EventEmitter implements IRoom {
 
   constructor({
     id = new Date().getTime().toString(), name = '', size = 10, minSize = 2, attrs
-  }: IRoomOptions) {
+  }: Partial<IRoomOptions>) {
     super();
     this.id = id;
     this.name = name;

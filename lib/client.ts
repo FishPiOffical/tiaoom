@@ -1,3 +1,5 @@
+import type { IRoomOptions } from "./models/room";
+
 export type TiaoomEvents = {
   /**
    * 连接准备就绪事件
@@ -293,7 +295,7 @@ export class Tiaoom {
    * @param {number} minSize 房间人数下限
    * @param {object} attrs 房间属性
    */
-  createRoom({ name, size, minSize, attrs }: { name: string, size: number, minSize: number, attrs?: Record<string, any> }) {
+  createRoom({ name, size, minSize, attrs }: IRoomOptions) {
     return new Promise<void>((resolve) => {
       this.send({ type: "room.create", data: { name, size, minSize, attrs } });
       this.on("room.create", (room) => {
