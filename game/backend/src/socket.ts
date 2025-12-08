@@ -1,16 +1,16 @@
 import http from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { EventEmitter } from "events";
-import { Room, Player, Message, MessagePackage, MessageEvents } from "tiaoom";
+import { Room, Player, IMessage, IMessagePackage, IMessageEvents, IMessageData, MessageTypes } from "tiaoom";
 
 let wsServer: WebSocketServer;
-export class SocketManager extends EventEmitter implements Message {
+export class SocketManager extends EventEmitter implements IMessage {
   sockets: Array<{ socket: WebSocket; player: Player }> = [];
   // listen on events
-  on<K extends keyof MessageEvents>(event: K, listener: MessageEvents[K]): this {
+  on<K extends keyof IMessageEvents>(event: K, listener: IMessageEvents[K]): this {
     return super.on(event as string, listener);
   }
-  emit<K extends keyof MessageEvents>(event: K, ...args: Parameters<MessageEvents[K]>): boolean {
+  emit<K extends keyof IMessageEvents>(event: K, ...args: Parameters<IMessageEvents[K]>): boolean {
     return super.emit(event as string, ...args);
   }
   // init socket manager
@@ -23,16 +23,16 @@ export class SocketManager extends EventEmitter implements Message {
       socket.on("message", (data: any) => {
         try {
           const packet = JSON.parse(data);
-          let message: MessagePackage = packet;
+          let message: IMessageData = packet;
           if (message) {
             if (message.type == 'player.login') {
               this.sockets.push({ socket, player: message.data });
             } else {
               const player = this.sockets.find(s => s.socket == socket)?.player;
-              message.sender = player;
+              if (player) message.sender = player;
             }
             this.emit("message", message, (err: Error | null, data?: any) => {
-              if (err) return socket.send(JSON.stringify({ type: 'error', data: err.message, stack: err.stack }));
+              if (err) return console.error(err);
               else socket.send(JSON.stringify({ type: message.type, data }));
             });
           }
@@ -48,7 +48,7 @@ export class SocketManager extends EventEmitter implements Message {
           this.sockets.splice(index, 1);
         }
         if (!this.sockets.some(s => s.player.id === player?.id)) 
-          this.emit("message", { type: 'player.logout', data: player });
+          this.emit("message", { type: MessageTypes.PlayerLogin, data: player, sender: player });
         this.emit("close");
       });
     });
@@ -58,7 +58,7 @@ export class SocketManager extends EventEmitter implements Message {
     wsServer.close();
   }
 
-  send(message: MessagePackage) {
+  send(message: IMessagePackage) {
     // send a message to the client
     console.log('send', message.type, message.sender)
     if (message.type.startsWith('player.') && message.sender) {

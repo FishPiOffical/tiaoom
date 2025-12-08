@@ -1,4 +1,4 @@
-import { MessagePackage, Room, RoomPlayer, RoomStatus } from "tiaoom";
+import { Room, RoomPlayer, RoomStatus } from "tiaoom";
 
 const questions = [
   ['蝴蝶', '蜜蜂'],
@@ -127,7 +127,7 @@ export default function onRoom(room: Room) {
     startTurn(nextPlayer);
   }
 
-  room.on('player-command', (message: MessagePackage) => {
+  room.on('player-command', (message: any) => {
     console.log("room message:", message);
     const sender = room.validPlayers.find((p) => p.id == message.sender?.id)!;
     /**

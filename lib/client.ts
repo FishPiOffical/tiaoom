@@ -1,3 +1,4 @@
+import { MessageTypes } from "./models/message";
 import type { IRoomOptions } from "./models/room";
 
 export type TiaoomEvents = {
@@ -14,6 +15,11 @@ export type TiaoomEvents = {
    * 连接关闭事件
    */
   "sys.close": () => void;
+  /**
+   * 全局错误事件
+   * @param error 错误信息
+   */
+  "global.error": (error: Error) => void;
   /**
    * 全局命令事件
    * @param data 命令内容
@@ -214,8 +220,8 @@ export class Tiaoom {
   run() {
     this.connect();
     this.onReady(() => {
-      this.send({ type: "room.list" });
-      this.send({ type: "player.list" });
+      this.send({ type: MessageTypes.RoomList });
+      this.send({ type: MessageTypes.PlayerList });
     });
 
     this.on("player.list", (players) => {
@@ -274,7 +280,7 @@ export class Tiaoom {
   /**
    * 发送消息实现
    */
-  send(_: { type: string, data?: any }) {
+  send(_: { type: MessageTypes, data?: any }) {
     throw new Error('Must be implement send method');
   }
 
@@ -284,7 +290,7 @@ export class Tiaoom {
    */
   login(player: Player) {
     this.currentPlayer = new Player(player);
-    this.send({ type: "player.login", data: player });
+    this.send({ type: MessageTypes.PlayerLogin, data: player });
     return this;
   }
 
@@ -297,7 +303,7 @@ export class Tiaoom {
    */
   createRoom({ name, size, minSize, attrs }: Omit<IRoomOptions, 'id'>) {
     return new Promise<void>((resolve) => {
-      this.send({ type: "room.create", data: { name, size, minSize, attrs } });
+      this.send({ type: MessageTypes.RoomCreate, data: { name, size, minSize, attrs } });
       this.on("room.create", (room) => {
         resolve();
       });
@@ -309,7 +315,7 @@ export class Tiaoom {
    * @param {string} roomId 房间ID
    */
   joinRoom(roomId: string) {
-    this.send({ type: "player.join", data: { roomId } });
+    this.send({ type: MessageTypes.RoomJoin, data: { roomId } });
     return this;
   }
 
@@ -318,7 +324,7 @@ export class Tiaoom {
    * @param {string} roomId 房间ID
    */
   leaveRoom(roomId: string) {
-    this.send({ type: "player.leave", data: { roomId } });
+    this.send({ type: MessageTypes.RoomLeave, data: { roomId } });
     return this;
   }
 
@@ -328,7 +334,7 @@ export class Tiaoom {
    * @param {string} playerId 玩家ID
    */
   kickPlayer(roomId: string, playerId: string) {
-    this.send({ type: "room.kick", data: { roomId, playerId } });
+    this.send({ type: MessageTypes.RoomKick, data: { roomId, playerId } });
     return this;
   }
 
@@ -338,7 +344,7 @@ export class Tiaoom {
    * @param {string} playerId 目标玩家ID
    */
   transferRoom(roomId: string, playerId: string) {
-    this.send({ type: "room.transfer", data: { roomId, playerId } });
+    this.send({ type: MessageTypes.RoomTransfer, data: { roomId, playerId } });
     return this;
   }
 
@@ -347,7 +353,7 @@ export class Tiaoom {
    * @param {string} id 房间ID
    */
   startGame(id: string) {
-    this.send({ type: "room.start", data: { id } });
+    this.send({ type: MessageTypes.RoomStart, data: { id } });
     return this;
   }
 
@@ -357,7 +363,7 @@ export class Tiaoom {
    * @param {boolean} isReady 是否准备
    */
   ready(roomId: string, isReady=true) {
-    this.send({ type: isReady ? "player.ready" : "player.unready", data: { roomId } });
+    this.send({ type: isReady ? MessageTypes.PlayerReady : MessageTypes.PlayerUnready, data: { roomId } });
     return this;
   }
 
@@ -371,9 +377,9 @@ export class Tiaoom {
   command(roomId: string | any, command?: any) {
     if (typeof roomId != 'string') {
       command = roomId;
-      this.send({ type: "global.command", data: command });
+      this.send({ type: MessageTypes.GlobalCommand, data: command });
     } else {
-      this.send({ type: "room.player-command", data: { id: roomId, ...command } });
+      this.send({ type: MessageTypes.PlayerCommand, data: { id: roomId, ...command } });
     }
     return this;
   }
@@ -384,6 +390,15 @@ export class Tiaoom {
    */
   onReady(cb: (...args: any[]) => void) {
     return this.on("sys.ready", cb);
+  }
+
+  /**
+   * 全局错误监听
+   * @param {function} cb 监听函数
+   */
+  onError(cb: (...args: any[]) => void) {
+    this.on("global.error", cb);
+    return this;
   }
 
   /**

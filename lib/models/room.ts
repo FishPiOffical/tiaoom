@@ -1,4 +1,4 @@
-import { IPlayer, Player, PlayerOptions, PlayerStatus } from "./player";
+import { IPlayer, Player, IPlayerOptions, PlayerStatus } from "./player";
 import EventEmitter from "events";
 import { RoomEvents } from "@lib/events";
 
@@ -73,7 +73,7 @@ export interface IRoom extends IRoomOptions {
 /**
  * 房间玩家选项接口
  */
-export interface IRoomPlayerOptions extends PlayerOptions {
+export interface IRoomPlayerOptions extends IPlayerOptions {
   /**
    * 房间Id
    */
@@ -238,7 +238,7 @@ export class Room extends EventEmitter implements IRoom {
     this.minSize = minSize;
     this.attrs = attrs;
     
-    const events: Array<keyof RoomEvents> = ['message', 'command', 'start', 'end', 'close', 'error', 'all-ready', 'player-unready', 'player-ready', 'join', 'leave'];
+    const events: Array<keyof RoomEvents> = ['message', 'command', 'start', 'end', 'close', 'all-ready', 'join', 'leave'];
     events.forEach((event) => {
       this.on(event, (...data: any) => {
         this.sender?.(event, ...data);
@@ -328,7 +328,7 @@ export class Room extends EventEmitter implements IRoom {
   /**
    * 开始游戏
    */
-  start() {
+  start(sender: IPlayer) {
     if (!this.isReady) {
       throw new Error('room is not ready.');
     }
@@ -340,7 +340,7 @@ export class Room extends EventEmitter implements IRoom {
       player.emit('status', PlayerStatus.playing);
     });
     this.emit("update", this);
-    return this.emit("start", this);
+    return this.emit("start", this, this.searchPlayer(sender)!);
   }
 
   /**

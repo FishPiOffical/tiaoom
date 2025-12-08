@@ -1,4 +1,4 @@
-import { MessagePackage, Room, RoomPlayer, RoomStatus } from "tiaoom";
+import { Room, RoomPlayer, RoomStatus } from "tiaoom";
 
 /**
  * 四子棋落子与胜负检查
@@ -100,7 +100,7 @@ export default function onRoom(room: Room) {
       type: 'achivents',
       data: achivents
     });
-  }).on('player-command', (message: MessagePackage) => {
+  }).on('player-command', (message: any) => {
     console.log("room message:", message);
     const sender = room.validPlayers.find((p) => p.id == message.sender?.id)!;
     /**

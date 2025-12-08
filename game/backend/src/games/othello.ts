@@ -1,4 +1,4 @@
-import { MessagePackage, Room, RoomPlayer, RoomStatus } from "tiaoom";
+import { Room, RoomPlayer, RoomStatus } from "tiaoom";
 
 /**
  * 检查黑白棋（Othello/Reversi）落子有效性，并返回落子后的棋盘状态
@@ -157,7 +157,7 @@ export default function onRoom(room: Room) {
       type: 'achivents',
       data: achivents
     });
-  }).on('player-command', (message: MessagePackage) => {
+  }).on('player-command', (message: any) => {
     console.log("room message:", message);
     const sender = room.validPlayers.find((p) => p.id == message.sender?.id)!;
     /**

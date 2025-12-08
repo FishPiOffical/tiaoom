@@ -4,7 +4,7 @@ import EventEmitter from "events";
 /**
  * 玩家选项接口
  */
-export interface PlayerOptions {
+export interface IPlayerOptions {
   /**
    * 玩家ID
    */
@@ -48,7 +48,7 @@ export enum PlayerStatus {
 /**
  * 玩家接口
  */
-export interface IPlayer extends PlayerOptions {
+export interface IPlayer extends IPlayerOptions {
   /**
    * 玩家状态
    */
@@ -85,7 +85,7 @@ export class Player extends EventEmitter implements IPlayer {
   status: PlayerStatus = PlayerStatus.online;
   sender?: (type: string, ...message: any) => void;
 
-  constructor({ id = new Date().getTime().toString(), name = '', attributes, sender }: PlayerOptions) {
+  constructor({ id = new Date().getTime().toString(), name = '', attributes, sender }: IPlayerOptions) {
     super();
     this.id = id;
     this.name = name;
@@ -96,7 +96,7 @@ export class Player extends EventEmitter implements IPlayer {
       this.status = status;
     });
     
-    const events: Array<keyof PlayerEvents> = ['command', 'message', 'join', 'leave', 'status'];
+    const events: Array<keyof PlayerEvents> = ['command', 'message', 'status'];
     events.forEach((event) => {
       this.on(event, (...data: any) => {
         this.sender?.(event, ...data);

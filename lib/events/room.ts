@@ -1,6 +1,6 @@
 import { IRoom, IRoomPlayer, RoomStatus } from "@lib/models/room";
 import { BaseEvents } from "./base";
-import { MessagePackage } from "..";
+import { IMessagePackage } from "..";
 
 /**
  * 房间事件定义
@@ -28,14 +28,14 @@ export interface RoomEvents extends BaseEvents {
   message: (data: string) => void;
   /**
    * 玩家发送的房间命令
-   * @param {MessagePackage} message 命令内容
+   * @param {IMessagePackage} message 命令内容
    */
-  'player-command': (message: MessagePackage) => void;
+  'player-command': (message: IMessagePackage) => void;
   /**
    * 房间命令
-   * @param {MessagePackage} message 命令内容
+   * @param {IMessagePackage} message 命令内容
    */
-  command: (message: MessagePackage) => void;
+  command: (message: any) => void;
   /**
    * 房间更新
    * @param {IRoom} room 房间信息
@@ -60,7 +60,7 @@ export interface RoomEvents extends BaseEvents {
    * 房间开始游戏
    * @param {IRoom} room 房间信息
    */
-  start: (room: IRoom) => void;
+  start: (room: IRoom, sender: IRoomPlayer) => void;
   /**
    * 房间结束游戏
    * @param {IRoom} room 房间信息

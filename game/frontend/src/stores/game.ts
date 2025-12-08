@@ -52,6 +52,9 @@ export const useGameStore = defineStore('game', () => {
     game.value = new GameCore('/ws')
     
     game.value.run()
+      .on('global.error', (err) => {
+        alert(err.message)
+      })
       .onReady(() => {
         if (player.value) {
           game.value!.login(new Player({ ...player.value, attributes: { avatar: player.value.avatar } }))

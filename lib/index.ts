@@ -1,17 +1,17 @@
 import { EventEmitter } from "events";
 import { TiaoomEvents } from "./events";
-import { Message } from "./models/message";
+import { IMessage, MessageTypes } from "./models/message";
 import { IRoom, IRoomPlayer, Room, IRoomOptions, IRoomPlayerOptions } from "./models/room";
-import { IPlayer, Player, PlayerOptions, PlayerStatus } from "./models/player";
+import { IPlayer, Player, IPlayerOptions, PlayerStatus } from "./models/player";
 
 export interface ITiaoomOptions {
-  socket: Message;
+  socket: IMessage;
 }
 
 export class Tiaoom extends EventEmitter {
   rooms: Room[] = []; // room list
   players: Player[] = []; // player list
-  messageInstance?: Message;
+  messageInstance?: IMessage;
 
   constructor({ socket }: ITiaoomOptions) {
     super();
@@ -70,40 +70,45 @@ export class Tiaoom extends EventEmitter {
         }
       } catch (error) {
         cb?.(error as Error);
+        this.messageInstance?.send({
+          type: MessageTypes.GlobalError,
+          data: error,
+          sender: message.sender,
+        });
       }
     });
 
     this.on('player', (player, online) => {
-      this.messageInstance?.send({ type: online ? 'player.login' : 'player.logout', data: player });
+      this.messageInstance?.send({ type: online ? MessageTypes.PlayerLogin : MessageTypes.PlayerLogout, data: player });
     });
 
     this.on('players', (players) => {
-      this.messageInstance?.send({ type: 'player.list', data: players });
+      this.messageInstance?.send({ type: MessageTypes.PlayerList, data: players });
     });
 
     this.on('room', (room) => {
-      this.messageInstance?.send({ type: 'room.create', data: room });
+      this.messageInstance?.send({ type: MessageTypes.RoomCreate, data: room });
     });
 
     this.on('room-player', (room) => {
-      this.messageInstance?.send({ type: 'room.update', data: room });
+      this.messageInstance?.send({ type: MessageTypes.RoomUpdate, data: room });
     });
 
     this.on('rooms', (rooms) => {
-      this.messageInstance?.send({ type: 'room.list', data: rooms });
+      this.messageInstance?.send({ type: MessageTypes.RoomList, data: rooms });
     });
 
     this.on('command', (data) => {
-      this.messageInstance?.send({ type: 'global.command', data });
+      this.messageInstance?.send({ type: MessageTypes.GlobalCommand, data });
     });
 
     return this;
   }
 
   searchPlayer(player: string): Player | undefined;
-  searchPlayer(player: PlayerOptions | IRoomPlayerOptions): Player | undefined;
+  searchPlayer(player: IPlayerOptions | IRoomPlayerOptions): Player | undefined;
 
-  searchPlayer(player: PlayerOptions | IRoomPlayerOptions | string) {
+  searchPlayer(player: IPlayerOptions | IRoomPlayerOptions | string) {
     const playerId = typeof player === "string" ? player : player.id;
     return this.players.find((target) => target.id === playerId);
   }
@@ -131,7 +136,7 @@ export class Tiaoom extends EventEmitter {
 
     const room = new Room(options);
     room.setSender((type, message) => {
-      this.messageInstance?.send({ type: `room.${type}`, data: message, sender: room });
+      this.messageInstance?.send({ type: `room.${type}` as MessageTypes, data: message, sender: room });
     });
     
     this.emit("room", room);
@@ -146,7 +151,7 @@ export class Tiaoom extends EventEmitter {
     if (!roomInstance) {
       throw new Error('room not found.');
     }
-    roomInstance.start();
+    roomInstance.start(sender);
 
     return this.emit("room-player", roomInstance);
   }
@@ -217,12 +222,12 @@ export class Tiaoom extends EventEmitter {
     return room;
   }
 
-  loginPlayer (player: PlayerOptions, cb?: (data: { player: Player }) => void): Player {
+  loginPlayer (player: IPlayerOptions, cb?: (data: { player: Player }) => void): Player {
     let playerInstance = this.searchPlayer(player);
     if (!playerInstance) {
       playerInstance = new Player(player);
       playerInstance.setSender((type, message) => {
-        this.messageInstance?.send({ type: `player.${type}`, data: message, sender: playerInstance });
+        this.messageInstance?.send({ type: `player.${type}` as MessageTypes, data: message, sender: playerInstance });
       });
       this.players.push(playerInstance);
       this.emit("player", playerInstance, true);
