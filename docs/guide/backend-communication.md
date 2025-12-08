@@ -1,6 +1,6 @@
 # 后端通信实现
 
-Tiaoom 的后端通信核心在于 [`IMessage`](/api/models#imessage) 接口的实现。通过实现该接口，你可以适配不同的通信协议（如 WebSocket、Socket.IO 等）。
+Tiaoom 的后端通信核心在于 [`IMessage`](/api/models#imessage) 接口的实现。通过实现该接口，你可以适配不同的通信协议（如 WebSocket、Socket.IO，RPC 等）。
 
 ## [`IMessage`](/api/models#imessage) 接口
 
