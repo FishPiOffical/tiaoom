@@ -45,8 +45,8 @@
 
 | 事件名 | 参数 | 描述 |
 | :--- | :--- | :--- |
-| `message` | <code>(message: <a href="./models.md#messagepackage">MessagePackage</a>)</code> | 当收到消息包时触发。 |
-| `open` | <code>()</code> | 当连接打开时触发。 |
+| `message` | <code>(message: <a href="./models.md#imessagedata">IMessageData</a>)</code> | 当收到消息包时触发。 |
+| `ready` | <code>()</code> | 当连接建立完成时触发。 |
 | `close` | <code>()</code> | 当连接关闭时触发。 |
 | `error` | <code>(error: Error)</code> | 当发生错误时触发。 |
 

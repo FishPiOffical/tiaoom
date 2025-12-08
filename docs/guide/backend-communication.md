@@ -7,17 +7,17 @@ Tiaoom 的后端通信核心在于 [`IMessage`](/api/models#imessage) 接口的�
 [`IMessage`](/api/models#imessage) 接口定义了后端通信类必须具备的基本能力，包括事件监听、消息发送和连接管理。
 
 ```typescript
-export interface IMessage extends EventEmitter {
+export interface IMessage extends EventEmitter<IMessageEmitterEvents> {
   /**
-   * 监听消息事件
-   * @param event 事件名
+   * 监听消息事件，继承自 EventEmitter，无需手动实现
+   * @param event 事件名，具体见 MessageEvents
    * @param listener 监听器
    */
   on<K extends keyof IMessageEvents>(event: K, listener: IMessageEvents[K]): this;
   
   /**
-   * 触发消息事件
-   * @param event 事件名
+   * 触发消息事件，继承自 EventEmitter，无需手动实现
+   * @param event 事件名，具体见 MessageEvents
    * @param args 参数
    */
   emit<K extends keyof IMessageEvents>(event: K, ...args: Parameters<IMessageEvents[K]>): boolean;

@@ -1,18 +1,11 @@
 import http from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { EventEmitter } from "events";
-import { Room, Player, IMessage, IMessagePackage, IMessageEvents, IMessageData, MessageTypes } from "tiaoom";
+import { Room, Player, IMessage, IMessagePackage, IMessageEmitterEvents, IMessageData, MessageTypes } from "tiaoom";
 
 let wsServer: WebSocketServer;
-export class SocketManager extends EventEmitter implements IMessage {
+export class SocketManager extends EventEmitter<IMessageEmitterEvents> implements IMessage {
   sockets: Array<{ socket: WebSocket; player: Player }> = [];
-  // listen on events
-  on<K extends keyof IMessageEvents>(event: K, listener: IMessageEvents[K]): this {
-    return super.on(event as string, listener);
-  }
-  emit<K extends keyof IMessageEvents>(event: K, ...args: Parameters<IMessageEvents[K]>): boolean {
-    return super.emit(event as string, ...args);
-  }
   // init socket manager
   constructor(server: http.Server) {
     super();

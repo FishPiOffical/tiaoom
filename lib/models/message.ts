@@ -1,7 +1,7 @@
 import EventEmitter from "events";
 import { IPlayer, IPlayerOptions } from "./player";
 import { IRoom, IRoomPlayer, IRoomOptions } from "./room";
-import { IMessageEvents } from "@lib/events/message";
+import { IMessageEmitterEvents, IMessageEvents } from "@lib/events/message";
 
 /**
  * 消息包类型枚举
@@ -142,7 +142,7 @@ export interface IMessageData extends IMessagePackage {
 /**
  * 消息通信接口
  */
-export interface IMessage extends EventEmitter {
+export interface IMessage extends EventEmitter<IMessageEmitterEvents> {
   /**
    * 监听消息事件
    * @param event 事件名，具体见 MessageEvents
