@@ -192,6 +192,7 @@ client.on('room.list', (rooms) => {
 });
 
 // 主动请求房间列表（通常在连接建立后会自动推送，也可以手动触发）
+// 值会在 `room.list` 事件中返回
 client.send({ type: 'room.list' });
 
 // 获取当前房间列表的快照
@@ -211,6 +212,7 @@ client.on('player.list', (players) => {
 });
 
 // 主动请求玩家列表（通常在连接建立后会自动推送，也可以手动触发）
+// 值会在 `player.list` 事件中返回
 client.send({ type: 'player.list' });
 
 // 获取当前在线玩家的快照
