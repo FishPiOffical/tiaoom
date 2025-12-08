@@ -192,6 +192,8 @@ client.on('room.list', (rooms) => {
 });
 
 // 主动请求房间列表（通常在连接建立后会自动推送，也可以手动触发）
+client.send({ type: 'room.list' });
+
 // 注意：Tiaoom 默认会在连接建立后自动推送一次 room.list
 ```
 
