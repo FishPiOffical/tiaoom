@@ -48,7 +48,7 @@ export class SocketManager extends EventEmitter implements IMessage {
           this.sockets.splice(index, 1);
         }
         if (!this.sockets.some(s => s.player.id === player?.id)) 
-          this.emit("message", { type: MessageTypes.PlayerLogin, data: player, sender: player });
+          this.emit("message", { type: MessageTypes.PlayerLogout, data: player, sender: player });
         this.emit("close");
       });
     });

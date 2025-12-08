@@ -9,9 +9,9 @@ Tiaoom 不绑定具体的网络协议，你需要实现 `Message` 接口来适�
 ```typescript
 import { WebSocketServer, WebSocket } from "ws";
 import { EventEmitter } from "events";
-import { Message, MessagePackage, MessageEvents, Player, Room } from "tiaoom";
+import { IMessage, MessageTypes, IMessagePackage, MessageEvents, Player, Room } from "tiaoom";
 
-export class SocketManager extends EventEmitter implements Message {
+export class SocketManager extends EventEmitter implements IMessage {
   sockets: Array<{ socket: WebSocket; player: Player }> = [];
 
   constructor(server: any) {
@@ -35,7 +35,7 @@ export class SocketManager extends EventEmitter implements Message {
           
           // 触发 message 事件供 Tiaoom 处理
           this.emit("message", packet, (err, data) => {
-            if (err) socket.send(JSON.stringify({ type: 'error', data: err.message }));
+            if (err) console.error(err); // 消息处理错误，会通过 global.error 事件通知到前端
             else socket.send(JSON.stringify({ type: packet.type, data }));
           });
         } catch (err) {
@@ -51,7 +51,7 @@ export class SocketManager extends EventEmitter implements Message {
           this.sockets.splice(index, 1);
           // 如果玩家所有连接都断开，通知 Tiaoom
           if (!this.sockets.some(s => s.player.id === player.id)) {
-            this.emit("message", { type: 'player.logout', data: player });
+            this.emit("message", { type: MessageTypes.PlayerLogout, data: player });
           }
         }
         this.emit("close");
@@ -60,7 +60,11 @@ export class SocketManager extends EventEmitter implements Message {
   }
 
   // 实现 send 方法，将消息路由到正确的客户端
-  send(message: MessagePackage) {
+  // 消息类型有三种情况：
+  // 1. 发送给特定玩家（player. 开头），message.sender 是 Player
+  // 2. 发送给房间内所有玩家（room. 开头），message.sender 是 Room
+  // 3. 广播给所有连接（其他情况）
+  send(message: IMessagePackage) {
     const payload = JSON.stringify({ 
       type: message.type, 
       data: message.data, 
@@ -85,7 +89,9 @@ export class SocketManager extends EventEmitter implements Message {
     }
   }
   
-  close() { /* 关闭服务器逻辑 */ }
+  close() { 
+    /* 关闭服务器逻辑 */
+  }
 }
 ```
 

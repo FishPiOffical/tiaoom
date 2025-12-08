@@ -2,7 +2,7 @@
 
 这里详细列出了 `tiaoom` 中使用的数据模型接口。
 
-## Player (玩家)
+## Player (玩家) {#player}
 
 ### IPlayer
 
@@ -15,7 +15,7 @@
 | `attributes` | `any` | 玩家的属性集合（可选）。 |
 | `status` | [`PlayerStatus`](#playerstatus) | 玩家的当前状态。 |
 
-### PlayerOptions
+### IPlayerOptions
 
 创建玩家时的选项接口。
 
@@ -37,7 +37,7 @@
 | `unready` | `'unready'` | 玩家取消准备。 |
 | `gaming` | `'gaming'` | 玩家正在游戏中。 |
 
-## Room (房间)
+## Room (房间) {#room}
 
 ### IRoom
 
@@ -94,17 +94,27 @@
 | `ready` | `'ready'` | 所有玩家已准备。 |
 | `playing` | `'playing'` | 游戏进行中。 |
 
-## Message (消息)
+## IMessage (消息) {#imessage}
 
-### MessagePackage
+### IMessagePackage
 
-消息包接口，用于在客户端和服务器之间传输数据。
+消息包接口，用于在服务器给客户发送数据。
 
 | 属性名 | 类型 | 描述 |
 | :--- | :--- | :--- |
 | `type` | [`MessageTypes`](#messagetypes) \| `string` | 消息类型。 |
 | `data` | `any` (可选) | 消息数据，可以是 `PlayerOptions`, `IRoomOptions`, `IPlayer`, `IRoom`, `IRoomPlayer` 等。 |
 | `sender` | [`IPlayer`](#iplayer) \| [`IRoom`](#iroom) \| [`IRoomPlayer`](#iroomplayer) (可选) | 消息发送者。 |
+
+### IMessageData
+
+消息包接口，用于在服务器接收客户端发送的数据。（必定包含发送者信息）
+
+| 属性名 | 类型 | 描述 |
+| :--- | :--- | :--- |
+| `type` | [`MessageTypes`](#messagetypes) \| `string` | 消息类型。 |
+| `data` | `any` (可选) | 消息数据，可以是 `PlayerOptions`, `IRoomOptions`, `IPlayer`, `IRoom`, `IRoomPlayer` 等。 |
+| `sender` | [`IPlayer`](#iplayer) \| [`IRoom`](#iroom) \| [`IRoomPlayer`](#iroomplayer) | 消息发送者。 |
 
 ### MessageTypes
 
@@ -114,19 +124,23 @@
 | :--- | :--- | :--- |
 | `RoomList` | `'room.list'` | 房间列表更新。 |
 | `RoomCreate` | `'room.create'` | 创建房间。 |
-| `RoomReady` | `'room.ready'` | 房间准备。 |
+| `RoomUpdate` | `'room.update'` | 更新房间信息。 |
+| `RoomReady` | `'room.ready'` | 房间准备就绪。 |
 | `RoomStart` | `'room.start'` | 房间开始游戏。 |
 | `RoomEnd` | `'room.end'` | 房间结束游戏。 |
 | `RoomClose` | `'room.close'` | 房间关闭。 |
-| `RoomAllReady` | `'room.allready'` | 房间内所有玩家已准备。 |
+| `RoomAllReady` | `'room.all-ready'` | 房间内所有玩家已准备。 |
 | `RoomCommand` | `'room.command'` | 房间命令。 |
 | `RoomMessage` | `'room.message'` | 房间消息。 |
-| `PlayerOffline` | `'player.offline'` | 玩家离线。 |
+| `RoomJoin` | `'room.join'` | 玩家加入房间。 |
+| `RoomLeave` | `'room.leave'` | 玩家离开房间。 |
+| `RoomPlayerReady` | `'room.player-ready'` | 房间内玩家准备。 |
+| `RoomPlayerUnready` | `'room.player-unready'` | 房间内玩家取消准备。 |
 | `PlayerList` | `'player.list'` | 玩家列表更新。 |
 | `PlayerLogin` | `'player.login'` | 玩家登录。 |
 | `PlayerLogout` | `'player.logout'` | 玩家登出。 |
-| `PlayerJoin` | `'player.join'` | 玩家加入房间。 |
-| `PlayerLeave` | `'player.leave'` | 玩家离开房间。 |
-| `PlayerReady` | `'player.ready'` | 玩家准备。 |
-| `PlayerUnready` | `'player.unready'` | 玩家取消准备。 |
+| `PlayerMessage` | `'player.message'` | 玩家消息。 |
 | `PlayerCommand` | `'player.command'` | 玩家命令。 |
+| `GlobalCommand` | `'global.command'` | 全局命令。 |
+| `GlobalMessage` | `'global.message'` | 全局消息。 |
+| `GlobalError` | `'global.error'` | 全局错误。 |

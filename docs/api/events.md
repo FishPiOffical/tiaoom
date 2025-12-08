@@ -23,8 +23,8 @@
 | `leave` | <code>(player: <a href="./models.md#iroomplayer">IRoomPlayer</a>)</code> | 当玩家离开房间时触发。 |
 | `ready` | <code>(player: <a href="./models.md#iroomplayer">IRoomPlayer</a>)</code> | 当玩家准备时触发。 |
 | `unready` | <code>(player: <a href="./models.md#iroomplayer">IRoomPlayer</a>)</code> | 当玩家取消准备时触发。 |
-| `start` | <code>()</code> | 当房间开始游戏时触发。 |
-| `close` | <code>()</code> | 当房间关闭时触发。 |
+| `start` | <code>(room: <a href="./models.md#iroom">IRoom</a>, sender: <a href="./models.md#iroomplayer">IRoomPlayer</a>)</code> | 当房间开始游戏时触发。 |
+| `end` | <code>(room: <a href="./models.md#iroom">IRoom</a>)</code> | 当房间关闭时触发。 |
 | `message` | <code>(message: any)</code> | 当房间收到消息时触发。 |
 | `player-ready` | <code>(player: <a href="./models.md#iroomplayer">IRoomPlayer</a>)</code> | 当玩家准备时触发（包含玩家信息）。 |
 | `player-unready` | <code>(player: <a href="./models.md#iroomplayer">IRoomPlayer</a>)</code> | 当玩家取消准备时触发（包含玩家信息）。 |
