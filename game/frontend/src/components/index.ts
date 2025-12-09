@@ -1,4 +1,5 @@
 import type { App, Component } from 'vue'
+import type { Player } from 'tiaoom/client';
 
 const modules = import.meta.glob('./*/*.vue', { eager: true });
 const components: Record<string, Component> = {};
@@ -11,4 +12,9 @@ export function registerGameComponents(app: App) {
   for (const [name, component] of Object.entries(components)) {
     app.component(name, component)
   }
+}
+
+export interface IMessage {
+  content: string;
+  sender?: Player;
 }

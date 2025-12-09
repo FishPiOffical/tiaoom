@@ -88,7 +88,7 @@ function checkFourConnect(board: number[][], y: number, player: number): false |
 
 export default function onRoom(room: Room) {
   console.log("room:", room);
-  let messageHistory: { message: string, sender?: IRoomPlayer }[] = [];
+  let messageHistory: { content: string, sender?: IRoomPlayer }[] = [];
   let currentPlayer: RoomPlayer;
   let lastLosePlayer: RoomPlayer | undefined;
   let gameStatus: 'waiting' | 'playing' = 'waiting';
@@ -290,7 +290,7 @@ export default function onRoom(room: Room) {
     console.log("room end");
     room.emit('command', { type: 'end' });
   }).on('message', (message: { content: string; sender?: IRoomPlayer }) => {
-    messageHistory.unshift({ message: message.content, sender: message.sender });
+    messageHistory.unshift(message);
     if (messageHistory.length > 100) messageHistory.splice(messageHistory.length - 100);
   });
 }

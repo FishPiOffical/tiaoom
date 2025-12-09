@@ -30,7 +30,7 @@ const questions = [
 export default function onRoom(room: Room) {
   console.log("room:", room);
   let words: string[] = [];
-  let messageHistory: { message: string, sender?: IRoomPlayer }[] = [];
+  let messageHistory: { content: string, sender?: IRoomPlayer }[] = [];
   const alivePlayers: RoomPlayer[] = [];
   let currentTalkPlayer: RoomPlayer;
   let spyPlayer: RoomPlayer;
@@ -291,7 +291,7 @@ export default function onRoom(room: Room) {
     }
     room.emit('command', { type: 'end' });
   }).on('message', (message: { content: string, sender?: IRoomPlayer }) => {
-    messageHistory.unshift({ message: message.content, sender: message.sender });
+    messageHistory.unshift(message);
     if (messageHistory.length > 100) messageHistory.splice(messageHistory.length - 100);
   });
 }

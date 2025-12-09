@@ -120,32 +120,19 @@
           <button @click="sendTalked" class="btn block btn-accent">
             结束发言 {{ countdown > 0 ? `(${countdown}s)` : '' }}
           </button>
-          <hr class="border-border" />
+          <hr class="border-base-content/20" />
         </div>        
         
-        <!-- 聊天 -->
-        <div class="flex">
-          <button 
-            @click="rulesModal?.open()" 
-            class="btn-ghost cursor-pointer bg-transparent border-none px-2!"
-            title="游戏规则"
-          >
-            <Icon icon="mdi:information-outline" />
-          </button>
-          <div v-if="roomPlayer.role === 'player'" class="join w-full">
-            <input 
-              v-model="msg" 
-              type="text"
-              @keyup.enter="sendMessage" 
-              placeholder="聊天或说明你的词语" 
-              class="flex-1 input join-item"
-            />
-            <button class="btn join-item" @click="sendMessage" :disabled="!canSpeak">发送</button>
-          </div>
-        </div>
-
-        <!-- 规则弹窗 -->
-        <RulesModal ref="rulesModal">
+      </section>
+      
+      <GameChat 
+        :messages="roomMessages" 
+        :room-player="roomPlayer" 
+        :can-send="canSpeak"
+        placeholder="聊天或说明你的词语"
+        @send="sendMessage"
+      >
+        <template #rules>
           <ul class="space-y-2 text-sm ">
             <li>1. 玩家分为平民和卧底，平民词语相同，卧底词语不同。</li>
             <li>2. 玩家轮流发言，描述自己的词语，但不能直接说出词语。</li>
@@ -160,12 +147,8 @@
             <li>4. 所有玩家发言结束后进行投票，票数最多者出局。</li>
             <li>5. 卧底出局则平民胜利，仅剩2人且含卧底则卧底胜利。</li>
           </ul>
-        </RulesModal>
-      </section>
-      
-      <section class="bg-base-300/30 p-3 rounded h-48 overflow-auto border border-base-content/20 flex-1">
-        <p v-for="(m, i) in roomMessages" :key="i" class="text-sm text-primary/90 mb-1">{{ m }}</p>
-      </section>
+        </template>
+      </GameChat>
     </aside>
   </section>
 </template>
@@ -173,8 +156,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { GameCore } from '@/core/game'
-import type { RoomPlayer, Room, Player } from 'tiaoom/client';
-import RulesModal from '@/components/rule/RulesModal.vue'
+import type { RoomPlayer, Room } from 'tiaoom/client';
+import GameChat from '@/components/common/GameChat.vue'
+import { IMessage } from '..';
 
 type SpyRoomPlayer = RoomPlayer & { isDead?: boolean }
 
@@ -187,12 +171,10 @@ const canVotePlayer = ref<string[]>([])
 const currentTalkPlayer = ref<any>(null)
 const voted = ref(false)
 const gameStatus = ref<'waiting' | 'talking' | 'voting'>('waiting')
-const msg = ref('')
 const word = ref('')
-const roomMessages = ref<string[]>([])
+const roomMessages = ref<IMessage[]>([])
 const currentPlayer = computed(() => props.roomPlayer.id)
 const countdown = ref(0)
-const rulesModal = ref<InstanceType<typeof RulesModal> | null>(null)
 let countdownTimer: any = null
 
 const voting = computed(() => gameStatus.value === 'voting')
@@ -208,8 +190,8 @@ props.game?.onRoomStart(() => {
 }).onRoomEnd(() => {
   gameStatus.value = 'waiting'
   currentTalkPlayer.value = null
-}).onCommand(onCommand).onPlayMessage((msg: { content: string, sender?: Player }) => {
-  roomMessages.value.unshift(`[${msg.sender?.name || '系统'}]: ${msg.content}`)
+}).onCommand(onCommand).onPlayMessage((msg: IMessage) => {
+  roomMessages.value.unshift(msg)
 })
 
 function onCommand(cmd: any) {
@@ -270,13 +252,13 @@ function onCommand(cmd: any) {
           if (p) p.isDead = true
         }
       }
-      roomMessages.value = (cmd.data.messageHistory || []).map((m: any) => `[${m.sender?.name || '系统'}]: ${m.message}`)
+      roomMessages.value = cmd.data.messageHistory || [];
       break
     case 'voted':
       voted.value = true
       break
     case 'dead':
-      if (cmd.data.player.id === currentPlayer.value) {
+      if (cmd.data.player.id === currentPlayer.value && !props.roomPlayer.isDead ) {
         alert('你已出局')
         props.roomPlayer.isDead = true
       }
@@ -296,10 +278,8 @@ function getPlayerStatus(p: any) {
   return '准备好了'
 }
 
-function sendMessage() {
-  if (!msg.value.trim()) return
-  props.game?.command(props.roomPlayer.room.id, { type: 'say', data: msg.value })
-  msg.value = ''
+function sendMessage(text: string) {
+  props.game?.command(props.roomPlayer.room.id, { type: 'say', data: text })
 }
 
 function sendTalked() {

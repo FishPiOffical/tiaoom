@@ -150,48 +150,31 @@
         
         <hr class="border-border" />
         
-        <!-- 聊天 -->
-        <div class="flex">
-          <button 
-            @click="rulesModal?.open()" 
-            class="btn-ghost cursor-pointer bg-transparent border-none px-2!"
-            title="游戏规则"
-          >
-            <Icon icon="mdi:information-outline" />
-          </button>
-          <div v-if="roomPlayer.role === 'player'" class="join w-full">
-            <input 
-              v-model="msg" 
-              type="text"
-              @keyup.enter="sendMessage" 
-              placeholder="随便聊聊" 
-              class="flex-1 input join-item"
-            />
-            <button class="btn join-item" @click="sendMessage">发送</button>
-          </div>
-        </div>
-
-        <RulesModal ref="rulesModal">
+      </section>
+      
+      <GameChat 
+        :messages="roomMessages" 
+        :room-player="roomPlayer" 
+        @send="sendMessage"
+      >
+        <template #rules>
           <ul class="space-y-2 text-sm">
             <li>1. 双方轮流在任意一列落子，棋子会落到该列最下方。</li>
             <li>2. 先在横、竖、斜方向连成4子者获胜。</li>
             <li>3. 若棋盘填满仍未分胜负，则为平局。</li>
           </ul>
-        </RulesModal>
-      </section>
-      
-      <section class="bg-base-300/30 p-3 rounded h-48 overflow-auto border border-base-content/20 flex-1">
-        <p v-for="(m, i) in roomMessages" :key="i" class="text-sm text-primary/90">{{ m }}</p>
-      </section>
+        </template>
+      </GameChat>
     </aside>
   </section>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import type { RoomPlayer, Room, Player } from 'tiaoom/client';
+import type { RoomPlayer, Room } from 'tiaoom/client';
 import type { GameCore } from '@/core/game'
-import RulesModal from '@/components/rule/RulesModal.vue'
+import GameChat from '@/components/common/GameChat.vue'
+import { IMessage } from '..';
 
 const props = defineProps<{
   roomPlayer: RoomPlayer & { room: Room }
@@ -203,10 +186,8 @@ const currentPlayer = ref<any>()
 const board = ref(Array(8).fill(0).map(() => Array(8).fill(-1)))
 const achivents = ref<Record<string, any>>({})
 const currentPlace = ref<{ x: number; y: number } | null>(null)
-const msg = ref('')
-const roomMessages = ref<string[]>([])
+const roomMessages = ref<IMessage[]>([])
 const hoverCol = ref<number>(-1)
-const rulesModal = ref<InstanceType<typeof RulesModal> | null>(null)
 
 const isMyTurn = computed(() => 
   gameStatus.value === 'playing' && 
@@ -223,8 +204,8 @@ props.game?.onRoomStart(() => {
 }).onRoomEnd(() => {
   gameStatus.value = 'waiting'
   currentPlayer.value = null
-}).onCommand(onCommand).onPlayMessage((msg: { content: string, sender?: Player }) => {
-  roomMessages.value.unshift(`[${msg.sender?.name || '系统'}]: ${msg.content}`)
+}).onCommand(onCommand).onPlayMessage((msg: IMessage) => {
+  roomMessages.value.unshift(msg)
 })
 
 function onCommand(cmd: any) {
@@ -234,7 +215,7 @@ function onCommand(cmd: any) {
     case 'status':
       gameStatus.value = cmd.data.status
       currentPlayer.value = cmd.data.current
-      roomMessages.value = (cmd.data.messageHistory || []).map((m: any) => `[${m.sender?.name || '系统'}]: ${m.message}`)
+      roomMessages.value = cmd.data.messageHistory;
       board.value = cmd.data.board
       achivents.value = cmd.data.achivents || {}
       break
@@ -295,10 +276,8 @@ function requestLose() {
   props.game?.command(props.roomPlayer.room.id, { type: 'request-lose' })
 }
 
-function sendMessage() {
-  if (!msg.value.trim()) return
-  props.game?.command(props.roomPlayer.room.id, { type: 'say', data: msg.value })
-  msg.value = ''
+function sendMessage(text: string) {
+  props.game?.command(props.roomPlayer.room.id, { type: 'say', data: text })
 }
 
 const isRoomFull = computed(() => {
