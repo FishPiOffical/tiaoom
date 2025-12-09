@@ -83,7 +83,7 @@ export class SocketManager extends EventEmitter<IMessageEmitterEvents> implement
     }
     else wsServer.clients.forEach((client) => {
       if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify({ type: message.type, data: message.data }));
+        client.send(JSON.stringify(message));
       }
     });
   }

@@ -98,6 +98,11 @@ export type TiaoomEvents = {
    */
   "global.command": (data: any & { sender: Player }) => void;
   /**
+   * 全局消息事件
+   * @param message 消息内容
+   */
+  "global.message": (message: string, sender?: Player) => void;
+  /**
    * 玩家列表更新事件
    * @param players 玩家列表
    */
@@ -128,7 +133,7 @@ export type TiaoomEvents = {
    * 玩家消息事件
    * @param message 消息内容
    */
-  "player.message": (message: string, sender?: Player) => void;
+  "player.message": (message: { content: string, sender?: Player }) => void;
   /**
    * 房间列表更新事件
    * @param rooms 房间列表
@@ -185,7 +190,7 @@ export type TiaoomEvents = {
    * 房间消息事件
    * @param message 消息内容
    */
-  "room.message": (message: string, sender?: RoomPlayer ) => void;
+  "room.message": (message: { content: string; sender?: RoomPlayer }) => void;
   /**
    * 房间玩家准备事件
    * @param player 玩家信息
@@ -474,6 +479,16 @@ export class Tiaoom {
   }
 
   /**
+   * 全局消息监听
+   * @param {function} cb 监听函数
+   */
+  onMessage(cb: (message: string, sender?: Player) => void, on=true) {
+    if (on) this.on("global.message", cb);
+    else this.off("global.message", cb);
+    return this;
+  }
+
+  /**
    * 玩家列表变更监听
    * @param {function} cb 监听函数
    */
@@ -605,7 +620,7 @@ export class Tiaoom {
    * @param {boolean} on 开启/关闭监听
    * @returns 
    */
-  onRoomMessage(cb: (message: string, sender?: RoomPlayer) => void, on=true) {
+  onRoomMessage(cb: (message: { content: string, sender?: RoomPlayer }) => void, on=true) {
     if (on) this.on("room.message", cb);
     else this.off("room.message", cb);
     return this;
@@ -617,7 +632,7 @@ export class Tiaoom {
    * @param {boolean} on 开启/关闭监听
    * @returns 
    */
-  onPlayerMessage(cb: (message: string, sender?: Player) => void, on=true) {
+  onPlayerMessage(cb: (message: { content: string, sender?: Player }) => void, on=true) {
     if (on) this.on("player.message", cb);
     else this.off("player.message", cb);
     return this;

@@ -42,9 +42,10 @@ export class Controller extends Tiaoom {
         console.log("room empty, close it.");
         this.closeRoom({} as IPlayer, room);
       }
-    }).on("command", (data: any & { sender: Player }) => {
-      if (data.type === 'say') {
-        this.messages.push({ data: `[${data.sender.name}]: ${data.data}`, sender: data.sender });
+    }).on("command", (command: any & { sender: Player }) => {
+      if (command.type === 'say') {
+        this.messages.push({ data: `[${command.sender.name}]: ${command.data}`, sender: command.sender });
+        this.emit('message', command.data, command.sender);
       }
     }).on("error", (error: any) => {
       console.log("error:", error);

@@ -134,7 +134,7 @@ export class Tiaoom extends EventEmitter {
     }
 
     const room = new Room(options);
-    room.setSender((type, message) => {
+    room.setSender((type, message, sender) => {
       this.messageInstance?.send({ type: `room.${type}` as MessageTypes, data: message, sender: room });
     });
     

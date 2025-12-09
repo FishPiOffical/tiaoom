@@ -340,7 +340,7 @@ export class Room extends EventEmitter implements IRoom {
       player.emit('status', PlayerStatus.playing);
     });
     this.emit("update", this);
-    return this.emit("start", this, this.searchPlayer(sender)!);
+    return this.emit("start", this);
   }
 
   /**

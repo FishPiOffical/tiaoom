@@ -213,8 +213,8 @@ props.game?.onRoomStart(() => {
 }).onRoomEnd(() => {
   gameStatus.value = 'waiting'
   currentTalkPlayer.value = null
-}).onCommand(onCommand).onMessage((msg: string, sender?: Player) => {
-  roomMessages.value.unshift(`[${sender?.name || '系统'}]: ${msg}`)
+}).onCommand(onCommand).onPlayMessage((msg: { content: string, sender?: Player }) => {
+  roomMessages.value.unshift(`[${msg.sender?.name || '系统'}]: ${msg.content}`)
 })
 
 function onCommand(cmd: any) {

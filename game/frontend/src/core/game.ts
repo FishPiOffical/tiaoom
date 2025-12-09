@@ -100,7 +100,7 @@ export class GameCore extends Tiaoom {
    * @param {boolean} on 开启/关闭监听
    * @returns 
    */
-  onMessage(cb: (message: string, sender?: Player) => void, on=true) {
+  onPlayMessage(cb: (message: { content: string, sender?: Player }) => void, on=true) {
     this.onPlayerMessage(cb, on);
     this.onRoomMessage(cb, on);
     return this;

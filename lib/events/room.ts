@@ -25,7 +25,7 @@ export interface RoomEvents extends BaseEvents {
    * 房间聊天
    * @param {string} data 消息内容
    **/ 
-  message: (data: string, sender?: IRoomPlayer) => void;
+  message: (data: { content: string; sender?: IRoomPlayer }) => void;
   /**
    * 玩家发送的房间命令
    * @param {IMessagePackage} message 命令内容
@@ -60,7 +60,7 @@ export interface RoomEvents extends BaseEvents {
    * 房间开始游戏
    * @param {IRoom} room 房间信息
    */
-  start: (room: IRoom, sender: IRoomPlayer) => void;
+  start: (room: IRoom) => void;
   /**
    * 房间结束游戏
    * @param {IRoom} room 房间信息

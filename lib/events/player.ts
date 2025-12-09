@@ -20,5 +20,5 @@ export interface PlayerEvents extends BaseEvents {
    * @param {string} data 消息内容
    * @param {Player} [sender] 发送者信息（可选）
    **/ 
-  message: (data: string, sender?: Player) => void;
+  message: (data: { content: string; sender?: Player }) => void;
 }

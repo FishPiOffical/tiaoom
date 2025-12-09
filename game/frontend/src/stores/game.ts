@@ -53,7 +53,7 @@ export const useGameStore = defineStore('game', () => {
     
     game.value.run()
       .on('global.error', (err) => {
-        alert(err.message)
+        if (err.message) alert(err.message)
       })
       .onReady(() => {
         if (player.value) {
@@ -82,10 +82,8 @@ export const useGameStore = defineStore('game', () => {
       .onPlayerReady(onPlayerReady)
       .onPlayerUnready(onPlayerReady)
 
-    game.value.on('global.command', (cmd) => {
-      if (cmd.type === 'say') {
-        globalMessages.value.push(`[${cmd.sender.name}]: ${cmd.data}`)
-      }
+    game.value.on('global.message', (message, sender) => {
+      globalMessages.value.push(`[${sender?.name || '系统'}]: ${message}`)
     })
   }
 

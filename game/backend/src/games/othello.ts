@@ -175,7 +175,7 @@ export default function onRoom(room: Room) {
      */
     switch (message.type) {
       case 'say':
-        room.emit('message', `${message.data}`, sender);
+        room.emit('message', { content: `${message.data}`, sender });
         break;
       case 'status': {
         const playerIndex = room.validPlayers.findIndex((p) => p.id == message.data.id);
@@ -196,32 +196,32 @@ export default function onRoom(room: Room) {
       }
       case 'place': {
         if (gameStatus !== 'playing') {
-          sender.emit('message', `游戏未开始，无法落子。`);
+          sender.emit('message', { content: `游戏未开始，无法落子。` });
           break;
         }
         if (sender.id !== currentPlayer.id) {
-          sender.emit('message', `轮到玩家 ${currentPlayer.name} 落子。`);
+          sender.emit('message', { content: `轮到玩家 ${currentPlayer.name} 落子。` });
           break;
         }
         const { x, y } = message.data;
         if (board[x][y] !== 0) {
-          sender.emit('message', `该位置已有棋子，请重新落子。`);
+          sender.emit('message', { content: `该位置已有棋子，请重新落子。` });
           break;
         }
         const color = sender.attributes?.color;
         let result = checkOthelloMove(board, { x, y }, color);
         if (!result) {
           sender.emit('command', { type: 'board', data: board });
-          sender.emit('message', `无效落子！`);
+          sender.emit('message', { content: `无效落子！` });
           return;
         }
 
         if (!result.flat().some(cell => cell === 0)) {
-          room.emit('message', `${3 - color ? '黑' : '白'}方无法落子，跳过！`);
+          room.emit('message', { content: `${3 - color ? '黑' : '白'}方无法落子，跳过！` });
           currentPlayer = room.validPlayers.find((p) => p.id != currentPlayer.id)!;
           result = markValidPlaces(result, color);
           if (!result.flat().some(cell => cell === 0)) {
-            room.emit('message', `双方均无法落子，结算！`);
+            room.emit('message', { content: `双方均无法落子，结算！` });
           }
         }
 
@@ -234,15 +234,15 @@ export default function onRoom(room: Room) {
           // 棋盘已满，游戏结束
           let winner: RoomPlayer | null = null;
           if (winnerPlayer === 1) {
-            room.emit('message', `玩家 ${room.validPlayers.find(p => p.attributes?.color === 1)?.name} 获胜！`);
+            room.emit('message', { content: `玩家 ${room.validPlayers.find(p => p.attributes?.color === 1)?.name} 获胜！` });
             winner = room.validPlayers.find(p => p.attributes?.color === 1)!;
             lastLosePlayer = room.validPlayers.find(p => p.attributes?.color === 2)!;
           } else if (winnerPlayer === 2) {
-            room.emit('message', `玩家 ${room.validPlayers.find(p => p.attributes?.color === 2)?.name} 获胜！`);
+            room.emit('message', { content: `玩家 ${room.validPlayers.find(p => p.attributes?.color === 2)?.name} 获胜！` });
             winner = room.validPlayers.find(p => p.attributes?.color === 2)!;
             lastLosePlayer = room.validPlayers.find(p => p.attributes?.color === 1)!;
           } else {
-            room.emit('message', `游戏以平局结束！`);
+            room.emit('message', { content: `游戏以平局结束！` });
           }
           gameStatus = 'waiting';
           room.validPlayers.forEach((player) => {
@@ -272,7 +272,7 @@ export default function onRoom(room: Room) {
         break;
       }
       case 'request-draw': {
-        room.emit('message', `玩家 ${sender.name} 请求和棋。`);
+        room.emit('message', { content: `玩家 ${sender.name} 请求和棋。` });
         lastLosePlayer = sender;
         const otherPlayer = room.validPlayers.find((p) => p.id != sender.id)!;
         otherPlayer.emit('command', {
@@ -283,7 +283,7 @@ export default function onRoom(room: Room) {
         break;
       }
       case 'request-lose': {
-        room.emit('message', `玩家 ${sender.name} 认输。`);
+        room.emit('message', { content: `玩家 ${sender.name} 认输。` });
         gameStatus = 'waiting';
         room.validPlayers.forEach((player) => {
           if (!achivents[player.name]) {
@@ -300,7 +300,7 @@ export default function onRoom(room: Room) {
         break;
       }
       case 'draw': {
-        room.emit('message', `玩家 ${sender.name} 同意和棋，游戏结束。`);
+        room.emit('message', { content: `玩家 ${sender.name} 同意和棋，游戏结束。` });
         lastLosePlayer = room.validPlayers.find((p) => p.id != sender.id)!;
         gameStatus = 'waiting';
         room.validPlayers.forEach((player) => {
@@ -319,7 +319,7 @@ export default function onRoom(room: Room) {
     console.log("room start");
 
     if (room.validPlayers.length < room.minSize) {
-      return room.emit('message', `玩家人数不足，无法开始游戏。`);
+      return room.emit('message', { content: `玩家人数不足，无法开始游戏。` });
     }
     if (!room.validPlayers.some((p) => p.id == lastLosePlayer?.id)) {
       lastLosePlayer = undefined;
@@ -358,14 +358,14 @@ export default function onRoom(room: Room) {
       }
     });
     room.emit('command', { type: 'achivements', data: achivents });
-    room.emit('message', `游戏开始。玩家 ${room.validPlayers[0].name} 执黑先行。`);
+    room.emit('message', { content: `游戏开始。玩家 ${room.validPlayers[0].name} 执黑先行。` });
     room.emit('command', { type: 'place-turn', data: { player: currentPlayer } });
     room.emit('command', { type: 'board', data: board });
   }).on('end', () => {
     console.log("room end");
     room.emit('command', { type: 'end' });
-  }).on('message', (message: string, sender?: IRoomPlayer) => {
-    messageHistory.unshift({ message, sender });
+  }).on('message', (message: { content: string; sender?: IRoomPlayer}) => {
+    messageHistory.unshift({ message: message.content, sender: message.sender });
     if (messageHistory.length > 100) messageHistory.splice(messageHistory.length - 100);
   });
 }
