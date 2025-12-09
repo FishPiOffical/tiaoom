@@ -86,7 +86,7 @@ export const useGameStore = defineStore('game', () => {
       .onPlayerUnready(onPlayerReady)
 
     game.value.on('global.message', (message, sender) => {
-      globalMessages.value.push(`[${sender?.name || '系统'}]: ${message}`)
+      globalMessages.value.unshift(`[${sender?.name || '系统'}]: ${message}`)
     })
   }
 

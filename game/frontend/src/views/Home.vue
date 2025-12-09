@@ -188,7 +188,7 @@
         </form>
         
         <!-- 全局聊天 -->
-        <section v-if="!gameStore.roomPlayer" class="mt-8 space-y-4 max-w-2xl mx-auto">
+        <section v-if="!gameStore.roomPlayer" class="mt-8 space-y-4 max-w-2xl mx-auto flex flex-col">
           <div class="border-t border-base-content/20 pt-4"></div>
           <div class="join w-full">
             <input 
@@ -196,11 +196,11 @@
               type="text"
               @keyup.enter="sendMessage" 
               placeholder="随便聊聊" 
-              class="flex-1 input"
+              class="flex-1 input join-item"
             />
-            <button class="btn btn-secondary" @click="sendMessage">发送</button>
+            <button class="btn btn-secondary join-item" @click="sendMessage">发送</button>
           </div>
-          <section class="bg-base-300/30 p-3 rounded h-64 overflow-auto border border-base-content/10">
+          <section class="bg-base-300/30 p-3 rounded min-h-64 overflow-auto border border-base-content/10">
             <p v-for="(m, i) in gameStore.globalMessages" :key="i" class="text-sm text-base-content/90">{{ m }}</p>
           </section>
         </section>
@@ -284,7 +284,7 @@ async function createRoom() {
 function sendMessage() {
   if (!msg.value.trim()) return
   gameStore.game?.command({ type: 'say', data: msg.value })
-  msg.value = ''
+  // msg.value = ''
 }
 
 async function handleLogout() {
