@@ -4,7 +4,7 @@
 
 <h1 align="center">Tiaoom - a Tiaoable project</h1>
 <p align="center">轻量级游戏房间引擎</p>
-<p align="center"><a target="_blank" href="https://room-docs.adventext.fun">📃在线文档</a></p>
+<p align="center"><a target="_blank" href="https://tiaoom.com">📃在线文档</a></p>
 
 
 ## ✨功能

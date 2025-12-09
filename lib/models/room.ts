@@ -238,7 +238,7 @@ export class Room extends EventEmitter implements IRoom {
     this.minSize = minSize;
     this.attrs = attrs;
     
-    const events: Array<keyof RoomEvents> = ['message', 'command', 'start', 'end', 'close', 'all-ready', 'join', 'leave'];
+    const events: Array<keyof RoomEvents> = ['message', 'command', 'start', 'end', 'all-ready', 'player-unready', 'player-ready', 'join', 'leave'];
     events.forEach((event) => {
       this.on(event, (...data: any) => {
         this.sender?.(event, ...data);

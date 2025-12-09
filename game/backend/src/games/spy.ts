@@ -1,4 +1,4 @@
-import { Room, RoomPlayer, RoomStatus } from "tiaoom";
+import { IRoomPlayer, Room, RoomPlayer, RoomStatus } from "tiaoom";
 
 const questions = [
   ['蝴蝶', '蜜蜂'],
@@ -30,7 +30,7 @@ const questions = [
 export default function onRoom(room: Room) {
   console.log("room:", room);
   let words: string[] = [];
-  let messageHistory: string[] = [];
+  let messageHistory: { message: string, sender?: IRoomPlayer }[] = [];
   const alivePlayers: RoomPlayer[] = [];
   let currentTalkPlayer: RoomPlayer;
   let spyPlayer: RoomPlayer;
@@ -48,7 +48,7 @@ export default function onRoom(room: Room) {
     
     if (talkTimeout) clearTimeout(talkTimeout);
     talkTimeout = setTimeout(() => {
-      room.emit('message', `[系统消息]: 玩家 ${player.name} 发言超时，判定死亡。`);
+      room.emit('message', `玩家 ${player.name} 发言超时，判定死亡。`);
       handlePlayerDeath(player);
     }, TURN_TIMEOUT);
   }
@@ -64,13 +64,13 @@ export default function onRoom(room: Room) {
     if (deadIndex > -1) alivePlayers.splice(deadIndex, 1);
 
     if (deadPlayer.name == spyPlayer.name) {
-      room.emit('message', `[系统消息]: 玩家 ${deadPlayer.name} 死亡。间谍死亡。玩家胜利。`);
+      room.emit('message', `玩家 ${deadPlayer.name} 死亡。间谍死亡。玩家胜利。`);
       room.validPlayers.forEach((player) => {
         if (!alivePlayers.some(p => p.id === player.id)) alivePlayers.push(player);
       });
       room.end();
     } else if (alivePlayers.length == 2) {
-      room.emit('message', `[系统消息]: 玩家 ${deadPlayer.name} 死亡。间谍 ${spyPlayer.name} 胜利。`);
+      room.emit('message', `玩家 ${deadPlayer.name} 死亡。间谍 ${spyPlayer.name} 胜利。`);
       room.validPlayers.forEach((player) => {
         if (!alivePlayers.some(p => p.id === player.id)) alivePlayers.push(player);
       });
@@ -81,7 +81,7 @@ export default function onRoom(room: Room) {
         // If death happened during voting (e.g. voted out), we need to start next round
         gameStatus = 'talking';
         startTurn(alivePlayers[0]);
-        room.emit('message', `[系统消息]: 玩家 ${deadPlayer.name} 死亡。游戏继续。玩家 ${alivePlayers[0].name} 发言。`);
+        room.emit('message', `玩家 ${deadPlayer.name} 死亡。游戏继续。玩家 ${alivePlayers[0].name} 发言。`);
       } else {
         // If death happened during talking (timeout), move to next player
         // We need to find who is next. Since deadPlayer is removed, we need to be careful.
@@ -95,12 +95,12 @@ export default function onRoom(room: Room) {
         let nextPlayer = alivePlayers[deadIndex];
         if (!nextPlayer) {
            // If we reached end of list, start voting
-           room.emit('message', `[系统消息]: 所有玩家都已发言，投票开始。`);
+           room.emit('message', `所有玩家都已发言，投票开始。`);
            room.emit('command', { type: 'vote' });
            gameStatus = 'voting';
         } else {
            startTurn(nextPlayer);
-           room.emit('message', `[系统消息]: 玩家 ${deadPlayer.name} 死亡。游戏继续。玩家 ${nextPlayer.name} 发言。`);
+           room.emit('message', `玩家 ${deadPlayer.name} 死亡。游戏继续。玩家 ${nextPlayer.name} 发言。`);
         }
       }
     }
@@ -117,13 +117,13 @@ export default function onRoom(room: Room) {
     const nextPlayer = alivePlayers[currentAliveIndex + 1];
 
     if (!nextPlayer) {
-      room.emit('message', `[系统消息]: 所有玩家都已发言，投票开始。`);
+      room.emit('message', `所有玩家都已发言，投票开始。`);
       room.emit('command', { type: 'vote' });
       gameStatus = 'voting';
       return;
     }
     
-    room.emit('message', `[系统消息]: 玩家 ${sender.name} 发言结束。玩家 ${nextPlayer.name} 开始发言。`);
+    room.emit('message', `玩家 ${sender.name} 发言结束。玩家 ${nextPlayer.name} 开始发言。`);
     startTurn(nextPlayer);
   }
 
@@ -266,7 +266,7 @@ export default function onRoom(room: Room) {
     }
 
     if (room.validPlayers.length < room.minSize) {
-      return room.emit('message', `[系统消息]: 玩家人数不足，无法开始游戏。`);
+      return room.emit('message', `玩家人数不足，无法开始游戏。`);
     }
 
     const mainWordIndex = Math.floor(Math.random() * 2);
@@ -280,7 +280,7 @@ export default function onRoom(room: Room) {
       player.emit('command', { type: 'word', data: { word: words[index] } });
       alivePlayers.push(player);
     })
-    room.emit('message', `[系统消息]: 游戏开始。玩家 ${room.validPlayers[0].name} 首先发言。`);
+    room.emit('message', `游戏开始。玩家 ${room.validPlayers[0].name} 首先发言。`);
     gameStatus = 'talking';
     startTurn(room.validPlayers[0]);
   }).on('end', () => {
@@ -290,8 +290,8 @@ export default function onRoom(room: Room) {
       talkTimeout = null;
     }
     room.emit('command', { type: 'end' });
-  }).on('message', (message: string) => {
-    messageHistory.unshift(message);
+  }).on('message', (message: string, sender?: IRoomPlayer) => {
+    messageHistory.unshift({ message, sender });
     if (messageHistory.length > 100) messageHistory.splice(messageHistory.length - 100);
   });
 }

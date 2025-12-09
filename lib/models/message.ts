@@ -25,10 +25,6 @@ export enum MessageTypes {
    */
   GlobalError = "global.error",
   /**
-   * 全局命令
-   */
-  GlobalCommand = "global.command",
-  /**
    * 房间列表
    */
   RoomList = "room.list",
@@ -40,10 +36,6 @@ export enum MessageTypes {
    * 房间更新
    */
   RoomUpdate = "room.update",
-  /**
-   * 房间准备
-   */
-  RoomReady = "room.ready",
   /**
    * 房间开始
    */
@@ -81,14 +73,6 @@ export enum MessageTypes {
    */
   RoomLeave = "room.leave",
   /**
-   * 房间踢出玩家
-   */
-  RoomKick = "room.kick",
-  /**
-   * 房间转移
-   */
-  RoomTransfer = "room.transfer",
-  /**
    * 房间玩家准备
    */
   RoomPlayerReady = "room.player-ready",
@@ -116,14 +100,6 @@ export enum MessageTypes {
    * *玩家命令
    */
   PlayerCommand = "player.command",
-  /**
-   * 玩家准备
-   */
-  PlayerReady = "player.ready",
-  /**
-   * 玩家取消准备
-   */
-  PlayerUnready = "player.unready",
   /**
    * 全局消息
    */

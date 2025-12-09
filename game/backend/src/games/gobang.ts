@@ -1,4 +1,4 @@
-import { Room, RoomPlayer, RoomStatus } from "tiaoom";
+import { IRoomPlayer, Room, RoomPlayer, RoomStatus } from "tiaoom";
 
 /**
  * 判断五子棋胜负情况与禁手
@@ -96,7 +96,7 @@ function gomokuJudge(board: number[][], { x, y }: { x: number, y: number }, colo
 
 export default function onRoom(room: Room) {
   console.log("room:", room);
-  let messageHistory: string[] = [];
+  let messageHistory: { message: string, sender?: IRoomPlayer }[] = [];
   let currentPlayer: RoomPlayer;
   let lastLosePlayer: RoomPlayer | undefined;
   let gameStatus: 'waiting' | 'playing' = 'waiting';
@@ -276,8 +276,8 @@ export default function onRoom(room: Room) {
   }).on('end', () => {
     console.log("room end");
     room.emit('command', { type: 'end' });
-  }).on('message', (message: string) => {
-    messageHistory.unshift(message);
+  }).on('message', (message: string, sender?: IRoomPlayer) => {
+    messageHistory.unshift({ message, sender });
     if (messageHistory.length > 100) messageHistory.splice(messageHistory.length - 100);
   });
 }

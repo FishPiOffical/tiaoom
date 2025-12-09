@@ -312,6 +312,7 @@ export class Tiaoom extends EventEmitter {
     playerInstance.emit("status", PlayerStatus.ready);
 
     room.emit("player-ready", { ...player, ...roomPlayer });
+    room.emit('update', room);
 
     return this;
   }
@@ -340,6 +341,7 @@ export class Tiaoom extends EventEmitter {
     roomPlayer.isReady = false;
     playerInstance.emit("status", PlayerStatus.unready);
     room.emit("player-unready", roomPlayer);
+    room.emit('update', room);
 
     return this;
   }

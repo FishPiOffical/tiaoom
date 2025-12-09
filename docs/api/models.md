@@ -125,7 +125,6 @@
 | `RoomList` | `'room.list'` | 房间列表更新。 |
 | `RoomCreate` | `'room.create'` | 创建房间。 |
 | `RoomUpdate` | `'room.update'` | 更新房间信息。 |
-| `RoomReady` | `'room.ready'` | 房间准备就绪。 |
 | `RoomStart` | `'room.start'` | 房间开始游戏。 |
 | `RoomEnd` | `'room.end'` | 房间结束游戏。 |
 | `RoomClose` | `'room.close'` | 房间关闭。 |
@@ -135,8 +134,6 @@
 | `RoomMessage` | `'room.message'` | 房间消息。 |
 | `RoomJoin` | `'room.join'` | 玩家加入房间。 |
 | `RoomLeave` | `'room.leave'` | 玩家离开房间。 |
-| `RoomKick` | `'room.kick'` | 房间踢出玩家。 |
-| `RoomTransfer` | `'room.transfer'` | 房间转移。 |
 | `RoomPlayerReady` | `'room.player-ready'` | 房间内玩家准备。 |
 | `RoomPlayerUnready` | `'room.player-unready'` | 房间内玩家取消准备。 |
 | `PlayerList` | `'player.list'` | 玩家列表更新。 |
@@ -144,9 +141,6 @@
 | `PlayerLogout` | `'player.logout'` | 玩家登出。 |
 | `PlayerMessage` | `'player.message'` | 玩家消息。 |
 | `PlayerCommand` | `'player.command'` | 玩家命令。 |
-| `PlayerReady` | `'player.ready'` | 玩家准备。 |
-| `PlayerUnready` | `'player.unready'` | 玩家取消准备。 |
-| `GlobalCommand` | `'global.command'` | 全局命令。 |
 | `GlobalMessage` | `'global.message'` | 全局消息。 |
 | `GlobalError` | `'global.error'` | 全局错误。 |
 | `SysReady` | `'sys.ready'` | 连接准备就绪。 |
