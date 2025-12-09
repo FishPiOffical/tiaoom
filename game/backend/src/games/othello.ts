@@ -236,13 +236,14 @@ export default function onRoom(room: Room) {
           return;
         }
 
-        if (!result.flat().some(cell => cell === 0)) {
-          room.emit('message', { content: `${3 - color ? '黑' : '白'}方无法落子，跳过！` });
-          currentPlayer = room.validPlayers.find((p) => p.id != currentPlayer.id)!;
-          result = markValidPlaces(result, color);
+        if (!result.flat().some(cell => cell === 0) && result.flat().filter(cell => cell <= 0).length) {
           if (!result.flat().some(cell => cell === 0)) {
             room.emit('message', { content: `双方均无法落子，结算！` });
+          } else {
+            room.emit('message', { content: `${3 - color ? '黑' : '白'}方无法落子，跳过！` });
+            result = markValidPlaces(result, color);
           }
+          currentPlayer = room.validPlayers.find((p) => p.id != currentPlayer.id)!;
         }
 
         board = result;
@@ -315,6 +316,7 @@ export default function onRoom(room: Room) {
             achivents[player.name].win += 1;
           }
         });
+        lastLosePlayer = room.validPlayers.find((p) => p.id == sender.id);
         room.emit('command', { type: 'achivements', data: achivents });
         room.end();
         break;
@@ -378,7 +380,7 @@ export default function onRoom(room: Room) {
       }
     });
     room.emit('command', { type: 'achivements', data: achivents });
-    room.emit('message', { content: `游戏开始。玩家 ${room.validPlayers[0].name} 执黑先行。` });
+    room.emit('message', { content: `游戏开始。玩家 ${currentPlayer.name} 执黑先行。` });
     room.emit('command', { type: 'place-turn', data: { player: currentPlayer } });
     room.emit('command', { type: 'board', data: board });
   }).on('end', () => {

@@ -283,7 +283,7 @@ export default function onRoom(room: Room) {
       }
     });
     room.emit('command', { type: 'achivements', data: achivents });
-    room.emit('message', { content: `游戏开始。玩家 ${room.validPlayers[0].name} 执黑先行。` });
+    room.emit('message', { content: `游戏开始。玩家 ${currentPlayer.name} 执黑先行。` });
     room.emit('command', { type: 'place-turn', data: { player: currentPlayer } });
     room.emit('command', { type: 'board', data: board });
   }).on('end', () => {
