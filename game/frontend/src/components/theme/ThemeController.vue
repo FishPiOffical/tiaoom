@@ -51,8 +51,15 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 
-const theme = ref(localStorage.getItem("theme") || "wireframe");
+const theme = ref(
+  localStorage.getItem("theme") ||
+    (window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "black"
+      : "wireframe")
+);
 const themes = [
+  "wireframe",
+  "black",
   "light",
   "dark",
   "cupcake",
@@ -70,8 +77,6 @@ const themes = [
   "lofi",
   "pastel",
   "fantasy",
-  "wireframe",
-  "black",
   "luxury",
   "dracula",
   "cmyk",

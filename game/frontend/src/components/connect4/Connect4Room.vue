@@ -160,7 +160,7 @@
         </div>
       </section>
       
-      <section class="bg-surface-light/30 p-3 rounded h-48 overflow-auto border border-border/50 flex-1">
+      <section class="bg-base-300/30 p-3 rounded h-48 overflow-auto border border-base-content/20 flex-1">
         <p v-for="(m, i) in roomMessages" :key="i" class="text-sm text-primary/90">{{ m }}</p>
       </section>
     </aside>
