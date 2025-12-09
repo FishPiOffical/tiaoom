@@ -101,6 +101,10 @@ export enum MessageTypes {
    */
   PlayerCommand = "player.command",
   /**
+   * 玩家错误信息
+   */
+  PlayerError = "player.error",
+  /**
    * 全局消息
    */
   GlobalMessage = "global.message",

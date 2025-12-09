@@ -70,7 +70,7 @@ export class Tiaoom extends EventEmitter {
       } catch (error) {
         cb?.(error as Error);
         this.messageInstance?.send({
-          type: MessageTypes.GlobalError,
+          type: MessageTypes.PlayerError,
           data: { message: (error as Error).message },
           sender: message.sender,
         });

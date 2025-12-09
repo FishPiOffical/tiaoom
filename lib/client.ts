@@ -135,6 +135,10 @@ export type TiaoomEvents = {
    */
   "player.message": (message: { content: string, sender?: Player }) => void;
   /**
+   * 玩家错误事件
+   */
+  "player.error": (error: Error) => void;
+  /**
    * 房间列表更新事件
    * @param rooms 房间列表
    */
