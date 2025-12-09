@@ -30,8 +30,8 @@ export default defineConfig({
         items: [
           { text: '快速开始', link: '/guide/getting-started' },
           { text: '游戏开发', link: '/guide/game-development' },
+          { text: '通信实现', link: '/guide/communication' },
           { text: '错误处理', link: '/guide/error-handling' },
-          { text: '后端通信实现', link: '/guide/backend-communication' }
         ]
       },
       {
