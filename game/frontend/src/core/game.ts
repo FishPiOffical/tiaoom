@@ -1,5 +1,5 @@
 import ReconnectingWebSocket from 'reconnecting-websocket'
-import { Tiaoom, TiaoomEvents } from 'tiaoom/client'
+import { Tiaoom, TiaoomEvents, MessageTypes, Player } from 'tiaoom/client'
 import type { Message } from '@/types'
 import { IUser } from '@/api'
 
@@ -55,7 +55,7 @@ export class GameCore extends Tiaoom {
   /**
    * 发送消息
    */
-  send({ type, data }: { type: string; data?: any }) {
+  send({ type, data }: { type: MessageTypes; data?: any }) {
     this.socket?.send(JSON.stringify({ type, data }))
     return this
   }
@@ -78,7 +78,7 @@ export class GameCore extends Tiaoom {
    * @returns 
    */
   init(roomId: string, player: IUser) {
-    this.send({ type: "room.player-command", data: { id: roomId, type: 'status', data: player } });
+    this.command(roomId, { type: 'status', data: player });
     return this;
   }
 
@@ -100,7 +100,7 @@ export class GameCore extends Tiaoom {
    * @param {boolean} on 开启/关闭监听
    * @returns 
    */
-  onMessage(cb: (message: any) => void, on=true) {
+  onMessage(cb: (message: string, sender?: Player) => void, on=true) {
     this.onPlayerMessage(cb, on);
     this.onRoomMessage(cb, on);
     return this;

@@ -135,7 +135,7 @@ export default function setupGame(room: Room) {
 在客户端，你需要继承 `Tiaoom` 类并实现连接逻辑。
 
 ```typescript
-import { Tiaoom, TiaoomEvents } from 'tiaoom/client';
+import { Tiaoom, TiaoomEvents, MessageTypes } from 'tiaoom/client';
 import ReconnectingWebSocket from 'reconnecting-websocket';
 
 export class GameClient extends Tiaoom {
@@ -159,7 +159,7 @@ export class GameClient extends Tiaoom {
     this.socket.onclose = () => this.emit('sys.close');
   }
 
-  send(msg: { type: string; data?: any }) {
+  send(msg: { type: MessageTypes; data?: any }) {
     this.socket?.send(JSON.stringify(msg));
   }
 

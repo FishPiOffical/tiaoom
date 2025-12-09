@@ -102,7 +102,7 @@
 
 | 属性名 | 类型 | 描述 |
 | :--- | :--- | :--- |
-| `type` | [`MessageTypes`](#messagetypes) \| `string` | 消息类型。 |
+| `type` | [`MessageTypes`](#messagetypes-server) \| `string` | 消息类型。 |
 | `data` | `any` (可选) | 消息数据，可以是 `PlayerOptions`, `IRoomOptions`, `IPlayer`, `IRoom`, `IRoomPlayer` 等。 |
 | `sender` | [`IPlayer`](#iplayer) \| [`IRoom`](#iroom) \| [`IRoomPlayer`](#iroomplayer) (可选) | 消息发送者。 |
 
@@ -112,13 +112,13 @@
 
 | 属性名 | 类型 | 描述 |
 | :--- | :--- | :--- |
-| `type` | [`MessageTypes`](#messagetypes) \| `string` | 消息类型。 |
+| `type` | [`MessageTypes`](#messagetypes-client) \| `string` | 消息类型。 |
 | `data` | `any` (可选) | 消息数据，可以是 `PlayerOptions`, `IRoomOptions`, `IPlayer`, `IRoom`, `IRoomPlayer` 等。 |
 | `sender` | [`IPlayer`](#iplayer) \| [`IRoom`](#iroom) \| [`IRoomPlayer`](#iroomplayer) | 消息发送者。 |
 
-### MessageTypes
+### MessageTypes (Server) {#messagetypes-server}
 
-消息类型枚举。
+消息类型枚举（服务端定义，用于 `tiaoom` 包）。
 
 | 枚举值 | 值 | 描述 |
 | :--- | :--- | :--- |
@@ -131,9 +131,12 @@
 | `RoomClose` | `'room.close'` | 房间关闭。 |
 | `RoomAllReady` | `'room.all-ready'` | 房间内所有玩家已准备。 |
 | `RoomCommand` | `'room.command'` | 房间命令。 |
+| `RoomPlayerCommand` | `'room.player-command'` | 房间内玩家命令。 |
 | `RoomMessage` | `'room.message'` | 房间消息。 |
 | `RoomJoin` | `'room.join'` | 玩家加入房间。 |
 | `RoomLeave` | `'room.leave'` | 玩家离开房间。 |
+| `RoomKick` | `'room.kick'` | 房间踢出玩家。 |
+| `RoomTransfer` | `'room.transfer'` | 房间转移。 |
 | `RoomPlayerReady` | `'room.player-ready'` | 房间内玩家准备。 |
 | `RoomPlayerUnready` | `'room.player-unready'` | 房间内玩家取消准备。 |
 | `PlayerList` | `'player.list'` | 玩家列表更新。 |
@@ -141,6 +144,34 @@
 | `PlayerLogout` | `'player.logout'` | 玩家登出。 |
 | `PlayerMessage` | `'player.message'` | 玩家消息。 |
 | `PlayerCommand` | `'player.command'` | 玩家命令。 |
+| `PlayerReady` | `'player.ready'` | 玩家准备。 |
+| `PlayerUnready` | `'player.unready'` | 玩家取消准备。 |
 | `GlobalCommand` | `'global.command'` | 全局命令。 |
 | `GlobalMessage` | `'global.message'` | 全局消息。 |
 | `GlobalError` | `'global.error'` | 全局错误。 |
+| `SysReady` | `'sys.ready'` | 连接准备就绪。 |
+| `SysClose` | `'sys.close'` | 连接关闭。 |
+| `SysError` | `'sys.error'` | 连接错误。 |
+
+### MessageTypes (Client) {#messagetypes-client}
+
+消息类型枚举（客户端定义，用于 `tiaoom/client` 包）。
+
+| 枚举值 | 值 | 描述 |
+| :--- | :--- | :--- |
+| `RoomList` | `'room.list'` | 请求房间列表。 |
+| `PlayerList` | `'player.list'` | 请求玩家列表。 |
+| `RoomCreate` | `'room.create'` | 请求创建房间。 |
+| `PlayerJoin` | `'player.join'` | 请求加入房间。 |
+| `PlayerLeave` | `'player.leave'` | 请求离开房间。 |
+| `RoomGet` | `'room.get'` | 请求获取房间信息。 |
+| `RoomStart` | `'room.start'` | 请求开始游戏。 |
+| `RoomKick` | `'room.kick'` | 请求踢出玩家。 |
+| `RoomTransfer` | `'room.transfer'` | 请求转让房主。 |
+| `RoomClose` | `'room.close'` | 请求关闭房间。 |
+| `PlayerLogin` | `'player.login'` | 请求登录。 |
+| `PlayerLogout` | `'player.logout'` | 请求登出。 |
+| `PlayerReady` | `'player.ready'` | 请求准备。 |
+| `PlayerUnready` | `'player.unready'` | 请求取消准备。 |
+| `RoomPlayerCommand` | `'room.player-command'` | 发送房间内玩家命令。 |
+| `GlobalCommand` | `'global.command'` | 发送全局命令。 |

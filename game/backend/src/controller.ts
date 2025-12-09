@@ -5,6 +5,8 @@ import { SocketManager } from "./socket";
 import Games, { IGameInfo } from "./games";
 
 export class Controller extends Tiaoom {
+  messages: { data: string, sender: Player }[] = [];
+
   constructor(server: http.Server) {
     super({ socket: new SocketManager(server) });
   }
@@ -39,6 +41,10 @@ export class Controller extends Tiaoom {
       if (room.players.length == 0) {
         console.log("room empty, close it.");
         this.closeRoom({} as IPlayer, room);
+      }
+    }).on("command", (data: any & { sender: Player }) => {
+      if (data.type === 'say') {
+        this.messages.push({ data: `[${data.sender.name}]: ${data.data}`, sender: data.sender });
       }
     }).on("error", (error: any) => {
       console.log("error:", error);

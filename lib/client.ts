@@ -1,5 +1,77 @@
-import { MessageTypes } from "./models/message";
 import type { IRoomOptions } from "./models/room";
+
+export { IRoomOptions };
+
+/**
+ * 客户端发送消息包类型枚举
+ * player： 'command', 'message', 'join', 'leave', 'status'
+ */
+export enum MessageTypes {
+  /**
+   * 房间列表
+   */
+  RoomList = "room.list",
+  /**
+   * 玩家列表
+   */
+  PlayerList = "player.list",
+  /**
+   * 房间创建
+   */
+  RoomCreate = "room.create",
+  /**
+   * 玩家加入房间
+   */
+  PlayerJoin = "player.join",
+  /**
+   * 玩家离开房间
+   */
+  PlayerLeave = "player.leave",
+  /**
+   * 房间获取
+   */
+  RoomGet = "room.get",
+  /**
+   * 房间开始
+   */
+  RoomStart = "room.start",
+  /**
+   * 房间踢出玩家
+   */
+  RoomKick = "room.kick",
+  /**
+   * 房间转移
+   */
+  RoomTransfer = "room.transfer",
+  /**
+   * 房间关闭
+   */
+  RoomClose = "room.close",  
+  /**
+   * 玩家登录
+   */
+  PlayerLogin = "player.login",
+  /**
+   * 玩家登出
+   */
+  PlayerLogout = "player.logout",
+  /**
+   * 玩家准备
+   */
+  PlayerReady = "player.ready",
+  /**
+   * 玩家取消准备
+   */
+  PlayerUnready = "player.unready",
+  /**
+   * 房间内玩家发送的指令
+   */
+  RoomPlayerCommand = "room.player-command",
+  /**
+   * 全局命令
+   */
+  GlobalCommand = "global.command",
+}
 
 export type TiaoomEvents = {
   /**
@@ -56,7 +128,7 @@ export type TiaoomEvents = {
    * 玩家消息事件
    * @param message 消息内容
    */
-  "player.message": (message: any & { sender: Player }) => void;
+  "player.message": (message: string, sender?: Player) => void;
   /**
    * 房间列表更新事件
    * @param rooms 房间列表
@@ -113,7 +185,7 @@ export type TiaoomEvents = {
    * 房间消息事件
    * @param message 消息内容
    */
-  "room.message": (message: any & { sender: Player }) => void;
+  "room.message": (message: string, sender?: RoomPlayer ) => void;
   /**
    * 房间玩家准备事件
    * @param player 玩家信息
@@ -315,7 +387,7 @@ export class Tiaoom {
    * @param {string} roomId 房间ID
    */
   joinRoom(roomId: string) {
-    this.send({ type: MessageTypes.RoomJoin, data: { roomId } });
+    this.send({ type: MessageTypes.PlayerJoin, data: { roomId } });
     return this;
   }
 
@@ -324,7 +396,7 @@ export class Tiaoom {
    * @param {string} roomId 房间ID
    */
   leaveRoom(roomId: string) {
-    this.send({ type: MessageTypes.RoomLeave, data: { roomId } });
+    this.send({ type: MessageTypes.PlayerLeave, data: { roomId } });
     return this;
   }
 
@@ -379,7 +451,7 @@ export class Tiaoom {
       command = roomId;
       this.send({ type: MessageTypes.GlobalCommand, data: command });
     } else {
-      this.send({ type: MessageTypes.PlayerCommand, data: { id: roomId, ...command } });
+      this.send({ type: MessageTypes.RoomPlayerCommand, data: { id: roomId, ...command } });
     }
     return this;
   }
@@ -388,7 +460,7 @@ export class Tiaoom {
    * 连接准备监听
    * @param {function} cb 监听函数
    */
-  onReady(cb: (...args: any[]) => void) {
+  onReady(cb: () => void) {
     return this.on("sys.ready", cb);
   }
 
@@ -396,7 +468,7 @@ export class Tiaoom {
    * 全局错误监听
    * @param {function} cb 监听函数
    */
-  onError(cb: (...args: any[]) => void) {
+  onError(cb: (error: Error) => void) {
     this.on("global.error", cb);
     return this;
   }
@@ -405,7 +477,7 @@ export class Tiaoom {
    * 玩家列表变更监听
    * @param {function} cb 监听函数
    */
-  onPlayerList(cb: (...args: any[]) => void) {
+  onPlayerList(cb: (players: Player[]) => void) {
     this.on("onPlayerList", cb);
     return this;
   }
@@ -416,7 +488,7 @@ export class Tiaoom {
    * @param {boolean} on 开启/关闭监听
    * @returns 
    */
-  onRoomList(cb: (...args: any[]) => void, on=true) {
+  onRoomList(cb: (rooms: Room[]) => void, on=true) {
     if (on) this.on("onRoomList", cb);
     else this.off("onRoomList", cb);
     return this;
@@ -428,7 +500,7 @@ export class Tiaoom {
    * @param {boolean} on 开启/关闭监听
    * @returns 
    */
-  onPlayerJoin(cb: (...args: any[]) => void, on=true) {
+  onPlayerJoin(cb: (room: Room, player: Player) => void, on=true) {
     if (on) this.on("room.join", cb);
     else this.off("room.join", cb);
     return this;
@@ -440,7 +512,7 @@ export class Tiaoom {
    * @param {boolean} on 开启/关闭监听
    * @returns 
    */
-  onPlayerLeave(cb: (...args: any[]) => void, on=true) {
+  onPlayerLeave(cb: (room: Room, player: Player) => void, on=true) {
     if (on) this.on("room.leave", cb);
     else this.off("room.leave", cb);
     return this;
@@ -452,7 +524,7 @@ export class Tiaoom {
    * @param {boolean} on 开启/关闭监听
    * @returns 
    */
-  onPlayerReady(cb: (...args: any[]) => void, on=true) {
+  onPlayerReady(cb: (player: Player, roomId?: string) => void, on=true) {
     if (on) this.on("room.player-ready", cb);
     else this.off("room.player-ready", cb);
     return this;
@@ -464,7 +536,7 @@ export class Tiaoom {
    * @param {boolean} on 开启/关闭监听
    * @returns 
    */
-  onPlayerUnready(cb: (...args: any[]) => void, on=true) {
+  onPlayerUnready(cb: (player: Player, roomId?: string) => void, on=true) {
     if (on) this.on("room.player-unready", cb);
     else this.off("room.player-unready", cb);
     return this;
@@ -476,7 +548,7 @@ export class Tiaoom {
    * @param {boolean} on 开启/关闭监听
    * @returns 
    */
-  onPlayerStatus(cb: (...args: any[]) => void, on=true) {
+  onPlayerStatus(cb: (player: Player, status: any) => void, on=true) {
     if (on) this.on("player.status", cb);
     else this.off("player.status", cb);
     return this;
@@ -488,7 +560,7 @@ export class Tiaoom {
    * @param {boolean} on 开启/关闭监听
    * @returns 
    */
-  onRoomStart(cb: (...args: any[]) => void, on=true) {
+  onRoomStart(cb: (room: Room) => void, on=true) {
     if (!this.listeners["room.start"]) {
       this.on("room.start", (room) => this.emit("onRoomStart", new Room(room)));
     }
@@ -503,7 +575,7 @@ export class Tiaoom {
    * @param {boolean} on 开启/关闭监听
    * @returns
    */
-  onRoomEnd(cb: (...args: any[]) => void, on=true) {
+  onRoomEnd(cb: (room: Room) => void, on=true) {
     if (!this.listeners["room.end"]) {
       this.on("room.end", (room) => this.emit("onRoomEnd", new Room(room)));
     }
@@ -518,7 +590,7 @@ export class Tiaoom {
    * @param {boolean} on 开启/关闭监听
    * @returns 
    */
-  onRoomAllReady(cb: (...args: any[]) => void, on=true) {
+  onRoomAllReady(cb: (room: Room) => void, on=true) {
     if (!this.listeners["room.all-ready"]) {
       this.on("room.all-ready", (room) => this.emit("onRoomAllReady", new Room(room)));
     }
@@ -533,7 +605,7 @@ export class Tiaoom {
    * @param {boolean} on 开启/关闭监听
    * @returns 
    */
-  onRoomMessage(cb: (...args: any[]) => void, on=true) {
+  onRoomMessage(cb: (message: string, sender?: RoomPlayer) => void, on=true) {
     if (on) this.on("room.message", cb);
     else this.off("room.message", cb);
     return this;
@@ -545,7 +617,7 @@ export class Tiaoom {
    * @param {boolean} on 开启/关闭监听
    * @returns 
    */
-  onPlayerMessage(cb: (...args: any[]) => void, on=true) {
+  onPlayerMessage(cb: (message: string, sender?: Player) => void, on=true) {
     if (on) this.on("player.message", cb);
     else this.off("player.message", cb);
     return this;
@@ -557,7 +629,7 @@ export class Tiaoom {
    * @param {boolean} on 开启/关闭监听
    * @returns 
    */
-  onRoomCommand(cb: (...args: any[]) => void, on=true) {
+  onRoomCommand(cb: (command: any & { sender?: Player }) => void, on=true) {
     if (on) this.on("room.command", cb);
     else this.off("room.command", cb);
     return this;
@@ -569,7 +641,7 @@ export class Tiaoom {
    * @param {boolean} on 开启/关闭监听
    * @returns 
    */
-  onPlayerCommand(cb: (...args: any[]) => void, on=true) {
+  onPlayerCommand(cb: (command: any & { sender?: Player }) => void, on=true) {
     if (on) this.on("player.command", cb);
     else this.off("player.command", cb);
     return this;
@@ -578,7 +650,7 @@ export class Tiaoom {
   /**
    * 事件监听
    * @param {string} event 事件名称
-   * @param {function} listener 监听函数
+   * @param {TiaoomEvents[K]} listener 监听函数
    * @returns 
    */
   on<K extends keyof TiaoomEvents>(event: K, listener: TiaoomEvents[K]): this {
@@ -590,7 +662,7 @@ export class Tiaoom {
   /**
    * 事件取消监听
    * @param {string} event 事件名称
-   * @param {function} listener 监听函数
+   * @param {TiaoomEvents[K]} listener 监听函数
    * @returns 
    */
   off<K extends keyof TiaoomEvents>(event: K, listener: TiaoomEvents[K]): this {
@@ -605,7 +677,7 @@ export class Tiaoom {
   /**
    * 事件触发
    * @param {string} event 事件名称
-   * @param  {...any} args 参数
+   * @param  {Parameters<TiaoomEvents[K]>} args 参数
    * @returns 
    */
   emit<K extends keyof TiaoomEvents>(event: K, ...args: Parameters<TiaoomEvents[K]>): this {

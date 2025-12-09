@@ -156,7 +156,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import type { RoomPlayer, Room } from 'tiaoom/client';
+import type { RoomPlayer, Room, Player } from 'tiaoom/client';
 import type { GameCore } from '@/core/game'
 
 const props = defineProps<{
@@ -179,8 +179,8 @@ props.game?.onRoomStart(() => {
 }).onRoomEnd(() => {
   gameStatus.value = 'waiting'
   currentPlayer.value = null
-}).onCommand(onCommand).onMessage((msg: string) => {
-  roomMessages.value.unshift(`${msg}`)
+}).onCommand(onCommand).onMessage((msg: string, sender?: Player) => {
+  roomMessages.value.unshift(`[${sender?.name || '系统'}]: ${msg}`)
 })
 
 function onCommand(cmd: any) {
@@ -190,7 +190,7 @@ function onCommand(cmd: any) {
     case 'status':
       gameStatus.value = cmd.data.status
       currentPlayer.value = cmd.data.current
-      roomMessages.value = cmd.data.messageHistory || []
+      roomMessages.value = (cmd.data.messageHistory || []).map((m: any) => `[${m.sender?.name || '系统'}]: ${m.message}`)
       board.value = cmd.data.board
       achivents.value = cmd.data.achivents || {}
       break

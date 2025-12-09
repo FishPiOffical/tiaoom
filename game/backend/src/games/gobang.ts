@@ -126,7 +126,7 @@ export default function onRoom(room: Room) {
      */
     switch (message.type) {
       case 'say':
-        room.emit('message', `[${sender.name}]: ${message.data}`);
+        room.emit('message', `${message.data}`, sender);
         break;
       case 'status': {
         const playerIndex = room.validPlayers.findIndex((p) => p.id == message.data.id);
@@ -147,23 +147,23 @@ export default function onRoom(room: Room) {
       }
       case 'place': {
         if (gameStatus !== 'playing') {
-          sender.emit('message', `[系统消息]: 游戏未开始，无法落子。`);
+          sender.emit('message', `游戏未开始，无法落子。`);
           break;
         }
         if (sender.id !== currentPlayer.id) {
-          sender.emit('message', `[系统消息]: 轮到玩家 ${currentPlayer.name} 落子。`);
+          sender.emit('message', `轮到玩家 ${currentPlayer.name} 落子。`);
           break;
         }
         const { x, y } = message.data;
         if (board[x][y] !== 0) {
-          sender.emit('message', `[系统消息]: 该位置已有棋子，请重新落子。`);
+          sender.emit('message', `该位置已有棋子，请重新落子。`);
           break;
         }
         const color = sender.attributes?.color;
         const result = gomokuJudge(board, { x, y }, color);
         if (result === -1) {
           sender.emit('command', { type: 'board', data: board });
-          sender.emit('message', `[系统消息]: 玩家 ${sender.name} 触发禁手，撤回落子！`);
+          sender.emit('message', `玩家 ${sender.name} 触发禁手，撤回落子！`);
           return;
         }
 
@@ -172,7 +172,7 @@ export default function onRoom(room: Room) {
         room.emit('command', { type: 'place', data: { x, y } });
 
         if (result === color) {
-          room.emit('message', `[系统消息]: 玩家 ${sender.name} 获胜！`);
+          room.emit('message', `玩家 ${sender.name} 获胜！`);
           lastLosePlayer = room.validPlayers.find((p) => p.id != sender.id)!;
           gameStatus = 'waiting';
           room.validPlayers.forEach((player) => {
@@ -198,7 +198,7 @@ export default function onRoom(room: Room) {
         break;
       }
       case 'request-draw': {
-        room.emit('message', `[系统消息]: 玩家 ${sender.name} 请求和棋。`);
+        room.emit('message', `玩家 ${sender.name} 请求和棋。`);
         lastLosePlayer = sender;
         const otherPlayer = room.validPlayers.find((p) => p.id != sender.id)!;
         otherPlayer.emit('command', {
@@ -209,7 +209,7 @@ export default function onRoom(room: Room) {
         break;
       }
       case 'request-lose': {
-        room.emit('message', `[系统消息]: 玩家 ${sender.name} 认输。`);
+        room.emit('message', `玩家 ${sender.name} 认输。`);
         gameStatus = 'waiting';
         room.validPlayers.forEach((player) => {
           if (!achivents[player.name]) {
@@ -226,7 +226,7 @@ export default function onRoom(room: Room) {
         break;
       }
       case 'draw': {
-        room.emit('message', `[系统消息]: 玩家 ${sender.name} 同意和棋，游戏结束。`);
+        room.emit('message', `玩家 ${sender.name} 同意和棋，游戏结束。`);
         lastLosePlayer = room.validPlayers.find((p) => p.id != sender.id)!;
         gameStatus = 'waiting';
         room.validPlayers.forEach((player) => {
@@ -245,7 +245,7 @@ export default function onRoom(room: Room) {
     console.log("room start");
 
     if (room.validPlayers.length < room.minSize) {
-      return room.emit('message', `[系统消息]: 玩家人数不足，无法开始游戏。`);
+      return room.emit('message', `玩家人数不足，无法开始游戏。`);
     }
     if (!room.validPlayers.some((p) => p.id == lastLosePlayer?.id)) {
       lastLosePlayer = undefined;
@@ -270,7 +270,7 @@ export default function onRoom(room: Room) {
       }
     });
     room.emit('command', { type: 'achivements', data: achivents });
-    room.emit('message', `[系统消息]: 游戏开始。玩家 ${room.validPlayers[0].name} 执黑先行。`);
+    room.emit('message', `游戏开始。玩家 ${room.validPlayers[0].name} 执黑先行。`);
     room.emit('command', { type: 'place-turn', data: { player: currentPlayer } });
     room.emit('command', { type: 'board', data: board });
   }).on('end', () => {

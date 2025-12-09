@@ -179,7 +179,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { GameCore } from '@/core/game'
-import type { RoomPlayer, Room } from 'tiaoom/client';
+import type { RoomPlayer, Room, Player } from 'tiaoom/client';
 
 type SpyRoomPlayer = RoomPlayer & { isDead?: boolean }
 
@@ -213,8 +213,8 @@ props.game?.onRoomStart(() => {
 }).onRoomEnd(() => {
   gameStatus.value = 'waiting'
   currentTalkPlayer.value = null
-}).onCommand(onCommand).onMessage((msg: string) => {
-  roomMessages.value.unshift(`${msg}`)
+}).onCommand(onCommand).onMessage((msg: string, sender?: Player) => {
+  roomMessages.value.unshift(`[${sender?.name || '系统'}]: ${msg}`)
 })
 
 function onCommand(cmd: any) {
@@ -275,7 +275,7 @@ function onCommand(cmd: any) {
           if (p) p.isDead = true
         }
       }
-      roomMessages.value = cmd.data.messageHistory || []
+      roomMessages.value = (cmd.data.messageHistory || []).map((m: any) => `[${m.sender?.name || '系统'}]: ${m.message}`)
       break
     case 'voted':
       voted.value = true

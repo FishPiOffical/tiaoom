@@ -12,6 +12,8 @@
 | `player` | <code>(player: <a href="./server.md#类-player">Player</a>, isLogin: boolean)</code> | 当玩家登录或登出时触发。`isLogin` 为 `true` 表示登录，`false` 表示登出。 |
 | `room-player` | <code>(room: <a href="./server.md#类-room">Room</a>)</code> | 当房间内的玩家状态发生变化（加入、离开、准备等）时触发。 |
 | `rooms` | <code>(rooms: <a href="./server.md#类-room">Room</a>[])</code> | 当房间列表发生变化时触发。 |
+| `command` | <code>(data: any & { sender: <a href="./server.md#类-player">Player</a> })</code> | 全局命令事件。 |
+| `message` | <code>(data: string, sender?: <a href="./server.md#类-player">Player</a>)</code> | 全局聊天事件。 |
 
 ## RoomEvents (房间事件) {#roomevents}
 
@@ -25,7 +27,10 @@
 | `unready` | <code>(player: <a href="./models.md#iroomplayer">IRoomPlayer</a>)</code> | 当玩家取消准备时触发。 |
 | `start` | <code>(room: <a href="./models.md#iroom">IRoom</a>, sender: <a href="./models.md#iroomplayer">IRoomPlayer</a>)</code> | 当房间开始游戏时触发。 |
 | `end` | <code>(room: <a href="./models.md#iroom">IRoom</a>)</code> | 当房间关闭时触发。 |
-| `message` | <code>(message: any)</code> | 当房间收到消息时触发。 |
+| `message` | <code>(data: string, sender?: <a href="./models.md#iroomplayer">IRoomPlayer</a>)</code> | 当房间收到消息时触发。 |
+| `player-command` | <code>(message: <a href="./models.md#imessagepackage">IMessagePackage</a>)</code> | 玩家发送的房间命令。 |
+| `command` | <code>(message: any)</code> | 房间命令。 |
+| `update` | <code>(room: <a href="./models.md#iroom">IRoom</a>)</code> | 房间更新。 |
 | `player-ready` | <code>(player: <a href="./models.md#iroomplayer">IRoomPlayer</a>)</code> | 当玩家准备时触发（包含玩家信息）。 |
 | `player-unready` | <code>(player: <a href="./models.md#iroomplayer">IRoomPlayer</a>)</code> | 当玩家取消准备时触发（包含玩家信息）。 |
 | `all-ready` | <code>(players: <a href="./models.md#iroomplayer">IRoomPlayer</a>[])</code> | 当房间内所有玩家都已准备时触发。 |
@@ -59,13 +64,14 @@
 | `sys.ready` | <code>()</code> | 连接准备就绪事件。 |
 | `sys.error` | <code>(error: any)</code> | 连接错误事件。 |
 | `sys.close` | <code>()</code> | 连接关闭事件。 |
+| `global.error` | <code>(error: Error)</code> | 全局错误事件。 |
 | `global.command` | <code>(data: any & { sender: <a href="./server.md#类-player">Player</a> })</code> | 全局命令事件。 |
 | `player.list` | <code>(players: <a href="./server.md#类-player">Player</a>[])</code> | 玩家列表更新事件。 |
 | `player.login` | <code>(player: <a href="./server.md#类-player">Player</a>)</code> | 玩家登录事件。 |
 | `player.logout` | <code>(player: <a href="./server.md#类-player">Player</a>)</code> | 玩家登出事件。 |
 | `player.status` | <code>(player: <a href="./server.md#类-player">Player</a>, status: string, roomId?: string)</code> | 玩家状态更新事件。 |
 | `player.command` | <code>(command: any & { sender: <a href="./server.md#类-player">Player</a> })</code> | 玩家命令事件。 |
-| `player.message` | <code>(message: any & { sender: <a href="./server.md#类-player">Player</a> })</code> | 玩家消息事件。 |
+| `player.message` | <code>(message: string, sender?: <a href="./server.md#类-player">Player</a>)</code> | 玩家消息事件。 |
 | `room.list` | <code>(rooms: <a href="./server.md#类-room">Room</a>[])</code> | 房间列表更新事件。 |
 | `room.create` | <code>(room: <a href="./server.md#类-room">Room</a>)</code> | 房间创建事件。 |
 | `room.update` | <code>(room: <a href="./server.md#类-room">Room</a>)</code> | 房间更新事件。 |
@@ -76,7 +82,7 @@
 | `room.end` | <code>(room: <a href="./server.md#类-room">Room</a>)</code> | 房间结束游戏事件。 |
 | `room.all-ready` | <code>(room: <a href="./server.md#类-room">Room</a>)</code> | 房间玩家全部准备事件。 |
 | `room.command` | <code>(command: any & { sender: <a href="./server.md#类-player">Player</a> })</code> | 房间命令事件。 |
-| `room.message` | <code>(message: any & { sender: <a href="./server.md#类-player">Player</a> })</code> | 房间消息事件。 |
+| `room.message` | <code>(message: string, sender?: <a href="./models.md#iroomplayer">IRoomPlayer</a>)</code> | 房间消息事件。 |
 | `room.player-ready` | <code>(player: <a href="./server.md#类-player">Player</a>, roomId?: string)</code> | 房间玩家准备事件。 |
 | `room.player-unready` | <code>(player: <a href="./server.md#类-player">Player</a>, roomId?: string)</code> | 房间玩家取消准备事件。 |
 | `onPlayerList` | <code>(players: <a href="./server.md#类-player">Player</a>[])</code> | 玩家列表更新事件(内部)。 |

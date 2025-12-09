@@ -1,4 +1,4 @@
-import { Room, RoomPlayer, RoomStatus } from "tiaoom";
+import { IRoomPlayer, Room, RoomPlayer } from "tiaoom";
 
 /**
  * 四子棋落子与胜负检查
@@ -88,7 +88,7 @@ function checkFourConnect(board: number[][], y: number, player: number): false |
 
 export default function onRoom(room: Room) {
   console.log("room:", room);
-  let messageHistory: string[] = [];
+  let messageHistory: { message: string, sender?: IRoomPlayer }[] = [];
   let currentPlayer: RoomPlayer;
   let lastLosePlayer: RoomPlayer | undefined;
   let gameStatus: 'waiting' | 'playing' = 'waiting';
@@ -118,7 +118,7 @@ export default function onRoom(room: Room) {
      */
     switch (message.type) {
       case 'say':
-        room.emit('message', `[${sender.name}]: ${message.data}`);
+        room.emit('message', `${message.data}`, sender);
         break;
       case 'status': {
         const playerIndex = room.validPlayers.findIndex((p) => p.id == message.data.id);
@@ -139,11 +139,11 @@ export default function onRoom(room: Room) {
       }
       case 'place': {
         if (gameStatus !== 'playing') {
-          sender.emit('message', `[系统消息]: 游戏未开始，无法落子。`);
+          sender.emit('message', `游戏未开始，无法落子。`);
           break;
         }
         if (sender.id !== currentPlayer.id) {
-          sender.emit('message', `[系统消息]: 轮到玩家 ${currentPlayer.name} 落子。`);
+          sender.emit('message', `轮到玩家 ${currentPlayer.name} 落子。`);
           break;
         }
 
@@ -154,13 +154,13 @@ export default function onRoom(room: Room) {
 
         if (!result) {
           sender.emit('command', { type: 'board', data: board });
-          sender.emit('message', `[系统消息]: 无效落子！`);
+          sender.emit('message', `无效落子！`);
           return;
         }
 
         if (result == true) {
           room.emit('command', { type: 'board', data: board });
-          room.emit('message', `[系统消息]: 玩家 ${sender.name} 获胜！`);
+          room.emit('message', `玩家 ${sender.name} 获胜！`);
           lastLosePlayer = room.validPlayers.find((p) => p.id != sender.id)!;
           gameStatus = 'waiting';
           room.validPlayers.forEach((player) => {
@@ -191,7 +191,7 @@ export default function onRoom(room: Room) {
         break;
       }
       case 'request-draw': {
-        room.emit('message', `[系统消息]: 玩家 ${sender.name} 请求和棋。`);
+        room.emit('message', `玩家 ${sender.name} 请求和棋。`);
         lastLosePlayer = sender;
         const otherPlayer = room.validPlayers.find((p) => p.id != sender.id)!;
         otherPlayer.emit('command', {
@@ -202,7 +202,7 @@ export default function onRoom(room: Room) {
         break;
       }
       case 'request-lose': {
-        room.emit('message', `[系统消息]: 玩家 ${sender.name} 认输。`);
+        room.emit('message', `玩家 ${sender.name} 认输。`);
         gameStatus = 'waiting';
         room.validPlayers.forEach((player) => {
           if (!achivents[player.name]) {
@@ -219,7 +219,7 @@ export default function onRoom(room: Room) {
         break;
       }
       case 'draw': {
-        room.emit('message', `[系统消息]: 玩家 ${sender.name} 同意和棋，游戏结束。`);
+        room.emit('message', `玩家 ${sender.name} 同意和棋，游戏结束。`);
         lastLosePlayer = room.validPlayers.find((p) => p.id != sender.id)!;
         gameStatus = 'waiting';
         room.validPlayers.forEach((player) => {
@@ -238,7 +238,7 @@ export default function onRoom(room: Room) {
     console.log("room start");
 
     if (room.validPlayers.length < room.minSize) {
-      return room.emit('message', `[系统消息]: 玩家人数不足，无法开始游戏。`);
+      return room.emit('message', `玩家人数不足，无法开始游戏。`);
     }
     if (!room.validPlayers.some((p) => p.id == lastLosePlayer?.id)) {
       lastLosePlayer = undefined;
@@ -264,14 +264,14 @@ export default function onRoom(room: Room) {
       }
     });
     room.emit('command', { type: 'achivements', data: achivents });
-    room.emit('message', `[系统消息]: 游戏开始。玩家 ${room.validPlayers[0].name} 执黑先行。`);
+    room.emit('message', `游戏开始。玩家 ${room.validPlayers[0].name} 执黑先行。`);
     room.emit('command', { type: 'place-turn', data: { player: currentPlayer } });
     room.emit('command', { type: 'board', data: board });
   }).on('end', () => {
     console.log("room end");
     room.emit('command', { type: 'end' });
-  }).on('message', (message: string) => {
-    messageHistory.unshift(message);
+  }).on('message', (message: string, sender?: IRoomPlayer) => {
+    messageHistory.unshift({ message, sender });
     if (messageHistory.length > 100) messageHistory.splice(messageHistory.length - 100);
   });
 }

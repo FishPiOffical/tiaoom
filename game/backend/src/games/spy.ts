@@ -146,11 +146,11 @@ export default function onRoom(room: Room) {
     switch (message.type) {
       case 'say':
         if (gameStatus == 'voting') {
-          sender.emit('message', `[系统消息]: 现在是投票时间，你不能说话。`);
+          sender.emit('message', `现在是投票时间，你不能说话。`);
           return;
         }
         if (gameStatus == 'talking' && sender.id != currentTalkPlayer.id) {
-          sender.emit('message', `[系统消息]: 现在不是你的发言时间。`);
+          sender.emit('message', `现在不是你的发言时间。`);
           return;
         }
         if (room.status == RoomStatus.playing) {
@@ -158,7 +158,7 @@ export default function onRoom(room: Room) {
             message.data = message.data.replace(new RegExp(word, 'ig'), ''.padStart(word.length, '*'));
           });
         }
-        room.emit('message', `[${sender.name}]: ${message.data}`);
+        room.emit('message', `${message.data}`, sender);
 
         // 倒计时逻辑
         if (gameStatus == 'talking' && sender.id == currentTalkPlayer.id) {
@@ -171,26 +171,26 @@ export default function onRoom(room: Room) {
         break;
       case 'talked':
         if (gameStatus != 'talking') {
-          sender.emit('message', `[系统消息]: 现在不是发言时间。`);
+          sender.emit('message', `现在不是发言时间。`);
           return;
         }
         if (sender.id != currentTalkPlayer.id) {
-          sender.emit('message', `[系统消息]: 现在不是你的发言时间。`);
+          sender.emit('message', `现在不是你的发言时间。`);
           return;
         }
         handleTalkEnd(sender);
         break;
       case 'voted':
         if (gameStatus != 'voting') {
-          sender.emit('message', `[系统消息]: 现在不是投票时间。`);
+          sender.emit('message', `现在不是投票时间。`);
           return;
         }
         if (votePlayers.includes(sender)) {
-          sender.emit('message', `[系统消息]: 你已经投票过了。`);
+          sender.emit('message', `你已经投票过了。`);
           return;
         }
         if (!alivePlayers.some((p) => p.id == sender.id)) {
-          sender.emit('message', `[系统消息]: 你不是房间内的玩家，不能投票。`);
+          sender.emit('message', `你不是房间内的玩家，不能投票。`);
           return;
         }
 
@@ -198,12 +198,12 @@ export default function onRoom(room: Room) {
         if (votePlayer && alivePlayers.includes(votePlayer)) {
           vote.push(votePlayer);
         } else if (votePlayer) {
-          return sender.emit('message', `[系统消息]: 玩家 ${votePlayer?.name} 不能被投票。`);
-        } else return sender.emit('message', `[系统消息]: 你投票的玩家不在房间内。`);
+          return sender.emit('message', `玩家 ${votePlayer?.name} 不能被投票。`);
+        } else return sender.emit('message', `你投票的玩家不在房间内。`);
 
         votePlayers.push(sender);
         sender.emit('command', { type: 'voted' });
-        room.emit('message', `[系统消息]: 玩家 ${sender.name} 已投票。`);
+        room.emit('message', `玩家 ${sender.name} 已投票。`);
         if (votePlayers.length != alivePlayers.length) return;
 
         const voteResult: { [key: string]: number } = vote.reduce((result, player) => {
@@ -213,11 +213,11 @@ export default function onRoom(room: Room) {
         const maxVote = Math.max(...Object.values(voteResult));
         const maxVotePlayer = Object.keys(voteResult).filter((id) => voteResult[id] == maxVote).map((id) => room.validPlayers.find((p) => p.id == id)!);
         if (maxVotePlayer.length > 1) {
-          room.emit('message', `[系统消息]: 玩家 ${maxVotePlayer.map(p => p!.name).join(',')} 投票相同。无人死亡。`);
+          room.emit('message', `玩家 ${maxVotePlayer.map(p => p!.name).join(',')} 投票相同。无人死亡。`);
           vote.splice(0, vote.length);
           votePlayers.splice(0, votePlayers.length);
           gameStatus = 'talking';
-          room.emit('message', `[系统消息]: 游戏继续。玩家 ${alivePlayers[0].name} 发言。`);
+          room.emit('message', `游戏继续。玩家 ${alivePlayers[0].name} 发言。`);
           startTurn(alivePlayers[0]);
           return;
         }

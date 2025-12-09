@@ -9,6 +9,26 @@ import { IMessageEmitterEvents, IMessageEvents } from "@lib/events/message";
  */
 export enum MessageTypes {
   /**
+   * 连接准备就绪事件
+   */
+  SysReady = "sys.ready",
+  /**
+   * 连接关闭事件
+   */
+  SysClose = "sys.close",
+  /**
+   * 错误事件
+   */
+  SysError = "sys.error",
+  /**
+   * 全局错误
+   */
+  GlobalError = "global.error",
+  /**
+   * 全局命令
+   */
+  GlobalCommand = "global.command",
+  /**
    * 房间列表
    */
   RoomList = "room.list",
@@ -44,6 +64,10 @@ export enum MessageTypes {
    * 房间命令
    */
   RoomCommand = "room.command",
+  /**
+   * 房间内玩家发送的指令
+   */
+  RoomPlayerCommand = "room.player-command",
   /**
    * 房间消息
    */
@@ -85,11 +109,11 @@ export enum MessageTypes {
    */
   PlayerLogout = "player.logout",
   /**
-   * 玩家消息
+   * *玩家消息
    */
   PlayerMessage = "player.message",
   /**
-   * 玩家命令
+   * *玩家命令
    */
   PlayerCommand = "player.command",
   /**
@@ -101,17 +125,9 @@ export enum MessageTypes {
    */
   PlayerUnready = "player.unready",
   /**
-   * 全局命令
-   */
-  GlobalCommand = "global.command",
-  /**
    * 全局消息
    */
   GlobalMessage = "global.message",
-  /**
-   * 全局错误
-   */
-  GlobalError = "global.error",
 }
 
 /**

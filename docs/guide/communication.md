@@ -176,3 +176,10 @@ socket.on("close", () => {
   this.emit("close");
 });
 ```
+
+## 前端通信
+
+前端通信主要依赖于继承实现 [`tiaoom/client`](/api/client) 模块中的 `Tiaoom` 类中的两个抽象方法。
+
+- `connect()`：用于建立与后端服务器的连接。
+- `send(message: { type: `[`MessageTypes`](/api/models#messagetypes-client)`, data?: any })`：用于发送消息到服务器。

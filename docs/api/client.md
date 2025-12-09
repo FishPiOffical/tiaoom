@@ -18,13 +18,13 @@ constructor()
 
 建立连接。
 
-#### `send(message: { type: string, data?: any }): void` {#send}
+#### `send(message: { type: MessageTypes, data?: any }): void` {#send}
 
 发送消息到服务器。
 
 | 参数 | 类型 | 描述 |
 | :--- | :--- | :--- |
-| `message` | `{ type: string, data?: any }` | 要发送的消息对象。 |
+| `message` | `{ type: `[`MessageTypes`](./models.md#messagetypes-client)`, data?: any }` | 要发送的消息对象。 |
 
 ### 方法
 

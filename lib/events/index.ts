@@ -36,7 +36,13 @@ export interface TiaoomEvents extends BaseEvents {
    * 全局命令事件
    * @param {any & { sender: Player }} data 命令内容
    */
-  command: (data: any & { sender: Player }) => void;
+  command: (data: any & { sender: Player }) => void;  
+  /**
+   * 全局聊天
+   * @param {string} data 消息内容
+   **/ 
+  message: (data: string, sender?: Player) => void;
+
 }
 
 export * from './message';

@@ -1,5 +1,6 @@
 import { EventEmitter } from "events";
 import { TiaoomEvents } from "./events";
+import { MessageTypes as RecvMessageTypes } from "./client";
 import { IMessage, MessageTypes } from "./models/message";
 import { IRoom, IRoomPlayer, Room, IRoomOptions, IRoomPlayerOptions } from "./models/room";
 import { IPlayer, Player, IPlayerOptions, PlayerStatus } from "./models/player";
@@ -31,39 +32,37 @@ export class Tiaoom extends EventEmitter {
     this.messageInstance?.on("message", (message: any, cb?: (err: Error | null, data?: any) => any) => {
       try {
         switch (message.type) {
-          case "room.list":
+          case RecvMessageTypes.RoomList:
             return cb?.(null, this.rooms);
-          case "player.list":
+          case RecvMessageTypes.PlayerList:
             return cb?.(null, this.players);
-          case "room.create":
+          case RecvMessageTypes.RoomCreate:
             return this.createRoom(message.sender, message.data);
-          case "player.join":
+          case RecvMessageTypes.PlayerJoin:
             return this.joinPlayer(message.sender, message.data);
-          case "player.leave":
+          case RecvMessageTypes.PlayerLeave:
             return this.leavePlayer(message.sender, message.data);
-          case "room.get":
+          case RecvMessageTypes.RoomGet:
             return cb?.(null, this.searchRoom(message.data));
-          case "room.start":
+          case RecvMessageTypes.RoomStart:
             return this.startRoom(message.sender, message.data);
-          case "room.kick":
+          case RecvMessageTypes.RoomKick:
             return this.kickPlayer(message.sender, message.data);
-          case "room.transfer":
+          case RecvMessageTypes.RoomTransfer:
             return this.transferOwner(message.sender, message.data);
-          case "room.close":
+          case RecvMessageTypes.RoomClose:
             return this.closeRoom(message.sender, message.data);
-          case "player.login":
+          case RecvMessageTypes.PlayerLogin:
             return this.loginPlayer(message.data);
-          case "player.logout":
+          case RecvMessageTypes.PlayerLogout:
             return this.removePlayer(message.data);
-          case "player.ready":
+          case RecvMessageTypes.PlayerReady:
             return this.readyPlayer(message.sender, message.data);
-          case "player.unready":
+          case RecvMessageTypes.PlayerUnready:
             return this.unReadyPlayer(message.sender, message.data);
-          case "room.player-command":
+          case RecvMessageTypes.RoomPlayerCommand:
             return this.searchRoom(message.data)?.emit("player-command", { ...message.data , sender: message.sender });
-          case "room.message":
-            return this.searchRoom(message.data)?.emit("message", message.data);
-          case "global.command":
+          case RecvMessageTypes.GlobalCommand:
             return this.emit("command", { ...message.data , sender: message.sender });
           default:
             throw new Error('unknown message type.');
@@ -98,8 +97,8 @@ export class Tiaoom extends EventEmitter {
       this.messageInstance?.send({ type: MessageTypes.RoomList, data: rooms });
     });
 
-    this.on('command', (data) => {
-      this.messageInstance?.send({ type: MessageTypes.GlobalCommand, data });
+    this.on('message', (data, sender) => {
+      this.messageInstance?.send({ type: MessageTypes.GlobalMessage, data, sender });
     });
 
     return this;
