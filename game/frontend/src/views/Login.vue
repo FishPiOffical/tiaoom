@@ -1,14 +1,14 @@
 <template>
-  <section class="flex items-center justify-center min-h-screen bg-background text-primary p-4">
-    <div class="w-full max-w-md p-8 rounded-xl bg-surface border border-border shadow-2xl text-center space-y-8">
-      <h1 class="text-4xl font-light tracking-[0.2em] text-white">GAME ROOMS</h1>
+  <section class="flex items-center justify-center min-h-screen bg-base-100 text-base-content p-4">
+    <div class="w-full max-w-md p-8 rounded-xl bg-base-200 border border-base-content/20 shadow-2xl text-center space-y-8">
+      <h1 class="text-4xl font-light tracking-[0.2em] text-base-content">GAME ROOMS</h1>
       
-      <p v-if="error" class="text-red-400 text-sm bg-red-900/20 py-2 rounded border border-red-900/50">{{ error }}</p>
+      <p v-if="error" class="text-error text-sm bg-error/10 py-2 rounded border border-error/20">{{ error }}</p>
       
       <div class="flex flex-col gap-4">
-        <button 
+        <button
           v-if="loginType === 'fishpi'"
-          class="flex items-center justify-center gap-3 w-full py-3 bg-surface-light hover:bg-border transition-all rounded border border-border group"
+          class="btn flex items-center justify-center gap-3 w-full py-3 bg-base-300 hover:bg-base-content/10 transition-all rounded border border-base-content/20 group"
           @click="loginWithFishpi"
         >
           <img src="/fishpi.svg" class="w-6 h-6 opacity-80 group-hover:opacity-100 transition-opacity" />
@@ -21,13 +21,13 @@
               v-model="name" 
               type="text"
               placeholder="起个名字吧" 
-              class="w-full text-center py-3 text-lg"
+              class="w-full text-center py-3 text-lg input input-bordered"
               @keyup.enter="handleLogin"
               required 
             />
-            <button 
+            <button
               @click="handleLogin"
-              class="w-full py-3 bg-white text-black font-bold hover:bg-gray-200 transition-all rounded border-none"
+              class="btn w-full py-3 btn-primary"
             >
               登录
             </button>

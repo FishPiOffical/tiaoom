@@ -2,7 +2,7 @@
   <section class="flex flex-col md:flex-row gap-4 md:h-full">
     <section class="flex-1 md:h-full flex flex-col items-center justify-start md:justify-center overflow-auto p-4">
       <!-- 棋盘 -->
-      <div class="inline-block bg-surface-light border border-border p-2 rounded shadow-2xl m-auto">
+      <div class="inline-block bg-base-300 border border-base-content/20 p-2 rounded shadow-2xl m-auto">
         <div v-for="(row, rowIndex) in board" :key="rowIndex" class="flex">
           <div 
             v-for="(cell, colIndex) in row" 
@@ -13,17 +13,17 @@
             :class="{ 'cursor-pointer': currentPlayer?.id === roomPlayer.id && cell === 0 }"
           >
             <!-- 棋盘网格线 -->
-            <div class="absolute inset-0 border-t border-l border-white/10"></div>
-            <div v-if="rowIndex === board.length - 1" class="absolute inset-0 border-b border-white/10"></div>
-            <div v-if="colIndex === row.length - 1" class="absolute inset-0 border-r border-white/10"></div>
+            <div class="absolute inset-0 border-t border-l border-base-content/10"></div>
+            <div v-if="rowIndex === board.length - 1" class="absolute inset-0 border-b border-base-content/10"></div>
+            <div v-if="colIndex === row.length - 1" class="absolute inset-0 border-r border-base-content/10"></div>
             
             <!-- 棋子 -->
             <span 
               v-if="cell > 0"
               class="w-[4.5vw] h-[4.5vw] md:w-6 md:h-6 rounded-full z-10 relative transition-all duration-200"
               :class="[
-                cell === 1 ? 'bg-black border border-gray-700 shadow-lg' : 'bg-white shadow-lg',
-                currentPlace?.x === rowIndex && currentPlace?.y === colIndex ? 'ring-2 ring-red-500 scale-90' : ''
+                cell === 1 ? 'bg-neutral border border-base-content/20 shadow-lg' : 'bg-base-100 shadow-lg',
+                currentPlace?.x === rowIndex && currentPlace?.y === colIndex ? 'ring-2 ring-primary scale-90' : ''
               ]"
             />
           </div>
@@ -32,21 +32,21 @@
       
       <!-- 当前回合 -->
       <div v-if="gameStatus === 'playing'" class="flex items-center justify-center gap-3 mt-4 text-lg">
-        <div class="w-5 h-5 flex items-center justify-center bg-surface-light rounded-full border border-border">
+        <div class="w-5 h-5 flex items-center justify-center bg-base-300 rounded-full border border-base-content/20">
           <span 
             class="w-4 h-4 rounded-full"
-            :class="currentPlayer?.attributes.color === 1 ? 'bg-black border border-gray-700 shadow-md' : 'bg-white shadow-md'"
+            :class="currentPlayer?.attributes.color === 1 ? 'bg-neutral border border-base-content/20 shadow-md' : 'bg-base-100 shadow-md'"
           />
         </div>
-        <b class="text-primary">{{ currentPlayer?.name }}</b>
+        <b class="text-base-content">{{ currentPlayer?.name }}</b>
       </div>
     </section>
     
     <!-- 侧边栏 -->
-    <aside class="w-full md:w-96 flex-none border-t md:border-t-0 md:border-l border-border pt-4 md:pt-0 md:pl-4 space-y-4 md:h-full flex flex-col">
+    <aside class="w-full md:w-96 flex-none border-t md:border-t-0 md:border-l border-base-content/20 pt-4 md:pt-0 md:pl-4 space-y-4 md:h-full flex flex-col">
       <section class="inline-flex flex-col gap-2">
         <!-- 成就表 -->
-        <table v-if="Object.keys(achivents).length" class="w-full border-collapse border border-border text-sm">
+        <table v-if="Object.keys(achivents).length" class="w-full border-collapse border border-base-content/20 text-sm">
           <thead>
             <tr class="bg-surface-light">
               <th class="border border-border p-2 text-secondary">玩家</th>
@@ -83,18 +83,18 @@
         
         <!-- 操作按钮 -->
         <div v-if="gameStatus === 'waiting' && roomPlayer.role === 'player'" class="group flex gap-2">
-          <button 
+          <button class="btn" 
             @click="game?.leaveRoom(roomPlayer.room.id)"
             :disabled="roomPlayer.isReady"
           >
             离开
           </button>
-          <button 
+          <button class="btn" 
             @click="game?.ready(roomPlayer.room.id, !roomPlayer.isReady)"
           >
             {{ roomPlayer.isReady ? '取消' : '准备' }}
           </button>
-          <button 
+          <button class="btn btn-primary" 
             @click="game?.startGame(roomPlayer.room.id)" 
             :disabled="!isAllReady"
           >
@@ -103,27 +103,27 @@
         </div>
         
         <div class="group flex gap-2">
-          <button 
+          <button class="btn" 
             v-if="roomPlayer.role === 'watcher'" 
             @click="game?.leaveRoom(roomPlayer.room.id)"
             :disabled="roomPlayer.isReady"
           >
             离开
           </button>
-          <button 
+          <button class="btn" 
             v-if="roomPlayer.role === 'watcher' && !isRoomFull" 
             @click="game?.joinRoom(roomPlayer.room.id)"
           >
             加入游戏
           </button>
-          <button 
+          <button class="btn" 
             v-if="gameStatus === 'playing' && roomPlayer.role === 'player'"
             @click="requestDraw"
             :disabled="currentPlayer?.id !== roomPlayer.id"
           >
             请求和棋
           </button>
-          <button 
+          <button class="btn" 
             v-if="gameStatus === 'playing' && roomPlayer.role === 'player'"
             @click="requestLose"
             :disabled="currentPlayer?.id !== roomPlayer.id"
@@ -135,15 +135,15 @@
         <hr class="border-border" />
         
         <!-- 聊天 -->
-        <div v-if="roomPlayer.role === 'player'" class="group flex gap-2">
+        <div v-if="roomPlayer.role === 'player'" class="join w-full">
           <input 
             v-model="msg" 
             type="text"
             @keyup.enter="sendMessage" 
             placeholder="随便聊聊" 
-            class="flex-1"
+            class="flex-1 input join-item"
           />
-          <button @click="sendMessage">发送</button>
+          <button class="btn join-item" @click="sendMessage">发送</button>
         </div>
       </section>
       

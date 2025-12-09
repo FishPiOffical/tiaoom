@@ -1,75 +1,46 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@plugin "daisyui" {
+  themes: all;
+};
 
-:root {
-  color-scheme: dark;
+@theme {
+  --font-pixel: "Chill Pixels Mono", "Pixel32", ui-sans-serif, system-ui;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 body {
-  @apply bg-background text-primary font-sans antialiased;
+  @apply bg-base-100 text-base-content font-sans antialiased;
   margin: 0;
   padding: 0;
   height: 100%;
 }
 
-/* Minimalist Input Styles */
-input, select {
-  @apply bg-surface text-primary border border-border rounded px-3 py-1 outline-none transition-colors;
-}
-
-input:focus, select:focus {
-  @apply border-primary;
-}
-
-input::placeholder {
-  @apply text-secondary;
-}
-
-/* Minimalist Button Styles */
-button, 
-input[type="button"], 
-input[type="submit"] {
-  @apply bg-surface-light text-primary border border-border rounded px-4 py-1 cursor-pointer transition-all duration-200 text-sm;
-}
-
-button:hover, 
-input[type="button"]:hover, 
-input[type="submit"]:hover {
-  @apply bg-border border-primary;
-}
-
-button:disabled,
-input:disabled {
-  @apply opacity-50 cursor-not-allowed hover:bg-surface-light hover:border-border;
-}
-
 .icon-btn {
-  @apply bg-transparent text-base text-primary border-none border-border rounded-full p-0 cursor-pointer transition-all duration-200 inline-flex items-center justify-center;
+  @apply bg-transparent text-base text-base-content border-none border-base-content/20 rounded-full p-0 cursor-pointer transition-all duration-200 inline-flex items-center justify-center;
 }
 
 .icon-btn-hidden {
-  @apply bg-transparent text-base text-primary border-none border-border rounded-full p-0 cursor-pointer transition-all duration-200 items-center justify-center;
+  @apply bg-transparent text-base text-base-content border-none border-base-content/20 rounded-full p-0 cursor-pointer transition-all duration-200 items-center justify-center;
 }
 
 .icon-btn:hover, .icon-btn-hidden:hover {
-  @apply -m-2 p-2 bg-border;
+  @apply -m-2 p-2 bg-base-content/20;
 }
 
 /* Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 4px;
+  height: 4px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-background;
+  @apply bg-base-100;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-surface-light rounded;
+  @apply bg-base-300 rounded;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-border;
+  @apply bg-base-content/20;
 }

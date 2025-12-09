@@ -2,8 +2,8 @@
   <section class="flex flex-col md:flex-row gap-4 md:h-full">
     <section class="flex-1 md:h-full flex flex-col items-center justify-start md:justify-center overflow-hidden p-4">
       <!-- 棋盘 -->
-      <div class="relative inline-block bg-gray-800 p-3 rounded-lg shadow-2xl m-auto select-none">
-        <div class="flex flex-col bg-gray-700 rounded border-4 border-gray-600 overflow-hidden relative">
+      <div class="relative inline-block bg-base-300 p-3 rounded-lg shadow-2xl m-auto select-none">
+        <div class="flex flex-col bg-base-200 rounded border-4 border-base-content/20 overflow-hidden relative">
           <div v-for="(row, rowIndex) in board" :key="rowIndex" class="flex">
             <div 
               v-for="(cell, colIndex) in row" 
@@ -11,14 +11,14 @@
               @click="handleColumnClick(colIndex)"
               @mouseenter="hoverCol = colIndex"
               @mouseleave="hoverCol = -1"
-              class="relative w-12 h-12 md:w-16 md:h-16 flex items-center justify-center border border-gray-600/20"
+              class="relative w-12 h-12 md:w-16 md:h-16 flex items-center justify-center border border-base-content/10"
               :class="{ 
                 'cursor-pointer': isMyTurn && cell !== -1,
-                'bg-white/5': hoverCol === colIndex && isMyTurn
+                'bg-base-content/5': hoverCol === colIndex && isMyTurn
               }"
             >
               <!-- 孔洞背景 -->
-              <div class="w-10 h-10 md:w-14 md:h-14 rounded-full bg-gray-900/40 shadow-inner"></div>
+              <div class="w-10 h-10 md:w-14 md:h-14 rounded-full bg-base-content/10 shadow-inner"></div>
 
               <!-- 真实棋子 -->
               <transition name="drop">
@@ -26,8 +26,8 @@
                   v-if="cell > 0"
                   class="absolute w-10 h-10 md:w-14 md:h-14 rounded-full shadow-lg"
                   :class="[
-                    cell === 1 ? 'bg-black border border-gray-700' : 'bg-white border border-gray-200',
-                    currentPlace?.x === rowIndex && currentPlace?.y === colIndex ? 'ring-2 ring-red-500' : ''
+                    cell === 1 ? 'bg-neutral text-neutral-content border border-base-content/20' : 'bg-base-100 border border-base-content/20',
+                    currentPlace?.x === rowIndex && currentPlace?.y === colIndex ? 'ring-2 ring-primary' : ''
                   ]"
                 />
               </transition>
@@ -36,7 +36,7 @@
               <span 
                 v-if="cell === 0 && hoverCol === colIndex && isMyTurn"
                 class="absolute w-10 h-10 md:w-14 md:h-14 rounded-full opacity-40"
-                :class="currentPlayer?.attributes.color === 1 ? 'bg-black' : 'bg-white'"
+                :class="currentPlayer?.attributes.color === 1 ? 'bg-neutral' : 'bg-base-100'"
               />
             </div>
           </div>
@@ -78,7 +78,7 @@
           </tbody>
         </table>
         
-        <hr class="border-border" />
+        <hr v-if="Object.keys(achivents).length" class="border-border" />
         
         <!-- 玩家列表 -->
         <ul class="space-y-1">
@@ -96,18 +96,18 @@
         
         <!-- 操作按钮 -->
         <div v-if="gameStatus === 'waiting' && roomPlayer.role === 'player'" class="group flex gap-2">
-          <button 
+          <button class="btn" 
             @click="game?.leaveRoom(roomPlayer.room.id)"
             :disabled="roomPlayer.isReady"
           >
             离开
           </button>
-          <button 
+          <button class="btn" 
             @click="game?.ready(roomPlayer.room.id, !roomPlayer.isReady)"
           >
             {{ roomPlayer.isReady ? '取消' : '准备' }}
           </button>
-          <button 
+          <button class="btn btn-primary" 
             @click="game?.startGame(roomPlayer.room.id)" 
             :disabled="!isAllReady"
           >
@@ -116,27 +116,27 @@
         </div>
         
         <div class="group flex gap-2">
-          <button 
+          <button class="btn" 
             v-if="roomPlayer.role === 'watcher'" 
             @click="game?.leaveRoom(roomPlayer.room.id)"
             :disabled="roomPlayer.isReady"
           >
             离开
           </button>
-          <button 
+          <button class="btn" 
             v-if="roomPlayer.role === 'watcher' && !isRoomFull" 
             @click="game?.joinRoom(roomPlayer.room.id)"
           >
             加入游戏
           </button>
-          <button 
+          <button class="btn" 
             v-if="gameStatus === 'playing' && roomPlayer.role === 'player'"
             @click="requestDraw"
             :disabled="currentPlayer?.id !== roomPlayer.id"
           >
             请求和棋
           </button>
-          <button 
+          <button class="btn" 
             v-if="gameStatus === 'playing' && roomPlayer.role === 'player'"
             @click="requestLose"
             :disabled="currentPlayer?.id !== roomPlayer.id"
@@ -148,15 +148,15 @@
         <hr class="border-border" />
         
         <!-- 聊天 -->
-        <div v-if="roomPlayer.role === 'player'" class="group flex gap-2">
+        <div v-if="roomPlayer.role === 'player'" class="join">
           <input 
             v-model="msg" 
             type="text"
             @keyup.enter="sendMessage" 
             placeholder="随便聊聊" 
-            class="flex-1"
+            class="flex-1 input join-item"
           />
-          <button @click="sendMessage">发送</button>
+          <button class="btn join-item" @click="sendMessage">发送</button>
         </div>
       </section>
       

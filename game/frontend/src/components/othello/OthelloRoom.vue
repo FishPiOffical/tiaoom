@@ -2,21 +2,21 @@
   <section class="flex flex-col md:flex-row gap-4 md:h-full">
     <section class="flex-1 md:h-full flex flex-col items-center justify-start md:justify-center overflow-auto p-4">
       <!-- 棋盘 -->
-      <div class="inline-block bg-surface-light border border-border p-2 rounded shadow-2xl m-auto">
+      <div class="inline-block bg-base-300 border border-base-content/20 p-2 rounded shadow-2xl m-auto">
         <div v-for="(row, rowIndex) in board" :key="rowIndex" class="flex">
           <div 
             v-for="(cell, colIndex) in row" 
             :key="colIndex" 
             @click="placePiece(rowIndex, colIndex)" 
-            class="relative w-[10vw] h-[10vw] md:w-8 md:h-8 flex items-center justify-center border border-white/10"
-            :class="{ 'cursor-pointer hover:bg-white/5': currentPlayer?.id === roomPlayer.id && cell === 0 }"
+            class="relative w-[10vw] h-[10vw] md:w-8 md:h-8 flex items-center justify-center border border-base-content/10"
+            :class="{ 'cursor-pointer hover:bg-base-content/5': currentPlayer?.id === roomPlayer.id && cell === 0 }"
           >
             <span 
               v-if="cell > 0"
               class="w-[9vw] h-[9vw] md:w-7 md:h-7 rounded-full transition-all duration-500"
               :class="[
-                cell === 1 ? 'black-piece border border-gray-700 shadow-lg' : 'white-piece shadow-lg',
-                currentPlace?.x === rowIndex && currentPlace?.y === colIndex ? 'ring-2 ring-red-500 scale-105' : ''
+                cell === 1 ? 'black-piece border border-base-content/20 shadow-lg' : 'white-piece shadow-lg',
+                currentPlace?.x === rowIndex && currentPlace?.y === colIndex ? 'ring-2 ring-primary scale-105' : ''
               ]"
             />
           </div>
@@ -25,27 +25,27 @@
       
       <!-- 当前回合 -->
       <div v-if="gameStatus === 'playing'" class="flex items-center justify-center gap-3 mt-4 text-lg">
-        <div class="w-6 h-6 flex items-center justify-center bg-surface-light rounded-full border border-border">
+        <div class="w-6 h-6 flex items-center justify-center bg-base-300 rounded-full border border-base-content/20">
           <span 
             class="w-5 h-5 rounded-full"
-            :class="currentPlayer?.attributes.color === 1 ? 'bg-black border border-gray-700 shadow-md' : 'bg-white shadow-md'"
+            :class="currentPlayer?.attributes.color === 1 ? 'bg-neutral border border-base-content/20 shadow-md' : 'bg-base-100 shadow-md'"
           />
         </div>
-        <b class="text-primary">{{ currentPlayer?.name }}</b>
+        <b class="text-base-content">{{ currentPlayer?.name }}</b>
       </div>
     </section>
     
     <!-- 侧边栏 -->
-    <aside class="w-full md:w-96 flex-none border-t md:border-t-0 md:border-l border-border pt-4 md:pt-0 md:pl-4 space-y-4 md:h-full flex flex-col">
+    <aside class="w-full md:w-96 flex-none border-t md:border-t-0 md:border-l border-base-content/20 pt-4 md:pt-0 md:pl-4 space-y-4 md:h-full flex flex-col">
       <section class="inline-flex flex-col gap-2">
         <!-- 成就表 -->
-        <table v-if="Object.keys(achivents).length" class="w-full border-collapse border border-border text-sm">
+        <table v-if="Object.keys(achivents).length" class="w-full border-collapse border border-base-content/20 text-sm">
           <thead>
-            <tr class="bg-surface-light">
-              <th class="border border-border p-2 text-secondary">玩家</th>
-              <th class="border border-border p-2 text-secondary">胜</th>
-              <th class="border border-border p-2 text-secondary">负</th>
-              <th class="border border-border p-2 text-secondary">和</th>
+            <tr class="bg-base-300">
+              <th class="border border-base-content/20 p-2 text-base-content/60">玩家</th>
+              <th class="border border-base-content/20 p-2 text-base-content/60">胜</th>
+              <th class="border border-base-content/20 p-2 text-base-content/60">负</th>
+              <th class="border border-base-content/20 p-2 text-base-content/60">和</th>
             </tr>
           </thead>
           <tbody>
@@ -76,18 +76,18 @@
         
         <!-- 操作按钮 -->
         <div v-if="gameStatus === 'waiting' && roomPlayer.role === 'player'" class="group flex gap-2">
-          <button 
+          <button class="btn" 
             @click="game.leaveRoom(roomPlayer.room.id)"
             :disabled="roomPlayer.isReady"
           >
             离开
           </button>
-          <button 
+          <button class="btn" 
             @click="game.ready(roomPlayer.room.id, !roomPlayer.isReady)"
           >
             {{ roomPlayer.isReady ? '取消' : '准备' }}
           </button>
-          <button 
+          <button class="btn btn-primary" 
             @click="game.startGame(roomPlayer.room.id)" 
             :disabled="!isAllReady"
           >
@@ -96,27 +96,27 @@
         </div>
         
         <div class="group flex gap-2">
-          <button 
+          <button class="btn" 
             v-if="roomPlayer.role === 'watcher'" 
             @click="game.leaveRoom(roomPlayer.room.id)"
             :disabled="roomPlayer.isReady"
           >
             离开
           </button>
-          <button 
+          <button class="btn" 
             v-if="roomPlayer.role === 'watcher' && !isRoomFull" 
             @click="game.joinRoom(roomPlayer.room.id)"
           >
             加入游戏
           </button>
-          <button 
+          <button class="btn" 
             v-if="gameStatus === 'playing' && roomPlayer.role === 'player'"
             @click="requestDraw"
             :disabled="currentPlayer?.id !== roomPlayer.id"
           >
             请求和棋
           </button>
-          <button 
+          <button class="btn" 
             v-if="gameStatus === 'playing' && roomPlayer.role === 'player'"
             @click="requestLose"
             :disabled="currentPlayer?.id !== roomPlayer.id"
@@ -128,15 +128,15 @@
         <hr class="border-border" />
         
         <!-- 聊天 -->
-        <div v-if="roomPlayer.role === 'player'" class="group flex gap-2">
+        <div v-if="roomPlayer.role === 'player'" class="join w-full">
           <input 
             v-model="msg" 
             type="text"
             @keyup.enter="sendMessage" 
             placeholder="随便聊聊" 
-            class="flex-1"
+            class="flex-1 input join-item"
           />
-          <button @click="sendMessage">发送</button>
+          <button class="btn join-item" @click="sendMessage">发送</button>
         </div>
       </section>      
       <section class="bg-surface-light/30 p-3 rounded h-48 overflow-auto border border-border/50 flex-1">
@@ -163,22 +163,6 @@ const achivents = ref<Record<string, any>>({})
 const currentPlace = ref<{ x: number; y: number } | null>(null)
 const msg = ref('')
 const roomMessages = ref<string[]>([])
-
-// 初始化黑白棋起始位置
-board.value[3][3] = 2
-board.value[3][4] = 1
-board.value[4][3] = 1
-board.value[4][4] = 2
-
-// 标记所有可落子的位置
-board.value[2][4] = 0
-board.value[4][2] = 0
-board.value[2][3] = 0
-board.value[3][2] = 0
-board.value[4][5] = 0
-board.value[5][4] = 0
-board.value[5][3] = 0
-board.value[3][5] = 0
 
 props.game?.onRoomStart(() => {
   roomMessages.value = []
@@ -271,25 +255,25 @@ const isAllReady = computed(() => {
     transition: background 0.5s, transform 0.5s;
   }
   .white-piece {
-    background: white;
-    color: black;
+    background: oklch(var(--b1));
+    color: oklch(var(--bc));
     transform: rotateY(0deg);
     box-shadow: none;
-    border: 1px solid #555;
+    border: 1px solid oklch(var(--bc) / 0.2);
   }
   .black-piece {
-    background: black;
-    color: white;
+    background: oklch(var(--n));
+    color: oklch(var(--nc));
     transform: rotateY(180deg);
     box-shadow: none;
-    border: 1px solid #555;
+    border: 1px solid oklch(var(--bc) / 0.2);
   }
   .row .cell::after {
     content: '';
     display: block;
     width: 100%;
     height: 100%;
-    border: 1px solid #aaa;
+    border: 1px solid oklch(var(--bc) / 0.2);
     box-sizing: border-box;
     left: 0em;
     top: 0em;
@@ -306,6 +290,6 @@ const isAllReady = computed(() => {
     margin: -1px -1px 0 0;
   }
   .row .can-place::after {
-    border-color: #4CAF50;
+    border-color: oklch(var(--su));
   }
 </style>

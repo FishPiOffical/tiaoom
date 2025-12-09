@@ -2,8 +2,8 @@
   <section class="flex flex-col md:flex-row gap-4 md:h-full">
     <section class="flex-1 md:h-full overflow-auto p-2">
        <!-- 你的词 -->
-      <div v-if="gameStatus !== 'waiting' && roomPlayer.role === 'player'" class="mb-6 p-6 bg-surface-light rounded-lg border-2 border-primary/50 text-center shadow-lg">
-        <span class="text-secondary text-lg">你的词语</span>
+      <div v-if="gameStatus !== 'waiting' && roomPlayer.role === 'player'" class="mb-6 p-6 bg-base-300 rounded-lg border-2 border-primary/50 text-center shadow-lg">
+        <span class="text-base-content/60 text-lg">你的词语</span>
         <div class="text-4xl font-bold text-primary mt-2 tracking-widest">{{ word }}</div>
       </div>
 
@@ -12,7 +12,7 @@
         <div 
           v-for="p in roomPlayer.room.players" 
           :key="p.id" 
-          class="group relative bg-surface-light border border-border p-4 rounded-lg shadow-md flex flex-col items-center gap-2 transition-all"
+          class="group relative bg-base-300 border border-base-content/20 p-4 rounded-lg shadow-md flex flex-col items-center gap-2 transition-all"
           :class="{ 
             'opacity-50 grayscale': p.isDead,
             'ring-2 ring-primary': currentTalkPlayer?.id === p.id,
@@ -20,7 +20,7 @@
           }"
         >
           <!-- 头像/状态图标 -->
-          <div class="w-12 h-12 rounded-full bg-surface border border-border flex items-center justify-center text-xl font-bold relative">
+          <div class="w-12 h-12 rounded-full bg-base-200 border border-base-content/20 flex items-center justify-center text-xl font-bold relative">
             <span v-if="!p.attributes.avatar">{{ p.name.substring(0, 1).toUpperCase() }}</span>
             <img 
               v-else 
@@ -40,17 +40,17 @@
           
           <div class="text-center w-full">
             <div class="font-bold truncate w-full" :class="{ 'line-through': p.isDead }">{{ p.name }}</div>
-            <div class="text-xs text-secondary mt-1">
+            <div class="text-xs text-base-content/60 mt-1">
               <span v-if="p.role === 'player'">{{ getPlayerStatus(p) }}</span>
               <span v-else>围观中</span>
             </div>
           </div>
 
           <!-- 投票按钮 -->
-          <button 
+          <button
             v-if="!roomPlayer.isDead && roomPlayer.role === 'player' && p.role === 'player' && voting && !voted && canVotePlayer.includes(p.id)" 
             @click="votePlayer(p.id)"
-            class="mt-2 w-full py-1 text-sm bg-red-500 hover:bg-red-600 text-white rounded transition-colors"
+            class="btn block btn-accent transition-colors"
           >
             投票
           </button>
@@ -60,14 +60,14 @@
             v-if="roomPlayer.isCreator && p.id !== roomPlayer.id && gameStatus === 'waiting'" 
             class="absolute top-3 right-3 flex gap-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
           >
-            <button 
+            <button
               @click="transferOwner(p.id)"
               class="icon-btn "
               title="转让房主"
             >
               <Icon icon="mdi:crown" />
             </button>
-            <button 
+            <button
               @click="kickPlayer(p.id)"
               class="icon-btn "
               title="踢出玩家"
@@ -80,22 +80,22 @@
     </section>
     
     <!-- 侧边栏 -->
-    <aside class="w-full md:w-96 flex-none border-t md:border-t-0 md:border-l border-border pt-4 md:pt-0 md:pl-4 space-y-4 md:h-full flex flex-col">
+    <aside class="w-full md:w-96 flex-none border-t md:border-t-0 md:border-l border-base-content/20 pt-4 md:pt-0 md:pl-4 space-y-4 md:h-full flex flex-col">
       <section class="inline-flex flex-col gap-2">
         <!-- 操作按钮 -->
         <div v-if="gameStatus === 'waiting' && roomPlayer.role === 'player'" class="group flex gap-2">
-          <button 
+          <button class="btn" 
             @click="game?.leaveRoom(roomPlayer.room.id)"
             :disabled="roomPlayer.isReady"
           >
             离开
           </button>
-          <button 
+          <button class="btn" 
             @click="game?.ready(roomPlayer.room.id, !roomPlayer.isReady)"
           >
             {{ roomPlayer.isReady ? '取消' : '准备' }}
           </button>
-          <button 
+          <button class="btn btn-primary" 
             @click="game?.startGame(roomPlayer.room.id)" 
             :disabled="!isAllReady"
           >
@@ -104,10 +104,10 @@
         </div>
         
         <div v-if="roomPlayer.role === 'watcher'" class="group flex gap-2">
-          <button @click="game?.leaveRoom(roomPlayer.room.id)" :disabled="roomPlayer.isReady">
+          <button class="btn" @click="game?.leaveRoom(roomPlayer.room.id)" :disabled="roomPlayer.isReady">
             离开
           </button>
-          <button 
+          <button class="btn" 
             v-if="!isRoomFull" 
             @click="game?.joinRoom(roomPlayer.room.id)"
           >
@@ -117,38 +117,40 @@
 
         <!-- 发言控制 -->
         <div v-if="roomPlayer.role === 'player' && canSpeak && gameStatus === 'talking'" class="group flex flex-col gap-2">
-           <button @click="sendTalked" class="w-full bg-green-600 hover:bg-green-700">
+          <button @click="sendTalked" class="btn block btn-accent">
             结束发言 {{ countdown > 0 ? `(${countdown}s)` : '' }}
           </button>
           <hr class="border-border" />
         </div>        
         
         <!-- 聊天 -->
-        <div v-if="roomPlayer.role === 'player'" class="group flex gap-2 items-center">
+        <div class="flex">
           <button 
             @click="showRules = !showRules" 
-            class="icon-btn text-secondary hover:text-primary"
+            class="btn-ghost cursor-pointer bg-transparent border-none px-2!"
             title="游戏规则"
           >
             <Icon icon="mdi:information-outline" />
           </button>
-          <input 
-            v-model="msg" 
-            type="text"
-            @keyup.enter="sendMessage" 
-            placeholder="聊天或说明你的词语" 
-            class="flex-1"
-          />
-          <button @click="sendMessage" :disabled="!canSpeak">发送</button>
+          <div v-if="roomPlayer.role === 'player'" class="join w-full">
+            <input 
+              v-model="msg" 
+              type="text"
+              @keyup.enter="sendMessage" 
+              placeholder="聊天或说明你的词语" 
+              class="flex-1 input join-item"
+            />
+            <button class="btn join-item" @click="sendMessage" :disabled="!canSpeak">发送</button>
+          </div>
         </div>
 
         <!-- 规则弹窗 -->
-        <div v-if="showRules" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="showRules = false">
-          <div class="bg-surface p-6 rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div v-if="showRules" class="fixed inset-0 bg-base-300/50 flex items-center justify-center z-50" @click.self="showRules = false">
+          <div class="bg-base-100 p-6 rounded-lg shadow-xl max-w-md w-full mx-4">
             <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
               <Icon icon="mdi:book-open-variant" /> 游戏规则
             </h3>
-            <ul class="space-y-2 text-sm text-secondary">
+            <ul class="space-y-2 text-sm ">
               <li>1. 玩家分为平民和卧底，平民词语相同，卧底词语不同。</li>
               <li>2. 玩家轮流发言，描述自己的词语，但不能直接说出词语。</li>
               <li>3. <strong>发言计时机制：</strong>
@@ -162,7 +164,7 @@
               <li>4. 所有玩家发言结束后进行投票，票数最多者出局。</li>
               <li>5. 卧底出局则平民胜利，仅剩2人且含卧底则卧底胜利。</li>
             </ul>
-            <button @click="showRules = false" class="mt-6 w-full bg-border text-primary py-2 rounded hover:bg-border/50">
+            <button @click="showRules = false" class="btn btn-primary mt-6 w-full py-2 rounded ">
               知道了
             </button>
           </div>
