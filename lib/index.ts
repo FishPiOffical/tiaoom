@@ -71,7 +71,7 @@ export class Tiaoom extends EventEmitter {
         cb?.(error as Error);
         this.messageInstance?.send({
           type: MessageTypes.GlobalError,
-          data: error,
+          data: { message: (error as Error).message },
           sender: message.sender,
         });
       }
@@ -340,7 +340,7 @@ export class Tiaoom extends EventEmitter {
 
     roomPlayer.isReady = false;
     playerInstance.emit("status", PlayerStatus.unready);
-    room.emit("player-unready", roomPlayer);
+    room.emit("player-unready", { ...player, ...roomPlayer });
     room.emit('update', room);
 
     return this;
