@@ -110,7 +110,7 @@ export default function onRoom(room: Room) {
     });
   }).on('leave', (player) => {
     console.log("player left:", player);
-    if (gameStatus === 'playing') {
+    if (gameStatus === 'playing' && player.role === 'player') {
       room.emit('message', { content: `玩家 ${player.name} 离开游戏，游戏结束。` });
       lastLosePlayer = room.validPlayers.find((p) => p.id != player.id)!;
       gameStatus = 'waiting';
