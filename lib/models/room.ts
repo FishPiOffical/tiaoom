@@ -321,7 +321,7 @@ export class Room extends EventEmitter implements IRoom {
   searchPlayer(playerId: string): RoomPlayer | undefined;
   searchPlayer(player: IPlayer): RoomPlayer | undefined;
   searchPlayer(player: string | IPlayer) {
-    const playerId = typeof player === "string" ? player : player.id;
+    const playerId = typeof player === "string" ? player : player?.id;
     return this.players.find((player) => player.id == playerId);
   }
 
