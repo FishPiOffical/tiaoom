@@ -2,16 +2,21 @@ import { Request, Response } from "express";
 
 export async function login(req: Request, res: Response) {
   const domain = new URL(req.headers.referer || `${req.protocol}://${req.headers.host}`).origin;
-  if (req.query['openid.mode'] === 'id_res') {
-    const userId = await verify(req);
-    if (userId) {
-      const userInfo = await getUserInfo(userId);
-      req.session.player = { name: userInfo.data.userNickname || userInfo.data.userName, id: userId, avatar: userInfo.data.userAvatarURL  };
-      return res.redirect("/");
-    } else {
-      req.session.error = "登录验证失败，请重试";
-      return res.redirect("/login");
+  try {
+    if (req.query['openid.mode'] === 'id_res') {
+      const userId = await verify(req);
+      if (userId) {
+        const userInfo = await getUserInfo(userId);
+        req.session.player = { name: userInfo.data.userNickname || userInfo.data.userName, id: userId, avatar: userInfo.data.userAvatarURL  };
+        return res.redirect("/");
+      } else {
+        req.session.error = "登录验证失败，请重试";
+        return res.redirect("/login");
+      }
     }
+  } catch (error) {
+    req.session.error = "登录验证失败，请重试：" + (error instanceof Error ? `(${error.message})` : "");
+    return res.redirect("/login");
   }
   res.redirect(`https://fishpi.cn/openid/login?openid.ns=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0&openid.mode=checkid_setup&openid.return_to=${encodeURIComponent(`${domain}/api/login/fishpi`)}&openid.realm=${encodeURIComponent(domain)}&openid.claimed_id=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.identity=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select`);
 }
@@ -40,7 +45,9 @@ function verify(req: Request) {
         return claimed_id.split('/').pop();
       }
       return null;
-    })
+    }).catch(() => {
+      return null;
+    });
 }
 
 function getUserInfo(userId: string): any {

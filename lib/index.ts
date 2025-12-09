@@ -108,7 +108,7 @@ export class Tiaoom extends EventEmitter {
   searchPlayer(player: IPlayerOptions | IRoomPlayerOptions): Player | undefined;
 
   searchPlayer(player: IPlayerOptions | IRoomPlayerOptions | string) {
-    const playerId = typeof player === "string" ? player : player.id;
+    const playerId = typeof player === "string" ? player : player?.id;
     return this.players.find((target) => target.id === playerId);
   }
 
@@ -116,7 +116,7 @@ export class Tiaoom extends EventEmitter {
   searchRoom(room: Partial<IRoomOptions>): Room | undefined;
 
   searchRoom(room: Partial<IRoomOptions> | string) {
-    const roomId = typeof room === "string" ? room : room.id;
+    const roomId = typeof room === "string" ? room : room?.id;
     return this.rooms.find((target) => target.id === roomId);
   }
 
