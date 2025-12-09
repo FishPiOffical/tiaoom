@@ -288,6 +288,7 @@ function sendMessage() {
 }
 
 async function handleLogout() {
+  if (!confirm('确定要退出登录吗？')) return
   await gameStore.logout()
   router.push('/login')
 }
