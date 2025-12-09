@@ -55,6 +55,9 @@ export const useGameStore = defineStore('game', () => {
       .on('global.error', (err) => {
         if (err.message) alert(err.message)
       })
+      .on('player.error', (err) => {
+        if (err.message) alert(err.message)
+      })
       .onReady(() => {
         if (player.value) {
           game.value!.login(new Player({ ...player.value, attributes: { avatar: player.value.avatar } }))

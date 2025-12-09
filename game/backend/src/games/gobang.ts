@@ -108,6 +108,25 @@ export default function onRoom(room: Room) {
       type: 'achivents',
       data: achivents
     });
+  }).on('leave', (player) => {
+    console.log("player left:", player);
+    if (gameStatus === 'playing') {
+      room.emit('message', { content: `玩家 ${player.name} 离开游戏，游戏结束。` });
+      lastLosePlayer = room.validPlayers.find((p) => p.id != player.id)!;
+      gameStatus = 'waiting';
+      room.validPlayers.forEach((p) => {
+        if (!achivents[p.name]) {
+          achivents[p.name] = { win: 0, lost: 0, draw: 0 };
+        }
+        if (p.id == lastLosePlayer?.id) {
+          achivents[p.name].win += 1;
+        } else {
+          achivents[p.name].lost += 1;
+        }
+      });
+      room.emit('command', { type: 'achivements', data: achivents });
+      room.end();
+    }
   }).on('player-command', (message: any) => {
     console.log("room message:", message);
     const sender = room.validPlayers.find((p) => p.id == message.sender?.id)!;
