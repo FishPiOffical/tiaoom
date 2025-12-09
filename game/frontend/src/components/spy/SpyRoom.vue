@@ -126,7 +126,7 @@
         <!-- 聊天 -->
         <div class="flex">
           <button 
-            @click="showRules = !showRules" 
+            @click="rulesModal?.open()" 
             class="btn-ghost cursor-pointer bg-transparent border-none px-2!"
             title="游戏规则"
           >
@@ -145,30 +145,22 @@
         </div>
 
         <!-- 规则弹窗 -->
-        <div v-if="showRules" class="fixed inset-0 bg-base-300/50 flex items-center justify-center z-50" @click.self="showRules = false">
-          <div class="bg-base-100 p-6 rounded-lg shadow-xl max-w-md w-full mx-4">
-            <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
-              <Icon icon="mdi:book-open-variant" /> 游戏规则
-            </h3>
-            <ul class="space-y-2 text-sm ">
-              <li>1. 玩家分为平民和卧底，平民词语相同，卧底词语不同。</li>
-              <li>2. 玩家轮流发言，描述自己的词语，但不能直接说出词语。</li>
-              <li>3. <strong>发言计时机制：</strong>
-                <ul class="pl-4 mt-1 list-disc">
-                  <li>轮到发言时，有 <strong>5分钟</strong> 时间准备和输入。</li>
-                  <li>超时未发言将被判定为死亡（出局）。</li>
-                  <li>一旦开始发言（发送消息），剩余时间将缩短为 <strong>30秒</strong>。</li>
-                  <li>30秒内未结束发言（点击结束按钮），系统将自动结束你的发言。</li>
-                </ul>
-              </li>
-              <li>4. 所有玩家发言结束后进行投票，票数最多者出局。</li>
-              <li>5. 卧底出局则平民胜利，仅剩2人且含卧底则卧底胜利。</li>
-            </ul>
-            <button @click="showRules = false" class="btn btn-primary mt-6 w-full py-2 rounded ">
-              知道了
-            </button>
-          </div>
-        </div>
+        <RulesModal ref="rulesModal">
+          <ul class="space-y-2 text-sm ">
+            <li>1. 玩家分为平民和卧底，平民词语相同，卧底词语不同。</li>
+            <li>2. 玩家轮流发言，描述自己的词语，但不能直接说出词语。</li>
+            <li>3. <strong>发言计时机制：</strong>
+              <ul class="pl-4 mt-1 list-disc">
+                <li>轮到发言时，有 <strong>5分钟</strong> 时间准备和输入。</li>
+                <li>超时未发言将被判定为死亡（出局）。</li>
+                <li>一旦开始发言（发送消息），剩余时间将缩短为 <strong>30秒</strong>。</li>
+                <li>30秒内未结束发言（点击结束按钮），系统将自动结束你的发言。</li>
+              </ul>
+            </li>
+            <li>4. 所有玩家发言结束后进行投票，票数最多者出局。</li>
+            <li>5. 卧底出局则平民胜利，仅剩2人且含卧底则卧底胜利。</li>
+          </ul>
+        </RulesModal>
       </section>
       
       <section class="bg-base-300/30 p-3 rounded h-48 overflow-auto border border-base-content/20 flex-1">
@@ -182,6 +174,7 @@
 import { ref, computed } from 'vue'
 import type { GameCore } from '@/core/game'
 import type { RoomPlayer, Room, Player } from 'tiaoom/client';
+import RulesModal from '@/components/rule/RulesModal.vue'
 
 type SpyRoomPlayer = RoomPlayer & { isDead?: boolean }
 
@@ -199,7 +192,7 @@ const word = ref('')
 const roomMessages = ref<string[]>([])
 const currentPlayer = computed(() => props.roomPlayer.id)
 const countdown = ref(0)
-const showRules = ref(false)
+const rulesModal = ref<InstanceType<typeof RulesModal> | null>(null)
 let countdownTimer: any = null
 
 const voting = computed(() => gameStatus.value === 'voting')

@@ -26,7 +26,7 @@
                   v-if="cell > 0"
                   class="absolute w-10 h-10 md:w-14 md:h-14 rounded-full shadow-lg"
                   :class="[
-                    cell === 1 ? 'bg-neutral text-neutral-content border border-base-content/20' : 'bg-base-100 border border-base-content/20',
+                    cell === 1 ? 'bg-black border border-white/20' : 'bg-white border border-black/20',
                     currentPlace?.x === rowIndex && currentPlace?.y === colIndex ? 'ring-2 ring-primary' : ''
                   ]"
                 />
@@ -36,7 +36,7 @@
               <span 
                 v-if="cell === 0 && hoverCol === colIndex && isMyTurn"
                 class="absolute w-10 h-10 md:w-14 md:h-14 rounded-full opacity-40"
-                :class="currentPlayer?.attributes.color === 1 ? 'bg-neutral' : 'bg-base-100'"
+                :class="currentPlayer?.attributes.color === 1 ? 'bg-black' : 'bg-white'"
               />
             </div>
           </div>
@@ -44,14 +44,15 @@
       </div>
       
       <!-- 当前回合 -->
+            <!-- 当前回合 -->
       <div v-if="gameStatus === 'playing'" class="flex items-center justify-center gap-3 mt-4 text-lg">
         <div class="w-6 h-6 flex items-center justify-center bg-surface-light rounded-full border border-border">
           <span 
             class="w-5 h-5 rounded-full"
-            :class="currentPlayer?.attributes.color === 1 ? 'bg-black border border-gray-700 shadow-md' : 'bg-white shadow-md'"
+            :class="currentPlayer?.attributes.color === 1 ? 'bg-black border border-white/20' : 'bg-white border border-black/20'"
           />
         </div>
-        <b class="text-primary">{{ currentPlayer?.name }}</b>
+        <b class="text-base-content">{{ currentPlayer?.name }}</b>
       </div>
     </section>
     
@@ -59,24 +60,26 @@
     <aside class="w-full md:w-96 flex-none border-t md:border-t-0 md:border-l border-border pt-4 md:pt-0 md:pl-4 space-y-4 md:h-full flex flex-col">
       <section class="inline-flex flex-col gap-2">
         <!-- 成就表 -->
-        <table v-if="Object.keys(achivents).length" class="w-full border-collapse border border-border text-sm">
-          <thead>
-            <tr class="bg-surface-light">
-              <th class="border border-border p-2 text-secondary">玩家</th>
-              <th class="border border-border p-2 text-secondary">胜</th>
-              <th class="border border-border p-2 text-secondary">负</th>
-              <th class="border border-border p-2 text-secondary">和</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(achivement, playerName) in achivents" :key="playerName">
-              <td class="border border-border p-2">{{ playerName }}</td>
-              <td class="border border-border p-2">{{ achivement.win }}</td>
-              <td class="border border-border p-2">{{ achivement.lost }}</td>
-              <td class="border border-border p-2">{{ achivement.draw }}</td>
-            </tr>
-          </tbody>
-        </table>
+        <section class="overflow-x-auto rounded-box border border-base-content/5 bg-base-100 max-h-50">
+          <table v-if="Object.keys(achivents).length" class="table table-pin-rows table-pin-cols text-center">
+            <thead>
+              <tr>
+                <th class="bg-base-300">玩家</th>
+                <th class="bg-base-300">胜</th>
+                <th class="bg-base-300">负</th>
+                <th class="bg-base-300">和</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(achivement, playerName) in achivents" :key="playerName">
+                <td class="">{{ playerName }}</td>
+                <td class="">{{ achivement.win }}</td>
+                <td class="">{{ achivement.lost }}</td>
+                <td class="">{{ achivement.draw }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
         
         <hr v-if="Object.keys(achivents).length" class="border-border" />
         
@@ -148,16 +151,33 @@
         <hr class="border-border" />
         
         <!-- 聊天 -->
-        <div v-if="roomPlayer.role === 'player'" class="join">
-          <input 
-            v-model="msg" 
-            type="text"
-            @keyup.enter="sendMessage" 
-            placeholder="随便聊聊" 
-            class="flex-1 input join-item"
-          />
-          <button class="btn join-item" @click="sendMessage">发送</button>
+        <div class="flex">
+          <button 
+            @click="rulesModal?.open()" 
+            class="btn-ghost cursor-pointer bg-transparent border-none px-2!"
+            title="游戏规则"
+          >
+            <Icon icon="mdi:information-outline" />
+          </button>
+          <div v-if="roomPlayer.role === 'player'" class="join w-full">
+            <input 
+              v-model="msg" 
+              type="text"
+              @keyup.enter="sendMessage" 
+              placeholder="随便聊聊" 
+              class="flex-1 input join-item"
+            />
+            <button class="btn join-item" @click="sendMessage">发送</button>
+          </div>
         </div>
+
+        <RulesModal ref="rulesModal">
+          <ul class="space-y-2 text-sm">
+            <li>1. 双方轮流在任意一列落子，棋子会落到该列最下方。</li>
+            <li>2. 先在横、竖、斜方向连成4子者获胜。</li>
+            <li>3. 若棋盘填满仍未分胜负，则为平局。</li>
+          </ul>
+        </RulesModal>
       </section>
       
       <section class="bg-base-300/30 p-3 rounded h-48 overflow-auto border border-base-content/20 flex-1">
@@ -171,6 +191,7 @@
 import { ref, computed } from 'vue'
 import type { RoomPlayer, Room, Player } from 'tiaoom/client';
 import type { GameCore } from '@/core/game'
+import RulesModal from '@/components/rule/RulesModal.vue'
 
 const props = defineProps<{
   roomPlayer: RoomPlayer & { room: Room }
@@ -185,6 +206,7 @@ const currentPlace = ref<{ x: number; y: number } | null>(null)
 const msg = ref('')
 const roomMessages = ref<string[]>([])
 const hoverCol = ref<number>(-1)
+const rulesModal = ref<InstanceType<typeof RulesModal> | null>(null)
 
 const isMyTurn = computed(() => 
   gameStatus.value === 'playing' && 

@@ -28,7 +28,7 @@
         <div class="w-6 h-6 flex items-center justify-center bg-base-300 rounded-full border border-base-content/20">
           <span 
             class="w-5 h-5 rounded-full"
-            :class="currentPlayer?.attributes.color === 1 ? 'bg-neutral border border-base-content/20 shadow-md' : 'bg-base-100 shadow-md'"
+            :class="currentPlayer?.attributes.color === 1 ? 'bg-black border border-white/20 shadow-md' : 'bg-white border border-black/20 shadow-md'"
           />
         </div>
         <b class="text-base-content">{{ currentPlayer?.name }}</b>
@@ -39,24 +39,26 @@
     <aside class="w-full md:w-96 flex-none border-t md:border-t-0 md:border-l border-base-content/20 pt-4 md:pt-0 md:pl-4 space-y-4 md:h-full flex flex-col">
       <section class="inline-flex flex-col gap-2">
         <!-- 成就表 -->
-        <table v-if="Object.keys(achivents).length" class="w-full border-collapse border border-base-content/20 text-sm">
-          <thead>
-            <tr class="bg-base-300">
-              <th class="border border-base-content/20 p-2 text-base-content/60">玩家</th>
-              <th class="border border-base-content/20 p-2 text-base-content/60">胜</th>
-              <th class="border border-base-content/20 p-2 text-base-content/60">负</th>
-              <th class="border border-base-content/20 p-2 text-base-content/60">和</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(achivement, playerName) in achivents" :key="playerName">
-              <td class="border border-border p-2">{{ playerName }}</td>
-              <td class="border border-border p-2">{{ achivement.win }}</td>
-              <td class="border border-border p-2">{{ achivement.lost }}</td>
-              <td class="border border-border p-2">{{ achivement.draw }}</td>
-            </tr>
-          </tbody>
-        </table>
+        <section class="overflow-x-auto rounded-box border border-base-content/5 bg-base-100 max-h-50">
+          <table v-if="Object.keys(achivents).length" class="table table-pin-rows table-pin-cols text-center">
+            <thead>
+              <tr>
+                <th class="bg-base-300">玩家</th>
+                <th class="bg-base-300">胜</th>
+                <th class="bg-base-300">负</th>
+                <th class="bg-base-300">和</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(achivement, playerName) in achivents" :key="playerName">
+                <td class="">{{ playerName }}</td>
+                <td class="">{{ achivement.win }}</td>
+                <td class="">{{ achivement.lost }}</td>
+                <td class="">{{ achivement.draw }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
         
         <hr class="border-border" />
         
@@ -128,17 +130,35 @@
         <hr class="border-border" />
         
         <!-- 聊天 -->
-        <div v-if="roomPlayer.role === 'player'" class="join w-full">
-          <input 
-            v-model="msg" 
-            type="text"
-            @keyup.enter="sendMessage" 
-            placeholder="随便聊聊" 
-            class="flex-1 input join-item"
-          />
-          <button class="btn join-item" @click="sendMessage">发送</button>
+        <div class="flex">
+          <button 
+            @click="rulesModal?.open()" 
+            class="btn-ghost cursor-pointer bg-transparent border-none px-2!"
+            title="游戏规则"
+          >
+            <Icon icon="mdi:information-outline" />
+          </button>
+          <div v-if="roomPlayer.role === 'player'" class="join w-full">
+            <input 
+              v-model="msg" 
+              type="text"
+              @keyup.enter="sendMessage" 
+              placeholder="随便聊聊" 
+              class="flex-1 input join-item"
+            />
+            <button class="btn join-item" @click="sendMessage">发送</button>
+          </div>
         </div>
-      </section>      
+
+        <RulesModal ref="rulesModal">
+          <ul class="space-y-2 text-sm">
+            <li>1. 双方轮流落子，落子时必须夹住对方棋子。</li>
+            <li>2. 被夹住的对方棋子会翻转为己方颜色。</li>
+            <li>3. 若无处可落子，则跳过回合。</li>
+            <li>4. 棋盘填满或双方均无处落子时游戏结束，棋子多者获胜。</li>
+          </ul>
+        </RulesModal>
+      </section>
       <section class="bg-base-300/30 p-3 rounded h-48 overflow-auto border border-base-content/20 flex-1">
         <p v-for="(m, i) in roomMessages" :key="i" class="text-sm text-primary/90">{{ m }}</p>
       </section>
@@ -150,6 +170,7 @@
 import { ref, computed } from 'vue'
 import type { RoomPlayer, Room, Player } from 'tiaoom/client';
 import type { GameCore } from '@/core/game'
+import RulesModal from '@/components/rule/RulesModal.vue'
 
 const props = defineProps<{
   roomPlayer: RoomPlayer & { room: Room }
@@ -163,6 +184,7 @@ const achivents = ref<Record<string, any>>({})
 const currentPlace = ref<{ x: number; y: number } | null>(null)
 const msg = ref('')
 const roomMessages = ref<string[]>([])
+const rulesModal = ref<InstanceType<typeof RulesModal> | null>(null)
 
 props.game?.onRoomStart(() => {
   roomMessages.value = []
@@ -255,18 +277,18 @@ const isAllReady = computed(() => {
     transition: background 0.5s, transform 0.5s;
   }
   .white-piece {
-    background: oklch(var(--b1));
-    color: oklch(var(--bc));
+    background: white;
+    color: black;
     transform: rotateY(0deg);
     box-shadow: none;
-    border: 1px solid oklch(var(--bc) / 0.2);
+    border: 1px solid rgba(0,0,0,0.2);
   }
   .black-piece {
-    background: oklch(var(--n));
-    color: oklch(var(--nc));
+    background: black;
+    color: white;
     transform: rotateY(180deg);
     box-shadow: none;
-    border: 1px solid oklch(var(--bc) / 0.2);
+    border: 1px solid rgba(255,255,255,0.2);
   }
   .row .cell::after {
     content: '';

@@ -13,16 +13,24 @@
             :class="{ 'cursor-pointer': currentPlayer?.id === roomPlayer.id && cell === 0 }"
           >
             <!-- 棋盘网格线 -->
-            <div class="absolute inset-0 border-t border-l border-base-content/10"></div>
-            <div v-if="rowIndex === board.length - 1" class="absolute inset-0 border-b border-base-content/10"></div>
-            <div v-if="colIndex === row.length - 1" class="absolute inset-0 border-r border-base-content/10"></div>
+            <div class="absolute bg-base-content/30 h-px top-1/2 -translate-y-1/2 z-0"
+              :class="[
+                colIndex === 0 ? 'left-1/2 w-1/2' : (colIndex === row.length - 1 ? 'left-0 w-1/2' : 'left-0 w-full')
+              ]"
+            ></div>
+            <div class="absolute bg-base-content/30 w-px left-1/2 -translate-x-1/2 z-0"
+              :class="[
+                rowIndex === 0 ? 'top-1/2 h-1/2' : (rowIndex === board.length - 1 ? 'top-0 h-1/2' : 'top-0 h-full')
+              ]"
+            ></div>
+            <div v-if="[3, 9, 15].includes(rowIndex) && [3, 9, 15].includes(colIndex)" class="absolute w-1.5 h-1.5 bg-base-content/80 rounded-full z-0 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
             
             <!-- 棋子 -->
             <span 
               v-if="cell > 0"
               class="w-[4.5vw] h-[4.5vw] md:w-6 md:h-6 rounded-full z-10 relative transition-all duration-200"
               :class="[
-                cell === 1 ? 'bg-neutral border border-base-content/20 shadow-lg' : 'bg-base-100 shadow-lg',
+                cell === 1 ? 'bg-black border border-white/20 shadow-lg' : 'bg-white border border-black/20 shadow-lg',
                 currentPlace?.x === rowIndex && currentPlace?.y === colIndex ? 'ring-2 ring-primary scale-90' : ''
               ]"
             />
@@ -35,7 +43,7 @@
         <div class="w-5 h-5 flex items-center justify-center bg-base-300 rounded-full border border-base-content/20">
           <span 
             class="w-4 h-4 rounded-full"
-            :class="currentPlayer?.attributes.color === 1 ? 'bg-neutral border border-base-content/20 shadow-md' : 'bg-base-100 shadow-md'"
+            :class="currentPlayer?.attributes.color === 1 ? 'bg-black border border-white/20 shadow-md' : 'bg-white border border-black/20 shadow-md'"
           />
         </div>
         <b class="text-base-content">{{ currentPlayer?.name }}</b>
@@ -46,24 +54,26 @@
     <aside class="w-full md:w-96 flex-none border-t md:border-t-0 md:border-l border-base-content/20 pt-4 md:pt-0 md:pl-4 space-y-4 md:h-full flex flex-col">
       <section class="inline-flex flex-col gap-2">
         <!-- 成就表 -->
-        <table v-if="Object.keys(achivents).length" class="w-full border-collapse border border-base-content/20 text-sm">
-          <thead>
-            <tr class="bg-surface-light">
-              <th class="border border-border p-2 text-secondary">玩家</th>
-              <th class="border border-border p-2 text-secondary">胜</th>
-              <th class="border border-border p-2 text-secondary">负</th>
-              <th class="border border-border p-2 text-secondary">和</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(achivement, playerName) in achivents" :key="playerName">
-              <td class="border border-border p-2">{{ playerName }}</td>
-              <td class="border border-border p-2">{{ achivement.win }}</td>
-              <td class="border border-border p-2">{{ achivement.lost }}</td>
-              <td class="border border-border p-2">{{ achivement.draw }}</td>
-            </tr>
-          </tbody>
-        </table>
+        <section class="overflow-x-auto rounded-box border border-base-content/5 bg-base-100 max-h-50">
+          <table v-if="Object.keys(achivents).length" class="table table-pin-rows table-pin-cols text-center">
+            <thead>
+              <tr>
+                <th class="bg-base-300">玩家</th>
+                <th class="bg-base-300">胜</th>
+                <th class="bg-base-300">负</th>
+                <th class="bg-base-300">和</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(achivement, playerName) in achivents" :key="playerName">
+                <td class="">{{ playerName }}</td>
+                <td class="">{{ achivement.win }}</td>
+                <td class="">{{ achivement.lost }}</td>
+                <td class="">{{ achivement.draw }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
         
         <hr class="border-border" />
         
@@ -135,19 +145,43 @@
         <hr class="border-border" />
         
         <!-- 聊天 -->
-        <div v-if="roomPlayer.role === 'player'" class="join w-full">
-          <input 
-            v-model="msg" 
-            type="text"
-            @keyup.enter="sendMessage" 
-            placeholder="随便聊聊" 
-            class="flex-1 input join-item"
-          />
-          <button class="btn join-item" @click="sendMessage">发送</button>
+        <div class="flex">
+          <button 
+            @click="rulesModal?.open()" 
+            class="btn-ghost cursor-pointer bg-transparent border-none px-2!"
+            title="游戏规则"
+          >
+            <Icon icon="mdi:information-outline" />
+          </button>
+          <div v-if="roomPlayer.role === 'player'" class="join w-full">
+            <input 
+              v-model="msg" 
+              type="text"
+              @keyup.enter="sendMessage" 
+              placeholder="随便聊聊" 
+              class="flex-1 input join-item"
+            />
+            <button class="btn join-item" @click="sendMessage">发送</button>
+          </div>
         </div>
+
+        <RulesModal ref="rulesModal">
+          <ul class="space-y-2 text-sm">
+            <li>1. 双方轮流在棋盘交叉点落子。</li>
+            <li>2. 先在横、竖、斜方向连成5子者获胜。</li>
+            <li>3. 若棋盘填满仍未分胜负，则为平局。</li>
+            <li>4. 黑方（先手）实行禁手规则：
+              <ul class="pl-4 mt-1 list-disc">
+                <li>三三禁手：两个或两个以上的活三。</li>
+                <li>四四禁手：两个或两个以上的冲四或活四。</li>
+                <li>长连禁手：连成六个或六个以上。</li>
+              </ul>
+            </li>
+          </ul>
+        </RulesModal>
       </section>
       
-      <section class="bg-base-300/30 p-3 rounded h-48 overflow-auto border border-base-content/20 flex-1">
+      <section class="bg-base-200/30 p-3 rounded h-48 overflow-auto border border-base-content/20 flex-1">
         <p v-for="(m, i) in roomMessages" :key="i" class="text-sm text-primary/90">{{ m }}</p>
       </section>
     </aside>
@@ -158,6 +192,7 @@
 import { ref, computed } from 'vue'
 import type { RoomPlayer, Room, Player } from 'tiaoom/client';
 import type { GameCore } from '@/core/game'
+import RulesModal from '@/components/rule/RulesModal.vue'
 
 const props = defineProps<{
   roomPlayer: RoomPlayer & { room: Room }
@@ -171,6 +206,7 @@ const achivents = ref<Record<string, any>>({})
 const currentPlace = ref<{ x: number; y: number } | null>(null)
 const msg = ref('')
 const roomMessages = ref<string[]>([])
+const rulesModal = ref<InstanceType<typeof RulesModal> | null>(null)
 
 props.game?.onRoomStart(() => {
   roomMessages.value = []
