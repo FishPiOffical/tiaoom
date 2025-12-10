@@ -83,45 +83,22 @@
     <aside class="w-full md:w-96 flex-none border-t md:border-t-0 md:border-l border-base-content/20 pt-4 md:pt-0 md:pl-4 space-y-4 md:h-full flex flex-col">
       <section class="inline-flex flex-col gap-2">
         <!-- 操作按钮 -->
-        <div v-if="gameStatus === 'waiting' && roomPlayer.role === 'player'" class="group flex gap-2">
-          <button class="btn" 
-            @click="game?.leaveRoom(roomPlayer.room.id)"
-            :disabled="roomPlayer.isReady"
-          >
-            离开
-          </button>
-          <button class="btn" 
-            @click="game?.ready(roomPlayer.room.id, !roomPlayer.isReady)"
-          >
-            {{ roomPlayer.isReady ? '取消' : '准备' }}
-          </button>
-          <button class="btn btn-primary" 
-            @click="game?.startGame(roomPlayer.room.id)" 
-            :disabled="!isAllReady"
-          >
-            开始游戏
-          </button>
-        </div>
-        
-        <div v-if="roomPlayer.role === 'watcher'" class="group flex gap-2">
-          <button class="btn" @click="game?.leaveRoom(roomPlayer.room.id)" :disabled="roomPlayer.isReady">
-            离开
-          </button>
-          <button class="btn" 
-            v-if="!isRoomFull" 
-            @click="game?.joinRoom(roomPlayer.room.id)"
-          >
-            加入游戏
-          </button>
-        </div>
-
-        <!-- 发言控制 -->
-        <div v-if="roomPlayer.role === 'player' && canSpeak && gameStatus === 'talking'" class="group flex flex-col gap-2">
-          <button @click="sendTalked" class="btn block btn-accent">
-            结束发言 {{ countdown > 0 ? `(${countdown}s)` : '' }}
-          </button>
-          <hr class="border-base-content/20" />
-        </div>        
+        <RoomControls
+          :game="game"
+          :room-player="roomPlayer"
+          :game-status="gameStatus"
+          :is-all-ready="isAllReady"
+          :is-room-full="isRoomFull"
+          :enable-draw-resign="false"
+        >
+          <!-- 发言控制 -->
+          <div v-if="roomPlayer.role === 'player' && canSpeak && gameStatus === 'talking'" class="group flex flex-col gap-2">
+            <button @click="sendTalked" class="btn block btn-accent">
+              结束发言 {{ countdown > 0 ? `(${countdown}s)` : '' }}
+            </button>
+            <hr class="border-base-content/20" />
+          </div>
+        </RoomControls>        
         
       </section>
       
@@ -164,7 +141,7 @@ type SpyRoomPlayer = RoomPlayer & { isDead?: boolean }
 
 const props = defineProps<{
   roomPlayer: SpyRoomPlayer & { room: Room & { players: SpyRoomPlayer[] } }
-  game: GameCore | null
+  game: GameCore
 }>()
 
 const canVotePlayer = ref<string[]>([])

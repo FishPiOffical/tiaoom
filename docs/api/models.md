@@ -73,7 +73,7 @@
 | `isReady` | `boolean` | 玩家是否已准备。 |
 | `isCreator` | `boolean` | 玩家是否是房主。 |
 | `roomId` | `string` | 玩家所在的房间 ID。 |
-| `isWatcher` | `boolean` (可选) | 玩家是否是旁观者。 |
+| `role` | [`PlayerRole`](#playerrole) | 玩家角色。 |
 
 ### IRoomPlayerOptions
 
@@ -82,7 +82,15 @@
 | 属性名 | 类型 | 描述 |
 | :--- | :--- | :--- |
 | `roomId` | `string` | 要加入的房间 ID。 |
-| `isWatcher` | `boolean` (可选) | 是否作为旁观者加入。 |
+
+### PlayerRole
+
+房间玩家角色枚举。
+
+| 枚举值 | 值 | 描述 |
+| :--- | :--- | :--- |
+| `player` | `'player'` | 玩家。 |
+| `watcher` | `'watcher'` | 观众。 |
 
 ### RoomStatus
 
@@ -158,10 +166,18 @@
 | `RoomCreate` | `'room.create'` | 请求创建房间。 |
 | `PlayerJoin` | `'player.join'` | 请求加入房间。 |
 | `PlayerLeave` | `'player.leave'` | 请求离开房间。 |
+| `PlayerStandUp` | `'player.standup'` | 请求离开座位。 |
 | `RoomGet` | `'room.get'` | 请求获取房间信息。 |
 | `RoomStart` | `'room.start'` | 请求开始游戏。 |
 | `RoomKick` | `'room.kick'` | 请求踢出玩家。 |
 | `RoomTransfer` | `'room.transfer'` | 请求转让房主。 |
+| `RoomClose` | `'room.close'` | 请求关闭房间。 |
+| `PlayerLogin` | `'player.login'` | 请求登录。 |
+| `PlayerLogout` | `'player.logout'` | 请求登出。 |
+| `PlayerReady` | `'player.ready'` | 请求准备。 |
+| `PlayerUnready` | `'player.unready'` | 请求取消准备。 |
+| `RoomPlayerCommand` | `'room.player-command'` | 发送房间内命令。 |
+| `GlobalCommand` | `'global.command'` | 发送全局命令。 |
 | `RoomClose` | `'room.close'` | 请求关闭房间。 |
 | `PlayerLogin` | `'player.login'` | 请求登录。 |
 | `PlayerLogout` | `'player.logout'` | 请求登出。 |

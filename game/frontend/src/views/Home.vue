@@ -95,6 +95,7 @@
           <ul class="space-y-2">
             <li v-for="r in roomList" :key="r.id" class="flex items-center justify-between p-2 rounded bg-base-300/50 hover:bg-base-300 transition-colors">
               <div class="flex items-center gap-2 overflow-hidden">
+                <Icon icon="solar:lock-linear" v-if="r.attrs.passwd" />
                 <span class="truncate text-sm" :class="{'font-bold text-base-content': r.players.some(p => p.id === gameStore.player?.id)}">
                   【{{ gameStore.games[r.attrs.type].name }}】{{ r.name }}
                 </span>
@@ -104,7 +105,7 @@
               </div>
               <button
                 v-if="!gameStore.roomPlayer"
-                @click="gameStore.game?.joinRoom(r.id); isSidebarOpen = false"
+                @click="joinRoom(r)"
                 class="px-2 py-1 btn-xs whitespace-nowrap btn"
               >
                 {{ r.status === 'waiting' && r.players.filter(p => p.role === 'player').length < r.size ? '进入' : '围观' }}
@@ -145,7 +146,7 @@
           <h3 class="text-xl font-light text-base-content">创建房间</h3>
           <div class="flex flex-wrap items-center gap-2">
             <input 
-              v-model="room.name" 
+              v-model.trim="room.name" 
               type="text" 
               placeholder="房间名称" 
               required 
@@ -180,6 +181,16 @@
               :max="room.size" 
               class="w-24 input"
             />
+            <label class="input w-[150px]">
+              <input
+                v-model="room.attrs.passwd"
+                :type="showPasswd ? 'text' : 'password'" 
+                placeholder="房间密码 (可选)" 
+                class="grow"
+                autocomplete="new-password"
+              />
+              <Icon class="cursor-pointer" :icon="showPasswd ? 'carbon:view' : 'carbon:view-off'" @click="showPasswd = !showPasswd" />
+            </label>
             <button type="submit" :disabled="!!gameStore.roomPlayer" class="btn btn-primary whitespace-nowrap">
               创建
             </button>
@@ -233,6 +244,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGameStore } from '@/stores/game'
+import { sha256 } from '@/utils'
+import { IRoomOptions } from 'tiaoom/client'
 
 const router = useRouter()
 const gameStore = useGameStore()
@@ -240,11 +253,12 @@ const gameStore = useGameStore()
 const isSidebarOpen = ref(false)
 const isDesktopSidebarCollapsed = ref(false)
 
+const showPasswd = ref(false);
 const room = ref({
   name: '',
   size: 4,
   minSize: 4,
-  attrs: { type: 'othello' },
+  attrs: { type: 'othello', passwd: '' },
 })
 
 const msg = ref('')
@@ -279,6 +293,16 @@ async function createRoom() {
   room.value.size = Math.min(room.value.size, currentGame.value.maxSize);
   room.value.size = Math.max(room.value.size, room.value.minSize);
   await gameStore.game?.createRoom(room.value)
+}
+
+function joinRoom(r: IRoomOptions) {
+  let passwd: string | undefined;
+  if (r.attrs?.passwd) {
+    passwd = prompt('请输入房间密码：') || '';
+    if (!passwd) return
+  }
+  gameStore.game?.joinRoom(r.id, { passwd }); 
+  isSidebarOpen.value = false
 }
 
 function sendMessage() {

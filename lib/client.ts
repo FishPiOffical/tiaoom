@@ -28,6 +28,10 @@ export enum MessageTypes {
    */
   PlayerLeave = "player.leave",
   /**
+   * 玩家离开座位
+   */
+  PlayerStandUp = "player.standup",
+  /**
    * 房间获取
    */
   RoomGet = "room.get",
@@ -394,18 +398,30 @@ export class Tiaoom {
   /**
    * 加入房间
    * @param {string} roomId 房间ID
+   * @param {object} params 加入参数
    */
-  joinRoom(roomId: string) {
-    this.send({ type: MessageTypes.PlayerJoin, data: { roomId } });
+  joinRoom(roomId: string, params?: any) {
+    this.send({ type: MessageTypes.PlayerJoin, data: { roomId, params } });
     return this;
   }
 
   /**
    * 离开房间
    * @param {string} roomId 房间ID
+   * @param {object} params 离开参数
    */
-  leaveRoom(roomId: string) {
-    this.send({ type: MessageTypes.PlayerLeave, data: { roomId } });
+  leaveRoom(roomId: string, params?: any) {
+    this.send({ type: MessageTypes.PlayerLeave, data: { roomId, params } });
+    return this;
+  }
+
+  /**
+   * 离开座位
+   * @param {string} roomId 房间ID
+   * @param {object} params 离开参数
+   */
+  leaveSeat(roomId: string, params?: any) {
+    this.send({ type: MessageTypes.PlayerStandUp, data: { roomId, params } });
     return this;
   }
 
@@ -413,9 +429,10 @@ export class Tiaoom {
    * 踢出玩家
    * @param {string} roomId 房间ID
    * @param {string} playerId 玩家ID
+   * @param {object} params 额外参数
    */
-  kickPlayer(roomId: string, playerId: string) {
-    this.send({ type: MessageTypes.RoomKick, data: { roomId, playerId } });
+  kickPlayer(roomId: string, playerId: string, params?: any) {
+    this.send({ type: MessageTypes.RoomKick, data: { roomId, playerId, params } });
     return this;
   }
 
@@ -423,9 +440,10 @@ export class Tiaoom {
    * 转让房主
    * @param {string} roomId 房间ID
    * @param {string} playerId 目标玩家ID
+   * @param {object} params 额外参数
    */
-  transferRoom(roomId: string, playerId: string) {
-    this.send({ type: MessageTypes.RoomTransfer, data: { roomId, playerId } });
+  transferRoom(roomId: string, playerId: string, params?: any) {
+    this.send({ type: MessageTypes.RoomTransfer, data: { roomId, playerId, params } });
     return this;
   }
 
@@ -433,8 +451,8 @@ export class Tiaoom {
    * 开始游戏
    * @param {string} id 房间ID
    */
-  startGame(id: string) {
-    this.send({ type: MessageTypes.RoomStart, data: { id } });
+  startGame(id: string, params?: any) {
+    this.send({ type: MessageTypes.RoomStart, data: { id, params } });
     return this;
   }
 
@@ -443,8 +461,8 @@ export class Tiaoom {
    * @param {string} roomId 房间ID
    * @param {boolean} isReady 是否准备
    */
-  ready(roomId: string, isReady=true) {
-    this.send({ type: isReady ? MessageTypes.PlayerReady : MessageTypes.PlayerUnready, data: { roomId } });
+  ready(roomId: string, isReady=true, params?: any) {
+    this.send({ type: isReady ? MessageTypes.PlayerReady : MessageTypes.PlayerUnready, data: { roomId, params } });
     return this;
   }
 

@@ -9,25 +9,32 @@
             :key="colIndex" 
             @click="placePiece(rowIndex, colIndex)" 
             class="relative w-[10vw] h-[10vw] md:w-8 md:h-8 flex items-center justify-center border border-base-content/10"
-            :class="{ 'cursor-pointer hover:bg-base-content/5': currentPlayer?.id === roomPlayer.id && cell === 0 }"
+            :class="{ 
+              'cursor-pointer hover:bg-base-content/20': currentPlayer?.id === roomPlayer.id && cell === 0,
+              'cursor-not-allowed': currentPlayer?.id === roomPlayer.id && cell !== 0
+            }"
           >
             <span 
               v-if="cell > 0"
-              class="w-[9vw] h-[9vw] md:w-7 md:h-7 rounded-full transition-all duration-500"
+              class="w-[9vw] h-[9vw] md:w-7 md:h-7 rounded-full transition-all duration-500 z-10"
               :class="[
                 cell === 1 ? 'black-piece border border-base-content/20 shadow-lg' : 'white-piece shadow-lg',
                 currentPlace?.x === rowIndex && currentPlace?.y === colIndex ? 'ring-2 ring-primary scale-105' : ''
               ]"
             />
+            <div 
+              v-if="cell === 0 && currentPlayer?.id === roomPlayer.id" 
+              class="absolute w-2 h-2 rounded-full bg-base-content/30"
+            ></div>
           </div>
         </div>
       </div>
       
       <!-- 当前回合 -->
-      <div v-if="gameStatus === 'playing'" class="flex items-center justify-center gap-3 mt-4 text-lg">
+      <div v-if="gameStatus === 'playing'" class="flex items-center justify-center gap-3 mt-4 text-lg p-1">
         <div class="w-6 h-6 flex items-center justify-center bg-base-300 rounded-full border border-base-content/20">
           <span 
-            class="w-5 h-5 rounded-full"
+            class="w-full h-full rounded-full"
             :class="currentPlayer?.attributes.color === 1 ? 'bg-black border border-white/20 shadow-md' : 'bg-white border border-black/20 shadow-md'"
           />
         </div>
@@ -60,7 +67,7 @@
           </table>
         </section>
         
-        <hr class="border-border" />
+        <hr v-if="Object.keys(achivents).length" class="border-base-content/20" />
         
         <!-- 玩家列表 -->
         <ul class="space-y-1">
@@ -77,57 +84,19 @@
         </ul>
         
         <!-- 操作按钮 -->
-        <div v-if="gameStatus === 'waiting' && roomPlayer.role === 'player'" class="group flex gap-2">
-          <button class="btn" 
-            @click="game.leaveRoom(roomPlayer.room.id)"
-            :disabled="roomPlayer.isReady"
-          >
-            离开
-          </button>
-          <button class="btn" 
-            @click="game.ready(roomPlayer.room.id, !roomPlayer.isReady)"
-          >
-            {{ roomPlayer.isReady ? '取消' : '准备' }}
-          </button>
-          <button class="btn btn-primary" 
-            @click="game.startGame(roomPlayer.room.id)" 
-            :disabled="!isAllReady"
-          >
-            开始游戏
-          </button>
-        </div>
+        <RoomControls
+          :game="game"
+          :room-player="roomPlayer"
+          :game-status="gameStatus"
+          :is-all-ready="isAllReady"
+          :is-room-full="isRoomFull"
+          :current-player="currentPlayer"
+          :enable-draw-resign="true"
+          @draw="requestDraw"
+          @lose="requestLose"
+        />
         
-        <div class="group flex gap-2">
-          <button class="btn" 
-            v-if="roomPlayer.role === 'watcher'" 
-            @click="game.leaveRoom(roomPlayer.room.id)"
-            :disabled="roomPlayer.isReady"
-          >
-            离开
-          </button>
-          <button class="btn" 
-            v-if="roomPlayer.role === 'watcher' && !isRoomFull" 
-            @click="game.joinRoom(roomPlayer.room.id)"
-          >
-            加入游戏
-          </button>
-          <button class="btn" 
-            v-if="gameStatus === 'playing' && roomPlayer.role === 'player'"
-            @click="requestDraw"
-            :disabled="currentPlayer?.id !== roomPlayer.id"
-          >
-            请求和棋
-          </button>
-          <button class="btn" 
-            v-if="gameStatus === 'playing' && roomPlayer.role === 'player'"
-            @click="requestLose"
-            :disabled="currentPlayer?.id !== roomPlayer.id"
-          >
-            认输
-          </button>
-        </div>
-        
-        <hr class="border-border" />
+        <hr class="border-base-content/20" />
         
       </section>
       <GameChat 
@@ -150,10 +119,9 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import type { RoomPlayer, Room } from 'tiaoom/client';
-import type { GameCore } from '@/core/game'
-import GameChat from '@/components/common/GameChat.vue'
+import { Room, RoomPlayer } from 'tiaoom/client'
 import { IMessage } from '..';
+import { GameCore } from '@/core/game';
 
 const props = defineProps<{
   roomPlayer: RoomPlayer & { room: Room }

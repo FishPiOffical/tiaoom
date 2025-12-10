@@ -66,12 +66,14 @@
 | `sys.close` | <code>()</code> | 连接关闭事件。 |
 | `global.error` | <code>(error: Error)</code> | 全局错误事件。 |
 | `global.command` | <code>(data: any & { sender: <a href="./server.md#类-player">Player</a> })</code> | 全局命令事件。 |
+| `global.message` | <code>(message: string, sender?: <a href="./server.md#类-player">Player</a>)</code> | 全局消息事件。 |
 | `player.list` | <code>(players: <a href="./server.md#类-player">Player</a>[])</code> | 玩家列表更新事件。 |
 | `player.login` | <code>(player: <a href="./server.md#类-player">Player</a>)</code> | 玩家登录事件。 |
 | `player.logout` | <code>(player: <a href="./server.md#类-player">Player</a>)</code> | 玩家登出事件。 |
 | `player.status` | <code>(player: <a href="./server.md#类-player">Player</a>, status: string, roomId?: string)</code> | 玩家状态更新事件。 |
 | `player.command` | <code>(command: any & { sender: <a href="./server.md#类-player">Player</a> })</code> | 玩家命令事件。 |
 | `player.message` | <code>(message: { content: string, sender?: <a href="./server.md#类-player">Player</a> })</code> | 玩家消息事件。 |
+| `player.error` | <code>(error: Error)</code> | 玩家错误事件。 |
 | `room.list` | <code>(rooms: <a href="./server.md#类-room">Room</a>[])</code> | 房间列表更新事件。 |
 | `room.create` | <code>(room: <a href="./server.md#类-room">Room</a>)</code> | 房间创建事件。 |
 | `room.update` | <code>(room: <a href="./server.md#类-room">Room</a>)</code> | 房间更新事件。 |

@@ -42,6 +42,8 @@ export class Tiaoom extends EventEmitter {
             return this.joinPlayer(message.sender, message.data);
           case RecvMessageTypes.PlayerLeave:
             return this.leavePlayer(message.sender, message.data);
+          case RecvMessageTypes.PlayerStandUp:
+            return this.leaveSeat(message.sender, message.data);
           case RecvMessageTypes.RoomGet:
             return cb?.(null, this.searchRoom(message.data));
           case RecvMessageTypes.RoomStart:
@@ -277,6 +279,27 @@ export class Tiaoom extends EventEmitter {
 
     const roomPlayer = room.kickPlayer(playerInstance);
 
+    if (roomPlayer) this.emit("room-player", room);
+
+    return roomPlayer;
+  }
+  
+  leaveSeat(sender: IPlayer, player: IRoomPlayerOptions) {
+    if (!player.roomId) {
+      throw new Error('missing room id.');
+    }
+
+    const room = this.rooms.find((room) => room.id === player.roomId);
+    if (!room) {
+      throw new Error('room not found.');
+    }
+
+    const playerInstance = room.searchPlayer(sender);
+    if (!playerInstance) {
+      throw new Error('player not in room.');
+    }
+
+    const roomPlayer = room.leaveSeat(playerInstance);
     if (roomPlayer) this.emit("room-player", room);
 
     return roomPlayer;

@@ -61,6 +61,7 @@ constructor()
 | 参数 | 类型 | 描述 |
 | :--- | :--- | :--- |
 | `roomId` | `string` | 房间 ID。 |
+| `params` | `any` (可选) | 额外参数。 |
 
 **返回:** `this`
 
@@ -71,6 +72,18 @@ constructor()
 | 参数 | 类型 | 描述 |
 | :--- | :--- | :--- |
 | `roomId` | `string` | 房间 ID。 |
+| `params` | `any` (可选) | 额外参数。 |
+
+**返回:** `this`
+
+#### `leaveSeat(roomId: string, params?: any): this` {#leaveseat}
+
+请求离开座位（变为观众）。
+
+| 参数 | 类型 | 描述 |
+| :--- | :--- | :--- |
+| `roomId` | `string` | 房间 ID。 |
+| `params` | `any` (可选) | 额外参数。 |
 
 **返回:** `this`
 
@@ -82,6 +95,7 @@ constructor()
 | :--- | :--- | :--- |
 | `roomId` | `string` | 房间 ID。 |
 | `playerId` | `string` | 目标玩家 ID。 |
+| `params` | `any` (可选) | 额外参数。 |
 
 **返回:** `this`
 
@@ -93,6 +107,7 @@ constructor()
 | :--- | :--- | :--- |
 | `roomId` | `string` | 房间 ID。 |
 | `playerId` | `string` | 目标玩家 ID。 |
+| `params` | `any` (可选) | 额外参数。 |
 
 **返回:** `this`
 
@@ -103,6 +118,7 @@ constructor()
 | 参数 | 类型 | 描述 |
 | :--- | :--- | :--- |
 | `id` | `string` | 房间 ID。 |
+| `params` | `any` (可选) | 额外参数。 |
 
 **返回:** `this`
 
@@ -114,6 +130,7 @@ constructor()
 | :--- | :--- | :--- |
 | `roomId` | `string` | 房间 ID。 |
 | `isReady` | `boolean` (可选) | 是否准备，默认为 `true`。 |
+| `params` | `any` (可选) | 额外参数。 |
 
 **返回:** `this`
 

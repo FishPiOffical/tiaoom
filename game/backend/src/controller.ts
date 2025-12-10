@@ -1,5 +1,6 @@
+import crypto from "crypto";
 import http from "http";
-import { IPlayer, Player, PlayerStatus, } from "tiaoom";
+import { IPlayer, IRoomOptions, IRoomPlayerOptions, Player, PlayerStatus, } from "tiaoom";
 import { Room, Tiaoom } from "tiaoom";
 import { SocketManager } from "./socket";
 import Games, { IGameInfo } from "./games";
@@ -50,5 +51,25 @@ export class Controller extends Tiaoom {
     }).on("error", (error: any) => {
       console.log("error:", error);
     });
+  }
+
+  createRoom(sender: IPlayer, options: IRoomOptions) {
+    if (options.attrs?.passwd) {
+      options.attrs.passwd = crypto.createHash('md5').update(options.attrs.passwd).digest('hex');
+    }
+    return super.createRoom(sender, options);
+  }
+
+  joinPlayer(sender: IPlayer, player: IRoomPlayerOptions & { params?: { passwd: string } }, isCreator: boolean = false) {
+    if (player.params?.passwd) {
+      const room = this.rooms.find(r => r.id === player.roomId);
+      if (room) {
+        const passwdHash = crypto.createHash('md5').update(player.params.passwd).digest('hex');
+        if (room.attrs?.passwd !== passwdHash) {
+          throw new Error("密码错误，无法加入房间。");
+        }
+      }
+    }
+    return super.joinPlayer(sender, player, isCreator);
   }
 }

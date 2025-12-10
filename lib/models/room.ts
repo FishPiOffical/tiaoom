@@ -294,6 +294,27 @@ export class Room extends EventEmitter implements IRoom {
   }
 
   /**
+   * 离开座位
+   * @param {string | IPlayer} player 玩家 / 玩家 id
+   */
+  leaveSeat(playerId: string): RoomPlayer;
+  leaveSeat(player: IPlayer): RoomPlayer;
+  leaveSeat(player: IPlayer | string) {
+    const playerId = typeof player === "string" ? player : player.id;
+    const roomPlayer = this.searchPlayer(playerId);
+    if (roomPlayer && roomPlayer.role === PlayerRole.player) {
+      roomPlayer.role = PlayerRole.watcher;
+      roomPlayer.isReady = false;
+      this.emit("leave",  { roomId: this.id, ...roomPlayer});
+      if (roomPlayer.isCreator && this.validPlayers.length > 0) {
+        this.validPlayers[0].isCreator = true;
+        this.emit("update", this);
+      }
+    }
+    return roomPlayer!;
+  }
+
+  /**
    * 踢出玩家
    * @param {string | IPlayer} player 玩家 / 玩家 id
    */

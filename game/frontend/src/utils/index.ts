@@ -112,3 +112,15 @@ export function isUrlEncode(uri: string): boolean {
 
   return false;
 }
+
+export async function sha256(message: string): Promise<string> {
+  // 编码 Message 为 Uint8Array
+  const msgBuffer = new TextEncoder().encode(message);
+  // 计算 hash（返回 ArrayBuffer）
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  // 转换为 byte array
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  // 转为十六进制字符串
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex;
+}
