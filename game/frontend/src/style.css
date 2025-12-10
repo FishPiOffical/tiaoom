@@ -27,6 +27,10 @@ body {
   @apply -m-2 p-2 bg-base-content/20;
 }
 
+.font-pixel {
+  font-family: "Chill Pixels Mono", "Pixel32", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 4px;

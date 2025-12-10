@@ -126,6 +126,12 @@
             </li>
           </ul>
         </div>
+        <footer class="text-base-content/50 mt-auto text-center font-serif text-sm">
+          <p>
+            Power By <a href="https://tiaoom.com" target="_blank" rel="noopener noreferrer">Tiaoom</a>
+            &copy; {{ new Date().getFullYear() }}
+          </p>
+        </footer>
       </aside>
       
       <!-- PC端展开按钮 -->
