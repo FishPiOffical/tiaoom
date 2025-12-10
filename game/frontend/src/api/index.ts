@@ -34,6 +34,9 @@ export const api = {
   getSession(): Promise<{ player: IUser }> {
     return instance.get('/info')
   },
+  getMessages(): Promise<{ messages: { data: string, sender: Player, createdAt: number }[] }> {
+    return instance.get('/message')
+  },
   login(name: string): Promise<Player> {
     return instance.post('/login', { name })
   },

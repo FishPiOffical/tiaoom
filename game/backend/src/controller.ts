@@ -6,7 +6,7 @@ import { SocketManager } from "./socket";
 import Games, { IGameInfo } from "./games";
 
 export class Controller extends Tiaoom {
-  messages: { data: string, sender: Player }[] = [];
+  messages: { data: string, sender: Player, createdAt: number }[] = [];
 
   constructor(server: http.Server) {
     super({ socket: new SocketManager(server) });
@@ -45,7 +45,8 @@ export class Controller extends Tiaoom {
       }
     }).on("command", (command: any & { sender: Player }) => {
       if (command.type === 'say') {
-        this.messages.push({ data: `[${command.sender.name}]: ${command.data}`, sender: command.sender });
+        this.messages.unshift({ data: command.data, sender: command.sender, createdAt: Date.now() });
+        this.messages = this.messages.slice(0, 500); // keep last 500 messages
         this.emit('message', command.data, command.sender);
       }
     }).on("error", (error: any) => {

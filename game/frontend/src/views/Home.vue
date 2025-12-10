@@ -244,7 +244,6 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGameStore } from '@/stores/game'
-import { sha256 } from '@/utils'
 import { IRoomOptions } from 'tiaoom/client'
 
 const router = useRouter()
@@ -308,7 +307,7 @@ function joinRoom(r: IRoomOptions) {
 function sendMessage() {
   if (!msg.value.trim()) return
   gameStore.game?.command({ type: 'say', data: msg.value })
-  // msg.value = ''
+  msg.value = ''
 }
 
 async function handleLogout() {

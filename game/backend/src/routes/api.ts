@@ -28,6 +28,15 @@ const createRoutes = (game: GameContext, gameName: string) => {
     });
   });
 
+  router.get("/message", (req: Request, res: Response) => {
+    res.json({
+      code: 0,
+      data: {
+        messages: game.controller?.messages || []
+      }
+    });
+  });
+
   router.post("/login", (req: Request, res: Response) => {
     if (game.controller?.players.some((player) => player.name == req.body.name)) {
       return res.json({ code: 1, message: "昵称已被使用" });

@@ -46,6 +46,17 @@ export const useGameStore = defineStore('game', () => {
     }
   }
 
+  async function loadMessages() {
+    try {
+      const res = await api.getMessages()
+      globalMessages.value = res.messages.map(m => `[${new Date(m.createdAt).toLocaleString()}] ${m.sender?.name || '系统'}: ${m.data}`)
+    } catch (error) {
+      console.error('Failed to load messages:', error)
+    }
+  }
+
+  loadMessages();
+
   function initGame() {
     if (game.value) return
 
