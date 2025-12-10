@@ -19,6 +19,28 @@ export class Tiaoom extends EventEmitter {
     this.messageInstance = socket;
   }
 
+  /**
+   * 导出 JSON 数据
+   * @returns 房间与玩家数据
+   */
+  toJSON() {
+    return {
+      rooms: this.rooms,
+      players: this.players,
+    };
+  }
+
+  /**
+   * 从数据加载
+   * @param data 房间与玩家数据
+   * @returns this
+   */
+  loadFrom(data: { rooms?: IRoom[]; players?: IPlayer[] }) {
+    this.rooms = data.rooms?.map((r) => new Room(r)) ?? [];
+    this.players = data.players?.map((p) => new Player(p)) ?? [];
+    return this;
+  }
+
   on<K extends keyof TiaoomEvents>(event: K, listener: TiaoomEvents[K]): this {
     super.on(event, listener);
     return this

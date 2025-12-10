@@ -52,7 +52,7 @@ constructor(options: ITiaoomOptions)
 | :--- | :--- | :--- |
 | `player` | `string` \| [`PlayerOptions`](./models.md#playeroptions) \| [`IRoomPlayerOptions`](./models.md#iroomplayeroptions) | 玩家 ID 或玩家选项对象。 |
 
-**返回:** [`Player`](#类-player) \| `undefined`
+**返回:** [`Player`](#player) \| `undefined`
 
 #### `searchRoom(room: string | Partial<IRoomOptions>): Room | undefined`
 
@@ -62,7 +62,7 @@ constructor(options: ITiaoomOptions)
 | :--- | :--- | :--- |
 | `room` | `string` \| <code>Partial<[IRoomOptions](./models.md#iroomoptions)></code> | 房间 ID 或房间选项对象。 |
 
-**返回:** [`Room`](#类-room) \| `undefined`
+**返回:** [`Room`](#room) \| `undefined`
 
 #### `createRoom(sender: IPlayer, options: IRoomOptions): Room`
 
@@ -73,7 +73,7 @@ constructor(options: ITiaoomOptions)
 | `sender` | [`IPlayer`](./models.md#iplayer) | 创建房间的玩家。 |
 | `options` | [`IRoomOptions`](./models.md#iroomoptions) | 房间选项。 |
 
-**返回:** [`Room`](#类-room)
+**返回:** [`Room`](#room)
 
 #### `startRoom(sender: IPlayer, room: IRoom): boolean`
 
@@ -95,7 +95,7 @@ constructor(options: ITiaoomOptions)
 | `sender` | [`IPlayer`](./models.md#iplayer) | 发起操作的玩家（必须是房主）。 |
 | `room` | [`IRoom`](./models.md#iroom) | 要关闭的房间。 |
 
-**返回:** [`Room`](#类-room)
+**返回:** [`Room`](#room)
 
 #### `kickPlayer(sender: IPlayer, data: { roomId: string, playerId: string }): IRoomPlayer | undefined`
 
@@ -117,7 +117,7 @@ constructor(options: ITiaoomOptions)
 | `sender` | [`IPlayer`](./models.md#iplayer) | 发起操作的玩家（必须是房主）。 |
 | `data` | `{ roomId: string, playerId: string }` | 包含房间 ID 和目标玩家 ID 的对象。 |
 
-**返回:** [`Room`](#类-room) \| `undefined`
+**返回:** [`Room`](#room) \| `undefined`
 
 #### `loginPlayer(player: PlayerOptions, cb?: (data: { player: Player }) => void): Player`
 
@@ -128,7 +128,7 @@ constructor(options: ITiaoomOptions)
 | `player` | [`PlayerOptions`](./models.md#playeroptions) | 玩家选项。 |
 | `cb` | `(data: { player: Player }) => void` (可选) | 回调函数。 |
 
-**返回:** [`Player`](#类-player)
+**返回:** [`Player`](#player)
 
 #### `joinPlayer(sender: IPlayer, player: IRoomPlayerOptions, isCreator?: boolean): IRoomPlayer | undefined`
 
@@ -183,7 +183,23 @@ constructor(options: ITiaoomOptions)
 | :--- | :--- | :--- |
 | `sender` | [`IPlayer`](./models.md#iplayer) | 要移除的玩家。 |
 
-**返回:** [`Player`](#类-player) \| `undefined`
+**返回:** [`Player`](#player) \| `undefined`
+
+#### `toJSON(): { players: Player[]; rooms: Room[] }`
+
+序列化当前服务器状态。
+
+**返回:** <code>{ players: [`Player`](#player)[]; rooms: [`Room`](#room)[] }</code>
+
+#### `loadFrom(data: { players: PlayerOptions[]; rooms: IRoomOptions[] }): this`
+
+从序列化数据加载服务器状态。
+
+| 参数 | 类型 | 描述 |
+| :--- | :--- | :--- |
+| `data` | <code>{ players: [PlayerOptions](./models.md#playeroptions)[]; rooms: [IRoomOptions](./models.md#iroomoptions)[] }</code> | 序列化数据。 |
+
+**返回:** `this`
 
 ### 事件
 
@@ -223,7 +239,7 @@ constructor(options: ITiaoomOptions)
 
 | 参数 | 类型 | 描述 |
 | :--- | :--- | :--- |
-| `player` | [`Player`](#类-player) | 目标玩家。 |
+| `player` | [`Player`](#player) | 目标玩家。 |
 
 **返回:** `this`
 
@@ -233,7 +249,7 @@ constructor(options: ITiaoomOptions)
 
 | 参数 | 类型 | 描述 |
 | :--- | :--- | :--- |
-| `player` | [`Player`](#类-player) | 要添加的玩家。 |
+| `player` | [`Player`](#player) | 要添加的玩家。 |
 | `isCreator` | `boolean` (可选) | 是否设为房主。 |
 
 **返回:** [`RoomPlayer`](./models.md#iroomplayer)
