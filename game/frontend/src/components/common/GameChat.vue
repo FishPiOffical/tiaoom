@@ -34,7 +34,7 @@
         class="text-sm mb-1" 
         :class="{ 
           'text-accent': !m.sender, 
-          'text-primary/90': m.sender,
+          'text-base-content/80': m.sender,
           'font-bold': m.sender?.id === roomPlayer.id
         }"
       >

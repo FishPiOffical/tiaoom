@@ -14,7 +14,7 @@
       >
         离开座位
       </button>
-      <button class="btn" 
+      <button class="btn btn-accent" 
         @click="game?.ready(roomPlayer.room.id, !roomPlayer.isReady)"
       >
         {{ roomPlayer.isReady ? '取消' : '准备' }}
