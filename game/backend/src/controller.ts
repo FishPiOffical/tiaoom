@@ -33,14 +33,10 @@ export class Controller extends Tiaoom {
         this.emit('room-player', room);
       });
     }).on('player', (player: Player) => {
-      console.log("player:", player);
       player.on('command', (message: any) => {
-        console.log("player command:", message);
       });
     }).on('room-player', (room: Room) => {
-      console.log("room update:", room);
       if (room.players.length == 0) {
-        console.log("room empty, close it.");
         this.closeRoom({} as IPlayer, room);
       }
     }).on("command", (command: any & { sender: Player }) => {

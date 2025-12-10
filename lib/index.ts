@@ -95,7 +95,11 @@ export class Tiaoom extends EventEmitter {
         cb?.(error as Error);
         this.messageInstance?.send({
           type: MessageTypes.PlayerError,
-          data: { message: (error as Error).message },
+          data: {
+            name: (error as Error).name, 
+            message: (error as Error).message,
+            stack: (error as Error).stack,
+          },
           sender: message.sender,
         });
       }

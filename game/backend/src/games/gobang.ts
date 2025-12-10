@@ -95,7 +95,6 @@ function gomokuJudge(board: number[][], { x, y }: { x: number, y: number }, colo
 }
 
 export default function onRoom(room: Room) {
-  console.log("room:", room);
   let messageHistory: { content: string, sender?: IRoomPlayer }[] = [];
   let currentPlayer: RoomPlayer;
   let lastLosePlayer: RoomPlayer | undefined;
@@ -109,7 +108,6 @@ export default function onRoom(room: Room) {
       data: achivents
     });
   }).on('leave', (player) => {
-    console.log("player left:", player);
     if (gameStatus === 'playing' && player.role === 'player') {
       room.emit('message', { content: `玩家 ${player.name} 离开游戏，游戏结束。` });
       lastLosePlayer = room.validPlayers.find((p) => p.id != player.id)!;
@@ -128,7 +126,6 @@ export default function onRoom(room: Room) {
       room.end();
     }
   }).on('player-command', (message: any) => {
-    console.log("room message:", message);
     const sender = room.validPlayers.find((p) => p.id == message.sender?.id)!;
     /**
      * # room command
@@ -261,8 +258,6 @@ export default function onRoom(room: Room) {
         break;
     }
   }).on('start', () => {
-    console.log("room start");
-
     if (room.validPlayers.length < room.minSize) {
       return room.emit('message', { content: `玩家人数不足，无法开始游戏。` });
     }
@@ -293,7 +288,6 @@ export default function onRoom(room: Room) {
     room.emit('command', { type: 'place-turn', data: { player: currentPlayer } });
     room.emit('command', { type: 'board', data: board });
   }).on('end', () => {
-    console.log("room end");
     room.emit('command', { type: 'end' });
   }).on('message', (message) => {
     messageHistory.unshift(message);

@@ -28,7 +28,6 @@ const questions = [
 ];
 
 export default function onRoom(room: Room) {
-  console.log("room:", room);
   let words: string[] = [];
   let messageHistory: { content: string, sender?: IRoomPlayer }[] = [];
   const alivePlayers: RoomPlayer[] = [];
@@ -128,7 +127,6 @@ export default function onRoom(room: Room) {
   }
 
   room.on('player-command', (message: any) => {
-    console.log("room message:", message);
     const sender = room.validPlayers.find((p) => p.id == message.sender?.id)!;
     /**
      * # room command
@@ -251,7 +249,6 @@ export default function onRoom(room: Room) {
         break;
     }
   }).on('start', () => {
-    console.log("room start");
 
     vote.splice(0, vote.length);
     votePlayers.splice(0, votePlayers.length);
@@ -284,7 +281,6 @@ export default function onRoom(room: Room) {
     gameStatus = 'talking';
     startTurn(room.validPlayers[0]);
   }).on('end', () => {
-    console.log("room end");
     if (talkTimeout) {
       clearTimeout(talkTimeout);
       talkTimeout = null;

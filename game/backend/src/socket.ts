@@ -53,7 +53,6 @@ export class SocketManager extends EventEmitter<IMessageEmitterEvents> implement
 
   send(message: IMessagePackage) {
     // send a message to the client
-    console.log('send', message.type, message.sender)
     if (message.type.startsWith('player.') && message.sender) {
       const player = message.sender as Player;
       // Send to all sockets of the player
