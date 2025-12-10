@@ -10,7 +10,7 @@
       <!-- 玩家列表 (作为游戏主区域) -->
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         <div 
-          v-for="p in roomPlayer.room.players" 
+          v-for="p in roomPlayer.room.players.filter(p => p.role === 'player') as SpyRoomPlayer[]" 
           :key="p.id" 
           class="group relative bg-base-300 border border-base-content/20 p-4 rounded-lg shadow-md flex flex-col items-center gap-2 transition-all"
           :class="{ 

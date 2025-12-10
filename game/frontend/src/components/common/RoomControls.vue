@@ -36,7 +36,7 @@
         离开房间
       </button>
       <button class="btn" 
-        v-if="!isRoomFull" 
+        v-if="!isRoomFull && gameStatus === 'waiting'" 
         @click="game?.joinRoom(roomPlayer.room.id)"
       >
         加入游戏
