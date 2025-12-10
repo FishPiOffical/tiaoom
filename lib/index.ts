@@ -396,7 +396,7 @@ export class Tiaoom extends EventEmitter {
   }
 
   removePlayer(sender: IPlayer) {
-    const playerIndex = this.players.findIndex((p) => p.id === sender.id);
+    const playerIndex = this.players.findIndex((p) => p.id === sender?.id);
     const player = this.players[playerIndex];
     if (playerIndex > -1) {
       this.players.splice(playerIndex, 1)[0];

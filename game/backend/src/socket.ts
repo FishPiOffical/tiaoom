@@ -40,7 +40,7 @@ export class SocketManager extends EventEmitter<IMessageEmitterEvents> implement
         if (index > -1) {
           this.sockets.splice(index, 1);
         }
-        if (!this.sockets.some(s => s.player.id === player?.id)) 
+        if (player && !this.sockets.some(s => s.player.id === player?.id)) 
           this.emit("message", { type: MessageTypes.PlayerLogout, data: player, sender: player });
         this.emit("close");
       });
