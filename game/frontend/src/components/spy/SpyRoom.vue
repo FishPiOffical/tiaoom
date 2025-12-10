@@ -1,6 +1,6 @@
 <template>
-  <section class="flex flex-col md:flex-row gap-4 md:h-full">
-    <section class="flex-1 md:h-full overflow-auto p-2">
+  <section class="flex flex-col lg:flex-row gap-4 lg:h-full">
+    <section class="flex-1 lg:h-full overflow-auto p-2">
        <!-- 你的词 -->
       <div v-if="gameStatus !== 'waiting' && roomPlayer.role === 'player'" class="mb-6 p-6 bg-base-300 rounded-lg border-2 border-primary/50 text-center shadow-lg">
         <span class="text-base-content/60 text-lg">你的词语</span>
@@ -80,7 +80,7 @@
     </section>
     
     <!-- 侧边栏 -->
-    <aside class="w-full md:w-96 flex-none border-t md:border-t-0 md:border-l border-base-content/20 pt-4 md:pt-0 md:pl-4 space-y-4 md:h-full flex flex-col">
+    <aside class="w-full lg:w-96 flex-none border-t lg:border-t-0 lg:border-l border-base-content/20 pt-4 lg:pt-0 lg:pl-4 space-y-4 lg:h-full flex flex-col">
       <section class="inline-flex flex-col gap-2">
         <!-- 操作按钮 -->
         <RoomControls
@@ -131,11 +131,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onBeforeUnmount } from 'vue'
 import type { GameCore } from '@/core/game'
 import type { RoomPlayer, Room } from 'tiaoom/client';
 import GameChat from '@/components/common/GameChat.vue'
 import { IMessage } from '..';
+import { useGameEvents } from '@/hook/useGameEvents';
 
 type SpyRoomPlayer = RoomPlayer & { isDead?: boolean }
 
@@ -161,15 +162,18 @@ const canSpeak = computed(() => {
          gameStatus.value === 'waiting'
 })
 
-props.game?.onRoomStart(() => {
+function onRoomStart() {
   roomMessages.value = []
   gameStatus.value = 'talking'
-}).onRoomEnd(() => {
+  currentTalkPlayer.value = null
+}
+function onRoomEnd() {
   gameStatus.value = 'waiting'
   currentTalkPlayer.value = null
-}).onCommand(onCommand).onPlayMessage((msg: IMessage) => {
+}
+function onPlayMessage(msg: IMessage) {
   roomMessages.value.unshift(msg)
-})
+}
 
 function onCommand(cmd: any) {
   if (props.roomPlayer.room.attrs?.type !== 'spy') return
@@ -245,6 +249,14 @@ function onCommand(cmd: any) {
   }
 }
 
+useGameEvents(props.game, {
+  'room.start': onRoomStart,
+  'room.end': onRoomEnd,
+  'player.message': onPlayMessage,
+  'room.message': onPlayMessage,
+  'room.command': onCommand
+})
+
 function getPlayerStatus(p: any) {
   if (!p.isReady) return '未准备'
   if (gameStatus.value === 'waiting') return '准备好了'
@@ -290,4 +302,5 @@ const isAllReady = computed(() => {
   return props.roomPlayer.room.players.filter((p: any) => p.role === 'player').length >= props.roomPlayer.room.minSize &&
     props.roomPlayer.room.players.every((p: any) => p.isReady || p.role === 'watcher')
 })
+
 </script>

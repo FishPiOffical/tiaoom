@@ -136,6 +136,7 @@ import type { RoomPlayer, Room } from 'tiaoom/client';
 import type { GameCore } from '@/core/game'
 import GameChat from '@/components/common/GameChat.vue'
 import { IMessage } from '..';
+import { useGameEvents } from '@/hook/useGameEvents';
 
 const props = defineProps<{
   roomPlayer: RoomPlayer & { room: Room }
@@ -158,15 +159,27 @@ const isMyTurn = computed(() =>
 // 初始化最底行为可落子位置
 board.value[board.value.length - 1] = board.value[board.value.length - 1].map(() => 0)
 
-props.game?.onRoomStart(() => {
+function onRoomStart() {
   roomMessages.value = []
   gameStatus.value = 'playing'
   currentPlace.value = null
-}).onRoomEnd(() => {
+}
+
+function onRoomEnd() {
   gameStatus.value = 'waiting'
   currentPlayer.value = null
-}).onCommand(onCommand).onPlayMessage((msg: IMessage) => {
+}
+
+function onPlayMessage(msg: IMessage) {
   roomMessages.value.unshift(msg)
+}
+
+useGameEvents(props.game, {
+  'room.start': onRoomStart,
+  'room.end': onRoomEnd,
+  'player.message': onPlayMessage,
+  'room.message': onPlayMessage,
+  'room.command': onCommand
 })
 
 function onCommand(cmd: any) {

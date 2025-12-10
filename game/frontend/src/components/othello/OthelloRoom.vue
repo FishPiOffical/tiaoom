@@ -122,6 +122,7 @@ import { ref, computed } from 'vue'
 import { Room, RoomPlayer } from 'tiaoom/client'
 import { IMessage } from '..';
 import { GameCore } from '@/core/game';
+import { useGameEvents } from '@/hook/useGameEvents';
 
 const props = defineProps<{
   roomPlayer: RoomPlayer & { room: Room }
@@ -135,15 +136,27 @@ const achivents = ref<Record<string, any>>({})
 const currentPlace = ref<{ x: number; y: number } | null>(null)
 const roomMessages = ref<IMessage[]>([])
 
-props.game?.onRoomStart(() => {
+function onRoomStart() {
   roomMessages.value = []
   gameStatus.value = 'playing'
   currentPlace.value = null
-}).onRoomEnd(() => {
+}
+
+function onRoomEnd() {
   gameStatus.value = 'waiting'
   currentPlayer.value = null
-}).onCommand(onCommand).onPlayMessage((msg: IMessage) => {
+}
+
+function onPlayMessage(msg: IMessage) {
   roomMessages.value.unshift(msg)
+}
+
+useGameEvents(props.game, {
+  'room.start': onRoomStart,
+  'room.end': onRoomEnd,
+  'player.message': onPlayMessage,
+  'room.message': onPlayMessage,
+  'room.command': onCommand
 })
 
 function onCommand(cmd: any) {
