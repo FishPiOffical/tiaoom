@@ -237,7 +237,7 @@
                     messageDiv.className = 'message success';
                     messageDiv.style.display = 'block';
                     setTimeout(() => {
-                        if (!location.href.includes(':')) {
+                        if (!location.host.includes(':')) {
                             location = '/';
                         } else {
                             location.href = `${location.protocol}//${location.hostname}:${data.webport}/`;
