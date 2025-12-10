@@ -16,7 +16,7 @@ export async function login(req: Request, res: Response) {
     }
   } catch (error) {
     req.session.error = "登录验证失败，请重试：" + (error instanceof Error ? `(${error.message})` : "");
-    return res.redirect("/login");
+    return res.redirect("/#/login");
   }
   res.redirect(`https://fishpi.cn/openid/login?openid.ns=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0&openid.mode=checkid_setup&openid.return_to=${encodeURIComponent(`${domain}/api/login/fishpi`)}&openid.realm=${encodeURIComponent(domain)}&openid.claimed_id=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.identity=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select`);
 }

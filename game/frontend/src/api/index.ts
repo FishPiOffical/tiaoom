@@ -40,6 +40,15 @@ export const api = {
   login(name: string): Promise<Player> {
     return instance.post('/login', { name })
   },
+  checkLoginError() {
+    return instance.get('/login/error').catch((err) => {
+      if (err?.status == 404) {
+        location.href = '/config';
+      } else {
+        throw err;
+      }
+    })
+  },
   logout(): Promise<void> {
     return instance.post('/logout')
   },

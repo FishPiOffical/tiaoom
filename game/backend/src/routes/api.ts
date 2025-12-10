@@ -45,6 +45,14 @@ const createRoutes = (game: GameContext, gameName: string) => {
     res.json({ code: 0, data: req.session.player });
   });
 
+  router.get("/login/error", (req: Request, res: Response) => {
+    if (req.session.error) {
+      const error = req.session.error;
+      req.session.error = undefined;
+      return res.json({ code: 1, message: error });
+    }
+    res.json({ code: 0, data: true });
+  });
   router.get("/login/fishpi", fishpiLogin);
 
   router.post("/logout", (req: Request, res: Response) => {

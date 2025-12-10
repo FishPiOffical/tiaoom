@@ -8,10 +8,10 @@
       <div class="flex flex-col gap-4">
         <button
           v-if="loginType === 'fishpi'"
-          class="btn flex items-center justify-center gap-3 w-full py-3 bg-base-300 hover:bg-base-content/10 transition-all rounded border border-base-content/20 group"
+          class="btn btn-lg flex items-center justify-center gap-3 w-full py-3 bg-base-300 hover:bg-base-content/10 transition-all border border-base-content/20 group"
           @click="loginWithFishpi"
         >
-          <img src="/fishpi.svg" class="w-6 h-6 opacity-80 group-hover:opacity-100 transition-opacity" />
+          <img src="/fishpi.svg" class="w-[2em] group-hover:opacity-100 transition-opacity" />
           <span class="tracking-wide">摸鱼派登录</span>
         </button>
         
@@ -42,6 +42,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGameStore } from '@/stores/game'
+import { api } from '@/api'
 
 const router = useRouter()
 const gameStore = useGameStore()
@@ -67,4 +68,13 @@ async function handleLogin() {
 function loginWithFishpi() {
   window.location.href = '/api/login/fishpi'
 }
+
+api.checkLoginError()
+  .then(() => {
+    // No error
+  })
+  .catch((err: any) => {
+    error.value = err || '登录失败，请使用普通登录'
+  })
+
 </script>

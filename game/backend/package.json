@@ -9,8 +9,8 @@
   "scripts": {
     "clean": "rimraf ../dist/",
     "dev": "node -r ts-node/register -r tsconfig-paths/register ./src/index.ts",
-    "build": "npm run clean && tsc && npm run afterbuild",
-    "afterbuild": "copyfiles package*.json ../dist/ && cd ../dist && npm i tiaoom@latest --package-lock-only",
+    "build": "npm run clean && tsc --project tsconfig.json && tsc-alias -p tsconfig.json && npm run afterbuild",
+    "afterbuild": "copyfiles package*.json ../dist/ && copyfiles ./src/routes/*.html ../dist/routes/ -f && cd ../dist && npm i tiaoom@latest --package-lock-only",
     "start": "node dist/index.js"
   },
   "dependencies": {
@@ -19,9 +19,11 @@
     "express": "^4.18.2",
     "express-session": "^1.17.3",
     "glob": "^13.0.0",
+    "mysql2": "^3.15.3",
     "reflect-metadata": "^0.2.2",
     "session-file-store": "^1.5.0",
     "tiaoom": "file:../..",
+    "typeorm": "^0.3.28",
     "ws": "^8.13.0"
   },
   "devDependencies": {
@@ -33,6 +35,7 @@
     "@types/ws": "^8.5.5",
     "copyfiles": "^2.4.1",
     "rimraf": "^6.1.2",
+    "tsc-alias": "^1.8.16",
     "tsconfig-paths": "^4.2.0",
     "tsx": "^3.12.7"
   }
