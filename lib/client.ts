@@ -1,81 +1,6 @@
-import type { IRoomOptions } from "./models/room";
-
-export { IRoomOptions };
-
-/**
- * 客户端发送消息包类型枚举
- * player： 'command', 'message', 'join', 'leave', 'status'
- */
-export enum MessageTypes {
-  /**
-   * 房间列表
-   */
-  RoomList = "room.list",
-  /**
-   * 玩家列表
-   */
-  PlayerList = "player.list",
-  /**
-   * 房间创建
-   */
-  RoomCreate = "room.create",
-  /**
-   * 玩家加入房间
-   */
-  PlayerJoin = "player.join",
-  /**
-   * 玩家离开房间
-   */
-  PlayerLeave = "player.leave",
-  /**
-   * 玩家离开座位
-   */
-  PlayerStandUp = "player.standup",
-  /**
-   * 房间获取
-   */
-  RoomGet = "room.get",
-  /**
-   * 房间开始
-   */
-  RoomStart = "room.start",
-  /**
-   * 房间踢出玩家
-   */
-  RoomKick = "room.kick",
-  /**
-   * 房间转移
-   */
-  RoomTransfer = "room.transfer",
-  /**
-   * 房间关闭
-   */
-  RoomClose = "room.close",  
-  /**
-   * 玩家登录
-   */
-  PlayerLogin = "player.login",
-  /**
-   * 玩家登出
-   */
-  PlayerLogout = "player.logout",
-  /**
-   * 玩家准备
-   */
-  PlayerReady = "player.ready",
-  /**
-   * 玩家取消准备
-   */
-  PlayerUnready = "player.unready",
-  /**
-   * 房间内玩家发送的指令
-   */
-  RoomPlayerCommand = "room.player-command",
-  /**
-   * 全局命令
-   */
-  GlobalCommand = "global.command",
-}
+import { IRoomOptions, PlayerRole, RoomStatus, PlayerStatus, RecvMessageTypes as MessageTypes } from "@lib/index";
+export { RoomStatus, PlayerStatus, PlayerRole, MessageTypes };
+export type { IRoomOptions };
 
 export type TiaoomEvents = {
   /**
@@ -127,7 +52,7 @@ export type TiaoomEvents = {
    * @param status 状态
    * @param roomId 房间ID（可选）
    */
-  "player.status": (player: Player, status: string, roomId?: string) => void;
+  "player.status": (status: PlayerStatus) => void;
   /**
    * 玩家命令事件
    * @param command 命令内容
@@ -167,13 +92,13 @@ export type TiaoomEvents = {
    * @param room 房间信息
    * @param player 玩家信息
    */
-  "room.join": (room: Room, player: Player) => void;
+  "room.join": (player: RoomPlayer & { roomId: string }) => void;
   /**
    * 玩家离开房间事件
    * @param room 房间信息
    * @param player 玩家信息
    */
-  "room.leave": (room: Room, player: Player) => void;
+  "room.leave": (player: RoomPlayer & { roomId: string }) => void;
   /**
    * 房间开始游戏事件
    * @param room 房间信息
@@ -204,13 +129,13 @@ export type TiaoomEvents = {
    * @param player 玩家信息
    * @param roomId 房间ID（可选）
    */
-  "room.player-ready": (player: Player, roomId?: string) => void;
+  "room.player-ready": (player: RoomPlayer) => void;
   /**
    * 房间玩家取消准备事件
    * @param player 玩家信息
    * @param roomId 房间ID（可选）
    */
-  "room.player-unready": (player: Player, roomId?: string) => void;
+  "room.player-unready": (player: RoomPlayer) => void;
   /**
    * 玩家列表更新事件(内部)
    * @param players 玩家列表
@@ -242,17 +167,17 @@ export class Player {
   id: string;
   name: string;
   attributes: Record<string, any>;
-  status: string;
+  status: PlayerStatus;
   constructor(player: Partial<Player>) {
     this.id = player.id || Date.now().toString();
     this.name = player.name || '玩家' + this.id;
     this.attributes = player.attributes || {};
-    this.status = player.status || 'online';
+    this.status = player.status || PlayerStatus.online;
   }
 }
 
 export class RoomPlayer extends Player {
-  role: string;
+  role: PlayerRole;
   isReady: boolean;
   isCreator: boolean;
   constructor(player: RoomPlayer) {
@@ -269,7 +194,7 @@ export class Room {
   players: RoomPlayer[];
   size: number;
   minSize: number;
-  status: string;
+  status: RoomStatus;
   attrs: Record<string, any>;
   constructor(room: Room) {
     this.id = room.id;
@@ -537,7 +462,7 @@ export class Tiaoom {
    * @param {boolean} on 开启/关闭监听
    * @returns 
    */
-  onPlayerJoin(cb: (room: Room, player: Player) => void, on=true) {
+  onPlayerJoin(cb: (player: RoomPlayer) => void, on=true) {
     if (on) this.on("room.join", cb);
     else this.off("room.join", cb);
     return this;
@@ -549,7 +474,7 @@ export class Tiaoom {
    * @param {boolean} on 开启/关闭监听
    * @returns 
    */
-  onPlayerLeave(cb: (room: Room, player: Player) => void, on=true) {
+  onPlayerLeave(cb: (player: RoomPlayer) => void, on=true) {
     if (on) this.on("room.leave", cb);
     else this.off("room.leave", cb);
     return this;
@@ -561,7 +486,7 @@ export class Tiaoom {
    * @param {boolean} on 开启/关闭监听
    * @returns 
    */
-  onPlayerReady(cb: (player: Player, roomId?: string) => void, on=true) {
+  onPlayerReady(cb: (player: RoomPlayer) => void, on=true) {
     if (on) this.on("room.player-ready", cb);
     else this.off("room.player-ready", cb);
     return this;
@@ -573,7 +498,7 @@ export class Tiaoom {
    * @param {boolean} on 开启/关闭监听
    * @returns 
    */
-  onPlayerUnready(cb: (player: Player, roomId?: string) => void, on=true) {
+  onPlayerUnready(cb: (player: RoomPlayer) => void, on=true) {
     if (on) this.on("room.player-unready", cb);
     else this.off("room.player-unready", cb);
     return this;
@@ -585,7 +510,7 @@ export class Tiaoom {
    * @param {boolean} on 开启/关闭监听
    * @returns 
    */
-  onPlayerStatus(cb: (player: Player, status: any) => void, on=true) {
+  onPlayerStatus(cb: (status: PlayerStatus) => void, on=true) {
     if (on) this.on("player.status", cb);
     else this.off("player.status", cb);
     return this;

@@ -1,9 +1,8 @@
 import { EventEmitter } from "events";
-import { TiaoomEvents } from "./events";
-import { MessageTypes as RecvMessageTypes } from "./client";
-import { IMessage, MessageTypes } from "./models/message";
-import { IRoom, IRoomPlayer, Room, IRoomOptions, IRoomPlayerOptions } from "./models/room";
-import { IPlayer, Player, IPlayerOptions, PlayerStatus } from "./models/player";
+import { TiaoomEvents } from "@lib/events";
+import { IMessage, RecvMessageTypes, MessageTypes } from "@lib/models/message";
+import { IRoom, IRoomPlayer, Room, IRoomOptions, IRoomPlayerOptions } from "@lib/models/room";
+import { IPlayer, Player, IPlayerOptions, PlayerStatus } from "@lib/models/player";
 
 export interface ITiaoomOptions {
   socket: IMessage;
@@ -414,7 +413,7 @@ export class Tiaoom extends EventEmitter {
   }
 }
 
-export * from "./models/message";
-export * from "./models/room";
-export * from "./models/player";
-export * from "./events";
+export * from "@lib/models/message";
+export * from "@lib/models/room";
+export * from "@lib/models/player";
+export * from "@lib/events";

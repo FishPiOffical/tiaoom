@@ -108,6 +108,85 @@ export enum MessageTypes {
    * 全局消息
    */
   GlobalMessage = "global.message",
+  /**
+   * 全局命令
+   */
+  GlobalCommand = "global.command",
+}
+
+/**
+ * 客户端发送消息包类型枚举
+ * player： 'command', 'message', 'join', 'leave', 'status'
+ */
+export enum RecvMessageTypes {
+  /**
+   * 房间列表
+   */
+  RoomList = "room.list",
+  /**
+   * 玩家列表
+   */
+  PlayerList = "player.list",
+  /**
+   * 房间创建
+   */
+  RoomCreate = "room.create",
+  /**
+   * 玩家加入房间
+   */
+  PlayerJoin = "player.join",
+  /**
+   * 玩家离开房间
+   */
+  PlayerLeave = "player.leave",
+  /**
+   * 玩家离开座位
+   */
+  PlayerStandUp = "player.standup",
+  /**
+   * 房间获取
+   */
+  RoomGet = "room.get",
+  /**
+   * 房间开始
+   */
+  RoomStart = "room.start",
+  /**
+   * 房间踢出玩家
+   */
+  RoomKick = "room.kick",
+  /**
+   * 房间转移
+   */
+  RoomTransfer = "room.transfer",
+  /**
+   * 房间关闭
+   */
+  RoomClose = "room.close",  
+  /**
+   * 玩家登录
+   */
+  PlayerLogin = "player.login",
+  /**
+   * 玩家登出
+   */
+  PlayerLogout = "player.logout",
+  /**
+   * 玩家准备
+   */
+  PlayerReady = "player.ready",
+  /**
+   * 玩家取消准备
+   */
+  PlayerUnready = "player.unready",
+  /**
+   * 房间内玩家发送的指令
+   */
+  RoomPlayerCommand = "room.player-command",
+  /**
+   * 全局命令
+   */
+  GlobalCommand = "global.command",
 }
 
 /**
