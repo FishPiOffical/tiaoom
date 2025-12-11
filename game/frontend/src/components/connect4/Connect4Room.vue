@@ -179,7 +179,8 @@ useGameEvents(props.game, {
   'room.end': onRoomEnd,
   'player.message': onPlayMessage,
   'room.message': onPlayMessage,
-  'room.command': onCommand
+  'player.command': onCommand,
+  'room.command': onCommand,
 })
 
 function onCommand(cmd: any) {

@@ -131,7 +131,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onBeforeUnmount } from 'vue'
+import { ref, computed } from 'vue'
 import type { GameCore } from '@/core/game'
 import type { RoomPlayer, Room } from 'tiaoom/client';
 import GameChat from '@/components/common/GameChat.vue'
@@ -140,8 +140,12 @@ import { useGameEvents } from '@/hook/useGameEvents';
 
 type SpyRoomPlayer = RoomPlayer & { isDead?: boolean }
 
+interface SpyRoom extends Room {
+  players: SpyRoomPlayer[]
+}
+
 const props = defineProps<{
-  roomPlayer: SpyRoomPlayer & { room: Room & { players: SpyRoomPlayer[] } }
+  roomPlayer: SpyRoomPlayer & { room: SpyRoom }
   game: GameCore
 }>()
 
@@ -254,7 +258,8 @@ useGameEvents(props.game, {
   'room.end': onRoomEnd,
   'player.message': onPlayMessage,
   'room.message': onPlayMessage,
-  'room.command': onCommand
+  'player.command': onCommand,
+  'room.command': onCommand,
 })
 
 function getPlayerStatus(p: any) {

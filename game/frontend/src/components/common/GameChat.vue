@@ -10,7 +10,7 @@
         <Icon icon="mdi:information-outline" />
       </button>
       
-      <div v-if="roomPlayer.role === 'player'" class="join w-full">
+      <div class="join w-full">
         <input 
           v-model="inputText" 
           type="text"
@@ -21,6 +21,9 @@
         <button class="btn join-item" @click="handleSend" :disabled="!canSend">发送</button>
       </div>
     </div>
+    <p v-if="roomPlayer.role !== PlayerRole.player && roomPlayer.room.status === RoomStatus.playing" class="text-xs text-base-content/50 italic">
+      * 游戏进行中，您为观众，发送消息仅能给其他观众查看
+    </p>
 
     <RulesModal ref="rulesModal">
       <slot name="rules"></slot>
@@ -34,8 +37,9 @@
         class="text-sm mb-1" 
         :class="{ 
           'text-accent': !m.sender, 
-          'text-base-content/80': m.sender,
-          'font-bold': m.sender?.id === roomPlayer.id
+          'text-base-content/80': m.sender && (m.sender as RoomPlayer)?.role == PlayerRole.player,
+          'font-bold': m.sender?.id === roomPlayer.id,
+          'italic': (m.sender as RoomPlayer)?.role !== PlayerRole.player
         }"
       >
         <span>[{{ m.sender?.name || '系统' }}]:</span>
@@ -47,13 +51,15 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { RoomPlayer } from 'tiaoom/client'
+import { PlayerRole, Room, RoomPlayer, RoomStatus } from 'tiaoom/client'
 import { IMessage } from '..'
 import RulesModal from '../rule/RulesModal.vue'
 
 const props = withDefaults(defineProps<{
   messages: IMessage[]
-  roomPlayer: RoomPlayer
+  roomPlayer: RoomPlayer & {
+    room: Room;
+  };
   canSend?: boolean
   placeholder?: string
 }>(), {

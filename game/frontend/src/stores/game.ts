@@ -4,6 +4,7 @@ import type { GameConfig } from '@/types'
 import { Player, Room } from 'tiaoom/client'
 import { GameCore } from '@/core/game'
 import { api, IUser } from '@/api'
+import { on } from 'events'
 
 export const useGameStore = defineStore('game', () => {
   const game = ref<GameCore | null>(null)
@@ -69,15 +70,20 @@ export const useGameStore = defineStore('game', () => {
       .on('player.error', (err) => {
         if (err.message) alert(err.message)
       })
+      .on('room.join', (roomPlayer) => {
+        if (roomPlayer.id === player.value?.id) {
+          game.value?.init(roomPlayer.roomId, player.value!)
+        }
+      })
       .onReady(() => {
         if (player.value) {
           game.value!.login(new Player({ ...player.value, attributes: { avatar: player.value.avatar } }))
         }
       })
       .onPlayerStatus((data) => {
-        const p = players.value.find(p => p.id === data.id)
+        const p = players.value.find(p => p.id === player.value?.id)
         if (p) {
-          p.status = data.status
+          p.status = data
         }
       })
       .onPlayerList(data => {

@@ -1,4 +1,4 @@
-import { IRoomPlayer, Room, RoomPlayer, RoomStatus } from "tiaoom";
+import { IRoomPlayer, PlayerRole, Room, RoomPlayer, RoomStatus } from "tiaoom";
 
 /**
  * 检查黑白棋（Othello/Reversi）落子有效性，并返回落子后的棋盘状态
@@ -177,7 +177,13 @@ export default function onRoom(room: Room) {
       return;
     }
   }).on('player-command', (message: any) => {
-    const sender = room.validPlayers.find((p) => p.id == message.sender?.id)!;
+    // 允许观众使用的指令
+    const publicCommands = ['say', 'status'];
+    const players = publicCommands.includes(message.type)
+      ? room.players
+      : room.validPlayers;
+    const sender = players.find((p) => p.id == message.sender?.id)!;
+    if (!sender) return;
     /**
      * # room command
      * - say: player say something
@@ -193,11 +199,17 @@ export default function onRoom(room: Room) {
      */
     switch (message.type) {
       case 'say':
+        // 游玩时间观众发言仅广播给其他观众
+        if (sender.role != PlayerRole.player && room.status == RoomStatus.playing) {
+          room.watchers.forEach((watcher) => {
+            watcher.emit('message', { content: `${message.data}`, sender });
+          });
+          return;
+        }
         room.emit('message', { content: `${message.data}`, sender });
         break;
       case 'status': {
-        const playerIndex = room.validPlayers.findIndex((p) => p.id == message.data.id);
-        const player = room.validPlayers[playerIndex];
+        const player = room.players.find((p) => p.id == message.data.id);
         if (!player) break;
         player.emit('command', {
           type: 'status',
@@ -381,7 +393,7 @@ export default function onRoom(room: Room) {
     room.emit('command', { type: 'board', data: board });
   }).on('end', () => {
     room.emit('command', { type: 'end' });
-  }).on('message', (message: { content: string; sender?: IRoomPlayer}) => {
+  }).on('message', (message: { content: string; sender?: IRoomPlayer }) => {
     messageHistory.unshift(message);
     if (messageHistory.length > 100) messageHistory.splice(messageHistory.length - 100);
   });

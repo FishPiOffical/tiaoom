@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col gap-2">
     <!-- Waiting: Player Actions -->
-    <div v-if="gameStatus === 'waiting' && roomPlayer.role === 'player'" class="group flex gap-2">
+    <div v-if="!isPlaying && roomPlayer.role === PlayerRole.player" class="group flex gap-2">
       <button class="btn" 
         @click="game?.leaveRoom(roomPlayer.room.id)"
         :disabled="roomPlayer.isReady"
@@ -28,7 +28,7 @@
     </div>
 
     <!-- Watcher Actions -->
-    <div v-if="roomPlayer.role === 'watcher'" class="group flex gap-2">
+    <div v-if="roomPlayer.role === PlayerRole.watcher" class="group flex gap-2">
       <button class="btn" 
         @click="game?.leaveRoom(roomPlayer.room.id)"
         :disabled="roomPlayer.isReady"
@@ -36,7 +36,7 @@
         离开房间
       </button>
       <button class="btn" 
-        v-if="!isRoomFull && gameStatus === 'waiting'" 
+        v-if="!isRoomFull && !isPlaying" 
         @click="game?.joinRoom(roomPlayer.room.id)"
       >
         加入游戏
@@ -44,7 +44,7 @@
     </div>
 
     <!-- Playing: Player Actions (Draw/Resign) -->
-    <div v-if="gameStatus === 'playing' && roomPlayer.role === 'player'" class="group flex gap-2">
+    <div v-if="isPlaying && roomPlayer.role === PlayerRole.player" class="group flex gap-2">
        <slot name="playing-actions">
           <button class="btn" 
             v-if="enableDrawResign"
@@ -70,9 +70,10 @@
 
 <script setup lang="ts">
 import { GameCore } from '@/core/game';
-import { RoomPlayer, Player, Room } from 'tiaoom/client';
+import { RoomPlayer, Player, Room, PlayerRole, RoomStatus } from 'tiaoom/client';
+import { computed } from 'vue';
 
-defineProps<{
+const props = defineProps<{
   roomPlayer: RoomPlayer & { room: Room },
   game: GameCore,  
   gameStatus: string,
@@ -83,4 +84,6 @@ defineProps<{
 }>()
 
 defineEmits(['draw', 'lose'])
+
+const isPlaying = computed(() => props.roomPlayer.room.status === RoomStatus.playing)
 </script>
