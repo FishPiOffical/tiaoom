@@ -11,7 +11,7 @@ export const useGameStore = defineStore('game', () => {
   const players = ref<Player[]>([])
   const rooms = ref<Room[]>([])
   const games = ref<Record<string, GameConfig>>({})
-  const globalMessages = ref<string[]>([])
+  const globalMessages = ref<{ data: string, sender?: Player, createdAt: number }[]>([])
 
   const roomPlayer = computed(() => {
     if (!player.value) return null
@@ -49,7 +49,7 @@ export const useGameStore = defineStore('game', () => {
   async function loadMessages() {
     try {
       const res = await api.getMessages()
-      globalMessages.value = res.messages.map(m => `[${new Date(m.createdAt).toLocaleString()}] ${m.sender?.name || '系统'}: ${m.data}`)
+      globalMessages.value = res.messages
     } catch (error) {
       console.error('Failed to load messages:', error)
     }
@@ -101,7 +101,7 @@ export const useGameStore = defineStore('game', () => {
       .onPlayerReady(onPlayerReady)
       .onPlayerUnready(onPlayerReady)
       .on('global.message', (message, sender) => {
-      globalMessages.value.unshift(`[${new Date().toLocaleString()}] ${sender?.name || '系统'}: ${message}`)
+      globalMessages.value.unshift({ data: message, sender, createdAt: Date.now() })
     })
   }
 
