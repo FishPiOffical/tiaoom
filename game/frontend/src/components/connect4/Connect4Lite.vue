@@ -53,14 +53,12 @@
       <b class="text-base-content">{{ currentPlayer?.name }}</b>
     </div>
 
-    <div v-if="gameStatus !== 'playing' || showControl" class="fixed z-100 bg-base-300/40 top-0 left-0 w-full h-full flex items-center justify-center">
-      <RoomControlsLite
-        :game="game"
-        :room-player="roomPlayer"
-        :current-player="currentPlayer"
-        :enable-draw-resign="true"
-      />
-    </div>
+    <RoomControlsLite
+      :game="game"
+      :room-player="roomPlayer"
+      :current-player="currentPlayer"
+      :enable-draw-resign="true"
+    />
   </section>
 </template>
 
@@ -69,7 +67,6 @@ import { Room, RoomPlayer } from 'tiaoom/client'
 import { GameCore } from '@/core/game';
 import { useConnect4 } from './useConnect4';
 import { onMounted, ref } from 'vue';
-import hotkeys from 'hotkeys-js';
 
 const props = defineProps<{
   roomPlayer: RoomPlayer & { room: Room }
@@ -94,11 +91,6 @@ onMounted(() => {
     window.resizeTo(window.innerWidth, rect.height);
   }
 })
-
-const showControl = ref(false);
-hotkeys('esc', () => {
-  showControl.value = !showControl.value;
-});
 </script>
 
 <style scoped>

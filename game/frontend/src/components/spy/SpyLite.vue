@@ -93,14 +93,11 @@
       </button>
     </div>
 
-    <div 
-      v-if="roomPlayer.room.status !== 'playing' || showControl" class="fixed z-100 bg-base-300/40 top-0 left-0 w-full h-full flex items-center justify-center">
-      <RoomControlsLite
-        :game="game"
-        :room-player="roomPlayer"
-        :enable-draw-resign="false"
-      />
-    </div>
+    <RoomControlsLite
+      :game="game"
+      :room-player="roomPlayer"
+      :enable-draw-resign="false"
+    />
   </section>
 </template>
 
@@ -108,7 +105,6 @@
 import { GameCore } from '@/core/game';
 import { useSpy, SpyRoomPlayer, SpyRoom } from './useSpy';
 import { onMounted, ref } from 'vue';
-import hotkeys from 'hotkeys-js';
 
 const props = defineProps<{
   roomPlayer: SpyRoomPlayer & { room: SpyRoom }
@@ -138,9 +134,4 @@ onMounted(() => {
     window.resizeTo(window.innerWidth, rect.height);
   }
 })
-
-const showControl = ref(false);
-hotkeys('esc', () => {
-  showControl.value = !showControl.value;
-});
 </script>

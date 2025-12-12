@@ -168,6 +168,7 @@
               v-model="room.size"
               @change="room.minSize = Math.min(room.minSize, room.size)"
               class="w-24 select"
+              title="最大可容纳玩家"
             >
               <option 
                 v-for="i in (currentGame.maxSize - currentGame.minSize + 1)" 
