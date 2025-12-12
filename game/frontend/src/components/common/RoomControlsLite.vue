@@ -1,6 +1,6 @@
 <template>
   <div 
-    v-if="roomPlayer.room.status !== 'playing' || showControl" class="fixed z-100 bg-base-300/60 top-0 left-0 w-full h-full flex items-center justify-center">
+    v-if="roomPlayer.room.status !== 'playing' || showControl" class="fixed z-100 bg-base-300/60 top-0 left-0 w-full h-full flex flex-col items-center justify-center">
 
     <div class="flex flex-col gap-2">
       <!-- Waiting: Player Actions -->
@@ -26,7 +26,7 @@
           <Icon :icon="roomPlayer.isReady ? 'mdi:close' : 'mdi:check'" />
         </button>
         <button class="btn btn-circle btn-primary tooltip" 
-          @click="game?.startGame(roomPlayer.room.id)" 
+          @click="game?.startGame(roomPlayer.room.id), showControl = false" 
           :disabled="!isAllReady"
           data-tip="开始游戏"
         >
@@ -77,6 +77,7 @@
       <!-- Extra Slot -->
       <slot />
     </div>
+    <p class="opacity-30 text-xs mt-3 content-end">游戏中可按下 <kbd class="kbd kbd-xs">Esc</kbd> 键显示/隐藏控制面板</p>
   </div>
 </template>
 
