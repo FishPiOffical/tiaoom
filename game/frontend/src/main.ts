@@ -5,9 +5,19 @@ import App from './App.vue'
 import './style.css'
 import { registerGameComponents } from './components'
 
-const app = createApp(App)
+function bootstrap() {
+  const app = createApp(App)
 
-app.use(createPinia())
-app.use(router)
-registerGameComponents(app)
-app.mount('#app')
+  app.use(createPinia())
+  app.use(router)
+  registerGameComponents(app)
+  app.mount('#app')
+
+  return {
+    getComponent: (name: string) => app.component(name),
+  }
+}
+
+const { getComponent } = bootstrap()
+
+export { getComponent }

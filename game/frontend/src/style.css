@@ -27,6 +27,10 @@ body {
   @apply -m-2 p-2 bg-base-content/20;
 }
 
+.btn-text {
+  @apply bg-transparent p-0 border-0 shadow-none;
+}
+
 .font-pixel {
   font-family: "Chill Pixels Mono", "Pixel32", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";;
 }
@@ -47,4 +51,8 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-base-content/20;
+}
+
+#app {
+  height: 100vh;
 }

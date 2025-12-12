@@ -17,7 +17,6 @@ export class GameCore extends Tiaoom {
    */
   connect() {
     this.socket = new ReconnectingWebSocket(this.address, [], {
-      debug: true,
       connectionTimeout: 3000
     })
 

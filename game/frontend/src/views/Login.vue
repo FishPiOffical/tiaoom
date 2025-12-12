@@ -49,7 +49,7 @@ const gameStore = useGameStore()
 
 const name = ref('')
 const error = ref('')
-const loginType = ref('fishpi') // 'fishpi' or 'normal'
+const loginType = ref('normal') // 'fishpi' or 'normal'
 
 async function handleLogin() {
   if (!name.value.trim()) {

@@ -10,10 +10,14 @@
             @click="placePiece(rowIndex, colIndex)" 
             class="relative w-[10vw] h-[10vw] md:w-8 md:h-8 flex items-center justify-center border border-base-content/10"
             :class="{ 
-              'cursor-pointer hover:bg-base-content/20': currentPlayer?.id === roomPlayer.id && cell === 0,
+              'cursor-pointer group': currentPlayer?.id === roomPlayer.id && cell === 0,
               'cursor-not-allowed': currentPlayer?.id === roomPlayer.id && cell !== 0
             }"
           >
+            <span 
+              class="group-hover:inline hidden opacity-80 w-[9vw] h-[9vw] md:w-7 md:h-7 rounded-full transition-all duration-500 z-10" 
+              :class="[currentPlayer?.attributes?.color === 1 ? 'black-piece border border-base-content/20 shadow-lg' : 'white-piece shadow-lg']">
+            </span>
             <span 
               v-if="cell > 0"
               class="w-[9vw] h-[9vw] md:w-7 md:h-7 rounded-full transition-all duration-500 z-10"
@@ -87,9 +91,6 @@
         <RoomControls
           :game="game"
           :room-player="roomPlayer"
-          :game-status="gameStatus"
-          :is-all-ready="isAllReady"
-          :is-room-full="isRoomFull"
           :current-player="currentPlayer"
           :enable-draw-resign="true"
           @draw="requestDraw"
@@ -99,11 +100,7 @@
         <hr class="border-base-content/20" />
         
       </section>
-      <GameChat 
-        :messages="roomMessages" 
-        :room-player="roomPlayer" 
-        @send="sendMessage"
-      >
+      <GameChat>
         <template #rules>
           <ul class="space-y-2 text-sm">
             <li>1. 双方轮流落子，落子时必须夹住对方棋子。</li>
@@ -118,120 +115,34 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
 import { Room, RoomPlayer } from 'tiaoom/client'
-import { IMessage } from '..';
 import { GameCore } from '@/core/game';
-import { useGameEvents } from '@/hook/useGameEvents';
+import { useOthello } from './useOthello';
 
 const props = defineProps<{
   roomPlayer: RoomPlayer & { room: Room }
   game: GameCore
 }>()
 
-const gameStatus = ref<'waiting' | 'playing'>('waiting')
-const currentPlayer = ref<any>()
-const board = ref(Array(8).fill(0).map(() => Array(8).fill(-1)))
-const achivents = ref<Record<string, any>>({})
-const currentPlace = ref<{ x: number; y: number } | null>(null)
-const roomMessages = ref<IMessage[]>([])
-
-function onRoomStart() {
-  roomMessages.value = []
-  gameStatus.value = 'playing'
-  currentPlace.value = null
-}
-
-function onRoomEnd() {
-  gameStatus.value = 'waiting'
-  currentPlayer.value = null
-}
-
-function onPlayMessage(msg: IMessage) {
-  roomMessages.value.unshift(msg)
-}
-
-useGameEvents(props.game, {
-  'room.start': onRoomStart,
-  'room.end': onRoomEnd,
-  'player.message': onPlayMessage,
-  'room.message': onPlayMessage,
-  'player.command': onCommand,
-  'room.command': onCommand,
-})
-
-function onCommand(cmd: any) {
-  if (props.roomPlayer.room.attrs?.type !== 'othello') return
-  
-  switch (cmd.type) {
-    case 'status':
-      gameStatus.value = cmd.data.status
-      currentPlayer.value = cmd.data.current
-      roomMessages.value = cmd.data.messageHistory || [];
-      board.value = cmd.data.board
-      achivents.value = cmd.data.achivents || {}
-      break
-    case 'board':
-      board.value = cmd.data
-      break
-    case 'request-draw':
-      confirm(`玩家 ${cmd.data.player.name} 请求和棋。是否同意？`) && 
-        props.game?.command(props.roomPlayer.room.id, { type: 'draw' })
-      break
-    case 'place-turn':
-      currentPlayer.value = cmd.data.player
-      gameStatus.value = 'playing'
-      break
-    case 'achivements':
-      achivents.value = cmd.data
-      break
-    case 'place':
-      const { x, y } = cmd.data
-      currentPlace.value = { x, y }
-      break
-  }
-}
+const {
+  gameStatus,
+  currentPlayer,
+  board,
+  currentPlace,
+  achivents,
+  placePiece,
+  requestDraw,
+  requestLose,
+} = useOthello(props.game, props.roomPlayer)
 
 function getPlayerStatus(p: any) {
   if (!p.isReady) return '未准备'
-  if (gameStatus.value === 'waiting') return '准备好了'
+  if (props.roomPlayer.room.status === 'waiting') return '准备好了'
   if (p.id === currentPlayer.value?.id) return '思考中'
-  if (gameStatus.value === 'playing') return '等待中'
+  if (props.roomPlayer.room.status === 'playing') return '等待中'
   return '准备好了'
 }
 
-function placePiece(row: number, col: number) {
-  if (gameStatus.value !== 'playing') return
-  if (currentPlayer.value.id !== props.roomPlayer.id) return
-  if (board.value[row][col] !== 0) return
-  props.game?.command(props.roomPlayer.room.id, { type: 'place', data: { x: row, y: col } })
-  board.value[row][col] = currentPlayer.value.attributes?.color
-}
-
-function requestDraw() {
-  if (gameStatus.value !== 'playing') return
-  props.game?.command(props.roomPlayer.room.id, { type: 'request-draw' })
-}
-
-function requestLose() {
-  if (gameStatus.value !== 'playing') return
-  props.game?.command(props.roomPlayer.room.id, { type: 'request-lose' })
-}
-
-function sendMessage(text: string) {
-  props.game?.command(props.roomPlayer.room.id, { type: 'say', data: text })
-}
-
-const isRoomFull = computed(() => {
-  if (!props.roomPlayer) return true
-  return props.roomPlayer.room.players.filter((p: any) => p.role === 'player').length >= props.roomPlayer.room.size
-})
-
-const isAllReady = computed(() => {
-  if (!props.roomPlayer) return false
-  return props.roomPlayer.room.players.filter((p: any) => p.role === 'player').length >= props.roomPlayer.room.minSize &&
-    props.roomPlayer.room.players.every((p: any) => p.isReady || p.role === 'watcher')
-})
 </script>
 <style scoped>
   .piece {
@@ -241,14 +152,12 @@ const isAllReady = computed(() => {
     background: white;
     color: black;
     transform: rotateY(0deg);
-    box-shadow: none;
     border: 1px solid rgba(0,0,0,0.2);
   }
   .black-piece {
     background: black;
     color: white;
     transform: rotateY(180deg);
-    box-shadow: none;
     border: 1px solid rgba(255,255,255,0.2);
   }
   .row .cell::after {

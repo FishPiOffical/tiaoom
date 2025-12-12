@@ -10,7 +10,9 @@
   },
   "dependencies": {
     "@iconify/vue": "^5.0.0",
+    "@vueuse/core": "^14.1.0",
     "axios": "^1.4.0",
+    "hotkeys-js": "^4.0.0-beta.7",
     "less": "^4.4.2",
     "pinia": "^2.1.6",
     "reconnecting-websocket": "^4.4.0",

@@ -103,11 +103,8 @@
       </section>
       
       <GameChat 
-        :messages="roomMessages" 
-        :room-player="roomPlayer" 
         :can-send="canSpeak"
         placeholder="聊天或说明你的词语"
-        @send="sendMessage"
       >
         <template #rules>
           <ul class="space-y-2 text-sm ">
@@ -270,10 +267,6 @@ function getPlayerStatus(p: any) {
   if (p.id === currentTalkPlayer.value?.id) return '发言中'
   if (gameStatus.value === 'talking') return '等待发言'
   return '准备好了'
-}
-
-function sendMessage(text: string) {
-  props.game?.command(props.roomPlayer.room.id, { type: 'say', data: text })
 }
 
 function sendTalked() {

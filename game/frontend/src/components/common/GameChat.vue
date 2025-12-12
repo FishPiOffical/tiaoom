@@ -21,7 +21,7 @@
         <button class="btn join-item" @click="handleSend" :disabled="!canSend">发送</button>
       </div>
     </div>
-    <p v-if="roomPlayer.role !== PlayerRole.player && roomPlayer.room.status === RoomStatus.playing" class="text-xs text-base-content/50 italic">
+    <p v-if="roomPlayer && roomPlayer.role !== PlayerRole.player && roomPlayer.room.status === RoomStatus.playing" class="text-xs text-base-content/50 italic">
       * 游戏进行中，您为观众，发送消息仅能给其他观众查看
     </p>
 
@@ -30,36 +30,50 @@
     </RulesModal>
 
     <!-- Message List -->
-    <div class="bg-base-300/30 p-3 rounded overflow-auto border border-base-content/20 flex-1">
-      <p 
+    <div class="bg-base-300/30 p-3 rounded overflow-auto space-y-2 border border-base-content/20 flex-1 relative group">
+      <button class="btn btn-text tooltip tooltip-left absolute top-2 right-5 group-hover:inline hidden" data-tip="弹出" @click="openSmallWindow('/#/lite/chat')">
+        <Icon icon="mdi:open-in-new" />
+      </button>
+      <div 
         v-for="(m, i) in messages" 
         :key="i" 
-        class="text-sm mb-1" 
+        class="text-sm wrap-break-word flex flex-col" 
         :class="{ 
-          'text-accent': !m.sender, 
-          'text-base-content/80': m.sender && (m.sender as RoomPlayer)?.role == PlayerRole.player,
-          'font-bold': m.sender?.id === roomPlayer.id,
-          'italic': (m.sender as RoomPlayer)?.role !== PlayerRole.player
+          'items-end': m.sender?.id === roomPlayer?.id,
+          'items-start': m.sender?.id !== roomPlayer?.id
         }"
       >
-        <span>[{{ m.sender?.name || '系统' }}]:</span>
-        {{ m.content }}
-      </p>
+        <div v-if="m.sender" class="text-[10px] opacity-50 mb-0.5 px-1 flex gap-1">
+            <span>{{ m.sender.name }}</span>
+            <span v-if="(m.sender as RoomPlayer)?.role !== PlayerRole.player" class="italic">(观众)</span>
+        </div>
+        <div 
+            class="px-3 py-1.5 rounded-2xl max-w-[85%]"
+            :class="{
+                'bg-primary text-primary-content rounded-tr-none': m.sender?.id === roomPlayer?.id,
+                'bg-base-200 text-base-content rounded-tl-none': m.sender?.id !== roomPlayer?.id && m.sender,
+                'bg-base-300/50 text-base-content/70 w-full text-center max-w-full! rounded text-xs py-1': !m.sender
+            }"
+        >
+            {{ m.content }}
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { PlayerRole, Room, RoomPlayer, RoomStatus } from 'tiaoom/client'
+import { computed, ref } from 'vue'
+import { PlayerRole, RoomPlayer, RoomStatus } from 'tiaoom/client'
 import { IMessage } from '..'
 import RulesModal from '../rule/RulesModal.vue'
+import Icon from '../icon/Icon.vue';
+import { openSmallWindow } from '@/utils/dom';
+import { useGameStore } from '@/stores/game';
+import { useGameEvents } from '@/hook/useGameEvents';
+import { GameCore } from '@/core/game';
 
 const props = withDefaults(defineProps<{
-  messages: IMessage[]
-  roomPlayer: RoomPlayer & {
-    room: Room;
-  };
   canSend?: boolean
   placeholder?: string
 }>(), {
@@ -75,10 +89,23 @@ const inputText = ref('')
 const rulesModal = ref<InstanceType<typeof RulesModal> | null>(null)
 
 function handleSend() {
-  if (!inputText.value.trim()) return
+  if (!inputText.value.trim() || !roomPlayer.value) return
   if (!props.canSend) return
   
-  emit('send', inputText.value)
+  game.value?.command(roomPlayer.value.room.id, { type: 'say', data: inputText.value })
   inputText.value = ''
+}
+
+const game = computed(() => useGameStore().game as GameCore);
+const roomPlayer = computed(() => useGameStore().roomPlayer);
+
+useGameEvents(useGameStore().game as GameCore, {
+  'player.message': onPlayMessage,
+  'room.message': onPlayMessage,
+});
+
+const messages = ref<IMessage[]>([])
+function onPlayMessage(msg: IMessage) {
+  messages.value.unshift(msg)
 }
 </script>

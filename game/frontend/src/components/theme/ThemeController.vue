@@ -28,7 +28,7 @@
             class="gap-3 px-2"
             :data-set-theme="t"
             data-act-class="[&_svg]:visible"
-            @click="theme = t; changeTheme()"
+            @click="setTheme(t)"
           >
             <div
               :data-theme="t"
@@ -49,55 +49,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { useTheme } from "@/hook/useTheme";
 
-const theme = ref(
-  localStorage.getItem("theme") ||
-    (window.matchMedia("(prefers-color-scheme: dark)").matches
-      ? "black"
-      : "wireframe")
-);
-const themes = [
-  "wireframe",
-  "black",
-  "light",
-  "dark",
-  "cupcake",
-  "bumblebee",
-  "emerald",
-  "corporate",
-  "synthwave",
-  "retro",
-  "cyberpunk",
-  "valentine",
-  "halloween",
-  "garden",
-  "forest",
-  "aqua",
-  "lofi",
-  "pastel",
-  "fantasy",
-  "luxury",
-  "dracula",
-  "cmyk",
-  "autumn",
-  "business",
-  "acid",
-  "lemonade",
-  "night",
-  "coffee",
-  "winter",
-  "dim",
-  "nord",
-  "sunset",
-];
-
-function changeTheme() {
-  localStorage.setItem("theme", theme.value);
-  document.documentElement.setAttribute("data-theme", theme.value);
-}
-
-onMounted(() => {
-  document.documentElement.setAttribute("data-theme", theme.value);
-});
+const { theme, themes, setTheme } = useTheme();
 </script>

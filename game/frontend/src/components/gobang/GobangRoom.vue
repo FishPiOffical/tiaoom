@@ -95,9 +95,6 @@
         <RoomControls
           :game="game"
           :room-player="roomPlayer"
-          :game-status="gameStatus"
-          :is-all-ready="isAllReady"
-          :is-room-full="isRoomFull"
           :current-player="currentPlayer"
           :enable-draw-resign="true"
           @draw="requestDraw"
@@ -108,11 +105,7 @@
         
       </section>
       
-      <GameChat 
-        :messages="roomMessages" 
-        :room-player="roomPlayer" 
-        @send="sendMessage"
-      >
+      <GameChat>
         <template #rules>
           <ul class="space-y-2 text-sm">
             <li>1. 双方轮流在棋盘交叉点落子。</li>
@@ -133,80 +126,27 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
 import type { RoomPlayer, Room } from 'tiaoom/client';
 import type { GameCore } from '@/core/game'
 import GameChat from '@/components/common/GameChat.vue'
-import { IMessage } from '..';
-import { useGameEvents } from '@/hook/useGameEvents';
+import { useGobang } from './useGobang';
 
 const props = defineProps<{
   roomPlayer: RoomPlayer & { room: Room }
   game: GameCore
 }>()
 
-const gameStatus = ref<'waiting' | 'playing'>('waiting')
-const currentPlayer = ref<any>()
-const board = ref(Array(19).fill(0).map(() => Array(19).fill(0)))
-const achivents = ref<Record<string, any>>({})
-const currentPlace = ref<{ x: number; y: number } | null>(null)
-const roomMessages = ref<IMessage[]>([])
+const {
+  achivents,
+  gameStatus,
+  currentPlayer,
+  board,
+  currentPlace,
+  placePiece,
+  requestDraw,
+  requestLose,
+} = useGobang(props.game, props.roomPlayer)
 
-function onRoomStart() {
-  roomMessages.value = []
-  gameStatus.value = 'playing'
-  currentPlace.value = null
-}
-
-function onRoomEnd() {
-  gameStatus.value = 'waiting'
-  currentPlayer.value = null
-}
-
-function onPlayMessage(msg: IMessage) {
-  roomMessages.value.unshift(msg)
-}
-
-useGameEvents(props.game, {
-  'room.start': onRoomStart,
-  'room.end': onRoomEnd,
-  'player.message': onPlayMessage,
-  'room.message': onPlayMessage,
-  'player.command': onCommand,
-  'room.command': onCommand,
-})
-
-function onCommand(cmd: any) {
-  if (props.roomPlayer.room.attrs?.type !== 'gobang') return
-  
-  switch (cmd.type) {
-    case 'status':
-      gameStatus.value = cmd.data.status
-      currentPlayer.value = cmd.data.current
-      roomMessages.value = cmd.data.messageHistory || [];
-      board.value = cmd.data.board
-      achivents.value = cmd.data.achivents || {}
-      break
-    case 'board':
-      board.value = cmd.data
-      break
-    case 'request-draw':
-      confirm(`玩家 ${cmd.data.player.name} 请求和棋。是否同意？`) && 
-        props.game?.command(props.roomPlayer.room.id, { type: 'draw' })
-      break
-    case 'place-turn':
-      currentPlayer.value = cmd.data.player
-      gameStatus.value = 'playing'
-      break
-    case 'achivements':
-      achivents.value = cmd.data
-      break
-    case 'place':
-      const { x, y } = cmd.data
-      currentPlace.value = { x, y }
-      break
-  }
-}
 
 function getPlayerStatus(p: any) {
   if (!p.isReady) return '未准备'
@@ -216,36 +156,4 @@ function getPlayerStatus(p: any) {
   return '准备好了'
 }
 
-function placePiece(row: number, col: number) {
-  if (gameStatus.value !== 'playing') return
-  if (currentPlayer.value?.id !== props.roomPlayer.id) return
-  if (board.value[row][col] !== 0) return
-  props.game?.command(props.roomPlayer.room.id, { type: 'place', data: { x: row, y: col } })
-  board.value[row][col] = currentPlayer.value.attributes?.color
-}
-
-function requestDraw() {
-  if (gameStatus.value !== 'playing') return
-  props.game?.command(props.roomPlayer.room.id, { type: 'request-draw' })
-}
-
-function requestLose() {
-  if (gameStatus.value !== 'playing') return
-  props.game?.command(props.roomPlayer.room.id, { type: 'request-lose' })
-}
-
-function sendMessage(text: string) {
-  props.game?.command(props.roomPlayer.room.id, { type: 'say', data: text })
-}
-
-const isRoomFull = computed(() => {
-  if (!props.roomPlayer) return true
-  return props.roomPlayer.room.players.filter((p: any) => p.role === 'player').length >= props.roomPlayer.room.size
-})
-
-const isAllReady = computed(() => {
-  if (!props.roomPlayer) return false
-  return props.roomPlayer.room.players.filter((p: any) => p.role === 'player').length >= props.roomPlayer.room.minSize &&
-    props.roomPlayer.room.players.every((p: any) => p.isReady || p.role === 'watcher')
-})
 </script>

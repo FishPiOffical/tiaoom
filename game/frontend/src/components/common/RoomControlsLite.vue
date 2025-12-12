@@ -2,63 +2,71 @@
   <div class="flex flex-col gap-2">
     <!-- Waiting: Player Actions -->
     <div v-if="!isPlaying && roomPlayer.role === PlayerRole.player" class="group flex gap-2">
-      <button class="btn" 
+      <button class="btn btn-circle tooltip" 
         @click="game?.leaveRoom(roomPlayer.room.id)"
         :disabled="roomPlayer.isReady"
+        data-tip="离开房间"
       >
-        离开房间
+        <Icon icon="mdi:logout" />
       </button>
-      <button class="btn" 
+      <button class="btn btn-circle tooltip" 
         @click="game?.leaveSeat(roomPlayer.room.id)"
         :disabled="roomPlayer.isReady"
+        data-tip="离开座位"
       >
-        离开座位
+        <Icon icon="mdi:account-minus" />
       </button>
-      <button class="btn btn-accent" 
+      <button class="btn btn-circle btn-accent btn-soft tooltip" 
         @click="game?.ready(roomPlayer.room.id, !roomPlayer.isReady)"
+        :data-tip="roomPlayer.isReady ? '取消' : '准备'"
       >
-        {{ roomPlayer.isReady ? '取消' : '准备' }}
+        <Icon :icon="roomPlayer.isReady ? 'mdi:close' : 'mdi:check'" />
       </button>
-      <button class="btn btn-primary" 
+      <button class="btn btn-circle btn-primary tooltip" 
         @click="game?.startGame(roomPlayer.room.id)" 
         :disabled="!isAllReady"
+        data-tip="开始游戏"
       >
-        开始游戏
+        <Icon icon="mdi:play" />
       </button>
     </div>
 
     <!-- Watcher Actions -->
     <div v-if="roomPlayer.role === PlayerRole.watcher" class="group flex gap-2">
-      <button class="btn" 
+      <button class="btn btn-circle tooltip" 
         @click="game?.leaveRoom(roomPlayer.room.id)"
         :disabled="roomPlayer.isReady"
+        data-tip="离开房间"
       >
-        离开房间
+        <Icon icon="mdi:logout" />
       </button>
-      <button class="btn" 
+      <button class="btn btn-circle tooltip" 
         v-if="!isRoomFull && !isPlaying" 
         @click="game?.joinRoom(roomPlayer.room.id)"
+        data-tip="加入游戏"
       >
-        加入游戏
+        <Icon icon="mdi:login" />
       </button>
     </div>
 
     <!-- Playing: Player Actions (Draw/Resign) -->
     <div v-if="isPlaying && roomPlayer.role === PlayerRole.player" class="group flex gap-2">
        <slot name="playing-actions">
-          <button class="btn" 
+          <button class="btn btn-circle btn-soft btn-warning tooltip" 
             v-if="enableDrawResign"
             @click="$emit('draw')"
             :disabled="currentPlayer?.id !== roomPlayer.id"
+            data-tip="请求和棋"
           >
-            请求和棋
+            <Icon icon="mdi:handshake" />
           </button>
-          <button class="btn" 
+          <button class="btn btn-circle btn-soft btn-success tooltip" 
             v-if="enableDrawResign"
             @click="$emit('lose')"
             :disabled="currentPlayer?.id !== roomPlayer.id"
+            data-tip="认输"
           >
-            认输
+            <Icon icon="mdi:flag" />
           </button>
        </slot>
     </div>

@@ -4,7 +4,6 @@ import type { GameConfig } from '@/types'
 import { Player, Room } from 'tiaoom/client'
 import { GameCore } from '@/core/game'
 import { api, IUser } from '@/api'
-import { on } from 'events'
 
 export const useGameStore = defineStore('game', () => {
   const game = ref<GameCore | null>(null)
@@ -58,12 +57,12 @@ export const useGameStore = defineStore('game', () => {
 
   loadMessages();
 
-  function initGame() {
-    if (game.value) return
+  function initGame(): GameCore{
+    if (game.value) return game.value as GameCore;
 
     game.value = new GameCore('/ws')
     
-    game.value.run()
+    return game.value.run()
       .on('global.error', (err) => {
         if (err.message) alert(err.message)
       })
@@ -101,8 +100,7 @@ export const useGameStore = defineStore('game', () => {
       })
       .onPlayerReady(onPlayerReady)
       .onPlayerUnready(onPlayerReady)
-
-    game.value.on('global.message', (message, sender) => {
+      .on('global.message', (message, sender) => {
       globalMessages.value.unshift(`[${new Date().toLocaleString()}] ${sender?.name || '系统'}: ${message}`)
     })
   }

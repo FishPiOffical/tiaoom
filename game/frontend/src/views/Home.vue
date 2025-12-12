@@ -224,12 +224,18 @@
         
         <!-- 房间内容 -->
         <section v-if="gameStore.roomPlayer" class="space-y-4 h-full flex flex-col">
-          <h3 class="text-xl font-light text-base-content border-b border-base-content/20 pb-2">
-            我的房间: {{ gameStore.roomPlayer.room.name }} 
-            <span class="text-sm text-base-content/60 ml-2">
-              ({{ gameStore.roomPlayer.room.players.filter(p => p.role === 'player').length }}/{{ gameStore.roomPlayer.room.size }})
+          <header class="border-b border-base-content/20 flex justify-between">
+            <h3 class="text-xl font-light text-base-content pb-2">
+              我的房间: {{ gameStore.roomPlayer.room.name }} 
+              <span class="text-sm text-base-content/60 ml-2">
+                ({{ gameStore.roomPlayer.room.players.filter(p => p.role === 'player').length }}/{{ gameStore.roomPlayer.room.size }})
+              </span>
+            </h3>
+            <span>
+              <button v-if="hasLiteComponent" class="btn btn-text hidden md:inline tooltip tooltip-left" data-tip="弹出" @click="openSmallWindow('/#/lite')"><Icon icon="majesticons:open-line" /></button>
+              {{ getComponent(gameStore.roomPlayer.room.attrs.type + '-lite') }}
             </span>
-          </h3>
+          </header>
           
           <!-- 动态游戏组件 -->
           <div class="flex-1 overflow-auto">
@@ -251,6 +257,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGameStore } from '@/stores/game'
 import { IRoomOptions } from 'tiaoom/client'
+import { openSmallWindow } from '@/utils/dom'
+import { getComponent } from '@/main';
 
 const router = useRouter()
 const gameStore = useGameStore()
@@ -331,4 +339,13 @@ const roomList = computed(() => {
 onMounted(() => {
   gameStore.initGame()
 })
+
+const hasLiteComponent = (type: string) => {
+  try {
+    getComponent(type.slice(0, 1).toUpperCase() + type.slice(1) + 'Lite')
+    return true
+  } catch {
+    return false
+  }
+}
 </script>

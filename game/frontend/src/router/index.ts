@@ -10,6 +10,18 @@ const router = createRouter({
       component: () => import('@/views/Login.vue')
     },
     {
+      path: '/lite',
+      name: 'lite',
+      component: () => import('@/views/Lite.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/lite/chat',
+      name: 'lite-chat',
+      component: () => import('@/components/common/GameChatLite.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/',
       name: 'home',
       component: () => import('@/views/Home.vue'),
