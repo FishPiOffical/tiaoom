@@ -28,9 +28,9 @@ export interface RoomEvents extends BaseEvents {
   message: (data: { content: string; sender?: IRoomPlayer }) => void;
   /**
    * 玩家发送的房间命令
-   * @param {IMessagePackage} message 命令内容
+   * @param {any} message 命令内容
    */
-  'player-command': (message: IMessagePackage) => void;
+  'player-command': (message: any) => void;
   /**
    * 房间命令
    * @param {IMessagePackage} message 命令内容

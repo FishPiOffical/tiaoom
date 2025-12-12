@@ -28,7 +28,7 @@
 | `start` | <code>(room: [IRoom](./models.md#iroom), sender: [IRoomPlayer](./models.md#iroomplayer))</code> | 当房间开始游戏时触发。 |
 | `end` | <code>(room: [IRoom](./models.md#iroom))</code> | 当房间关闭时触发。 |
 | `message` | <code>(data: { content: string, sender?: [IRoomPlayer](./models.md#iroomplayer) })</code> | 当房间收到消息时触发。 |
-| `player-command` | <code>(message: [IMessagePackage](./models.md#imessagepackage))</code> | 玩家发送的房间命令。 |
+| `player-command` | `(message: any)` | 玩家发送的房间命令。 |
 | `command` | <code>(message: any)</code> | 房间命令。 |
 | `update` | <code>(room: [IRoom](./models.md#iroom))</code> | 房间更新。 |
 | `player-ready` | <code>(player: [IRoomPlayer](./models.md#iroomplayer))</code> | 当玩家准备时触发（包含玩家信息）。 |

@@ -102,10 +102,18 @@ const roomPlayer = computed(() => useGameStore().roomPlayer);
 useGameEvents(useGameStore().game as GameCore, {
   'player.message': onPlayMessage,
   'room.message': onPlayMessage,
+  'player.command': onCommand,
 });
 
 const messages = ref<IMessage[]>([])
 function onPlayMessage(msg: IMessage) {
   messages.value.unshift(msg)
+}
+function onCommand(cmd: any) {
+  switch (cmd.type) {
+    case 'status':
+      messages.value = cmd.data.messageHistory;
+      break
+  }
 }
 </script>

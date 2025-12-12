@@ -87,8 +87,6 @@
           :game="game"
           :room-player="roomPlayer"
           :game-status="gameStatus"
-          :is-all-ready="isAllReady"
-          :is-room-full="isRoomFull"
           :enable-draw-resign="false"
         >
           <!-- 发言控制 -->
@@ -97,6 +95,12 @@
               结束发言 {{ countdown > 0 ? `(${countdown}s)` : '' }}
             </button>
             <hr class="border-base-content/20" />
+          </div>
+
+          <!-- 投票倒计时 -->
+          <div v-if="gameStatus === 'voting'" class="text-center p-2 bg-base-200 rounded-lg">
+             <div class="text-sm opacity-70">投票倒计时</div>
+             <div class="text-xl font-bold" :class="{'text-error': countdown < 30}">{{ countdown }}s</div>
           </div>
         </RoomControls>        
         
@@ -128,12 +132,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
 import type { GameCore } from '@/core/game'
 import type { RoomPlayer, Room } from 'tiaoom/client';
 import GameChat from '@/components/common/GameChat.vue'
-import { IMessage } from '..';
-import { useGameEvents } from '@/hook/useGameEvents';
+import { useSpy } from './useSpy';
 
 type SpyRoomPlayer = RoomPlayer & { isDead?: boolean }
 
@@ -146,118 +148,22 @@ const props = defineProps<{
   game: GameCore
 }>()
 
-const canVotePlayer = ref<string[]>([])
-const currentTalkPlayer = ref<any>(null)
-const voted = ref(false)
-const gameStatus = ref<'waiting' | 'talking' | 'voting'>('waiting')
-const word = ref('')
-const roomMessages = ref<IMessage[]>([])
-const currentPlayer = computed(() => props.roomPlayer.id)
-const countdown = ref(0)
-let countdownTimer: any = null
 
-const voting = computed(() => gameStatus.value === 'voting')
+const {
+  canVotePlayer,
+  currentTalkPlayer,
+  voted,
+  gameStatus,
+  word,
+  countdown,
+  voting,
+  canSpeak,
+  sendTalked,
+  votePlayer,
+  kickPlayer,
+  transferOwner
+} = useSpy(props.game, props.roomPlayer)
 
-const canSpeak = computed(() => {
-  return (gameStatus.value === 'talking' && currentTalkPlayer.value?.id === currentPlayer.value) || 
-         gameStatus.value === 'waiting'
-})
-
-function onRoomStart() {
-  roomMessages.value = []
-  gameStatus.value = 'talking'
-  currentTalkPlayer.value = null
-}
-function onRoomEnd() {
-  gameStatus.value = 'waiting'
-  currentTalkPlayer.value = null
-}
-function onPlayMessage(msg: IMessage) {
-  roomMessages.value.unshift(msg)
-}
-
-function onCommand(cmd: any) {
-  if (props.roomPlayer.room.attrs?.type !== 'spy') return
-  
-  switch (cmd.type) {
-    case 'talk':
-      currentTalkPlayer.value = cmd.data.player
-      gameStatus.value = 'talking'
-      if (countdownTimer) clearInterval(countdownTimer)
-      countdown.value = 0
-      if (currentTalkPlayer.value?.id === currentPlayer.value) {
-        // 如果是自己发言，开始倒计时
-        countdown.value = 300
-        countdownTimer = setInterval(() => {
-          countdown.value--
-          if (countdown.value <= 0) {
-            clearInterval(countdownTimer)
-          }
-        }, 1000)
-      }
-      break;
-    case 'talk-countdown':
-      countdown.value = cmd.data.seconds
-      if (countdownTimer) clearInterval(countdownTimer)
-      countdownTimer = setInterval(() => {
-        countdown.value--
-        if (countdown.value <= 0) {
-          clearInterval(countdownTimer)
-        }
-      }, 1000)
-      break
-    case 'vote':
-      gameStatus.value = 'voting'
-      voted.value = false
-      if (countdownTimer) clearInterval(countdownTimer)
-      countdown.value = 0
-      if (cmd.data) {
-        canVotePlayer.value = cmd.data.map((p: any) => p.id)
-      } else {
-        canVotePlayer.value = props.roomPlayer.room.players
-          .filter((p: any) => !p.isDead)
-          .map((p: any) => p.id)
-      }
-      break
-    case 'word':
-      word.value = cmd.data.word
-      break
-    case 'status':
-      gameStatus.value = cmd.data.status
-      word.value = cmd.data.word
-      currentTalkPlayer.value = cmd.data.talk
-      voted.value = cmd.data.voted
-      canVotePlayer.value = cmd.data.canVotePlayers.map((p: any) => p.id)
-      if (cmd.data.deadPlayers) {
-        for (const dp of cmd.data.deadPlayers) {
-          const p: SpyRoomPlayer | undefined = props.roomPlayer.room.players.find((p: any) => p.id === dp.id)
-          if (p) p.isDead = true
-        }
-      }
-      roomMessages.value = cmd.data.messageHistory || [];
-      break
-    case 'voted':
-      voted.value = true
-      break
-    case 'dead':
-      if (cmd.data.player.id === currentPlayer.value && !props.roomPlayer.isDead ) {
-        alert('你已出局')
-        props.roomPlayer.isDead = true
-      }
-      const deadPlayer: SpyRoomPlayer | undefined = props.roomPlayer.room.players.find((p: any) => p.id === cmd.data.player.id)
-      if (deadPlayer) deadPlayer.isDead = true
-      break
-  }
-}
-
-useGameEvents(props.game, {
-  'room.start': onRoomStart,
-  'room.end': onRoomEnd,
-  'player.message': onPlayMessage,
-  'room.message': onPlayMessage,
-  'player.command': onCommand,
-  'room.command': onCommand,
-})
 
 function getPlayerStatus(p: any) {
   if (!p.isReady) return '未准备'
@@ -269,36 +175,5 @@ function getPlayerStatus(p: any) {
   return '准备好了'
 }
 
-function sendTalked() {
-  props.game?.command(props.roomPlayer.room.id, { type: 'talked' })
-  if (countdownTimer) clearInterval(countdownTimer)
-  countdown.value = 0
-}
-
-function votePlayer(playerId: string) {
-  if (voted.value) return
-  props.game?.command(props.roomPlayer.room.id, { type: 'voted', data: { id: playerId } })
-}
-
-function kickPlayer(playerId: string) {
-  if (!confirm('确定要踢出该玩家吗？')) return
-  props.game?.kickPlayer(props.roomPlayer.room.id, playerId)
-}
-
-function transferOwner(playerId: string) {
-  if (!confirm('确定要转让房主给该玩家吗？')) return
-  props.game?.transferRoom(props.roomPlayer.room.id, playerId)
-}
-
-const isRoomFull = computed(() => {
-  if (!props.roomPlayer) return true
-  return props.roomPlayer.room.players.filter((p: any) => p.role === 'player').length >= props.roomPlayer.room.size
-})
-
-const isAllReady = computed(() => {
-  if (!props.roomPlayer) return false
-  return props.roomPlayer.room.players.filter((p: any) => p.role === 'player').length >= props.roomPlayer.room.minSize &&
-    props.roomPlayer.room.players.every((p: any) => p.isReady || p.role === 'watcher')
-})
 
 </script>

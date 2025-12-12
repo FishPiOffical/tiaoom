@@ -100,6 +100,16 @@ export function useSpy(game: GameCore, roomPlayer: SpyRoomPlayer & { room: SpyRo
           }
         }
         roomMessages.value = cmd.data.messageHistory || [];
+        if (cmd.data.countdown) {
+          countdown.value = cmd.data.countdown
+          if (countdownTimer) clearInterval(countdownTimer)
+          countdownTimer = setInterval(() => {
+            countdown.value--
+            if (countdown.value <= 0) {
+              clearInterval(countdownTimer)
+            }
+          }, 1000)
+        }
         break
       case 'voted':
         voted.value = true

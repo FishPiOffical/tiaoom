@@ -35,16 +35,37 @@ export default function onRoom(room: Room) {
   let spyPlayer: RoomPlayer;
   let gameStatus: 'waiting' | 'talking' | 'voting' = 'waiting';
   let talkTimeout: NodeJS.Timeout | null = null;
+  let voteTimeout: NodeJS.Timeout | null = null;
+  let timerEndTime: number = 0;
 
   const vote: RoomPlayer[] = [];
   const votePlayers: RoomPlayer[] = [];
   const TURN_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+  const VOTE_TIMEOUT = 2 * 60 * 1000; // 5 minutes
+
+  function startVote() {
+    gameStatus = 'voting';
+    timerEndTime = Date.now() + VOTE_TIMEOUT;
+    room.emit('message', { content: `所有玩家都已发言，投票开始。` });
+    room.emit('command', { type: 'vote' });
+    room.emit('command', { type: 'talk-countdown', data: { seconds: VOTE_TIMEOUT / 1000 } });
+
+    if (voteTimeout) clearTimeout(voteTimeout);
+    voteTimeout = setTimeout(() => {
+      room.emit('message', { content: `投票超时，未投票玩家视为弃权。` });
+      const unvotedPlayers = alivePlayers.filter(p => !votePlayers.some(vp => vp.id === p.id));
+      unvotedPlayers.forEach(p => {
+        room.emit('player-command', { type: 'voted', sender: { id: p.id }, data: { id: null } });
+      });
+    }, VOTE_TIMEOUT);
+  }
 
   function startTurn(player: RoomPlayer) {
     currentTalkPlayer = player;
+    timerEndTime = Date.now() + TURN_TIMEOUT;
     room.emit('command', { type: 'talk', data: { player } });
     room.emit('command', { type: 'talk-countdown', data: { seconds: TURN_TIMEOUT / 1000 } });
-    
+
     if (talkTimeout) clearTimeout(talkTimeout);
     talkTimeout = setTimeout(() => {
       room.emit('message', { content: `玩家 ${player.name} 发言超时，判定死亡。` });
@@ -75,31 +96,23 @@ export default function onRoom(room: Room) {
       });
       room.end();
     } else {
-      // If game continues
       if (gameStatus === 'voting') {
-        // If death happened during voting (e.g. voted out), we need to start next round
+        // 若在投票环节死亡，则开始下一轮发言
         gameStatus = 'talking';
         startTurn(alivePlayers[0]);
         room.emit('message', { content: `玩家 ${deadPlayer.name} 死亡。游戏继续。玩家 ${alivePlayers[0].name} 发言。` });
       } else {
-        // If death happened during talking (timeout), move to next player
-        // We need to find who is next. Since deadPlayer is removed, we need to be careful.
-        // If deadPlayer was currentTalkPlayer, we need the next one in list.
-        // But alivePlayers is already updated.
-        // If deadPlayer was at index i, the new player at index i is the next one.
-        // Unless deadPlayer was last, then index i is out of bounds?
-        // Actually, handleTalkEnd logic was: find index, take index+1.
-        // Here we removed the player. So the player at `deadIndex` is the next player.
-        
+        // 若因发言超时导致该玩家死亡，则切换到下一位玩家
+        // 因为当前玩家已经移除出 alivePlayers。所以“deadIndex”的玩家就是下一个玩家。
+
         let nextPlayer = alivePlayers[deadIndex];
         if (!nextPlayer) {
-           // If we reached end of list, start voting
-           room.emit('message', { content: `所有玩家都已发言，投票开始。` });
-           room.emit('command', { type: 'vote' });
-           gameStatus = 'voting';
+          // 若已经没有下一位玩家，则说明本轮发言结束，进入投票环节
+          startVote();
         } else {
-           startTurn(nextPlayer);
-           room.emit('message', { content: `玩家 ${deadPlayer.name} 死亡。游戏继续。玩家 ${nextPlayer.name} 发言。` });
+          startTurn(nextPlayer);
+          gameStatus = 'talking';
+          room.emit('message', { content: `玩家 ${deadPlayer.name} 死亡。游戏继续。玩家 ${nextPlayer.name} 发言。` });
         }
       }
     }
@@ -116,12 +129,10 @@ export default function onRoom(room: Room) {
     const nextPlayer = alivePlayers[currentAliveIndex + 1];
 
     if (!nextPlayer) {
-      room.emit('message', { content: `所有玩家都已发言，投票开始。` });
-      room.emit('command', { type: 'vote' });
-      gameStatus = 'voting';
+      startVote();
       return;
     }
-    
+
     room.emit('message', { content: `玩家 ${sender.name} 发言结束。玩家 ${nextPlayer.name} 开始发言。` });
     startTurn(nextPlayer);
   }
@@ -177,6 +188,7 @@ export default function onRoom(room: Room) {
           talkTimeout = setTimeout(() => {
             handleTalkEnd(sender);
           }, 30000);
+          timerEndTime = Date.now() + 30000;
           sender.emit('command', { type: 'talk-countdown', data: { seconds: 30 } });
         }
         break;
@@ -205,22 +217,44 @@ export default function onRoom(room: Room) {
           return;
         }
 
-        const votePlayer = room.validPlayers.find((p) => p.id == message.data.id)
-        if (votePlayer && alivePlayers.includes(votePlayer)) {
-          vote.push(votePlayer);
-        } else if (votePlayer) {
-          return sender.emit('message', { content: `玩家 ${votePlayer?.name} 不能被投票。` });
-        } else return sender.emit('message', { content: `你投票的玩家不在房间内。` });
+        if (message.data?.id) {
+          const votePlayer = room.validPlayers.find((p) => p.id == message.data.id)
+          if (votePlayer && alivePlayers.includes(votePlayer)) {
+            vote.push(votePlayer);
+          } else if (votePlayer) {
+            return sender.emit('message', { content: `玩家 ${votePlayer?.name} 不能被投票。` });
+          } else return sender.emit('message', { content: `你投票的玩家不在房间内。` });
+        } else {
+          room.emit('message', { content: `玩家 ${sender.name} 弃权。` });
+        }
 
         votePlayers.push(sender);
         sender.emit('command', { type: 'voted' });
-        room.emit('message', { content: `玩家 ${sender.name} 已投票。` });
+        if (message.data?.id) {
+          room.emit('message', { content: `玩家 ${sender.name} 已投票。` });
+        }
         if (votePlayers.length != alivePlayers.length) return;
+
+        if (voteTimeout) {
+          clearTimeout(voteTimeout);
+          voteTimeout = null;
+        }
 
         const voteResult: { [key: string]: number } = vote.reduce((result, player) => {
           result[player.id] = (result[player.id] || 0) + 1;
           return result;
         }, {} as { [key: string]: number });
+
+        if (Object.keys(voteResult).length === 0) {
+          room.emit('message', { content: `无人投票。无人死亡。` });
+          vote.splice(0, vote.length);
+          votePlayers.splice(0, votePlayers.length);
+          gameStatus = 'talking';
+          room.emit('message', { content: `游戏继续。玩家 ${alivePlayers[0].name} 发言。` });
+          startTurn(alivePlayers[0]);
+          return;
+        }
+
         const maxVote = Math.max(...Object.values(voteResult));
         const maxVotePlayer = Object.keys(voteResult).filter((id) => voteResult[id] == maxVote).map((id) => room.validPlayers.find((p) => p.id == id)!);
         if (maxVotePlayer.length > 1) {
@@ -235,8 +269,6 @@ export default function onRoom(room: Room) {
 
         vote.splice(0, vote.length);
         votePlayers.splice(0, votePlayers.length);
-        gameStatus = 'waiting';
-
         const deadPlayer = maxVotePlayer[0]!;
         handlePlayerDeath(deadPlayer);
         break;
@@ -254,6 +286,7 @@ export default function onRoom(room: Room) {
             deadPlayers: room.status == RoomStatus.playing ? room.validPlayers.filter((p) => !alivePlayers.some(a => p.id == a.id)) : [],
             canVotePlayers: alivePlayers,
             messageHistory,
+            countdown: Math.max(0, Math.ceil((timerEndTime - Date.now()) / 1000)),
           }
         });
         break;
@@ -273,6 +306,10 @@ export default function onRoom(room: Room) {
     if (talkTimeout) {
       clearTimeout(talkTimeout);
       talkTimeout = null;
+    }
+    if (voteTimeout) {
+      clearTimeout(voteTimeout);
+      voteTimeout = null;
     }
 
     if (room.validPlayers.length < room.minSize) {
@@ -297,6 +334,10 @@ export default function onRoom(room: Room) {
     if (talkTimeout) {
       clearTimeout(talkTimeout);
       talkTimeout = null;
+    }
+    if (voteTimeout) {
+      clearTimeout(voteTimeout);
+      voteTimeout = null;
     }
     room.emit('command', { type: 'end' });
   }).on('message', (message: { content: string, sender?: IRoomPlayer }) => {
