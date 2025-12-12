@@ -27,7 +27,7 @@
                   class="absolute w-10 h-10 md:w-14 md:h-14 rounded-full shadow-lg"
                   :class="[
                     cell === 1 ? 'bg-black border border-white/20' : 'bg-white border border-black/20',
-                    currentPlace?.x === rowIndex && currentPlace?.y === colIndex ? 'ring-2 ring-primary' : ''
+                    currentPlace?.x === rowIndex && currentPlace?.y === colIndex ? 'ring-2 ring-error' : ''
                   ]"
                 />
               </transition>

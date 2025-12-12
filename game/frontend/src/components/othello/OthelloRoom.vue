@@ -19,7 +19,7 @@
               class="w-[9vw] h-[9vw] md:w-7 md:h-7 rounded-full transition-all duration-500 z-10"
               :class="[
                 cell === 1 ? 'black-piece border border-base-content/20 shadow-lg' : 'white-piece shadow-lg',
-                currentPlace?.x === rowIndex && currentPlace?.y === colIndex ? 'ring-2 ring-primary scale-105' : ''
+                currentPlace?.x === rowIndex && currentPlace?.y === colIndex ? 'ring-2 ring-error scale-105' : ''
               ]"
             />
             <div 

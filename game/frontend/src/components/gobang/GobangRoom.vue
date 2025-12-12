@@ -31,7 +31,7 @@
               class="w-[4.5vw] h-[4.5vw] md:w-6 md:h-6 rounded-full z-10 relative transition-all duration-200"
               :class="[
                 cell === 1 ? 'bg-black border border-white/20 shadow-lg' : 'bg-white border border-black/20 shadow-lg',
-                currentPlace?.x === rowIndex && currentPlace?.y === colIndex ? 'ring-2 ring-primary scale-90' : ''
+                currentPlace?.x === rowIndex && currentPlace?.y === colIndex ? 'ring-2 ring-error scale-90' : ''
               ]"
             />
           </div>
