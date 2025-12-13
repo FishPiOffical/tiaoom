@@ -247,13 +247,13 @@ export default function onRoom(room: Room) {
         }
 
         if (!result.flat().some(cell => cell === 0) && result.flat().filter(cell => cell <= 0).length) {
+          result = markValidPlaces(result, color);
           if (!result.flat().some(cell => cell === 0)) {
             room.emit('message', { content: `双方均无法落子，结算！` });
           } else {
             room.emit('message', { content: `${3 - color ? '黑' : '白'}方无法落子，跳过！` });
-            result = markValidPlaces(result, color);
+            currentPlayer = room.validPlayers.find((p) => p.id != currentPlayer.id)!;
           }
-          currentPlayer = room.validPlayers.find((p) => p.id != currentPlayer.id)!;
         }
 
         board = result;
