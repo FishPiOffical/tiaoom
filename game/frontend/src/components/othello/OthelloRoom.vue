@@ -27,7 +27,7 @@
               ]"
             />
             <div 
-              v-if="cell === 0 && currentPlayer?.id === roomPlayer.id" 
+              v-if="cell === 0 && (currentPlayer?.id === roomPlayer.id || roomPlayer.role !== 'player')" 
               class="absolute w-2 h-2 rounded-full bg-base-content/30"
             ></div>
           </div>
