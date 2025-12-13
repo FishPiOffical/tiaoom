@@ -10,7 +10,6 @@ export function useConnect4(game: GameCore, roomPlayer: RoomPlayer & { room: Roo
   const board = ref(Array(8).fill(0).map(() => Array(8).fill(-1)))
   const achivents = ref<Record<string, any>>({})
   const currentPlace = ref<{ x: number; y: number } | null>(null)
-  const roomMessages = ref<IMessage[]>([])
   const hoverCol = ref<number>(-1)
 
   const isMyTurn = computed(() => 
@@ -22,7 +21,6 @@ export function useConnect4(game: GameCore, roomPlayer: RoomPlayer & { room: Roo
   board.value[board.value.length - 1] = board.value[board.value.length - 1].map(() => 0)
 
   function onRoomStart() {
-    roomMessages.value = []
     gameStatus.value = 'playing'
     currentPlace.value = null
   }
@@ -32,10 +30,6 @@ export function useConnect4(game: GameCore, roomPlayer: RoomPlayer & { room: Roo
     currentPlayer.value = null
   }
 
-  function onPlayMessage(msg: IMessage) {
-    roomMessages.value.unshift(msg)
-  }
-
   function onCommand(cmd: any) {
     if (roomPlayer.room.attrs?.type !== 'connect4') return
     
@@ -43,7 +37,6 @@ export function useConnect4(game: GameCore, roomPlayer: RoomPlayer & { room: Roo
       case 'status':
         gameStatus.value = cmd.data.status
         currentPlayer.value = cmd.data.current
-        roomMessages.value = cmd.data.messageHistory;
         board.value = cmd.data.board
         achivents.value = cmd.data.achivents || {}
         break
@@ -87,8 +80,6 @@ export function useConnect4(game: GameCore, roomPlayer: RoomPlayer & { room: Roo
   useGameEvents(game, {
     'room.start': onRoomStart,
     'room.end': onRoomEnd,
-    'player.message': onPlayMessage,
-    'room.message': onPlayMessage,
     'player.command': onCommand,
     'room.command': onCommand,
   })
@@ -109,7 +100,6 @@ export function useConnect4(game: GameCore, roomPlayer: RoomPlayer & { room: Roo
     board,
     achivents,
     currentPlace,
-    roomMessages,
     hoverCol,
     isMyTurn,
     handleColumnClick,

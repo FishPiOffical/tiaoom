@@ -16,7 +16,6 @@ export function useSpy(game: GameCore, roomPlayer: SpyRoomPlayer & { room: SpyRo
   const voted = ref(false)
   const gameStatus = ref<'waiting' | 'talking' | 'voting'>('waiting')
   const word = ref('')
-  const roomMessages = ref<IMessage[]>([])
   const currentPlayer = computed(() => roomPlayer.id)
   const countdown = ref(0)
   let countdownTimer: any = null
@@ -29,16 +28,12 @@ export function useSpy(game: GameCore, roomPlayer: SpyRoomPlayer & { room: SpyRo
   })
 
   function onRoomStart() {
-    roomMessages.value = []
     gameStatus.value = 'talking'
     currentTalkPlayer.value = null
   }
   function onRoomEnd() {
     gameStatus.value = 'waiting'
     currentTalkPlayer.value = null
-  }
-  function onPlayMessage(msg: IMessage) {
-    roomMessages.value.unshift(msg)
   }
 
   function onCommand(cmd: any) {
@@ -99,7 +94,6 @@ export function useSpy(game: GameCore, roomPlayer: SpyRoomPlayer & { room: SpyRo
             if (p) p.isDead = true
           }
         }
-        roomMessages.value = cmd.data.messageHistory || [];
         if (cmd.data.countdown) {
           countdown.value = cmd.data.countdown
           if (countdownTimer) clearInterval(countdownTimer)
@@ -128,8 +122,6 @@ export function useSpy(game: GameCore, roomPlayer: SpyRoomPlayer & { room: SpyRo
   useGameEvents(game, {
     'room.start': onRoomStart,
     'room.end': onRoomEnd,
-    'player.message': onPlayMessage,
-    'room.message': onPlayMessage,
     'player.command': onCommand,
     'room.command': onCommand,
   })
@@ -161,7 +153,6 @@ export function useSpy(game: GameCore, roomPlayer: SpyRoomPlayer & { room: SpyRo
     voted,
     gameStatus,
     word,
-    roomMessages,
     currentPlayer,
     countdown,
     voting,

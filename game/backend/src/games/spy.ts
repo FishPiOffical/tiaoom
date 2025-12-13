@@ -78,6 +78,10 @@ export default function onRoom(room: Room) {
       clearTimeout(talkTimeout);
       talkTimeout = null;
     }
+    if (voteTimeout) {
+      clearTimeout(voteTimeout);
+      voteTimeout = null;
+    }
 
     room.emit('command', { type: 'dead', data: { player: deadPlayer } });
     const deadIndex = alivePlayers.findIndex((p) => p.id == deadPlayer.id);
@@ -339,6 +343,7 @@ export default function onRoom(room: Room) {
       clearTimeout(voteTimeout);
       voteTimeout = null;
     }
+    gameStatus = 'waiting';
     room.emit('command', { type: 'end' });
   }).on('message', (message: { content: string, sender?: IRoomPlayer }) => {
     messageHistory.unshift(message);
