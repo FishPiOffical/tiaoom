@@ -83,7 +83,7 @@
 import { Room, RoomPlayer } from "tiaoom/client";
 import { GameCore } from "@/core/game";
 import { useOthello } from "./useOthello";
-import { onMounted, ref } from "vue";
+import { onMounted, ref, watch } from "vue";
 
 const props = defineProps<{
   roomPlayer: RoomPlayer & { room: Room };
@@ -100,14 +100,19 @@ const {
   requestLose,
 } = useOthello(props.game, props.roomPlayer);
 
-const containerRef = ref<HTMLElement>();
 onMounted(() => {
-  const rect = containerRef.value?.parentElement?.getBoundingClientRect();
-  if (!rect) return;
-  if (rect.height < window.innerHeight) {
-    window.resizeTo(window.innerWidth, rect.height);
-  }
+  updateDocumentTitle();
 });
+
+function updateDocumentTitle() {
+  const blackCount = board.value.flat().filter(b => b === 1).length;
+  const whiteCount = board.value.flat().filter(b => b === 2).length;
+  if (blackCount + whiteCount > 0) {
+    document.title = `⚫ ${blackCount} : ${whiteCount} ⚪`;
+  }
+}
+
+watch(() => board.value, updateDocumentTitle, { deep: true });
 
 </script>
 

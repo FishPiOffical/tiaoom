@@ -81,9 +81,19 @@
             class="flex items-center gap-2 text-sm p-1 rounded hover:bg-surface/50"
             :class="{ 'text-gray-500': p.role === 'watcher' }"
           >
-            <span v-if="p.role === 'player'">[{{ getPlayerStatus(p) }}]</span>
+            <span v-if="p.role === 'player'" class="inline-flex gap-2 items-center">
+              <span>[{{ getPlayerStatus(p) }}]</span>
+              <div class="w-4 h-4 flex items-center justify-center bg-base-300 rounded-full border border-base-content/20">
+                <span 
+                  class="w-full h-full rounded-full"
+                  :class="p.attributes.color === 1 ? 'bg-black border border-white/20 shadow-md' : 'bg-white border border-black/20 shadow-md'"
+                />
+              </div>
+              <span>{{ board.flat().filter(b => b == p.attributes.color).length }}</span>
+            </span>
             <span v-else>[围观中]</span>
             <span>{{ p.name }}</span>
+            
           </li>
         </ul>
         
