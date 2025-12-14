@@ -7,7 +7,6 @@
       
       <div class="flex flex-col gap-4">
         <button
-          v-if="loginType === 'fishpi'"
           class="btn btn-lg flex items-center justify-center gap-3 w-full py-3 bg-base-300 hover:bg-base-content/10 transition-all border border-base-content/20 group"
           @click="loginWithFishpi"
         >
@@ -15,12 +14,12 @@
           <span class="tracking-wide">摸鱼派登录</span>
         </button>
         
-        <template v-else>
+        <template v-if="isDevMode()">
           <div class="space-y-4">
             <input 
               v-model="name" 
               type="text"
-              placeholder="起个名字吧" 
+              placeholder="起个名字吧(本地开发专用)" 
               class="w-full text-center py-3 text-lg input input-bordered"
               @keyup.enter="handleLogin"
               required 
@@ -43,6 +42,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGameStore } from '@/stores/game'
 import { api } from '@/api'
+import { isDevMode } from '@/utils/env'
 
 const router = useRouter()
 const gameStore = useGameStore()
