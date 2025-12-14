@@ -4,7 +4,7 @@ import * as path from "path";
 const files = glob.sync(path.join(__dirname, '*.*').replace(/\\/g, '/')).filter(f => f.endsWith('.ts') || f.endsWith('.js'));
 
 export interface IGame extends IGameInfo {
-  default: (room: Room) => any;
+  default: (room: Room, methods: IGameMethod) => any;
 }
 
 export interface IGameInfo {
@@ -12,6 +12,11 @@ export interface IGameInfo {
   minSize: number;
   maxSize: number;
   description: string;
+}
+
+export interface IGameMethod {
+  save: (data: Record<string, any>) => Promise<void>;
+  restore: () => Promise<Record<string, any> | null>;
 }
 
 export type GameMap = { [key: string]: IGame };

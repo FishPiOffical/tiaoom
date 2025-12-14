@@ -1,4 +1,5 @@
 import { IRoomPlayer, Player, PlayerRole, Room, RoomPlayer, RoomStatus } from "tiaoom";
+import { IGameMethod } from ".";
 
 const questions = [
   ['蝴蝶', '蜜蜂'],
@@ -27,21 +28,54 @@ const questions = [
   ["医生", "护士"],
 ];
 
-export default function onRoom(room: Room) {
-  let words: string[] = [];
-  let messageHistory: { content: string, sender?: IRoomPlayer }[] = [];
-  const alivePlayers: RoomPlayer[] = [];
-  let currentTalkPlayer: RoomPlayer;
-  let spyPlayer: RoomPlayer;
-  let gameStatus: 'waiting' | 'talking' | 'voting' = 'waiting';
+export default async function onRoom(room: Room, { save, restore }: IGameMethod) {
+  const gameData = await restore();
+  let words: string[] = gameData?.words ?? [];
+  let messageHistory: { content: string, sender?: IRoomPlayer }[] = gameData?.messageHistory ?? [];
+  const alivePlayers: RoomPlayer[] = gameData?.alivePlayerIds ? gameData.alivePlayerIds.map((id: string) => room.players.find(p => p.id === id)!).filter(Boolean) : [];
+  let currentTalkPlayer: RoomPlayer | undefined = gameData?.currentTalkPlayerId ? room.players.find(p => p.id === gameData.currentTalkPlayerId)! : undefined;
+  let spyPlayer: RoomPlayer | undefined = gameData?.spyPlayerId ? room.players.find(p => p.id === gameData.spyPlayerId)! : undefined;
+  let gameStatus: 'waiting' | 'talking' | 'voting' = gameData?.gameStatus ?? 'waiting';
   let talkTimeout: NodeJS.Timeout | null = null;
   let voteTimeout: NodeJS.Timeout | null = null;
   let timerEndTime: number = 0;
 
-  const vote: RoomPlayer[] = [];
-  const votePlayers: RoomPlayer[] = [];
+  // 被投票玩家列表
+  const vote: RoomPlayer[] = gameData?.voteIds ? gameData.voteIds.map((id: string) => room.players.find(p => p.id === id)!).filter(Boolean) : [];
+  // 已投票玩家列表
+  const votePlayers: RoomPlayer[] = gameData?.votedIds ? gameData.votedIds.map((id: string) => room.players.find(p => p.id === id)!).filter(Boolean) : [];
   const TURN_TIMEOUT = 5 * 60 * 1000; // 5 minutes
   const VOTE_TIMEOUT = 2 * 60 * 1000; // 5 minutes
+
+  function saveGameData() {
+    return save({
+      words,
+      messageHistory,
+      alivePlayerIds: alivePlayers.map(p => p.id),
+      currentTalkPlayerId: currentTalkPlayer?.id,
+      spyPlayerId: spyPlayer?.id,
+      gameStatus,
+      timeoutData: talkTimeout || voteTimeout ? {
+        type: talkTimeout ? 'talk' : voteTimeout ? 'vote' : null,
+        endTime: timerEndTime,
+      } : undefined,
+      voteIds: vote.map(p => p.id),
+      votedIds: votePlayers.map(p => p.id),
+    });
+  }
+
+  if (gameData?.timeoutData) {
+    const timeoutType = gameData.timeoutData.type;
+    const remainingTime = Math.max(1, gameData.timeoutData.endTime - Date.now());
+    timerEndTime = gameData.timeoutData.endTime;
+    if (timeoutType === 'talk' && gameData.timeoutData.player) {
+      if (currentTalkPlayer) {
+        setTurnTimeout('talk', remainingTime);
+      }
+    } else if (timeoutType === 'vote' && remainingTime > 0) {
+      setTurnTimeout('vote', remainingTime);
+    }
+  }
 
   function startVote() {
     gameStatus = 'voting';
@@ -50,15 +84,30 @@ export default function onRoom(room: Room) {
     room.emit('command', { type: 'vote' });
     room.emit('command', { type: 'talk-countdown', data: { seconds: VOTE_TIMEOUT / 1000 } });
 
-    if (voteTimeout) clearTimeout(voteTimeout);
-    voteTimeout = setTimeout(() => {
-      room.emit('message', { content: `投票超时，未投票玩家视为弃权。` });
-      const unvotedPlayers = alivePlayers.filter(p => !votePlayers.some(vp => vp.id === p.id));
-      unvotedPlayers.forEach(p => {
-        room.emit('player-command', { type: 'voted', sender: { id: p.id }, data: { id: null } });
-      });
-    }, VOTE_TIMEOUT);
+    setTurnTimeout('vote', VOTE_TIMEOUT);
+    saveGameData();
   }
+
+  function setTurnTimeout(timeoutType: 'talk' | 'vote', duration: number) {
+    if (timeoutType === 'talk' && currentTalkPlayer) {
+      const player = currentTalkPlayer;
+      if (talkTimeout) clearTimeout(talkTimeout);
+      talkTimeout = setTimeout(() => {
+        room.emit('message', { content: `玩家 ${player.name} 发言超时，判定死亡。` });
+        handlePlayerDeath(player);
+      }, duration);
+    } else if (timeoutType === 'vote') {
+      if (voteTimeout) clearTimeout(voteTimeout);
+      voteTimeout = setTimeout(() => {
+        room.emit('message', { content: `投票超时，未投票玩家视为弃权。` });
+        const unvotedPlayers = alivePlayers.filter(p => !votePlayers.some(vp => vp.id === p.id));
+        unvotedPlayers.forEach(p => {
+          room.emit('player-command', { type: 'voted', sender: { id: p.id }, data: { id: null } });
+        });
+      }, duration);
+    }
+  }
+
 
   function startTurn(player: RoomPlayer) {
     currentTalkPlayer = player;
@@ -66,11 +115,8 @@ export default function onRoom(room: Room) {
     room.emit('command', { type: 'talk', data: { player } });
     room.emit('command', { type: 'talk-countdown', data: { seconds: TURN_TIMEOUT / 1000 } });
 
-    if (talkTimeout) clearTimeout(talkTimeout);
-    talkTimeout = setTimeout(() => {
-      room.emit('message', { content: `玩家 ${player.name} 发言超时，判定死亡。` });
-      handlePlayerDeath(player);
-    }, TURN_TIMEOUT);
+    setTurnTimeout('talk', TURN_TIMEOUT);
+    saveGameData();
   }
 
   function handlePlayerDeath(deadPlayer: RoomPlayer) {
@@ -87,14 +133,14 @@ export default function onRoom(room: Room) {
     const deadIndex = alivePlayers.findIndex((p) => p.id == deadPlayer.id);
     if (deadIndex > -1) alivePlayers.splice(deadIndex, 1);
 
-    if (deadPlayer.name == spyPlayer.name) {
+    if (deadPlayer.name == spyPlayer?.name) {
       room.emit('message', { content: `玩家 ${deadPlayer.name} 死亡。间谍死亡。玩家胜利。` });
       room.validPlayers.forEach((player) => {
         if (!alivePlayers.some(p => p.id === player.id)) alivePlayers.push(player);
       });
       room.end();
     } else if (alivePlayers.length == 2) {
-      room.emit('message', { content: `玩家 ${deadPlayer.name} 死亡。间谍 ${spyPlayer.name} 胜利。` });
+      room.emit('message', { content: `玩家 ${deadPlayer.name} 死亡。间谍 ${spyPlayer?.name} 胜利。` });
       room.validPlayers.forEach((player) => {
         if (!alivePlayers.some(p => p.id === player.id)) alivePlayers.push(player);
       });
@@ -120,6 +166,7 @@ export default function onRoom(room: Room) {
         }
       }
     }
+    saveGameData();
   }
 
   function handleTalkEnd(sender: RoomPlayer) {
@@ -175,7 +222,7 @@ export default function onRoom(room: Room) {
           sender.emit('message', { content: `现在是投票时间，你不能说话。` });
           return;
         }
-        if (gameStatus == 'talking' && sender.id != currentTalkPlayer.id) {
+        if (gameStatus == 'talking' && sender.id != currentTalkPlayer?.id) {
           sender.emit('message', { content: `现在不是你的发言时间。` });
           return;
         }
@@ -187,7 +234,7 @@ export default function onRoom(room: Room) {
         room.emit('message', { content: `${message.data}`, sender });
 
         // 倒计时逻辑
-        if (gameStatus == 'talking' && sender.id == currentTalkPlayer.id) {
+        if (gameStatus == 'talking' && sender.id == currentTalkPlayer?.id) {
           if (talkTimeout) clearTimeout(talkTimeout);
           talkTimeout = setTimeout(() => {
             handleTalkEnd(sender);
@@ -195,13 +242,14 @@ export default function onRoom(room: Room) {
           timerEndTime = Date.now() + 30000;
           sender.emit('command', { type: 'talk-countdown', data: { seconds: 30 } });
         }
+        saveGameData();
         break;
       case 'talked':
         if (gameStatus != 'talking') {
           sender.emit('message', { content: `现在不是发言时间。` });
           return;
         }
-        if (sender.id != currentTalkPlayer.id) {
+        if (sender.id != currentTalkPlayer?.id) {
           sender.emit('message', { content: `现在不是你的发言时间。` });
           return;
         }
@@ -299,7 +347,9 @@ export default function onRoom(room: Room) {
         break;
     }
   }).on('start', () => {
-
+    if (room.validPlayers.length < room.minSize) {
+      return room.emit('message', { content: `玩家人数不足，无法开始游戏。` });
+    }
     vote.splice(0, vote.length);
     votePlayers.splice(0, votePlayers.length);
     alivePlayers.splice(0, alivePlayers.length);
@@ -314,10 +364,6 @@ export default function onRoom(room: Room) {
     if (voteTimeout) {
       clearTimeout(voteTimeout);
       voteTimeout = null;
-    }
-
-    if (room.validPlayers.length < room.minSize) {
-      return room.emit('message', { content: `玩家人数不足，无法开始游戏。` });
     }
 
     const mainWordIndex = Math.floor(Math.random() * 2);
@@ -345,9 +391,11 @@ export default function onRoom(room: Room) {
     }
     gameStatus = 'waiting';
     room.emit('command', { type: 'end' });
+    saveGameData();
   }).on('message', (message: { content: string, sender?: IRoomPlayer }) => {
     messageHistory.unshift(message);
     if (messageHistory.length > 100) messageHistory.splice(messageHistory.length - 100);
+    saveGameData();
   });
 }
 

@@ -1,4 +1,6 @@
+import { Model } from "@/model";
 import { IRoomPlayer, PlayerRole, Room, RoomPlayer, RoomStatus } from "tiaoom";
+import { IGameMethod } from ".";
 
 /**
  * 检查黑白棋（Othello/Reversi）落子有效性，并返回落子后的棋盘状态
@@ -142,15 +144,42 @@ function isWin(board: number[][]): number | null {
   return null; // 游戏未结束
 }
 
-export default function onRoom(room: Room) {
+export default async function onRoom(room: Room, { save, restore }: IGameMethod) {
+  const data = await restore();
   const size = 8;
-  let messageHistory: { content: string, sender?: IRoomPlayer }[] = [];
-  let currentPlayer: RoomPlayer;
-  let lastLosePlayer: RoomPlayer | undefined;
-  let gameStatus: 'waiting' | 'playing' = 'waiting';
-  let board: number[][] = Array.from({ length: size }, () => Array(size).fill(-1));
+  let messageHistory: { content: string, sender?: IRoomPlayer }[] = data?.messageHistory || [];
+  let currentPlayer: RoomPlayer | undefined = room.validPlayers.find(p => p.id === data?.currentPlayerId);
+  let lastLosePlayer: RoomPlayer | undefined = data?.lastLosePlayerId
+    ? room.validPlayers.find(p => p.id === data.lastLosePlayerId)
+    : undefined;
+  let gameStatus: 'waiting' | 'playing' = data?.gameStatus ?? 'waiting';
+  let board: number[][] = data?.board ?? Array.from({ length: size }, () => Array(size).fill(-1));
 
-  let achivents: Record<string, { win: number; lost: number; draw: number }> = {};
+  let achivents: Record<string, { win: number; lost: number; draw: number }> = data?.achivents ?? {};
+
+  function saveGameData() {
+    return save({
+      board,
+      currentPlayerId: currentPlayer?.id,
+      gameStatus,
+      messageHistory,
+      lastLosePlayerId: lastLosePlayer?.id,
+      achivents
+    });
+  }
+
+  function saveAchivents(winner?: RoomPlayer | null) {
+    room.validPlayers.forEach((p) => {
+      if (!achivents[p.name]) {
+        achivents[p.name] = { win: 0, lost: 0, draw: 0 };
+      }
+      if (p.id === winner?.id) {
+        achivents[p.name].win += 1;
+      } else {
+        achivents[p.name].lost += 1;
+      }
+    });
+  }
 
   room.on('join', (player) => {
     room.validPlayers.find((p) => p.id === player.id)?.emit('command', {
@@ -162,18 +191,10 @@ export default function onRoom(room: Room) {
       room.emit('message', { content: `玩家 ${player.name} 离开游戏，游戏结束。` });
       lastLosePlayer = room.validPlayers.find((p) => p.id != player.id)!;
       gameStatus = 'waiting';
-      room.validPlayers.forEach((p) => {
-        if (!achivents[p.name]) {
-          achivents[p.name] = { win: 0, lost: 0, draw: 0 };
-        }
-        if (p.id === player.id) {
-          achivents[p.name].lost += 1;
-        } else {
-          achivents[p.name].win += 1;
-        }
-      });
+      saveAchivents(lastLosePlayer);
       room.emit('command', { type: 'achivements', data: achivents });
       room.end();
+      saveGameData();
       return;
     }
   }).on('player-command', (message: any) => {
@@ -229,8 +250,8 @@ export default function onRoom(room: Room) {
           sender.emit('message', { content: `游戏未开始，无法落子。` });
           break;
         }
-        if (sender.id !== currentPlayer.id) {
-          sender.emit('message', { content: `轮到玩家 ${currentPlayer.name} 落子。` });
+        if (sender.id !== currentPlayer?.id) {
+          sender.emit('message', { content: `轮到玩家 ${currentPlayer?.name} 落子。` });
           break;
         }
         const { x, y } = message.data;
@@ -252,7 +273,7 @@ export default function onRoom(room: Room) {
             room.emit('message', { content: `双方均无法落子，结算！` });
           } else {
             room.emit('message', { content: `${3 - color ? '黑' : '白'}方无法落子，跳过！` });
-            currentPlayer = room.validPlayers.find((p) => p.id != currentPlayer.id)!;
+            currentPlayer = room.validPlayers.find((p) => p.id != currentPlayer?.id)!;
           }
         }
 
@@ -276,41 +297,28 @@ export default function onRoom(room: Room) {
             room.emit('message', { content: `游戏以平局结束！` });
           }
           gameStatus = 'waiting';
-          room.validPlayers.forEach((player) => {
-            if (!achivents[player.name]) {
-              achivents[player.name] = { win: 0, lost: 0, draw: 0 };
-            }
-            if (winner) {
-              if (player.id == winner.id) {
-                achivents[player.name].win += 1;
-              } else {
-                achivents[player.name].lost += 1;
-              }
-            } else {
-              achivents[player.name].draw += 1;
-            }
-          });
+          saveAchivents(winner);
           room.emit('command', { type: 'achivements', data: achivents });
           room.end();
+          saveGameData();
           return;
         }
         // 切换当前玩家
-        const current = room.validPlayers.find((p) => p.id != currentPlayer.id);
+        const current = room.validPlayers.find((p) => p.id != currentPlayer?.id);
         if (current) {
           currentPlayer = current;
           room.emit('command', { type: 'place-turn', data: { player: currentPlayer } });
+          saveGameData();
         }
         break;
       }
       case 'request-draw': {
         room.emit('message', { content: `玩家 ${sender.name} 请求和棋。` });
-        lastLosePlayer = sender;
         const otherPlayer = room.validPlayers.find((p) => p.id != sender.id)!;
         otherPlayer.emit('command', {
           type: 'request-draw',
           data: { player: sender }
         });
-        room.emit('command', { type: 'achivements', data: achivents });
         break;
       }
       case 'request-lose': {
@@ -329,9 +337,14 @@ export default function onRoom(room: Room) {
         lastLosePlayer = room.validPlayers.find((p) => p.id == sender.id);
         room.emit('command', { type: 'achivements', data: achivents });
         room.end();
+        saveGameData();
         break;
       }
       case 'draw': {
+        if (!message.data.agree) {
+          room.emit('message', { content: `玩家 ${sender.name} 拒绝和棋，游戏继续。` });
+          break;
+        }
         room.emit('message', { content: `玩家 ${sender.name} 同意和棋，游戏结束。` });
         lastLosePlayer = room.validPlayers.find((p) => p.id != sender.id)!;
         gameStatus = 'waiting';
@@ -342,6 +355,7 @@ export default function onRoom(room: Room) {
           achivents[player.name].draw += 1;
         });
         room.end();
+        saveGameData();
         break;
       }
       default:
@@ -374,7 +388,7 @@ export default function onRoom(room: Room) {
     messageHistory = [];
     currentPlayer.attributes = { color: 1 }; // 黑子先行
     room.validPlayers.forEach((player) => {
-      if (player.id !== currentPlayer.id) {
+      if (player.id !== currentPlayer?.id) {
         player.attributes = { color: 2 }; // 白子
         player.emit('command', {
           type: 'color',
@@ -391,11 +405,13 @@ export default function onRoom(room: Room) {
     room.emit('message', { content: `游戏开始。玩家 ${currentPlayer.name} 执黑先行。` });
     room.emit('command', { type: 'place-turn', data: { player: currentPlayer } });
     room.emit('command', { type: 'board', data: board });
+    saveGameData();
   }).on('end', () => {
     room.emit('command', { type: 'end' });
   }).on('message', (message: { content: string; sender?: IRoomPlayer }) => {
     messageHistory.unshift(message);
     if (messageHistory.length > 100) messageHistory.splice(messageHistory.length - 100);
+    saveGameData();
   });
 }
 

@@ -1,15 +1,33 @@
 import crypto from "crypto";
 import http from "http";
-import { IPlayer, IRoomOptions, IRoomPlayerOptions, Player, PlayerStatus, } from "tiaoom";
+import { IPlayer, IRoomOptions, IRoomPlayer, IRoomPlayerOptions, Player, PlayerStatus, RoomPlayer, } from "tiaoom";
 import { Room, Tiaoom } from "tiaoom";
 import { SocketManager } from "./socket";
 import Games, { IGameInfo } from "./games";
+import { Model } from "./model";
 
 export class Controller extends Tiaoom {
   messages: { data: string, sender: Player, createdAt: number }[] = [];
+  missSenderPlayers: RoomPlayer[] = [];
 
   constructor(server: http.Server) {
     super({ socket: new SocketManager(server) });
+    Model.getRooms().then(rooms => {
+      const players = rooms.map(r => r.players).flat();
+      this.loadFrom({ 
+        rooms: rooms.map(roomData => {
+          const room = new Room(roomData.toRoom());
+          room.players = roomData.players.map(p => {
+            const player = new RoomPlayer(p, p.role);
+            return player;
+          }); 
+          this.missSenderPlayers.push(...room.players.filter(p => !this.missSenderPlayers.some(mp => mp.id === p.id)));
+          return room;
+        }),
+        players: players.filter((p, index, self) => index === self.findIndex(tp => tp.id === p.id)).map(p => new Player(p, p.status)),
+      });
+      this.rooms.forEach(room => this.emit("room", room));
+    });
   }
 
   get games() {
@@ -22,22 +40,42 @@ export class Controller extends Tiaoom {
   run() {
     return super.run().on("room", (room: Room) => {
       const gameType = room.attrs?.type;
-      if (gameType && Games[gameType])
-        Games[gameType].default(room);
+      Model.createRoom(room);
+      if (gameType && Games[gameType]) {
+        Games[gameType].default(room, {
+          save: (data: Record<string, any>) => {
+            return Model.saveGameData(room.id, data);
+          },
+          restore: () => {
+            return Model.getGameData(room.id);
+          }
+        });
+      }
       else console.error("game not found:", room);
-      room.on('end', () => {
+      room.on("player-ready", (player: IRoomPlayer) => {
+        Model.updatePlayerList(room.id, this.rooms.find(r => r.id === player.roomId)?.players || []);
+      }).on('end', () => {
         room.players.forEach(p => {
           p.isReady = false;
           p.emit('status', PlayerStatus.unready);
         });
         this.emit('room-player', room);
+      }).on('close', async () => {
+        await Model.closeRoom(room.id)
       });
     }).on('player', (player: Player) => {
+      const miss = this.missSenderPlayers.find(p => p.id === player.id);
+      if (miss) {
+        miss.setSender(player.sender!);
+        this.missSenderPlayers = this.missSenderPlayers.filter(p => p.id !== player.id);
+      }
       player.on('command', (message: any) => {
       });
     }).on('room-player', (room: Room) => {
       if (room.players.length == 0) {
         this.closeRoom({} as IPlayer, room);
+      } else {
+        Model.updatePlayerList(room.id, room.players);
       }
     }).on("command", (command: any & { sender: Player }) => {
       if (command.type === 'say') {

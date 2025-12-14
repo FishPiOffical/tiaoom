@@ -2,6 +2,7 @@ import { ref, computed } from 'vue'
 import { Room, RoomPlayer } from 'tiaoom/client'
 import { GameCore } from '@/core/game';
 import { useGameEvents } from '@/hook/useGameEvents';
+import { confirm } from '@/components/msgbox';
 
 export function useConnect4(game: GameCore, roomPlayer: RoomPlayer & { room: Room }) {
   const gameStatus = ref<'waiting' | 'playing'>('waiting')
@@ -43,8 +44,12 @@ export function useConnect4(game: GameCore, roomPlayer: RoomPlayer & { room: Roo
         board.value = cmd.data
         break
       case 'request-draw':
-        confirm(`玩家 ${cmd.data.player.name} 请求和棋。是否同意？`) && 
-          game?.command(roomPlayer.room.id, { type: 'draw' })
+        confirm(`玩家 ${cmd.data.player.name} 请求和棋。是否同意？`, '和棋', {
+          confirmText: '同意',
+          cancelText: '拒绝',
+        }).then((ok) => {          if (ok) game?.command(roomPlayer.room.id, { type: 'draw', data: { agree: true } })
+          else game?.command(roomPlayer.room.id, { type: 'draw', data: { agree: false } })
+        })
         break
       case 'place-turn':
         currentPlayer.value = cmd.data.player

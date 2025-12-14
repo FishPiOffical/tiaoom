@@ -1,18 +1,19 @@
 import 'reflect-metadata';
 import { EventSubscriber, EntitySubscriberInterface, InsertEvent, UpdateEvent, DataSource, Repository } from 'typeorm';
 import { User } from "./User";
+import { Room } from "./Room";
 import utils from '@/utils'
 
 @EventSubscriber()
 export class EntitySubscriber implements EntitySubscriberInterface {
   beforeInsert(event: InsertEvent<any>): void {
-    if (event.entity) {
+    if (event.entity && !event.entity.createdAt) {
       const timestamp = Date.now();
-      if ('createTime' in event.entity) {
-        event.entity.createTime = timestamp;
+      if ('createdAt' in event.entity) {
+        event.entity.createdAt = timestamp;
       }
-      if ('updateTime' in event.entity) {
-        event.entity.updateTime = timestamp;
+      if ('updatedAt' in event.entity) {
+        event.entity.updatedAt = timestamp;
       }
     }
   }
@@ -29,14 +30,16 @@ export const AppDataSource = utils.config ? new DataSource({
   logging: false,
   ...utils.config.database,
   synchronize: true,
-  entities: [User],
+  entities: [User, Room],
   migrations: [],
   subscribers: [],
   charset: "utf8mb4_unicode_ci"
 }) : {} as DataSource;
 
 export {
-  User
+  User,
+  Room
 }
 
 export const UserRepo = utils.config ? AppDataSource.getRepository(User) : {} as Repository<User>;
+export const RoomRepo = utils.config ? AppDataSource.getRepository(Room) : {} as Repository<Room>;

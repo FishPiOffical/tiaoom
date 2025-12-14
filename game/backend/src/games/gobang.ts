@@ -1,4 +1,5 @@
 import { IRoomPlayer, PlayerRole, Room, RoomPlayer, RoomStatus } from "tiaoom";
+import { IGameMethod } from ".";
 
 /**
  * 判断五子棋胜负情况与禁手
@@ -94,13 +95,25 @@ function gomokuJudge(board: number[][], { x, y }: { x: number, y: number }, colo
   return 0;
 }
 
-export default function onRoom(room: Room) {
-  let messageHistory: { content: string, sender?: IRoomPlayer }[] = [];
-  let currentPlayer: RoomPlayer;
-  let lastLosePlayer: RoomPlayer | undefined;
-  let gameStatus: 'waiting' | 'playing' = 'waiting';
-  let board: number[][] = Array.from({ length: 19 }, () => Array(19).fill(0));
+export default async function onRoom(room: Room, { save, restore }: IGameMethod) {
+  const gameData = await restore();
+  let messageHistory: { content: string, sender?: IRoomPlayer }[] = gameData?.messageHistory || [];
+  let currentPlayer: RoomPlayer | undefined = room.players.find((p) => p.id === gameData?.currentPlayerId);
+  let lastLosePlayer: RoomPlayer | undefined = room.players.find((p) => p.id === gameData?.lastLosePlayerId);
+  let gameStatus: 'waiting' | 'playing' = gameData?.gameStatus ?? 'waiting';
+  let board: number[][] = gameData?.board ?? Array.from({ length: 19 }, () => Array(19).fill(0));
   let achivents: Record<string, { win: number; lost: number; draw: number }> = {};
+
+  function saveGameData() {
+    save({
+      messageHistory,
+      currentPlayerId: currentPlayer?.id,
+      lastLosePlayerId: lastLosePlayer?.id,
+      gameStatus,
+      board,
+      achivents
+    });
+  }
 
   room.on('join', (player) => {
     room.validPlayers.find((p) => p.id === player.id)?.emit('command', {
@@ -124,6 +137,7 @@ export default function onRoom(room: Room) {
       });
       room.emit('command', { type: 'achivements', data: achivents });
       room.end();
+      saveGameData();
     }
   }).on('player-command', (message: any) => {
     // 允许观众使用的指令
@@ -178,8 +192,8 @@ export default function onRoom(room: Room) {
           sender.emit('message', { content: `游戏未开始，无法落子。` });
           break;
         }
-        if (sender.id !== currentPlayer.id) {
-          sender.emit('message', { content: `轮到玩家 ${currentPlayer.name} 落子。` });
+        if (sender.id !== currentPlayer?.id) {
+          sender.emit('message', { content: `轮到玩家 ${currentPlayer?.name} 落子。` });
           break;
         }
         const { x, y } = message.data;
@@ -215,25 +229,25 @@ export default function onRoom(room: Room) {
           });
           room.emit('command', { type: 'achivements', data: achivents });
           room.end();
+          saveGameData();
           return;
         }
         // 切换当前玩家
-        const current = room.validPlayers.find((p) => p.id != currentPlayer.id);
+        const current = room.validPlayers.find((p) => p.id != currentPlayer?.id);
         if (current) {
           currentPlayer = current;
           room.emit('command', { type: 'place-turn', data: { player: currentPlayer } });
         }
+        saveGameData();
         break;
       }
       case 'request-draw': {
         room.emit('message', { content: `玩家 ${sender.name} 请求和棋。` });
-        lastLosePlayer = sender;
         const otherPlayer = room.validPlayers.find((p) => p.id != sender.id)!;
         otherPlayer.emit('command', {
           type: 'request-draw',
           data: { player: sender }
         });
-        room.emit('command', { type: 'achivements', data: achivents });
         break;
       }
       case 'request-lose': {
@@ -251,9 +265,14 @@ export default function onRoom(room: Room) {
         });
         room.emit('command', { type: 'achivements', data: achivents });
         room.end();
+        saveGameData();
         break;
       }
       case 'draw': {
+        if (!message.data.agree) {
+          room.emit('message', { content: `玩家 ${sender.name} 拒绝和棋，游戏继续。` });
+          break;
+        }
         room.emit('message', { content: `玩家 ${sender.name} 同意和棋，游戏结束。` });
         lastLosePlayer = room.validPlayers.find((p) => p.id != sender.id)!;
         gameStatus = 'waiting';
@@ -264,6 +283,7 @@ export default function onRoom(room: Room) {
           achivents[player.name].draw += 1;
         });
         room.end();
+        saveGameData();
         break;
       }
       default:
@@ -282,7 +302,7 @@ export default function onRoom(room: Room) {
     messageHistory = [];
     currentPlayer.attributes = { color: 1 }; // 黑子先行
     room.validPlayers.forEach((player) => {
-      if (player.id !== currentPlayer.id) {
+      if (player.id !== currentPlayer?.id) {
         player.attributes = { color: 2 }; // 白子
         player.emit('command', {
           type: 'color',
@@ -299,6 +319,7 @@ export default function onRoom(room: Room) {
     room.emit('message', { content: `游戏开始。玩家 ${currentPlayer.name} 执黑先行。` });
     room.emit('command', { type: 'place-turn', data: { player: currentPlayer } });
     room.emit('command', { type: 'board', data: board });
+    saveGameData();
   }).on('end', () => {
     room.emit('command', { type: 'end' });
   }).on('message', (message) => {
