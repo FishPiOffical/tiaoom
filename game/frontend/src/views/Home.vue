@@ -291,6 +291,7 @@ import { useGameStore } from '@/stores/game'
 import { IRoomOptions } from 'tiaoom/client'
 import { openSmallWindow } from '@/utils/dom'
 import { getComponent } from '@/main';
+import { error } from '@/components/msg';
 
 const router = useRouter()
 const gameStore = useGameStore()
@@ -327,11 +328,11 @@ function onTypeChange() {
 
 async function createRoom() {
   if (!room.value.name) {
-    alert('请填写房间名称')
+    error('请填写房间名称')
     return
   }
   if (gameStore.rooms.some(r => r.name === room.value.name)) {
-    alert('房间名称已存在，请更换一个')
+    error('房间名称已存在，请更换一个')
     return
   }
   room.value.minSize = Math.min(room.value.minSize, currentGame.value.minSize);

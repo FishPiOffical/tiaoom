@@ -4,6 +4,7 @@ import type { GameConfig } from '@/types'
 import { Player, Room } from 'tiaoom/client'
 import { GameCore } from '@/core/game'
 import { api, User } from '@/api'
+import msg from '@/components/msg';
 
 export const useGameStore = defineStore('game', () => {
   const game = ref<GameCore | null>(null)
@@ -63,10 +64,10 @@ export const useGameStore = defineStore('game', () => {
     
     return game.value.run()
       .on('global.error', (err) => {
-        if (err.message) alert(err.message)
+        if (err.message) msg.error(err.message)
       })
       .on('player.error', (err) => {
-        if (err.message) alert(err.message)
+        if (err.message) msg.error(err.message)
       })
       .on('room.join', (roomPlayer) => {
         if (roomPlayer.id === player.value?.id) {

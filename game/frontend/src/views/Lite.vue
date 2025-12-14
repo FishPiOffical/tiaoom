@@ -73,6 +73,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useGameStore } from '@/stores/game'
+import msg from '@/components/msg';
 const gameStore = useGameStore()
 
 const showPasswd = ref(false);
@@ -102,11 +103,11 @@ function onTypeChange() {
 
 async function createRoom() {
   if (!room.value.name) {
-    alert('请填写房间名称')
+    msg.error('请填写房间名称')
     return
   }
   if (gameStore.rooms.some(r => r.name === room.value.name)) {
-    alert('房间名称已存在，请更换一个')
+    msg.error('房间名称已存在，请更换一个')
     return
   }
   room.value.minSize = Math.min(room.value.minSize, currentGame.value.minSize);
