@@ -16,7 +16,7 @@
             class="w-full h-full object-cover rounded-full"
           />
         </div>
-        <span class="font-medium truncate">{{ gameStore.player?.name }}</span>
+        <span class="font-medium truncate">{{ gameStore.player?.nickname }}</span>
       </div>
       <button 
         @click="handleLogout"
@@ -64,7 +64,7 @@
                 class="w-full h-full object-cover rounded-full"
               />
             </span>
-            <span class="font-medium">{{ gameStore.player?.name }}</span>
+            <span class="font-medium">{{ gameStore.player?.nickname }}</span>
           </section>
           <div class="flex items-center gap-2">
             <ThemeController />

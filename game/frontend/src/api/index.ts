@@ -3,9 +3,37 @@ import { Player, Room } from 'tiaoom/client'
 import axios from 'axios'
 
 export interface IUser {
-  id: string
-  name: string
-  avatar?: string
+  id: string;
+  username: string;
+  nickname: string;
+  avatar?: string;
+  from?: string;
+}
+
+export class User implements IUser {
+  id: string;
+  username: string;
+  nickname: string;
+  avatar: string;
+  from: string;
+
+  constructor(user: Partial<IUser>) {
+    this.id = user.id || '';
+    this.username = user.username || '';
+    this.nickname = user.nickname || '';
+    this.avatar = user.avatar || '';
+    this.from = user.from || '';
+  }
+
+  get player(): Player {
+    return new Player({
+      id: this.id,
+      name: this.nickname,
+      attributes: {
+        avatar: this.avatar || ''
+      }
+    });
+  }
 }
 
 const instance = axios.create({
@@ -31,14 +59,14 @@ export const api = {
   getConfig(): Promise<Record<string, GameConfig>> {
     return instance.get('/config')
   },
-  getSession(): Promise<{ player: IUser }> {
-    return instance.get('/info')
+  getUserInfo(): Promise<User> {
+    return instance.get('/info').then((data: any) => new User(data.player))
   },
   getMessages(): Promise<{ messages: { data: string, sender: Player, createdAt: number }[] }> {
     return instance.get('/message')
   },
-  login(name: string): Promise<Player> {
-    return instance.post('/login', { name })
+  login(name: string): Promise<User> {
+    return instance.post('/login', { name }).then((data: any) => new User(data))
   },
   checkLoginError() {
     return instance.get('/login/error').catch((err) => {

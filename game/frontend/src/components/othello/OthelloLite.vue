@@ -83,7 +83,7 @@
 import { Room, RoomPlayer } from "tiaoom/client";
 import { GameCore } from "@/core/game";
 import { useOthello } from "./useOthello";
-import { onMounted, ref, watch } from "vue";
+import { onMounted, watch } from "vue";
 
 const props = defineProps<{
   roomPlayer: RoomPlayer & { room: Room };

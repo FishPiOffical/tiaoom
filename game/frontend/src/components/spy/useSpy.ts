@@ -2,7 +2,6 @@ import { ref, computed } from 'vue'
 import { Room, RoomPlayer } from 'tiaoom/client'
 import { GameCore } from '@/core/game';
 import { useGameEvents } from '@/hook/useGameEvents';
-import { IMessage } from '..';
 
 export type SpyRoomPlayer = RoomPlayer & { isDead?: boolean }
 

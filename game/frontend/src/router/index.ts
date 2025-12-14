@@ -30,7 +30,7 @@ const router = createRouter({
   ]
 })
 
-router.beforeEach(async (to, from, next) => {
+router.beforeEach(async (to, _from, next) => {
   const gameStore = useGameStore()
   
   if (to.meta.requiresAuth) {

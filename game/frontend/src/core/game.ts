@@ -1,7 +1,6 @@
 import ReconnectingWebSocket from 'reconnecting-websocket'
 import { Tiaoom, TiaoomEvents, MessageTypes, Player } from 'tiaoom/client'
 import type { Message } from '@/types'
-import { IUser } from '@/api'
 
 export class GameCore extends Tiaoom {
   private address: string
@@ -76,7 +75,7 @@ export class GameCore extends Tiaoom {
    * @param {object} player 玩家信息
    * @returns 
    */
-  init(roomId: string, player: IUser) {
+  init(roomId: string, player: Player) {
     this.command(roomId, { type: 'status', data: player });
     return this;
   }

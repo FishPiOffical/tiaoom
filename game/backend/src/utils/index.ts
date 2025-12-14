@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from "path";
 import { isObject } from './is';
 import { IConfig } from '#/index';
+import { Request } from 'express';
 
 export function omit(obj: any, keys: string[]) {
   return Object.fromEntries(
@@ -74,4 +75,8 @@ export const weightedRandom = (min: number, max: number, weight: number): number
   const rnd = Math.random();
   const biased = Math.pow(rnd, 1 - weight);
   return Math.floor(min + biased * (max - min));
+}
+
+export function getIP(req: Request) {
+  return req.header('x-forwarded-for') || req.header('x-real-ip') || req.socket.remoteAddress || req.ip || '';
 }

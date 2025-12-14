@@ -11,8 +11,11 @@ export class User {
   @Column({ comment: "昵称" })
   nickname: string;
 
+  @Column({ comment: "头像链接", default: '' })
+  avatar: string = '';
+
   @Column('bigint', { comment: "上次登录时间" })
-  lastLogin: number = 0;
+  lastLogin: number = Date.now();
 
   @Column({ comment: "注册来源" })
   from: string = '';
@@ -20,7 +23,11 @@ export class User {
   @Column({ comment: "是否管理员", default: false })
   isAdmin: boolean = false;
 
-  constructor(username: string = '', nickname: string = '') {
+  @Column({ comment: "最后登录 IP 地址", default: '' })
+  ip: string = '';
+
+  constructor(id = '', username: string = '', nickname: string = '') {
+    this.id = id;
     this.username = username;
     this.nickname = nickname || username;
   }

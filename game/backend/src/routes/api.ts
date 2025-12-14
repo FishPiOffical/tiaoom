@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { Controller } from "../controller";
 import { login as fishpiLogin } from "../login/fishpi";
+import { User } from "@/entities";
 
 export interface GameContext {
   controller?: Controller;
@@ -41,7 +42,7 @@ const createRoutes = (game: GameContext, gameName: string) => {
     if (game.controller?.players.some((player) => player.name == req.body.name)) {
       return res.json({ code: 1, message: "昵称已被使用" });
     }
-    req.session.player = { name: req.body.name, id: new Date().getTime().toString() };
+    req.session.player = new User(new Date().getTime().toString(), req.body.name, req.body.name);
     res.json({ code: 0, data: req.session.player });
   });
 
@@ -59,7 +60,7 @@ const createRoutes = (game: GameContext, gameName: string) => {
     req.session.destroy((err) => {
       if (err) return res.json({ code: 1, message: "退出失败" });
       game.controller?.rooms.forEach((room) => {
-        const player = room.validPlayers.find((p) => p.name == req.session?.player?.name && p.id == req.session?.player?.id);
+        const player = room.validPlayers.find((p) => p.id == req.session?.player?.id);
         if (player) {
           room.kickPlayer(player);
         }

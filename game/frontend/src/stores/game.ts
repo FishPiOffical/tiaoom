@@ -3,11 +3,11 @@ import { ref, computed } from 'vue'
 import type { GameConfig } from '@/types'
 import { Player, Room } from 'tiaoom/client'
 import { GameCore } from '@/core/game'
-import { api, IUser } from '@/api'
+import { api, User } from '@/api'
 
 export const useGameStore = defineStore('game', () => {
   const game = ref<GameCore | null>(null)
-  const player = ref<IUser | null>(null)
+  const player = ref<User | null>(null)
   const players = ref<Player[]>([])
   const rooms = ref<Room[]>([])
   const games = ref<Record<string, GameConfig>>({})
@@ -38,8 +38,7 @@ export const useGameStore = defineStore('game', () => {
 
   async function checkSession() {
     try {
-      const session = await api.getSession()
-      player.value = session.player
+      player.value = await api.getUserInfo()
       return true
     } catch (error) {
       return false
@@ -71,12 +70,12 @@ export const useGameStore = defineStore('game', () => {
       })
       .on('room.join', (roomPlayer) => {
         if (roomPlayer.id === player.value?.id) {
-          game.value?.init(roomPlayer.roomId, player.value!)
+          game.value?.init(roomPlayer.roomId, player.value!.player)
         }
       })
       .onReady(() => {
         if (player.value) {
-          game.value!.login(new Player({ ...player.value, attributes: { avatar: player.value.avatar } }))
+          game.value!.login(player.value.player)
         }
       })
       .onPlayerStatus((data) => {
@@ -91,7 +90,7 @@ export const useGameStore = defineStore('game', () => {
         
         // 初始化游戏状态
         if (roomPlayer.value) {
-          game.value!.init(roomPlayer.value.room.id, player.value!)
+          game.value!.init(roomPlayer.value.room.id, player.value!.player)
         }
       })
       .onRoomList(data => {

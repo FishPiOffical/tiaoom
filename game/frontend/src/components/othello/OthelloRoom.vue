@@ -83,13 +83,15 @@
           >
             <span v-if="p.role === 'player'" class="inline-flex gap-2 items-center">
               <span>[{{ getPlayerStatus(p) }}]</span>
-              <div class="w-4 h-4 flex items-center justify-center bg-base-300 rounded-full border border-base-content/20">
-                <span 
-                  class="w-full h-full rounded-full"
-                  :class="p.attributes.color === 1 ? 'bg-black border border-white/20 shadow-md' : 'bg-white border border-black/20 shadow-md'"
-                />
-              </div>
-              <span>{{ board.flat().filter(b => b == p.attributes.color).length }}</span>
+              <template v-if="board.flat().filter(b => b > 0).length">
+                <div class="w-4 h-4 flex items-center justify-center bg-base-300 rounded-full border border-base-content/20">
+                  <span 
+                    class="w-full h-full rounded-full"
+                    :class="p.attributes.color === 1 ? 'bg-black border border-white/20 shadow-md' : 'bg-white border border-black/20 shadow-md'"
+                  />
+                </div>
+                <span>{{ board.flat().filter(b => b == p.attributes.color).length }}</span>
+              </template>
             </span>
             <span v-else>[围观中]</span>
             <span>{{ p.name }}</span>

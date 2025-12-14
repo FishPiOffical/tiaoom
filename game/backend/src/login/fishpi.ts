@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { saveUser } from ".";
 
 export async function login(req: Request, res: Response) {
   const domain = new URL(req.headers.referer || `${req.protocol}://${req.headers.host}`).origin;
@@ -7,7 +8,15 @@ export async function login(req: Request, res: Response) {
       const userId = await verify(req);
       if (userId) {
         const userInfo = await getUserInfo(userId);
-        req.session.player = { name: userInfo.data.userNickname || userInfo.data.userName, id: userId, avatar: userInfo.data.userAvatarURL  };
+        const user = await saveUser(
+          { 
+            name: userInfo.data.userNickname || userInfo.data.userName, 
+            id: userId, 
+            avatar: userInfo.data.userAvatarURL, 
+            ip: req.header('x-forwarded-for') || req.header('x-real-ip') || req.socket.remoteAddress || req.ip || ''
+          }
+        );
+        req.session.player = user;
         return res.redirect("/");
       } else {
         req.session.error = "登录验证失败，请重试";
