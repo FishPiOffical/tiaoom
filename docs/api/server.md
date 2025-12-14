@@ -197,7 +197,7 @@ constructor(options: ITiaoomOptions)
 
 | 参数 | 类型 | 描述 |
 | :--- | :--- | :--- |
-| `data` | <code>{ players: [PlayerOptions](./models.md#playeroptions)[]; rooms: [IRoomOptions](./models.md#iroomoptions)[] }</code> | 序列化数据。 |
+| `data` | <code>{ players: [Player](./models.md#player)[]; rooms: [Room](./models.md#room)[] }</code> | 序列化数据。 |
 
 **返回:** `this`
 

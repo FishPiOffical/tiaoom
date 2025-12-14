@@ -96,6 +96,10 @@ export interface IRoomPlayer extends IRoomPlayerOptions, IPlayer {
    * 是否为房主
    */
   isCreator: boolean;
+  /**
+   * 房间 Id
+   */
+  roomId: string;
 }
 
 /**
@@ -105,11 +109,15 @@ export class RoomPlayer extends Player implements IRoomPlayer {
   isReady: boolean = false;
   role: PlayerRole = PlayerRole.player;
   isCreator: boolean = false;
-  roomId?: string;
+  roomId: string;
 
-  constructor(player: IPlayer | Player, role: PlayerRole = PlayerRole.player) {
+  constructor(player: Partial<IRoomPlayer>, role: PlayerRole = PlayerRole.player) {
     super(player);
-    this.role = role;
+    this.isReady = player.isReady || false;
+    this.isCreator = player.isCreator || false;
+    this.roomId = player.roomId || '';
+    this.role = player.role || role;
+    this.status = player.status || PlayerStatus.online;
     if (player instanceof Player && player.sender) super.setSender(player.sender);
   }
 
@@ -228,15 +236,21 @@ export class Room extends EventEmitter implements IRoom {
     return JSON.stringify(this.toJSON());
   }
 
-  constructor({
-    id = new Date().getTime().toString(), name = '', size = 10, minSize = 2, attrs
-  }: Partial<IRoomOptions>) {
+  constructor(room: Partial<IRoomOptions> | Room, players: RoomPlayer[] = []) {
     super();
-    this.id = id;
-    this.name = name;
-    this.size = size;
-    this.minSize = minSize;
-    this.attrs = attrs;
+    if (room instanceof Room) {
+      this.players = room.players;
+      this.players.forEach((p) => {
+        p.roomId = room.id;
+      });
+    }
+
+    this.id = room.id || new Date().getTime().toString();
+    this.name = room.name || '';
+    this.size = room.size || 10;
+    this.minSize = room.minSize || 2;
+    this.attrs = room.attrs;
+    this.players = players;
     
     const events: Array<keyof RoomEvents> = ['message', 'command', 'start', 'end', 'all-ready', 'player-unready', 'player-ready', 'join', 'leave'];
     events.forEach((event) => {
@@ -288,7 +302,7 @@ export class Room extends EventEmitter implements IRoom {
     roomPlayer.isCreator = isCreator;
     roomPlayer.roomId = this.id;
     this.players.push(roomPlayer);
-    this.emit("join", { roomId: this.id, ...roomPlayer });
+    this.emit("join", { ...roomPlayer, roomId: this.id });
     
     return roomPlayer;
   }
@@ -305,7 +319,7 @@ export class Room extends EventEmitter implements IRoom {
     if (roomPlayer && roomPlayer.role === PlayerRole.player) {
       roomPlayer.role = PlayerRole.watcher;
       roomPlayer.isReady = false;
-      this.emit("leave",  { roomId: this.id, ...roomPlayer});
+      this.emit("leave",  { ...roomPlayer, roomId: this.id });
       if (roomPlayer.isCreator && this.validPlayers.length > 0) {
         this.validPlayers[0].isCreator = true;
         this.emit("update", this);
@@ -325,7 +339,7 @@ export class Room extends EventEmitter implements IRoom {
     const index = this.players.findIndex((p) => p.id == playerId);
     const roomPlayer = this.players[index];
     if (index > -1) {
-      this.emit("leave",  { roomId: this.id, ...roomPlayer});
+      this.emit("leave",  { ...roomPlayer, roomId: this.id });
       this.players.splice(index, 1);
       if (roomPlayer.isCreator && this.players.length > 0) {
         this.players[0].isCreator = true;

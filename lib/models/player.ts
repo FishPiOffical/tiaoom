@@ -85,12 +85,16 @@ export class Player extends EventEmitter implements IPlayer {
   status: PlayerStatus = PlayerStatus.online;
   sender?: (type: string, ...message: any) => void;
 
-  constructor({ id = new Date().getTime().toString(), name = '', attributes, sender }: IPlayerOptions) {
+  constructor(player: Partial<IPlayerOptions> | Player, status: PlayerStatus = PlayerStatus.online) {
     super();
-    this.id = id;
-    this.name = name;
-    this.attributes = attributes;
-    this.sender = sender;
+    this.id = player.id || new Date().getTime().toString();
+    this.name = player.name || "";
+    this.attributes = player.attributes || {};
+    this.sender = player.sender;
+
+    if (player instanceof Player) this.status = player.status;
+
+    this.status = status;
 
     this.on('status', (status: PlayerStatus) => {
       this.status = status;

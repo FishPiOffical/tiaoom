@@ -180,11 +180,13 @@ export class RoomPlayer extends Player {
   role: PlayerRole;
   isReady: boolean;
   isCreator: boolean;
+  roomId: string;
   constructor(player: RoomPlayer) {
     super(player);
     this.role = player.role;
     this.isReady = player.isReady;
     this.isCreator = player.isCreator;
+    this.roomId = player.roomId;
   }
 }
 

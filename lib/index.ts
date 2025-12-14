@@ -34,9 +34,14 @@ export class Tiaoom extends EventEmitter {
    * @param data 房间与玩家数据
    * @returns this
    */
-  loadFrom(data: { rooms?: IRoom[]; players?: IPlayer[] }) {
-    this.rooms = data.rooms?.map((r) => new Room(r)) ?? [];
-    this.players = data.players?.map((p) => new Player(p)) ?? [];
+  loadFrom(data: { rooms?: Room[]; players?: Player[] }) {
+    this.rooms = data.rooms?.map((r) => new Room(r, r.players)) ?? [];
+    this.players = data.players?.map((p) => new Player(p, p.status)) ?? [];
+    this.rooms.forEach((room) => {
+      room.setSender((type, message, sender) => {
+        this.messageInstance?.send({ type: `room.${type}` as MessageTypes, data: message, sender: room });
+      })
+    })
     return this;
   }
 
@@ -165,10 +170,9 @@ export class Tiaoom extends EventEmitter {
       this.messageInstance?.send({ type: `room.${type}` as MessageTypes, data: message, sender: room });
     });
     
-    this.emit("room", room);
     this.rooms.push(room);
-
     this.joinPlayer(sender, { roomId: room.id, ...sender }, true);
+    this.emit("room", room);
     return room;
   }
 
@@ -250,16 +254,18 @@ export class Tiaoom extends EventEmitter {
 
   loginPlayer (player: IPlayerOptions, cb?: (data: { player: Player }) => void): Player {
     let playerInstance = this.searchPlayer(player);
-    if (!playerInstance) {
-      playerInstance = new Player(player);
+    if (!playerInstance?.sender) {
+      if (!playerInstance) {
+        playerInstance = new Player(player);
+        this.players.push(playerInstance);
+      }
       playerInstance.setSender((type, message) => {
         this.messageInstance?.send({ type: `player.${type}` as MessageTypes, data: message, sender: playerInstance });
       });
-      this.players.push(playerInstance);
       this.emit("player", playerInstance, true);
     }
     
-    playerInstance.emit("status", PlayerStatus.online);
+    playerInstance.emit("status", playerInstance.status);
     cb?.({ player: playerInstance });
     return playerInstance;
   }
