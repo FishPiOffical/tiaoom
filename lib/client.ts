@@ -168,11 +168,13 @@ export class Player {
   name: string;
   attributes: Record<string, any>;
   status: PlayerStatus;
+  isAdmin: boolean;
   constructor(player: Partial<Player>) {
     this.id = player.id || Date.now().toString();
     this.name = player.name || '玩家' + this.id;
     this.attributes = player.attributes || {};
     this.status = player.status || PlayerStatus.online;
+    this.isAdmin = player.isAdmin || false;
   }
 }
 
@@ -371,6 +373,17 @@ export class Tiaoom {
    */
   transferRoom(roomId: string, playerId: string, params?: any) {
     this.send({ type: MessageTypes.RoomTransfer, data: { roomId, playerId, params } });
+    return this;
+  }
+
+  /**
+   * 关闭房间
+   * @param {string} roomId 房间ID
+   * @param {object} params 额外参数
+   * @returns 
+   */
+  closeRoom(roomId: string, params?: any) {
+    this.send({ type: MessageTypes.RoomClose, data: { roomId, params } });
     return this;
   }
 

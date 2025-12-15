@@ -1,10 +1,11 @@
 import crypto from "crypto";
 import http from "http";
-import { IPlayer, IRoomOptions, IRoomPlayer, IRoomPlayerOptions, Player, PlayerStatus, RoomPlayer, } from "tiaoom";
+import { IPlayer, IRoomOptions, IRoomPlayer, IRoomPlayerOptions, Player, PlayerRole, PlayerStatus, RoomPlayer, } from "tiaoom";
 import { Room, Tiaoom } from "tiaoom";
 import { SocketManager } from "./socket";
 import Games, { IGameInfo } from "./games";
 import { Model } from "./model";
+import { UserRepo } from "./entities";
 
 export class Controller extends Tiaoom {
   messages: { data: string, sender: Player, createdAt: number }[] = [];
@@ -66,6 +67,17 @@ export class Controller extends Tiaoom {
           this.emit('room-player', room);
         }).on('close', async () => {
           await Model.closeRoom(room.id)
+        }).on('player-command', (message: any) => {
+          const sender = this.players.find((p) => p.id == message.sender?.id);
+          // 管理员指令
+          if (sender && sender?.isAdmin) {
+            switch (message.type) {
+              case 'broadcast':
+                const roomPlayer = new RoomPlayer(sender, PlayerRole.admin);
+                room.emit('message', { content: `${message.data}`, sender: roomPlayer });
+                break;
+            }
+          }
         });
     }).on('player', (player: Player) => {
       const miss = this.missSenderPlayers.find(p => p.id === player.id);
@@ -77,7 +89,7 @@ export class Controller extends Tiaoom {
       });
     }).on('room-player', (room: Room) => {
       if (room.players.length == 0) {
-        this.closeRoom({} as IPlayer, room);
+        this.closeRoom(null, room);
       } else {
         Model.updatePlayerList(room.id, room.players);
       }
@@ -110,5 +122,11 @@ export class Controller extends Tiaoom {
       }
     }
     return super.joinPlayer(sender, player, isCreator);
+  }
+
+  isAdmin(player: IPlayer): Promise<boolean> {
+    return UserRepo.findOneBy({ id: player.id }).then(user => {
+      return user?.isAdmin || false;
+    });
   }
 }

@@ -14,6 +14,7 @@
 | `name` | `string` | 玩家的显示名称。 |
 | `attributes` | `any` | 玩家的属性集合（可选）。 |
 | `status` | [`PlayerStatus`](#playerstatus) | 玩家的当前状态。 |
+| `isAdmin` | `boolean` | 玩家是否为管理员。 |
 
 ### IPlayerOptions
 
@@ -24,6 +25,7 @@
 | `id` | `string` | 玩家的唯一标识符。 |
 | `name` | `string` | 玩家的显示名称。 |
 | `attributes` | `any` | 玩家的属性集合（可选）。 |
+| `isAdmin` | `boolean` | 玩家是否为管理员。 |
 
 ### PlayerStatus
 

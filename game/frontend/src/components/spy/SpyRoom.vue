@@ -81,7 +81,7 @@
     
     <!-- 侧边栏 -->
     <aside class="w-full lg:w-96 flex-none border-t lg:border-t-0 lg:border-l border-base-content/20 pt-4 lg:pt-0 lg:pl-4 space-y-4 lg:h-full flex flex-col">
-      <section class="inline-flex flex-col gap-2">
+      <section class="inline-flex flex-col gap-2 max-h-1/2">
         <!-- 操作按钮 -->
         <RoomControls
           :game="game"
@@ -103,7 +103,8 @@
              <div class="text-xl font-bold" :class="{'text-error': countdown < 30}">{{ countdown }}s</div>
           </div>
         </RoomControls>        
-        
+        <!-- 玩家列表 -->
+        <PlayerList :players="roomPlayer.room.players.filter(p => p.role != 'player')" />
       </section>
       
       <GameChat 

@@ -21,6 +21,10 @@ export interface IPlayerOptions {
    * 发送者函数
    */
   sender?: (type: string, ...message: any) => void;
+  /**
+   * 是否超级管理员
+   */
+  isAdmin?: boolean;
 }
 
 /**
@@ -84,6 +88,7 @@ export class Player extends EventEmitter implements IPlayer {
   attributes?: any;
   status: PlayerStatus = PlayerStatus.online;
   sender?: (type: string, ...message: any) => void;
+  isAdmin: boolean = false;
 
   constructor(player: Partial<IPlayerOptions> | Player, status: PlayerStatus = PlayerStatus.online) {
     super();
@@ -114,6 +119,7 @@ export class Player extends EventEmitter implements IPlayer {
       name: this.name,
       attributes: this.attributes,
       status: this.status,
+      isAdmin: this.isAdmin,
     };
   }
 
