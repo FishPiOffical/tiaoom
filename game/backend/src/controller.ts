@@ -52,17 +52,21 @@ export class Controller extends Tiaoom {
         });
       }
       else console.error("game not found:", room);
-      room.on("player-ready", (player: IRoomPlayer) => {
-        Model.updatePlayerList(room.id, this.rooms.find(r => r.id === player.roomId)?.players || []);
-      }).on('end', () => {
-        room.players.forEach(p => {
-          p.isReady = false;
-          p.emit('status', PlayerStatus.unready);
+      function updatePlayerList() {
+        Model.updatePlayerList(room.id, room.players);
+      }
+      room.on("join", updatePlayerList)
+        .on("player-ready", updatePlayerList)
+        .on("player-unready", updatePlayerList)
+        .on('end', () => {
+          room.players.forEach(p => {
+            p.isReady = false;
+            p.emit('status', PlayerStatus.unready);
+          });
+          this.emit('room-player', room);
+        }).on('close', async () => {
+          await Model.closeRoom(room.id)
         });
-        this.emit('room-player', room);
-      }).on('close', async () => {
-        await Model.closeRoom(room.id)
-      });
     }).on('player', (player: Player) => {
       const miss = this.missSenderPlayers.find(p => p.id === player.id);
       if (miss) {
