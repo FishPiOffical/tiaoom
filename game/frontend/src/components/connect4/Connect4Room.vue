@@ -57,9 +57,9 @@
     
     <!-- 侧边栏 -->
     <aside class="w-full md:w-96 flex-none border-t md:border-t-0 md:border-l border-border pt-4 md:pt-0 md:pl-4 space-y-4 md:h-full flex flex-col">
-      <section class="inline-flex flex-col gap-2">
+      <section class="inline-flex flex-col gap-2 flex-1 h-1/2">
         <!-- 成就表 -->
-        <section class="overflow-x-auto rounded-box border border-base-content/5 bg-base-100 max-h-50">
+        <section class="overflow-auto rounded-box border border-base-content/5 bg-base-100 max-h-50 min-h-30">
           <table v-if="Object.keys(achivents).length" class="table table-pin-rows table-pin-cols text-center">
             <thead>
               <tr>
@@ -83,7 +83,7 @@
         <hr v-if="Object.keys(achivents).length" class="border-border" />
         
         <!-- 玩家列表 -->
-        <ul class="space-y-1">
+        <ul class="space-y-1 max-h-50 overflow-y-auto">
           <li 
             v-for="p in roomPlayer.room.players" 
             :key="p.id" 
