@@ -54,7 +54,21 @@ export class Tiaoom extends EventEmitter {
     return super.emit(event, ...args);
   }
 
+  /**
+   * 判断玩家是否为管理员
+   * @param player 玩家信息
+   * @returns 是否为管理员
+   */
   async isAdmin(_player: IPlayer) {
+    return false;
+  }
+
+  /**
+   * 判断玩家是否被封禁
+   * @param _player 玩家信息
+   * @returns 是否被封禁
+   */
+  async isBanned(_player: IPlayer) {
     return false;
   }
 
@@ -190,16 +204,18 @@ export class Tiaoom extends EventEmitter {
     return this.emit("room-player", roomInstance);
   }
 
-  closeRoom(sender: IPlayer, room: IRoom) {
+  closeRoom(sender: IPlayer | null, room: IRoom) {
     const roomIndex = this.rooms.findIndex((r) => r.id === room.id);
     const roomInstance = this.rooms[roomIndex];
     if (!roomInstance) {
       throw new Error('room not found.');
     }
 
-    const senderInRoom = roomInstance.searchPlayer(sender);
-    if (!senderInRoom || (!senderInRoom.isCreator && !senderInRoom.isAdmin)) {
-      throw new Error('permission denied.');
+    if (sender?.id) {
+      const senderInRoom = roomInstance.searchPlayer(sender);
+      if (!senderInRoom || (!senderInRoom.isCreator && !senderInRoom.isAdmin)) {
+        throw new Error('permission denied.');
+      }
     }
 
     room = this.rooms.splice(roomIndex, 1)[0];
@@ -289,6 +305,10 @@ export class Tiaoom extends EventEmitter {
     const room = this.rooms.find((room) => room.id === player.roomId);
     if (!room) {
       throw new Error('room not found.');
+    }
+
+    if (!isCreator && !room.players.some(p => p.isCreator)) {
+      isCreator = true;
     }
 
     const roomPlayer = room.addPlayer(playerInstance, isCreator);

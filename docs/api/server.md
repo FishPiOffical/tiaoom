@@ -210,6 +210,15 @@ constructor(options: ITiaoomOptions)
 
 **返回:** `Promise<boolean>` 默认返回 `false`。若有配置管理员需求，需重写此方法。
 
+#### `isBanned(player: IPlayer): Promise<boolean>`
+检查玩家是否被封禁。
+
+| 参数 | 类型 | 描述 |
+| :--- | :--- | :--- |
+| `player` | [`IPlayer`](./models.md#iplayer) | 目标玩家。 |
+
+**返回:** `Promise<boolean>` 默认返回 `false`。若有封禁需求，需重写此方法。
+
 ### 事件
 
 请参考 [事件文档](./events.md#tiaoom-events)。

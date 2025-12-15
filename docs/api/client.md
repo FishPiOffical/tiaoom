@@ -89,7 +89,7 @@ constructor()
 
 #### `kickPlayer(roomId: string, playerId: string): this` {#kickplayer}
 
-将玩家踢出房间（仅限房主）。
+将玩家踢出房间（仅限房主或管理员）。
 
 | 参数 | 类型 | 描述 |
 | :--- | :--- | :--- |
@@ -101,7 +101,7 @@ constructor()
 
 #### `transferRoom(roomId: string, playerId: string): this` {#transferroom}
 
-转让房主权限（仅限房主）。
+转让房主权限（仅限房主或管理员）。
 
 | 参数 | 类型 | 描述 |
 | :--- | :--- | :--- |
@@ -111,9 +111,20 @@ constructor()
 
 **返回:** `this`
 
+#### `closeRoom(id: string): this` {#closeroom}
+
+请求关闭房间（仅限房主或管理员）。
+
+| 参数 | 类型 | 描述 |
+| :--- | :--- | :--- |
+| `id` | `string` | 房间 ID。 |
+| `params` | `any` (可选) | 额外参数。 |
+
+**返回:** `this`
+
 #### `startGame(id: string): this` {#startgame}
 
-请求开始游戏（仅限房主）。
+请求开始游戏（仅限房主或管理员）。
 
 | 参数 | 类型 | 描述 |
 | :--- | :--- | :--- |

@@ -40,6 +40,10 @@ export enum PlayerRole {
    * 观众
    */
   watcher = 'watcher',
+  /**
+   * 管理员
+   */
+  admin = 'admin',
 }
 
 /**
@@ -288,6 +292,7 @@ export class Room extends EventEmitter implements IRoom {
     if (roomPlayer) {
       if (roomPlayer.role === PlayerRole.watcher && !this.isFull && !this.isPlaying) {
         roomPlayer.role = PlayerRole.player;
+        roomPlayer.isCreator = isCreator;
         this.emit("update", this);
       }
       return roomPlayer;

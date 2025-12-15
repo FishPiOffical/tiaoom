@@ -377,6 +377,17 @@ export class Tiaoom {
   }
 
   /**
+   * 关闭房间
+   * @param {string} roomId 房间ID
+   * @param {object} params 额外参数
+   * @returns 
+   */
+  closeRoom(roomId: string, params?: any) {
+    this.send({ type: MessageTypes.RoomClose, data: { roomId, params } });
+    return this;
+  }
+
+  /**
    * 开始游戏
    * @param {string} id 房间ID
    */
