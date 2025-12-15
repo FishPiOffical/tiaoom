@@ -78,18 +78,23 @@
         <hr v-if="Object.keys(achivents).length" class="border-base-content/20" />
         
         <!-- 玩家列表 -->
-        <ul class="space-y-1 max-h-50 overflow-auto">
-          <li 
-            v-for="p in roomPlayer.room.players" 
-            :key="p.id" 
-            class="flex items-center gap-2 text-sm p-1 rounded hover:bg-surface/50"
-            :class="{ 'text-gray-500': p.role === 'watcher' }"
-          >
-            <span v-if="p.role === 'player'">[{{ getPlayerStatus(p) }}]</span>
+        <PlayerList :players="roomPlayer.room.players">
+          <template #default="{ player: p }">
+            <span v-if="p.role === 'player'">
+              <span>[{{ getPlayerStatus(p) }}]</span>
+              <template v-if="p.attributes.color ?? false">
+                <div class="w-4 h-4 flex items-center justify-center bg-base-300 rounded-full border border-base-content/20">
+                  <span 
+                    class="w-full h-full rounded-full"
+                    :class="p.attributes.color === 1 ? 'bg-black border border-white/20 shadow-md' : 'bg-white border border-black/20 shadow-md'"
+                  />
+                </div>
+              </template>
+            </span>
             <span v-else>[围观中]</span>
             <span>{{ p.name }}</span>
-          </li>
-        </ul>
+          </template>
+        </PlayerList>
         
         <!-- 操作按钮 -->
         <RoomControls
