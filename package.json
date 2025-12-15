@@ -23,7 +23,7 @@
     "README.md",
     "logo.png"
   ],
-  "keywords": [],
+  "keywords": ["game", "framework", "multiplayer"],
   "author": "",
   "license": "MIT",
   "devDependencies": {

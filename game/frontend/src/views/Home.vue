@@ -81,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import { useGameStore } from '@/stores/game'
 import { openSmallWindow } from '@/utils/dom'
 import { getComponent } from '@/main';
@@ -95,10 +95,6 @@ function sendMessage() {
   gameStore.game?.command({ type: 'say', data: msg.value })
   msg.value = ''
 }
-
-onMounted(() => {
-  gameStore.initGame()
-})
 
 const hasLiteComponent = (type: string) => {
   try {
