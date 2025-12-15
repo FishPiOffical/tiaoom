@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { Controller } from "../controller";
-import { login as fishpiLogin } from "../login/fishpi";
+import { login as fishpiLogin, register as fishpiRegister } from "../login/fishpi";
 import { User } from "@/entities";
 
 export interface GameContext {
@@ -55,6 +55,7 @@ const createRoutes = (game: GameContext, gameName: string) => {
     res.json({ code: 0, data: true });
   });
   router.get("/login/fishpi", fishpiLogin);
+  router.get("/register/fishpi", fishpiRegister);
 
   router.post("/logout", (req: Request, res: Response) => {
     req.session.destroy((err) => {

@@ -30,6 +30,11 @@ export async function login(req: Request, res: Response) {
   res.redirect(`https://fishpi.cn/openid/login?openid.ns=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0&openid.mode=checkid_setup&openid.return_to=${encodeURIComponent(`${domain}/api/login/fishpi`)}&openid.realm=${encodeURIComponent(domain)}&openid.claimed_id=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.identity=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select`);
 }
 
+export function register(req: Request, res: Response) {
+  const domain = new URL(req.headers.referer || `${req.protocol}://${req.headers.host}`).origin;
+  res.redirect(`https://fishpi.cn/register?goto=${encodeURIComponent(`https://fishpi.cn/openid/login?openid.ns=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0&openid.mode=checkid_setup&openid.return_to=${encodeURIComponent(`${domain}/api/login/fishpi`)}&openid.realm=${encodeURIComponent(domain)}&openid.claimed_id=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.identity=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select`)}`);
+}
+
 function verify(req: Request) {
   const openVerify = {
       "openid.ns": "http://specs.openid.net/auth/2.0",
