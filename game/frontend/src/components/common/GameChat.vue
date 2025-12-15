@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col flex-1 min-h-0 gap-2">
+  <div class="flex flex-col flex-1 min-h-[calc(50%-30px)] gap-2">
     <!-- Input Area -->
     <div class="flex-none flex items-center gap-2">
       <button 
@@ -18,7 +18,17 @@
           :placeholder="placeholder" 
           class="flex-1 input join-item"
         />
-        <button class="btn join-item" @click="handleSend" :disabled="!canSend">发送</button>
+        <button 
+          class="btn btn-accent join-item tooltip tooltip-left" 
+          @click="handleBroadcast" 
+          v-if="roomPlayer?.role !== PlayerRole.player && 
+          roomPlayer?.room.status === RoomStatus.playing &&
+          isAdmin"
+          data-tip="(管理员)广播消息给所有玩家和观众"
+        >
+          广播
+        </button>
+        <button class="btn btn-primary join-item" @click="handleSend" :disabled="!canSend">发送</button>
       </div>
     </div>
     <p v-if="roomPlayer && roomPlayer.role !== PlayerRole.player && roomPlayer.room.status === RoomStatus.playing" class="text-xs text-base-content/50 italic">
@@ -45,14 +55,18 @@
       >
         <div v-if="m.sender" class="text-[10px] opacity-50 mb-0.5 px-1 flex gap-1">
             <span>{{ m.sender.name }}</span>
-            <span v-if="(m.sender as RoomPlayer)?.role !== PlayerRole.player" class="italic">(观众)</span>
+            <span v-if="(m.sender as RoomPlayer)?.role == PlayerRole.watcher" class="italic">(观众)</span>
+            <span v-if="(m.sender as RoomPlayer)?.role == PlayerRole.admin" class="italic">(管理员)</span>
         </div>
         <div 
             class="px-3 py-1.5 rounded-2xl max-w-[85%]"
             :class="{
-                'bg-primary text-primary-content rounded-tr-none': m.sender?.id === roomPlayer?.id,
-                'bg-base-200 text-base-content rounded-tl-none': m.sender?.id !== roomPlayer?.id && m.sender,
-                'bg-base-300/50 text-base-content/70 w-full text-center max-w-full! rounded text-xs py-1': !m.sender
+                'bg-accent text-accent-content': (m.sender as RoomPlayer)?.role == PlayerRole.admin,
+                'rounded-tr-none': m.sender?.id === roomPlayer?.id,
+                'rounded-tl-none': m.sender?.id !== roomPlayer?.id && m.sender,
+                'bg-base-300/50 text-base-content/70 w-full text-center max-w-full! rounded text-xs py-1': !m.sender,
+                'bg-base-200 text-base-content': (m.sender as RoomPlayer)?.role !== PlayerRole.admin,
+                'bg-primary text-primary-content': (m.sender as RoomPlayer)?.role !== PlayerRole.admin && m.sender?.id === roomPlayer?.id,
             }"
         >
             {{ m.content }}
@@ -96,8 +110,17 @@ function handleSend() {
   inputText.value = ''
 }
 
+function handleBroadcast() {
+  if (!inputText.value.trim() || !roomPlayer.value) return
+  if (!isAdmin.value) return
+  
+  game.value?.command(roomPlayer.value.room.id, { type: 'broadcast', data: inputText.value })
+  inputText.value = ''
+}
+
 const game = computed(() => useGameStore().game as GameCore);
 const roomPlayer = computed(() => useGameStore().roomPlayer);
+const isAdmin = computed(() => useGameStore().player?.isAdmin);
 
 useGameEvents(useGameStore().game as GameCore, {
   'player.message': onPlayMessage,

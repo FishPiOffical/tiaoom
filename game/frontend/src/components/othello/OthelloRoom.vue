@@ -48,7 +48,7 @@
     
     <!-- 侧边栏 -->
     <aside class="w-full md:w-96 flex-none border-t md:border-t-0 md:border-l border-base-content/20 pt-4 md:pt-0 md:pl-4 space-y-4 md:h-full flex flex-col">
-      <section class="inline-flex flex-col gap-2 max-h-1/2 flex-1">
+      <section class="inline-flex flex-col gap-2 max-h-1/2">
         <!-- 成就表 -->
         <section v-if="Object.keys(achivents).length" class="overflow-auto rounded-box border border-base-content/5 bg-base-100 max-h-50 min-h-30">
           <table class="table table-pin-rows table-pin-cols text-center">
@@ -69,9 +69,8 @@
               </tr>
             </tbody>
           </table>
-        </section>
-        
-        <hr v-if="Object.keys(achivents).length" class="border-base-content/20" />
+          <hr class="border-base-content/20" />
+        </section>       
         
         <!-- 玩家列表 -->
         <ul class="space-y-1 max-h-50 overflow-auto">
@@ -110,7 +109,6 @@
         />
         
         <hr class="border-base-content/20" />
-        
       </section>
       <GameChat>
         <template #rules>

@@ -16,14 +16,18 @@
       >
         <div v-if="m.sender" class="opacity-50 mb-0.5 px-1 flex gap-1">
             <span>{{ m.sender.name }}</span>
-            <span v-if="roomPlayer && (m.sender as RoomPlayer)?.role !== PlayerRole.player" class="italic">(观众)</span>
+            <span v-if="(m.sender as RoomPlayer)?.role == PlayerRole.watcher" class="italic">(观众)</span>
+            <span v-if="(m.sender as RoomPlayer)?.role == PlayerRole.admin" class="italic">(管理员)</span>
         </div>
         <div 
             class="px-3 py-1.5 rounded-2xl max-w-[85%]"
             :class="{
-                'bg-primary text-primary-content rounded-tr-none': m.sender?.id === player?.id,
-                'bg-base-300 text-base-content rounded-tl-none': m.sender?.id !== player?.id && m.sender,
-                'bg-base-300/50 text-base-content/70 w-full text-center max-w-full! rounded text-xs py-1': !m.sender
+                'bg-accent text-accent-content': (m.sender as RoomPlayer)?.role == PlayerRole.admin,
+                'rounded-tr-none': m.sender?.id === roomPlayer?.id,
+                'rounded-tl-none': m.sender?.id !== roomPlayer?.id && m.sender,
+                'bg-base-300/50 text-base-content/70 w-full text-center max-w-full! rounded text-xs py-1': !m.sender,
+                'bg-base-200 text-base-content': (m.sender as RoomPlayer)?.role !== PlayerRole.admin,
+                'bg-primary text-primary-content': (m.sender as RoomPlayer)?.role !== PlayerRole.admin && m.sender?.id === roomPlayer?.id,
             }"
         >
             {{ m.content || m.data }}
@@ -46,8 +50,11 @@
               placeholder="随便聊聊" 
               class="flex-1 input input-sm join-item input-bordered focus:outline-none"
             />
+            <button class="btn join-item" @click="broadcast" v-if="roomPlayer?.isAdmin">
+              <Icon icon="bi:broadcast" />
+            </button>
             <button class="btn btn-sm btn-primary join-item" @click="send">
-                <Icon icon="mdi:send" />
+              <Icon icon="mdi:send" />
             </button>
           </div>
         </div>
@@ -94,6 +101,14 @@ function send() {
   } else {
     sendToGlobal()
   }
+}
+
+function broadcast() {
+  if (!msg.value.trim() || !roomPlayer.value) return
+  if (!roomPlayer.value.isAdmin) return
+  
+  game.value?.command(roomPlayer.value.room.id, { type: 'broadcast', data: msg.value })
+  msg.value = ''
 }
 
 const messages = computed<any[]>(() => {
