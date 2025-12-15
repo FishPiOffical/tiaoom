@@ -8,6 +8,7 @@ export interface IUser {
   nickname: string;
   avatar?: string;
   from?: string;
+  isAdmin?: boolean;
 }
 
 export class User implements IUser {
@@ -16,6 +17,7 @@ export class User implements IUser {
   nickname: string;
   avatar: string;
   from: string;
+  isAdmin: boolean;
 
   constructor(user: Partial<IUser>) {
     this.id = user.id || '';
@@ -23,6 +25,7 @@ export class User implements IUser {
     this.nickname = user.nickname || '';
     this.avatar = user.avatar || '';
     this.from = user.from || '';
+    this.isAdmin = user.isAdmin || false;
   }
 
   get player(): Player {
