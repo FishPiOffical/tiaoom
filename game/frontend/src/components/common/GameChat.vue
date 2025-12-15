@@ -30,7 +30,7 @@
     </RulesModal>
 
     <!-- Message List -->
-    <div class="bg-base-300/30 p-3 rounded overflow-auto space-y-2 border border-base-content/20 flex-1 relative group">
+    <div class="bg-base-300/30 min-h-[200px] p-3 rounded overflow-auto space-y-2 border border-base-content/20 flex-1 relative group">
       <button class="btn btn-text tooltip tooltip-left absolute top-2 right-5 group-hover:inline hidden" data-tip="弹出" @click="openSmallWindow('/#/lite/chat')">
         <Icon icon="mdi:open-in-new" />
       </button>
