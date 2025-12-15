@@ -3,8 +3,8 @@ import { IGameMethod } from "./index";
 
 export const name = "UNO";
 export const minSize = 2;
-export const maxSize = 4;
-export const description = "经典的UNO纸牌游戏，匹配颜色或数字，先出完牌的玩家获胜";
+export const maxSize = 6;
+export const description = "经典的UNO纸牌游戏（最多6人），匹配颜色或数字，先出完牌的玩家获胜";
 
 export interface UnoCard {
   id: string;
