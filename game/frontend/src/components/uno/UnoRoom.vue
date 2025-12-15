@@ -10,17 +10,15 @@
           </div>
         </div>
         <div class="flex items-center gap-4">
-          <!-- 游戏恢复通知 -->
-          <!-- 恢复通知已改为中央浮动通知（showTransient） -->
+          <!-- 恢复通知使用中央 transient -->
         </div>
       </div>
     </header>
 
     <!-- 游戏主区域 -->
     <main class="flex flex-col flex-1 gap-2 p-2 overflow-hidden md:flex-row md:p-4 md:gap-4">
-      <!-- 游戏内容区域 -->
+      <!-- 左侧主视图 -->
       <div class="flex flex-col flex-1 md:h-full">
-        <!-- 准备阶段 -->
         <div v-if="gameStatus === 'waiting'" class="flex items-center justify-center flex-1">
           <div class="text-center">
             <h3 class="mb-4 text-2xl font-bold">等待玩家准备</h3>
@@ -35,49 +33,26 @@
 
         <div v-else-if="gameStatus === 'ended' && gameState" class="flex flex-col items-center justify-center flex-1">
           <div class="text-center">
-            <h2 class="mb-4 text-3xl font-bold">
-              {{ gameState.winner === gameStore.player?.id ? '你赢了！' : '游戏结束' }}
-            </h2>
-            <p v-if="gameState.winner && gameState.winner !== gameStore.player?.id" class="mb-6 text-lg">
-              {{ getPlayerName(gameState.winner) }} 获胜
-            </p>
+            <h2 class="mb-4 text-3xl font-bold">{{ gameState.winner === gameStore.player?.id ? '你赢了！' : '游戏结束' }}</h2>
+            <p v-if="gameState.winner && gameState.winner !== gameStore.player?.id" class="mb-6 text-lg">{{ getPlayerName(gameState.winner) }} 获胜</p>
             <p class="mb-4 text-gray-600">等待玩家准备开始新游戏</p>
           </div>
         </div>
 
-        <!-- 加载中或状态不匹配时的显示 -->
-        <div v-else-if="gameStatus === 'playing' && !gameState" class="flex items-center justify-center flex-1">
-          <div class="text-center">
-            <h3 class="mb-4 text-2xl font-bold">游戏加载中...</h3>
-            <p class="mb-2 text-gray-600" v-if="gameStore.roomPlayer?.role === 'watcher'">
-              正在获取游戏状态，请稍候...
-            </p>
-            <p class="mb-2 text-gray-600" v-else>
-              正在从服务器恢复游戏数据
-            </p>
-            <div class="loading loading-spinner loading-lg"></div>
-          </div>
-        </div>
-
         <div v-else-if="gameStatus === 'playing' && gameState" class="flex flex-col flex-1">
-          <!-- 游戏桌面 - 包含其他玩家位置 -->
+          <!-- 游戏桌面 -->
           <div class="relative flex-1 p-2 rounded-lg md:p-6 bg-base-100">
             <!-- 按位置排列所有玩家（包括自己） -->
             <div class="absolute inset-0">
-              <!-- 其他玩家 -->
               <div 
                 v-for="(playerInfo, index) in getPlayersByPosition" 
                 :key="playerInfo.id"
                 class="absolute p-2 md:p-3 rounded-lg bg-base-100 shadow-lg min-w-[70px] md:min-w-[100px] z-30"
-                :class="{ 
-                  'ring-2 ring-primary ring-offset-2 z-40': gameState.currentPlayer === playerInfo.id,
-                  'border-2 border-primary/50': gameStore.roomPlayer?.role === 'watcher' && playerInfo.id === gameStore.player?.id
-                }"
+                :class="{ 'ring-2 ring-primary ring-offset-2 z-40': gameState.currentPlayer === playerInfo.id }"
                 :style="getPlayerPositionStyle(index, getPlayersByPosition.length)"
               >
                 <div class="flex flex-col items-center gap-1 md:gap-2">
                   <div :class="['flex items-center gap-2 md:gap-3', playerAnim[playerInfo.id]?.type === 'play' ? 'animate-play' : '', playerAnim[playerInfo.id]?.type === 'draw' ? 'animate-draw' : '', playerAnim[playerInfo.id]?.type === 'skip' ? 'player-skipped' : '']">
-                    <!-- avatar -->
                     <div class="flex items-center justify-center w-8 h-8 overflow-hidden text-sm font-bold border rounded-full md:w-10 md:h-10 bg-base-200 border-base-content/20">
                       <template v-if="getRoomPlayer(playerInfo.id)?.attributes?.avatar">
                         <img :src="getRoomPlayer(playerInfo.id)?.attributes?.avatar" alt="avatar" class="object-cover w-full h-full rounded-full" />
@@ -86,215 +61,133 @@
                         <span>{{ getRoomPlayer(playerInfo.id)?.name?.substring(0,1).toUpperCase() }}</span>
                       </template>
                     </div>
-                    <!-- 被跳过/禁止出牌覆盖图标 -->
                     <div v-if="playerAnim[playerInfo.id]?.type === 'skip'" class="absolute inset-0 flex items-center justify-center pointer-events-none">
                       <span class="text-2xl text-red-600 md:text-3xl animate-pulse">⛔</span>
                     </div>
                     <div class="flex items-center gap-1">
-                      <span class="text-xs md:text-sm font-medium truncate max-w-[60px] md:max-w-20">
-                        {{ getPlayerDisplayName(playerInfo.id) }}
-                      </span>
+                      <span class="text-xs md:text-sm font-medium truncate max-w-[60px] md:max-w-20">{{ getPlayerDisplayName(playerInfo.id) }}</span>
                       <div v-if="gameState.currentPlayer === playerInfo.id" class="w-1.5 h-1.5 md:w-2 md:h-2 bg-green-500 rounded-full animate-pulse"></div>
                     </div>
                   </div>
-              <!-- 当前玩家倒计时（移到手牌数量前面） -->
-              <div class="flex items-center gap-2 mb-1">
-                <div v-if="gameState.currentPlayer === playerInfo.id && currentTimer !== null" class="text-xs font-bold animate-pulse"
-                     :class="currentTimer <= 5 ? 'text-red-500' : 'text-blue-500'">
-                  ⏱ {{ currentTimer }}s
-                </div>
-                <span class="badge badge-xs md:badge-sm">{{ playerInfo.hand?.length ?? 0 }} 张</span>
-              </div>
-              <div v-if="playerInfo.hand.length === 1" class="text-xs font-bold text-red-500">
-                UNO!
-              </div>
-              
-              <!-- 位置提示已移除 -->
-                </div>
-              </div>
-              
-              <!-- 当前玩家（自己）- 始终在底部中央 - 仅对普通玩家显示 -->
-              <div 
-                v-if="gameStore.roomPlayer?.role === 'player'"
-                class="absolute p-2 md:p-4 rounded-lg bg-base-100 border border-primary md:border-2 shadow-lg min-w-20 md:min-w-[120px] z-30"
-                :class="{ 
-                  'ring-2 ring-primary ring-offset-2 z-50': gameState.currentPlayer === gameStore.player?.id
-                }"
-                style="bottom: 5%; left: 50%; transform: translate(-50%, 50%)"
-              >
-                <div class="flex flex-col items-center gap-1 md:gap-2">
-                  <div :class="['flex items-center gap-2 md:gap-3', playerAnim[gameStore.player?.id || '']?.type === 'play' ? 'animate-play' : '', playerAnim[gameStore.player?.id || '']?.type === 'draw' ? 'animate-draw' : '', playerAnim[gameStore.player?.id || '']?.type === 'skip' ? 'player-skipped' : '']">
-                    <!-- 自己头像 -->
-                    <div class="flex items-center justify-center w-10 h-10 overflow-hidden text-sm font-bold border rounded-full bg-base-200 border-base-content/20">
-                      <template v-if="getRoomPlayer(gameStore.player?.id || '')?.attributes?.avatar">
-                        <img :src="getRoomPlayer(gameStore.player?.id || '')?.attributes?.avatar" alt="avatar" class="object-cover w-full h-full rounded-full" />
-                      </template>
-                      <template v-else>
-                        <span>{{ getRoomPlayer(gameStore.player?.id || '')?.name?.substring(0,1).toUpperCase() }}</span>
-                      </template>
-                    </div>
-                    <div v-if="playerAnim[gameStore.player?.id || '']?.type === 'skip'" class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <span class="text-2xl text-red-600 md:text-3xl animate-pulse">⛔</span>
-                    </div>
-                    <div class="flex items-center gap-1">
-                      <span class="text-xs font-medium md:text-sm">你</span>
-                      <div v-if="gameState.currentPlayer === gameStore.player?.id" class="w-1.5 h-1.5 md:w-2 md:h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    </div>
-                  </div>
-                  <!-- 自己的倒计时（放在手牌数前） -->
                   <div class="flex items-center gap-2 mb-1">
-                    <div v-if="gameState.currentPlayer === gameStore.player?.id && currentTimer !== null"
-                         class="text-sm font-bold animate-pulse"
-                         :class="currentTimer <= 5 ? 'text-red-500' : 'text-blue-500'">
-                      ⏱ {{ currentTimer }}s
-                    </div>
-                    <span class="badge badge-xs badge-primary md:badge-sm">{{ (gameState.players?.[gameStore.player?.id || '']?.length) || 0 }} 张</span>
+                    <div v-if="gameState.currentPlayer === playerInfo.id && currentTimer !== null" class="text-xs font-bold animate-pulse" :class="currentTimer <= 5 ? 'text-red-500' : 'text-blue-500'">⏱ {{ currentTimer }}s</div>
+                    <span class="badge badge-xs md:badge-sm">{{ playerInfo.hand?.length ?? 0 }} 张</span>
                   </div>
-                  <div v-if="gameState.players?.[gameStore.player?.id || '']?.length === 1" class="text-xs font-bold text-red-500">
-                    UNO!
-                  </div>
-                  <!-- <div class="hidden text-xs font-medium text-primary md:block">
-                    当前玩家
-                  </div> -->
+                  <div v-if="(playerInfo.hand?.length || 0) === 1" class="text-xs font-bold text-red-500">UNO!</div>
                 </div>
               </div>
             </div>
-            <!-- 左上角状态信息 -->
+
+            <!-- 左上角状态信息（方向 / 当前颜色 / 抽牌计数） -->
             <div v-if="gameState" class="absolute z-40 flex flex-wrap items-center gap-2 top-2 left-2 md:top-4 md:left-4 md:gap-3 max-w-60 md:max-w-80">
-              <!-- 方向指示 -->
               <div class="flex items-center gap-1 px-2 py-1 text-xs rounded-lg shadow-md md:gap-2 md:text-sm bg-white/90 md:px-3 md:py-2 backdrop-blur-sm">
-                <div class="text-base md:text-lg">
-                  {{ gameState.direction === 1 ? '↻' : '↺' }}
-                </div>
-                <span class="hidden font-medium md:inline">
-                  {{ gameState.direction === 1 ? '顺时针' : '逆时针' }}
-                </span>
+                <div class="text-base md:text-lg">{{ gameState.direction === 1 ? '↻' : '↺' }}</div>
+                <span class="hidden font-medium md:inline">{{ gameState.direction === 1 ? '顺时针' : '逆时针' }}</span>
               </div>
-              
-              <!-- 当前颜色 -->
+
               <div class="flex items-center gap-1 px-2 py-1 text-xs rounded-lg shadow-md md:gap-2 md:text-sm bg-white/90 md:px-3 md:py-2 backdrop-blur-sm">
                 <span class="hidden font-medium md:inline">当前颜色:</span>
-                <div 
-                  class="w-4 h-4 border-2 border-gray-800 rounded md:w-5 md:h-5"
+                <div class="w-4 h-4 border-2 border-gray-800 rounded md:w-5 md:h-5"
                   :class="{
                     'bg-red-500': gameState.color === 'red',
                     'bg-blue-500': gameState.color === 'blue',
                     'bg-green-500': gameState.color === 'green',
                     'bg-yellow-400': gameState.color === 'yellow'
-                  }"
-                ></div>
+                  }"></div>
               </div>
-              
-              <!-- 抽牌计数 -->
+
               <div v-if="gameState.drawCount > 0" class="flex items-center gap-1 px-2 py-1 text-xs border border-orange-300 rounded-lg shadow-md md:gap-2 md:text-sm bg-orange-100/90 md:px-3 md:py-2 backdrop-blur-sm">
-                <div class="text-xs font-bold text-orange-600 md:text-sm">
-                  +{{ gameState.drawCount }}
-                </div>
-                <span class="hidden font-medium text-orange-700 md:inline">
-                  累积抽牌
-                </span>
+                <div class="text-xs font-bold text-orange-600 md:text-sm">+{{ gameState.drawCount }}</div>
+                <span class="hidden font-medium text-orange-700 md:inline">累积抽牌</span>
               </div>
             </div>
 
-            <div class="relative flex items-center justify-center" style="margin-top: 40px;">
-              <!-- 中央方向指示器 - 缩小作为背景装饰，降低层级 -->
-              <div v-if="gameState" class="absolute z-0 flex items-center justify-center w-48 h-48 pointer-events-none md:w-80 md:h-80">
-                <div class="relative w-full h-full">
-                  <!-- 方向箭头 -->
-                  <div class="absolute inset-0 flex items-center justify-center transition-all duration-700 ease-in-out">
-                    <div class="relative">
-                      <!-- 主箭头 - 根据方向使用不同图标 -->
-                      <div class="text-3xl text-blue-500 md:text-6xl opacity-30 animate-pulse">
-                        {{ gameState.direction === 1 ? '↻' : '↺' }}
-                      </div>
-                    </div>
+            <!-- 底部中央：当前玩家（自己）显示块（仅普通玩家可见） -->
+            <div v-if="gameStore.roomPlayer?.role === 'player'" class="absolute z-50 p-2 md:p-4 rounded-lg bg-base-100 border border-primary/20 shadow-lg min-w-[120px]" :class="{ 'ring-2 ring-primary ring-offset-2': gameState?.currentPlayer === gameStore.player?.id }" style="bottom: 5%; left: 50%; transform: translate(-50%, 50%)">
+              <div class="flex items-center gap-3">
+                <div class="flex items-center justify-center w-10 h-10 overflow-hidden text-sm font-bold border rounded-full bg-base-200 border-base-content/20">
+                  <template v-if="getRoomPlayer(gameStore.player?.id || '')?.attributes?.avatar">
+                    <img :src="getRoomPlayer(gameStore.player?.id || '')?.attributes?.avatar" alt="avatar" class="object-cover w-full h-full rounded-full" />
+                  </template>
+                  <template v-else>
+                    <span>{{ getRoomPlayer(gameStore.player?.id || '')?.name?.substring(0,1).toUpperCase() }}</span>
+                  </template>
+                </div>
+                <div class="flex flex-col">
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm font-medium">你</span>
+                    <div v-if="gameState?.currentPlayer === gameStore.player?.id" class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                   </div>
-                  
-                  <!-- 圆形轨道 - 装饰性边框，降低透明度 -->
-                  <div class="absolute inset-0 border border-blue-300 rounded-full opacity-10 md:border-2"></div>
-                  <div class="absolute border border-blue-200 rounded-full inset-2 md:inset-3 opacity-5"></div>
+                  <div class="flex items-center gap-2 mt-1">
+                    <div v-if="gameState?.currentPlayer === gameStore.player?.id && currentTimer !== null" class="text-sm font-bold" :class="currentTimer <= 5 ? 'text-red-500' : 'text-blue-500'">⏱ {{ currentTimer }}s</div>
+                    <span class="badge badge-xs md:badge-sm">{{ (gameState?.players?.[gameStore.player?.id || '']?.length) || 0 }} 张</span>
+                  </div>
                 </div>
               </div>
-              
-              <!-- 游戏内容 - 确保在指示器之上 -->
-              <div class="relative z-10 flex flex-col items-center gap-4 md:gap-8">
-                <!-- 弃牌堆 -->
-                <div class="text-center">
-                  <p class="mb-2 text-sm text-gray-600">弃牌堆</p>
-                  <div v-if="gameState.discardPile.length > 0" class="relative">
-                    <UnoCard :card="gameState.discardPile[gameState.discardPile.length - 1]" />
+            </div>
+
+            <!-- 中央方向指示器（装饰性，置于弃牌/牌堆下方） -->
+            <div v-if="gameState" class="absolute z-0 flex items-center justify-center w-48 h-48 pointer-events-none md:w-80 md:h-80 left-1/2" style="top: calc(20% + 0.75rem); transform: translateX(-50%);">
+              <div class="relative w-full h-full">
+                <div class="absolute inset-0 flex items-center justify-center transition-all duration-700 ease-in-out">
+                  <div class="relative">
+                    <div class="text-3xl text-blue-500 md:text-6xl opacity-30 animate-pulse">{{ gameState.direction === 1 ? '↻' : '↺' }}</div>
                   </div>
                 </div>
+                <div class="absolute inset-0 border border-blue-300 rounded-full opacity-10 md:border-2"></div>
+                <div class="absolute border border-blue-200 rounded-full inset-2 md:inset-3 opacity-5"></div>
+              </div>
+            </div>
 
-                <!-- 牌堆 -->
-                <div class="text-center">
-                  <p class="mb-2 text-sm text-gray-600">抽牌堆</p>
-                  <div class="relative flex items-center justify-center w-20 font-bold text-white bg-gray-800 rounded-lg h-28">
-                    <span>{{ gameState.deck.length }}</span>
-                  </div>
+            <!-- 中央区域：弃牌与牌堆（下移以避开中央方向指示器） -->
+            <div class="relative z-10 flex flex-col items-center gap-4 transform translate-y-16 md:gap-8 md:translate-y-24">
+              <div class="text-center">
+                <p class="mb-2 text-sm text-gray-600">弃牌堆</p>
+                <div v-if="gameState.discardPile.length > 0" class="relative">
+                  <UnoCard :card="gameState.discardPile[gameState.discardPile.length - 1]" />
+                </div>
+              </div>
+
+              <div class="text-center">
+                <p class="mb-2 text-sm text-gray-600">抽牌堆</p>
+                <div class="relative flex items-center justify-center w-20 font-bold text-white bg-gray-800 rounded-lg h-28">
+                  <span>{{ gameState.deck.length }}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- 普通玩家手牌区域 -->
+          <!-- 自己的手牌区域 -->
           <div v-if="gameStore.roomPlayer?.role === 'player'" class="p-2 rounded-lg md:p-4 bg-base-100">
             <div class="flex items-center justify-between mb-2 md:mb-4">
               <span class="text-sm md:font-medium">我的手牌</span>
               <div class="flex items-center gap-2">
-                <button 
-                  v-if="gameState.players?.[gameStore.player?.id || '']?.length === 2"
-                  @click="callUno"
-                  class="btn btn-xs md:btn-sm btn-warning"
-                >
-                  UNO!
-                </button>
+                <button v-if="gameState.players?.[gameStore.player?.id || '']?.length === 2" @click="callUno" class="btn btn-xs md:btn-sm btn-warning">UNO!</button>
               </div>
             </div>
 
-            <!-- 手牌显示 -->
             <div class="flex flex-wrap gap-1 md:gap-2 mb-2 md:mb-4 min-h-20 md:min-h-[100px] max-h-44 md:max-h-40 overflow-y-auto">
-              <UnoCard
-                v-for="card in (gameState.players[gameStore.player?.id || ''] || [])"
-                :key="card.id"
-                :card="card"
-                :playable="isCurrentPlayer && canPlayCard(card)"
-                @play="playCard"
-                @cant-play="showCantPlayNotification"
-              />
+              <UnoCard v-for="card in (gameState.players[gameStore.player?.id || ''] || [])" :key="card.id" :card="card" :playable="isCurrentPlayer && canPlayCard(card)" @play="playCard" @cant-play="showCantPlayNotification" />
             </div>
 
-            <!-- 操作按钮 -->
             <div class="flex flex-col gap-2 sm:flex-row">
-              <button 
-                @click="drawCard"
-                :disabled="!isCurrentPlayer"
-                class="btn btn-sm md:btn-base"
-                :class="gameState.drawCount > 0 ? 'btn-warning animate-pulse' : 'btn-secondary'"
-              >
-                抽牌
-                <span v-if="gameState.drawCount > 0" class="ml-2 text-xs badge badge-error">+{{ gameState.drawCount }}</span>
-              </button>
+              <button @click="drawCard" :disabled="!isCurrentPlayer" class="btn btn-sm md:btn-base" :class="gameState.drawCount > 0 ? 'btn-warning animate-pulse' : 'btn-secondary'">抽牌 <span v-if="gameState.drawCount > 0" class="ml-2 text-xs badge badge-error">+{{ gameState.drawCount }}</span></button>
             </div>
           </div>
-          
-          <!-- 围观玩家提示区域 -->
-          <div v-else-if="gameStore.roomPlayer?.role === 'watcher'" class="p-4 rounded-lg bg-base-200">
-            <div class="text-center">
-              <div class="mb-2 text-sm text-gray-600">
-                你正在围观这场游戏
-              </div>
-              <div class="text-xs text-gray-500">
-                围观玩家无法查看手牌或参与游戏
-              </div>
-            </div>
+        </div>
+
+        <div v-else-if="gameStatus === 'playing' && !gameState" class="flex items-center justify-center flex-1">
+          <div class="text-center">
+            <h3 class="mb-4 text-2xl font-bold">游戏加载中...</h3>
+            <p class="mb-2 text-gray-600" v-if="gameStore.roomPlayer?.role === 'watcher'">正在获取游戏状态，请稍候...</p>
+            <p class="mb-2 text-gray-600" v-else>正在从服务器恢复游戏数据</p>
+            <div class="loading loading-spinner loading-lg"></div>
           </div>
         </div>
       </div>
 
       <!-- 右侧栏 -->
       <aside class="flex flex-col flex-none w-full overflow-y-auto border-t md:pl-4 md:border-t-0 md:border-l border-base-content/20 md:w-80">
-        <!-- 成就表 -->
         <section class="mb-2 md:mb-4">
           <h3 class="mb-2 text-base font-bold md:text-lg">📊 计分板</h3>
           <div v-if="Object.keys(achievements).length" class="overflow-x-auto overflow-y-auto border rounded-box border-base-content/5 bg-base-100 max-h-48">
@@ -312,113 +205,57 @@
                   <td class="font-medium truncate max-w-[60px]">{{ playerName }}</td>
                   <td class="text-green-600">{{ achievement.win }}</td>
                   <td class="text-red-600">{{ achievement.lost }}</td>
-                  <td class="hidden md:table-cell">
-                    {{ ((achievement.win / (achievement.win + achievement.lost)) * 100 || 0).toFixed(1) }}%
-                  </td>
+                  <td class="hidden md:table-cell">{{ ((achievement.win / (achievement.win + achievement.lost)) * 100 || 0).toFixed(1) }}%</td>
                 </tr>
               </tbody>
             </table>
           </div>
-          <div v-else class="py-4 text-center text-gray-500">
-            暂无战绩
-          </div>
+          <div v-else class="py-4 text-center text-gray-500">暂无战绩</div>
         </section>
 
-        <!-- 玩家列表 -->
         <section class="mb-4">
           <h3 class="mb-2 text-lg font-bold">玩家列表</h3>
           <ul class="mb-4 space-y-1 overflow-y-auto max-h-44">
-            <li 
-              v-for="p in gameStore.roomPlayer?.room?.players || []" 
-              :key="p.id" 
-              class="flex items-center gap-2 p-1 text-sm rounded hover:bg-surface/50"
-              :class="{ 'text-gray-500': p.role === 'watcher' }"
-            >
+            <li v-for="p in gameStore.roomPlayer?.room?.players || []" :key="p.id" class="flex items-center gap-2 p-1 text-sm rounded hover:bg-surface/50" :class="{ 'text-gray-500': p.role === 'watcher' }">
               <span v-if="p.role === 'player'">[{{ getPlayerStatus(p) }}]</span>
               <span v-else>[围观中]</span>
               <span>{{ p.name }}</span>
             </li>
           </ul>
-          
-          <!-- 操作按钮 -->
+
           <div v-if="gameStore.roomPlayer && gameStore.game" class="space-y-2">
-            <!-- 使用单一 RoomControls 组件处理不同状态与角色，RoomControls 内部会根据 role/status 渲染不同按钮 -->
-            <RoomControls
-              :game="gameStore.game as any"
-              :room-player="gameStore.roomPlayer"
-              :game-status="gameStatus"
-              :is-all-ready="isAllReady"
-              :is-room-full="isRoomFull"
-              :enable-draw-resign="false"
-            />
+            <RoomControls :game="gameStore.game as any" :room-player="gameStore.roomPlayer" :game-status="gameStatus" :is-all-ready="isAllReady" :is-room-full="isRoomFull" :enable-draw-resign="false" />
           </div>
         </section>
 
-        <!-- 聊天区域 -->
         <section v-if="gameStore.roomPlayer" class="flex flex-col flex-1 min-h-0">
-          <GameChat 
-            :messages="roomMessages" 
-            :room-player="gameStore.roomPlayer" 
-            @send="sendMessage"
-          />
+          <GameChat :messages="roomMessages" :room-player="gameStore.roomPlayer" @send="sendMessage" />
         </section>
       </aside>
     </main>
-  </div>
 
-  <!-- 游戏通知 -->
-  <div v-if="showNotification" class="fixed z-50 transform -translate-x-1/2 top-4 left-1/2 animate-pulse">
-    <div class="px-6 py-3 rounded-lg shadow-lg" 
-         :class="{
-           'bg-orange-500': forceDrawMessage,
-           'bg-red-500': cantPlayMessage,
-           'bg-blue-500': directionChangeMessage
-         }">
-      <p class="font-bold text-center text-white">
-        {{ forceDrawMessage || cantPlayMessage || directionChangeMessage }}
-      </p>
-    </div>
-  </div>
-
-  <!-- 颜色选择模态框 -->
-  <div v-if="showColorPicker" class="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-    <div class="w-full max-w-sm p-4 rounded-lg shadow-xl md:p-6 bg-base-100">
-      <h3 class="mb-4 text-base font-bold text-center md:text-lg">选择颜色</h3>
-      <div class="grid grid-cols-2 gap-2 md:gap-4">
-        <button
-          @click="selectColor('red')"
-          class="p-3 text-sm font-bold text-white bg-red-500 rounded-lg md:p-4 hover:bg-red-600 md:text-base"
-        >
-          红色
-        </button>
-        <button
-          @click="selectColor('blue')"
-          class="p-3 text-sm font-bold text-white bg-blue-500 rounded-lg md:p-4 hover:bg-blue-600 md:text-base"
-        >
-          蓝色
-        </button>
-        <button
-          @click="selectColor('green')"
-          class="p-3 text-sm font-bold text-white bg-green-500 rounded-lg md:p-4 hover:bg-green-600 md:text-base"
-        >
-          绿色
-        </button>
-        <button
-          @click="selectColor('yellow')"
-          class="p-3 text-sm font-bold text-white bg-yellow-400 rounded-lg md:p-4 hover:bg-yellow-500 md:text-base"
-        >
-          黄色
-        </button>
+    <!-- 通知 & 颜色选择 -->
+    <div v-if="showNotification" class="fixed z-50 transform -translate-x-1/2 top-4 left-1/2 animate-pulse">
+      <div class="px-6 py-3 rounded-lg shadow-lg" :class="{ 'bg-orange-500': forceDrawMessage, 'bg-red-500': cantPlayMessage, 'bg-blue-500': directionChangeMessage }">
+        <p class="font-bold text-center text-white">{{ forceDrawMessage || cantPlayMessage || directionChangeMessage }}</p>
       </div>
-      <button
-        @click="cancelColorSelection"
-        class="w-full mt-2 md:mt-4 btn btn-secondary btn-sm md:btn-base"
-      >
-        取消
-      </button>
+    </div>
+
+    <div v-if="showColorPicker" class="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+      <div class="w-full max-w-sm p-4 rounded-lg shadow-xl md:p-6 bg-base-100">
+        <h3 class="mb-4 text-base font-bold text-center md:text-lg">选择颜色</h3>
+        <div class="grid grid-cols-2 gap-2 md:gap-4">
+          <button @click="selectColor('red')" class="p-3 text-sm font-bold text-white bg-red-500 rounded-lg md:p-4 hover:bg-red-600 md:text-base">红色</button>
+          <button @click="selectColor('blue')" class="p-3 text-sm font-bold text-white bg-blue-500 rounded-lg md:p-4 hover:bg-blue-600 md:text-base">蓝色</button>
+          <button @click="selectColor('green')" class="p-3 text-sm font-bold text-white bg-green-500 rounded-lg md:p-4 hover:bg-green-600 md:text-base">绿色</button>
+          <button @click="selectColor('yellow')" class="p-3 text-sm font-bold text-white bg-yellow-400 rounded-lg md:p-4 hover:bg-yellow-500 md:text-base">黄色</button>
+        </div>
+        <button @click="cancelColorSelection" class="w-full mt-2 md:mt-4 btn btn-secondary btn-sm md:btn-base">取消</button>
+      </div>
     </div>
   </div>
 </template>
+
 
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
@@ -482,82 +319,40 @@ const isCurrentPlayer = computed(() => {
   return gameState.value?.currentPlayer === gameStore.player?.id
 })
 
-// 计算其他玩家按照游戏顺序的排列
+// 计算玩家按照游戏顺序的排列（支持 2-6 人）
 const getPlayersByPosition = computed(() => {
   if (!gameState.value) return []
-  
+
   const allPlayerIds = Object.keys(gameState.value.players)
-  
-  // 如果是围观玩家，显示所有玩家（包括自己在其他玩家位置）
-  if (gameStore.roomPlayer?.role === 'watcher') {
-    const allPlayers: Array<{ id: string, hand: any[], position: string }> = []
-    const totalPlayers = allPlayerIds.length
-    
-    // 按照游戏顺序排列所有玩家，从第一个玩家开始
-      for (let i = 0; i < totalPlayers; i++) {
-      const playerId = allPlayerIds[i]
-      let position = ''
-      
-      if (totalPlayers === 2) {
-        position = i === 0 ? 'across' : 'across'
-      } else if (totalPlayers === 3) {
-        if (i === 0) position = 'next'
-        else if (i === 1) position = 'across'
-        else position = 'prev'
-      } else if (totalPlayers === 4) {
-        if (i === 0) position = 'next'
-        else if (i === 1) position = 'across'
-        else position = 'prev'
-      }
-      
-      allPlayers.push({
-        id: playerId,
-        hand: gameState.value.players[playerId] || [],
-        position
-      })
-    }
-    
-    return allPlayers
-  }
-  
-  // 普通玩家只看其他玩家
-  if (!gameStore.player?.id) return []
-  
-  const currentPlayerId = gameStore.player.id
-  const currentPlayerIndex = allPlayerIds.indexOf(currentPlayerId)
-  
-  // 将其他玩家按照游戏顺序排列（从当前玩家的下家开始）
-  const otherPlayers: Array<{ id: string, hand: any[], position: 'next' | 'across' | 'prev' | string }> = []
   const totalPlayers = allPlayerIds.length
-  
-  for (let i = 1; i < totalPlayers; i++) {
-    const playerIndex = gameState.value.direction === 1 
-      ? (currentPlayerIndex + i) % totalPlayers
-      : (currentPlayerIndex - i + totalPlayers) % totalPlayers
-    
-    const playerId = allPlayerIds[playerIndex]
-    let position = ''
-    
-    if (totalPlayers === 2) {
-      position = 'across'
-    } else if (totalPlayers === 3) {
-      if (i === 1) position = 'next'      // 正上
-      else if (i === 2) position = 'across' // 右上  
-      else position = 'prev'                 // 左上
-    } else if (totalPlayers === 4) {
-      if (i === 1) position = 'next'      // 正上（下家）
-      else if (i === 2) position = 'across' // 右上（对家）
-      else position = 'prev'                 // 左上（上家）
-    }
-    
-    otherPlayers.push({
-      id: playerId,
-      hand: gameState.value.players[playerId] || [],
-      position
-    })
+  if (totalPlayers === 0) return []
+
+  const asWatcher = gameStore.roomPlayer?.role === 'watcher'
+
+  // 如果是围观玩家：显示所有玩家，顺序按游戏内的 players 键顺序
+  if (asWatcher) {
+    return allPlayerIds.map(id => ({ id, hand: gameState.value!.players[id] || [] }))
   }
-  
-  return otherPlayers
+
+  // 对于普通玩家，只显示其他玩家（不包含自己），并按当前玩家为基准按方向排列
+  const myId = String(gameStore.player?.id || '')
+  const myIndex = allPlayerIds.indexOf(myId)
+  if (myIndex === -1) {
+    // 如果当前玩家 ID 不在列表中，回退为展示所有玩家
+    return allPlayerIds.map(id => ({ id, hand: gameState.value!.players[id] || [] }))
+  }
+
+  const list: Array<{ id: string, hand: any[] }> = []
+  const countOthers = totalPlayers - 1
+  for (let i = 1; i <= countOthers; i++) {
+    const playerIndex = gameState.value!.direction === 1
+      ? (myIndex + i) % totalPlayers
+      : (myIndex - i + totalPlayers) % totalPlayers
+    const id = allPlayerIds[playerIndex]
+    list.push({ id, hand: gameState.value!.players[id] || [] })
+  }
+
+  return list
 })
 
 // 监听房间状态变化，同步 gameStatus
@@ -677,81 +472,39 @@ const isRoomFull = computed(() => {
   return playerCount >= gameStore.roomPlayer.room.size
 })
 
-// 根据玩家位置计算样式
+// 根据玩家位置计算样式（使用极坐标计算，支持 2-6 人）
 const getPlayerPositionStyle = (index: number, totalPlayers: number) => {
-  const positions: { [key: number]: { top?: string, bottom?: string, left?: string, right?: string, transform?: string } } = {}
-  
   const isWatcher = gameStore.roomPlayer?.role === 'watcher'
-  
-  if (isMobile.value) {
-    // 移动端布局 - 更紧凑
-    if (isWatcher) {
-      // 围观玩家布局 - 显示所有玩家
-      if (totalPlayers === 2) {
-        positions[0] = { top: '10%', left: '25%', transform: 'translate(-50%, -50%)' }
-        positions[1] = { top: '10%', right: '25%', transform: 'translate(50%, -50%)' }
-      } else if (totalPlayers === 3) {
-        positions[0] = { top: '8%', left: '50%', transform: 'translate(-50%, -50%)' }
-        positions[1] = { top: '15%', right: '10%', transform: 'translate(50%, -50%)' }
-        positions[2] = { top: '15%', left: '10%', transform: 'translate(-50%, -50%)' }
-      } else if (totalPlayers === 4) {
-        positions[0] = { top: '5%', left: '50%', transform: 'translate(-50%, -50%)' }
-        positions[1] = { top: '12%', right: '8%', transform: 'translate(50%, -50%)' }
-        positions[2] = { top: '18%', left: '8%', transform: 'translate(-50%, -50%)' }
-        positions[3] = { top: '25%', right: '25%', transform: 'translate(50%, -50%)' }
-      }
-    } else {
-      // 普通玩家布局 - 只显示其他玩家
-      if (totalPlayers === 1) {
-        // 只有一个其他玩家 - 放在顶部
-        positions[0] = { top: '10%', left: '50%', transform: 'translate(-50%, -50%)' }
-      } else if (totalPlayers === 2) {
-        // 两个其他玩家 - 分别放在左上、右上
-        positions[0] = { top: '10%', left: '25%', transform: 'translate(-50%, -50%)' }
-        positions[1] = { top: '10%', right: '25%', transform: 'translate(50%, -50%)' }
-      } else if (totalPlayers === 3) {
-        // 三个其他玩家（总共4人）- 分别放在左上、正上、右上，更紧凑
-        positions[0] = { top: '8%', left: '50%', transform: 'translate(-50%, -50%)' }   // 正上（下家）
-        positions[1] = { top: '15%', right: '10%', transform: 'translate(50%, -50%)' }    // 右上（对家）
-        positions[2] = { top: '15%', left: '10%', transform: 'translate(-50%, -50%)' }     // 左上（上家）
-      }
-    }
-  } else {
-    // 桌面端布局 - 保持原有间距
-    if (isWatcher) {
-      // 围观玩家布局 - 显示所有玩家，环形分布
-      if (totalPlayers === 2) {
-        positions[0] = { top: '15%', left: '35%', transform: 'translate(-50%, -50%)' }
-        positions[1] = { top: '15%', right: '35%', transform: 'translate(50%, -50%)' }
-      } else if (totalPlayers === 3) {
-        positions[0] = { top: '15%', left: '50%', transform: 'translate(-50%, -50%)' }
-        positions[1] = { top: '25%', right: '15%', transform: 'translate(50%, -50%)' }
-        positions[2] = { top: '25%', left: '15%', transform: 'translate(-50%, -50%)' }
-      } else if (totalPlayers === 4) {
-        positions[0] = { top: '10%', left: '50%', transform: 'translate(-50%, -50%)' }
-        positions[1] = { top: '20%', right: '12%', transform: 'translate(50%, -50%)' }
-        positions[2] = { top: '30%', left: '12%', transform: 'translate(-50%, -50%)' }
-        positions[3] = { top: '40%', right: '35%', transform: 'translate(50%, -50%)' }
-      }
-    } else {
-      // 普通玩家布局 - 只显示其他玩家
-      if (totalPlayers === 1) {
-        // 只有一个其他玩家 - 放在顶部
-        positions[0] = { top: '15%', left: '50%', transform: 'translate(-50%, -50%)' }
-      } else if (totalPlayers === 2) {
-        // 两个其他玩家 - 分别放在左上、右上
-        positions[0] = { top: '15%', left: '35%', transform: 'translate(-50%, -50%)' }
-        positions[1] = { top: '15%', right: '35%', transform: 'translate(50%, -50%)' }
-      } else if (totalPlayers === 3) {
-        // 三个其他玩家（总共4人）- 分别放在左上、正上、右上，形成包围感
-        positions[0] = { top: '15%', left: '50%', transform: 'translate(-50%, -50%)' } // 正上（下家）
-        positions[1] = { top: '25%', right: '15%', transform: 'translate(50%, -50%)' }  // 右上（对家）
-        positions[2] = { top: '25%', left: '15%', transform: 'translate(-50%, -50%)' }   // 左上（上家）
-      }
-    }
+
+  // 需要在渲染时知道这次布局实际放置的玩家数量：
+  // - 围观者：放置 totalPlayers
+  // - 普通玩家：放置 totalPlayers (已由 getPlayersByPosition 返回，只包含其他玩家)
+  const placeCount = Math.max(1, totalPlayers)
+
+  // 角度范围：围观者使用完整环形（360°），普通玩家使用上半环（180°）
+  const fullCircle = isWatcher
+  const startDeg = fullCircle ? -90 : -180 // -90 表示从正上方开始，中点向右展开
+  const spanDeg = fullCircle ? 360 : 180
+
+  // 在移动端稍微收缩半径
+  const radius = isMobile.value ? 30 : 36 // 百分比
+
+  // 计算角度（将玩家均匀分布在 spanDeg 上）
+  const step = spanDeg / placeCount
+  // offset 使分布居中：将起始角度左移半个 step
+  const angleDeg = startDeg + step * (index + 0.5)
+  const rad = angleDeg * (Math.PI / 180)
+
+  const cx = 50
+  const cy = 50
+  const x = cx + radius * Math.cos(rad)
+  const y = cy + radius * Math.sin(rad)
+
+  return {
+    top: `${y}%`,
+    left: `${x}%`,
+    transform: 'translate(-50%, -50%)'
   }
-  
-  return positions[index] || { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }
 }
 
 
