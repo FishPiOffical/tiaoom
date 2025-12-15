@@ -5,6 +5,7 @@ import { Room, Tiaoom } from "tiaoom";
 import { SocketManager } from "./socket";
 import Games, { IGameInfo } from "./games";
 import { Model } from "./model";
+import { UserRepo } from "./entities";
 
 export class Controller extends Tiaoom {
   messages: { data: string, sender: Player, createdAt: number }[] = [];
@@ -110,5 +111,11 @@ export class Controller extends Tiaoom {
       }
     }
     return super.joinPlayer(sender, player, isCreator);
+  }
+
+  isAdmin(player: IPlayer): Promise<boolean> {
+    return UserRepo.findOneBy({ id: player.id }).then(user => {
+      return user?.isAdmin || false;
+    });
   }
 }

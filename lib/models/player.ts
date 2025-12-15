@@ -119,6 +119,7 @@ export class Player extends EventEmitter implements IPlayer {
       name: this.name,
       attributes: this.attributes,
       status: this.status,
+      isAdmin: this.isAdmin,
     };
   }
 
