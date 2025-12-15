@@ -168,11 +168,13 @@ export class Player {
   name: string;
   attributes: Record<string, any>;
   status: PlayerStatus;
+  isAdmin: boolean;
   constructor(player: Partial<Player>) {
     this.id = player.id || Date.now().toString();
     this.name = player.name || '玩家' + this.id;
     this.attributes = player.attributes || {};
     this.status = player.status || PlayerStatus.online;
+    this.isAdmin = player.isAdmin || false;
   }
 }
 
