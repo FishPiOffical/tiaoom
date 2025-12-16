@@ -66,6 +66,8 @@
                     </div>
                     <div class="flex items-center gap-1">
                       <span class="text-xs md:text-sm font-medium truncate max-w-[60px] md:max-w-20">{{ getPlayerDisplayName(playerInfo.id) }}</span>
+                      <!-- 托管徽章 -->
+                      <span v-if="gameState?.hosted && gameState.hosted[playerInfo.id]" class="ml-1 text-xs badge badge-error">托管</span>
                       <div v-if="gameState.currentPlayer === playerInfo.id" class="w-1.5 h-1.5 md:w-2 md:h-2 bg-green-500 rounded-full animate-pulse"></div>
                     </div>
                   </div>
@@ -117,6 +119,7 @@
                 <div class="flex flex-col">
                   <div class="flex items-center gap-2">
                     <span class="text-sm font-medium">你</span>
+                    <span v-if="gameState?.hosted && gameStore.player?.id && gameState.hosted[gameStore.player.id]" class="ml-1 text-xs badge badge-error">托管</span>
                     <div v-if="gameState?.currentPlayer === gameStore.player?.id" class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                   </div>
                   <div class="flex items-center gap-2 mt-1">
@@ -305,6 +308,8 @@ const lastSwitchAt = ref<number>(0)
 const suppressTimerUntil = ref<number>(0)
 const pendingSmallTimer = ref<number | null>(null)
 const pendingSmallTimerTimeout = ref<number | null>(null)
+const waitingForServerTimer = ref(false)
+const waitingForServerTimerTimeout = ref<number | null>(null)
 
 // 响应式状态
 const isMobile = ref(false)
@@ -596,9 +601,25 @@ const onCommand = (command: any) => {
         const timeoutMs = (typeof command.data.turnTimeout === 'number') ? command.data.turnTimeout : 15000
         const fullSeconds = Math.max(1, Math.round(timeoutMs / 1000))
         console.log('玩家切换，设置完整倒计时:', fullSeconds)
-        currentTimer.value = fullSeconds
-        // 设置抑制窗口，避免接下来的 timer_update 被忽略
-        suppressTimerUntil.value = Date.now() + 1200
+        // 如果该玩家被托管，则直接从5开始（后端也会设置 turnTimeout 为 5000），并立即短促跳到4以避免闪烁
+        // 更稳健的托管判定：优先使用 hosted 标志；若无，则根据服务端的 turnTimeout 值判断（托管会使用 5000ms）
+        const isHosted = !!(command.data.hosted && command.data.currentPlayer && command.data.hosted[command.data.currentPlayer])
+        // 直接写死默认值：托管玩家 5s，正常玩家强制为 15s（避免被后端可能残留的 5s 覆盖）
+        if (isHosted) {
+          currentTimer.value = 5
+        } else {
+          currentTimer.value = 15
+        }
+        // 等待服务端的 timer_update 覆盖显示（避免客户端自行计算产生闪烁）
+        waitingForServerTimer.value = true
+        if (waitingForServerTimerTimeout.value) {
+          clearTimeout(waitingForServerTimerTimeout.value as number)
+          waitingForServerTimerTimeout.value = null
+        }
+        waitingForServerTimerTimeout.value = window.setTimeout(() => {
+          waitingForServerTimer.value = false
+          waitingForServerTimerTimeout.value = null
+        }, 2500)
       } else if (typeof command.data.turnTimeLeft !== 'undefined') {
         // 同一玩家回合，直接使用服务端提供的 turnTimeLeft
         const serverVal = Number(command.data.turnTimeLeft) || 0
@@ -625,6 +646,16 @@ const onCommand = (command: any) => {
       // 后端每秒发送剩余时间（秒）。当计时器从隐藏变为可见（currentTimer 为 null）时，
       // 直接显示完整回合时长（默认为 15s 或使用服务端 turnTimeout），避免短暂显示 1s 的闪烁。
       console.log('收到game:timer_update命令:', Date.now(), command.data)
+      // 如果我们正在等待服务端的第一条 timer_update，则接受其更新并清除等待标志；
+      // 否则按原逻辑处理（包括抑制小值等）。
+      if (waitingForServerTimer.value) {
+        // 当服务端更新到达，取消等待并继续处理（下方会将 turnTimeLeft 应用到 currentTimer）
+        if (waitingForServerTimerTimeout.value) {
+          clearTimeout(waitingForServerTimerTimeout.value as number)
+          waitingForServerTimerTimeout.value = null
+        }
+        waitingForServerTimer.value = false
+      }
       // 如果在抑制窗口内，通常忽略短小的 timer_update，但如果服务端推送的值 >1s 则允许通过，
       // 以避免错过例如 14s 的合法更新。
       if (suppressTimerUntil.value && Date.now() < suppressTimerUntil.value) {
