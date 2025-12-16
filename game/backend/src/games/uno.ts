@@ -95,6 +95,31 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
         player.status = PlayerStatus.playing;
       }
     });
+    
+    // 恢复倒计时状态 - 延迟到函数定义后执行
+    setTimeout(() => {
+      if (gameState && !gameState.winner && gameState.turnStartTime && gameState.turnTimeout && gameState.turnTimeLeft !== undefined) {
+        const elapsed = Date.now() - gameState.turnStartTime;
+        const remaining = gameState.turnTimeout - elapsed;
+        
+        if (remaining > 0) {
+          // 还有剩余时间，继续倒计时
+          gameState.turnTimeLeft = Math.ceil(remaining / 1000);
+          
+          currentTimeout = setTimeout(() => {
+            handleTimeout();
+          }, remaining);
+          
+          console.log(`恢复倒计时: ${gameState.turnTimeLeft}秒`);
+        } else {
+          // 倒计时已过期，立即处理超时
+          handleTimeout();
+        }
+      } else if (gameState && !gameState.winner) {
+        // 没有倒计时状态，开始新的倒计时
+        startTurnTimer();
+      }
+    }, 0);
   }
   
   // 持久化函数
@@ -205,26 +230,22 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
         handleTimeout();
       }, TURN_TIMEOUT);
       
-      // 延迟1秒后开始发送倒计时更新，避免与 game:state 的初始发送冲突
-      setTimeout(() => {
-        // 每秒更新剩余时间
-        countdownInterval = setInterval(() => {
-          if (gameState && gameState.turnTimeLeft !== undefined) {
-            gameState.turnTimeLeft = Math.max(0, gameState.turnTimeLeft - 1);
-            
-            // 发送倒计时更新（使用 command 事件以匹配 Room 事件类型）
-            room.emit('command', { type: 'game:timer_update', data: { turnTimeLeft: gameState.turnTimeLeft } });
-            
-            // 当倒计时结束时清除定时器（先检查非 null）
-            if (gameState.turnTimeLeft <= 0) {
-              if (countdownInterval) {
-                clearInterval(countdownInterval);
-                countdownInterval = null;
-              }
+      // 每秒更新倒计时状态
+      countdownInterval = setInterval(() => {
+        if (gameState && gameState.turnTimeLeft !== undefined) {
+          gameState.turnTimeLeft = Math.max(0, gameState.turnTimeLeft - 1);
+          // 实时发送倒计时更新给所有玩家
+          room.emit('command', { type: 'game:state', data: gameState });
+          
+          // 当倒计时归零时清除定时器
+          if (gameState.turnTimeLeft <= 0) {
+            if (countdownInterval) {
+              clearInterval(countdownInterval);
             }
           }
-        }, 1000);
-      }, 1000); // 延迟1秒开始
+        }
+      }, 1000);
+      
     }
   };
 
@@ -265,7 +286,6 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
       room.emit('command', { type: 'game:state', data: gameState });
       
       // 清除当前倒计时并开始下一回合的倒计时
-      clearTurnTimer();
       startTurnTimer();
     }
   };
@@ -523,6 +543,7 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
           
           // 清除倒计时
           clearTurnTimer();
+        
           
           // 保存成就和最终状态
           await saveGameData();
@@ -596,7 +617,7 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
         
         // 清除当前倒计时并开始下一回合的倒计时
         if (!gameState.winner) {
-          clearTurnTimer();
+        
           startTurnTimer();
         }
         break;
@@ -646,8 +667,7 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
         room.emit('command', { type: 'game:state', data: gameState });
         
         // 清除当前倒计时并开始下一回合的倒计时
-        if (!gameState.winner) {
-          clearTurnTimer();
+        if (!gameState.winner) {  
           startTurnTimer();
         }
         break;
