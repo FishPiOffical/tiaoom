@@ -30,13 +30,20 @@ const router = createRouter({
         {
           path: '',
           name: 'home',
-          component: () => import('@/views/Home.vue')
+          component: () => import('@/views/Home.vue'),
+          meta: { requiresAuth: true }
         },
         {
           path: 'admin',
           name: 'admin',
           component: () => import('@/views/Admin.vue'),
           meta: { requiresAdmin: true }
+        },
+        {
+          path: 'room/:id',
+          name: 'room',
+          component: () => import('@/views/Room.vue'),
+          meta: { requiresAuth: true }
         },
       ]
     }
@@ -45,10 +52,11 @@ const router = createRouter({
 
 router.beforeEach(async (to, _from, next) => {
   const gameStore = useGameStore()
-  
+
   if (to.meta.requiresAuth) {
     const hasSession = await gameStore.checkSession()
     if (!hasSession) {
+      localStorage.setItem('redirect-after-login', to.fullPath)
       next('/login')
       return
     }
@@ -57,19 +65,27 @@ router.beforeEach(async (to, _from, next) => {
   if (to.meta.requiresAdmin) {
     // Ensure session is checked if we navigated directly here
     if (!gameStore.player) {
-       const hasSession = await gameStore.checkSession()
-       if (!hasSession) {
-         next('/login')
-         return
-       }
+      const hasSession = await gameStore.checkSession()
+      if (!hasSession) {
+        localStorage.setItem('redirect-after-login', to.fullPath)
+        next('/login')
+        return
+      }
     }
-    
+
     if (!gameStore.player?.isAdmin) {
       next('/')
       return
     }
   }
-  
+
+  const redirectAfterLogin = localStorage.getItem('redirect-after-login')
+  if (redirectAfterLogin) {
+    localStorage.removeItem('redirect-after-login')
+    next(redirectAfterLogin)
+    return
+  }
+
   next()
 })
 

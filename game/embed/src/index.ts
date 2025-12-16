@@ -64,7 +64,8 @@ class GameCore extends Tiaoom {
 interface GameRenderData { 
   room?: Room, 
   player?: Player, 
-  logo: string, 
+  logo: string,
+  game: string,
   visitRoom: (roomId: string) => void 
 }
 
@@ -104,6 +105,7 @@ class GameEmbed {
     this.renders = renders;
     fetch(`${scriptSrc.origin}/api/config`).then(res => res.json()).then((res) => {
       this.config = res.data;
+      this.update();
     });
     this.tiaoom.run().onRoomList(() => {
       this.update();
@@ -163,13 +165,14 @@ class GameEmbed {
       if (!domOrRender) return;
       if (typeof domOrRender === 'function') {
         domOrRender({ 
+          game: this.config[room?.attrs.type || '']?.name,
           room, player, logo: scriptSrc.origin + '/logo.png', visitRoom: (roomId) => {
             window.open(`${scriptSrc.origin}/r/${roomId}`, '_blank');
           } 
         });
         return;
       }
-      if (!player || !room) return domOrRender.innerHTML = '';
+      if (!player || !room || !this.config[room.attrs.type]) return domOrRender.innerHTML = '';
       const roomPlayer = room.players.find(p => p.id === player.id)!;
       const gameName = this.config[room.attrs.type].name;
       const tag = document.createElement('a');
@@ -195,7 +198,7 @@ class GameEmbed {
           ${roomPlayer.role == 'player' ? '🎮' : '👀'}
         </span>
       `;
-      tag.href=`${scriptSrc.origin}/r/${room.id}`;
+      tag.href=`${scriptSrc.origin}/#/r/${room.id}`;
       tag.target = '_blank';
       domOrRender.innerHTML = tag.outerHTML;
     }
