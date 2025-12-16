@@ -197,7 +197,8 @@ class GameEmbed {
     }
     this.renders.forEach(item => {
       let oId = item.oId;
-      if (oId.startsWith('$')) oId = item.src?.dataset[oId.slice(1)] || '';
+      if (oId.startsWith('$') && (item.src || item.render) instanceof HTMLElement) 
+        oId = (item.src || item.render as HTMLElement)?.dataset[oId.slice(1)] || '';
       if (!oId) return; 
       const player = this.tiaoom.players.find(p => p.id === oId);
       const room = player && this.tiaoom.rooms.find(room => room.players.find(p => p.id === oId));
