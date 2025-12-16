@@ -5,7 +5,7 @@ export default defineConfig([
     entry: { embed: 'src/index.ts' },
     outDir: '../frontend/public/',
     format: ['iife'],
-    globalName: 'GameHook',
+    globalName: 'GameEmbed',
     dts: false,
     target: 'es2018',
     minify: true,
