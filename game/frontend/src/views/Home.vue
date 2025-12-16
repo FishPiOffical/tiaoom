@@ -46,7 +46,7 @@
             >
                 {{ m.data }}
             </div>
-            <time class="text-base-content/30 text-xs my-0.5">{{ new Date(m.createdAt).toLocaleString() }}</time>
+            <time class="text-base-content/30 text-[10px] my-0.5 px-0.5">{{ new Date(m.createdAt).toLocaleString() }}</time>
           </div>
         </div>
       </section>
