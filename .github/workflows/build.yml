@@ -28,7 +28,10 @@ jobs:
       run: |
         npm ci
         npm run build
-        cd game
+        cd game/embed
+        npm ci
+        npm run build
+        cd ..
         npm ci
         npm run build
         cd dist

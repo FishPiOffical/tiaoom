@@ -1,6 +1,7 @@
 import { Model } from "@/model";
 import { IRoomPlayer, PlayerRole, Room, RoomPlayer, RoomStatus } from "tiaoom";
 import { IGameMethod } from ".";
+import { sleep } from "@/utils";
 
 /**
  * 检查黑白棋（Othello/Reversi）落子有效性，并返回落子后的棋盘状态
@@ -186,9 +187,11 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
       type: 'achivents',
       data: achivents
     });
-  }).on('leave', (player) => {
+  }).on('player-offline', async (player) => {
+    await sleep(4 * 60 * 1000); // 等待 4 分钟，判定为离线
+    room.kickPlayer(player);
     if (gameStatus === 'playing' && player.role === 'player') {
-      room.emit('message', { content: `玩家 ${player.name} 离开游戏，游戏结束。` });
+      room.emit('message', { content: `玩家 ${player.name} 已离线，游戏结束。` });
       lastLosePlayer = room.validPlayers.find((p) => p.id != player.id)!;
       gameStatus = 'waiting';
       saveAchivents(lastLosePlayer);

@@ -152,7 +152,8 @@ else {
 **处理逻辑：**
 1. 当某个 Socket 连接关闭时，将其从连接列表中移除。
 2. 检查该玩家是否还有其他活跃的连接。
-3. 如果该玩家没有任何活跃连接，则触发 `player.logout` 消息，通知系统玩家已完全下线。
+3. 如果该玩家没有任何活跃连接，则触发 `player.offline` 消息，通知系统玩家已完全下线。
+4. 房间也会在一分钟后（避免因网络或刷新误判）收到该玩家的离线事件`player-offline`，不同游戏可触发相应的处理逻辑（如踢出房间，启动托管等）。
 
 ```typescript
 socket.on("close", () => {
@@ -167,7 +168,7 @@ socket.on("close", () => {
   if (!this.sockets.some(s => s.player.id === player?.id)) {
     // 触发登出消息
     this.emit("message", { 
-      type: MessageTypes.PlayerLogout, 
+      type: MessageTypes.PlayerOffline, 
       data: player, 
       sender: player 
     });

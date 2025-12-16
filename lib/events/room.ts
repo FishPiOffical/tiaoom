@@ -57,6 +57,11 @@ export interface RoomEvents extends BaseEvents {
    */
   'player-unready': (player: IRoomPlayer) => void;
   /**
+   * 玩家离线
+   * @param {IRoomPlayer} player 玩家信息
+   */
+  'player-offline': (player: IRoomPlayer) => void;
+  /**
    * 房间开始游戏
    * @param {IRoom} room 房间信息
    */

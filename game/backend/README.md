@@ -34,7 +34,7 @@ npm start
 ## API 端点
 
 - `GET /api/config` - 获取配置信息（WebSocket 地址和游戏列表）
-- `GET /api/session` - 获取当前会话信息
+- `GET /api/info` - 获取当前会话信息
 - `POST /api/login` - 用户登录
 - `GET /api/login/fishpi` - 摸鱼派登录
 - `POST /api/logout` - 用户登出
@@ -45,4 +45,4 @@ npm start
 
 ## WebSocket
 
-WebSocket 服务器地址：`ws://127.0.0.1:27016`
+WebSocket 服务器地址：`ws://127.0.0.1:27015`

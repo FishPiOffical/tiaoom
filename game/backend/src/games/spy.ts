@@ -1,5 +1,6 @@
 import { IRoomPlayer, Player, PlayerRole, Room, RoomPlayer, RoomStatus } from "tiaoom";
 import { IGameMethod } from ".";
+import { sleep } from "@/utils";
 
 const questions = [
   ['蝴蝶', '蜜蜂'],
@@ -45,7 +46,7 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
   // 已投票玩家列表
   const votePlayers: RoomPlayer[] = gameData?.votedIds ? gameData.votedIds.map((id: string) => room.players.find(p => p.id === id)!).filter(Boolean) : [];
   const TURN_TIMEOUT = 5 * 60 * 1000; // 5 minutes
-  const VOTE_TIMEOUT = 2 * 60 * 1000; // 5 minutes
+  const VOTE_TIMEOUT = 2 * 60 * 1000; // 2 minutes
 
   function saveGameData() {
     return save({
@@ -188,7 +189,10 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
     startTurn(nextPlayer);
   }
 
-  room.on('player-command', (message: any) => {
+  room.on('player-offline', async (player) => {
+    await sleep(4 * 60 * 1000 + 10000); // 等待 4 分 10 秒，判定为离线
+    room.kickPlayer(player);
+  }).on('player-command', (message: any) => {
     // 允许观众使用的指令
     const publicCommands = ['say', 'status'];
     const players = publicCommands.includes(message.type)

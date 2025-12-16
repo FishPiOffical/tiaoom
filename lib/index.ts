@@ -102,6 +102,8 @@ export class Tiaoom extends EventEmitter {
             return this.loginPlayer(message.data);
           case RecvMessageTypes.PlayerLogout:
             return this.removePlayer(message.data);
+          case MessageTypes.PlayerOffline:
+            return this.offlinePlayer(message.data);
           case RecvMessageTypes.PlayerReady:
             return this.readyPlayer(message.sender, message.data);
           case RecvMessageTypes.PlayerUnready:
@@ -432,16 +434,20 @@ export class Tiaoom extends EventEmitter {
     if (playerIndex > -1) {
       this.players.splice(playerIndex, 1)[0];
       this.emit("player", player, false);
-      if (this.rooms.some(r => r.searchPlayer(player))) {
-        setTimeout(() => {
-          if (this.players.some(p => p.id === sender.id)) return; // player is online
-          this.rooms.filter(r => r.searchPlayer(player)).forEach(r => {
-            this.leavePlayer(sender, { ...sender, roomId: r.id });
-          });
-        }, 5 * 60 * 1000); // 5 minutes later
-      }
     }
     return player;
+  }
+
+  offlinePlayer(sender: IPlayer) {
+    const room = this.rooms.find((room) => room.players.some(p => p.id === sender?.id));
+    if (room) {
+      setTimeout(() => {
+        if (this.players.some(p => p.id === sender.id)) return; // player is online
+        room.emit("player-offline", room.players.find(p => p.id === sender.id)!);
+      }, 60 * 1000); // 1 minute later
+    }
+    this.removePlayer(sender);
+    return sender;
   }
 }
 

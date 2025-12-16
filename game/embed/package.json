@@ -1,0 +1,23 @@
+{
+  "name": "game-embed",
+  "version": "0.0.1",
+  "description": "embed game status to web",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsdown",
+    "postbuild": "shx mv ../frontend/public/embed.iife.js ../frontend/public/embed.min.js"
+  },
+  "author": "Hancel.Lin",
+  "license": "MIT",
+  "dependencies": {
+    "reconnecting-websocket": "^4.4.0",
+    "tiaoom": "file:../.."
+  },
+  "devDependencies": {
+    "shx": "^0.4.0",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "tsdown": "^0.18.0",
+    "typescript": "^5.9.3"
+  }
+}
