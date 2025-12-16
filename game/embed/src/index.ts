@@ -71,6 +71,7 @@ interface GameRenderData {
 interface GameRenderMap {
   render: HTMLElement | ((data: GameRenderData) => void);
   oId: string;
+  src?: HTMLElement;
 }
 
 /**
@@ -117,8 +118,8 @@ class GameEmbed {
       this.color = '#' + this.color;
   }
   
-  append(render: HTMLElement | ((data: GameRenderData) => void), oId: string) {
-    this.renders.push({ render, oId });
+  append(render: HTMLElement | ((data: GameRenderData) => void), oId: string, src?: HTMLElement) {
+    this.renders.push({ render, oId, src });
     this.update();
   }
 
@@ -134,10 +135,10 @@ class GameEmbed {
         const oId = (el as HTMLElement).dataset[idDataset || 'oid'];
         if (oId) {
           const renderFn = render ? (data: GameRenderData) => render(el as HTMLElement, data) : undefined;
-          if (!renderFn) this.append(el as HTMLElement, oId);
+          if (!renderFn) this.append(el as HTMLElement, '$' + idDataset, el as HTMLElement);
           else {
             elRenders.push({ el: el as HTMLElement, render: renderFn });
-            this.append(renderFn, oId);
+            this.append(renderFn, oId, el as HTMLElement);
           }
         }
       },
@@ -195,8 +196,11 @@ class GameEmbed {
       domOrRender.innerHTML = tag.outerHTML;
     }
     this.renders.forEach(item => {
-      const player = this.tiaoom.players.find(p => p.id === item.oId);
-      const room = player && this.tiaoom.rooms.find(room => room.players.find(p => p.id === item.oId));
+      let oId = item.oId;
+      if (oId.startsWith('$')) oId = item.src?.dataset[oId.slice(1)] || '';
+      if (!oId) return; 
+      const player = this.tiaoom.players.find(p => p.id === oId);
+      const room = player && this.tiaoom.rooms.find(room => room.players.find(p => p.id === oId));
       render(item.render, { room, player});
     });
   }

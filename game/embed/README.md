@@ -14,7 +14,7 @@
 const gameEmbed = new GameEmbed();
 // 监听所有 class 为 .game-badge 的元素，使用其 data-oid 属性作为玩家 ID
 embed.listen('.game-badge', 'oid');
-// 也可以直接添加指定元素和玩家 ID
+// 也可以直接添加指定元素和玩家 ID，若传入 id 为 $xxx，则表示从元素的 data-xxx 属性获取玩家 ID
 embed.append(document.getElementById('specific-player')!, 'player-oId-12345');
 // 或使用渲染函数，动态渲染内容（listen 方法同理：embed.listen('.game-badge', 'oid', (data) => {})）
 embed.append((data) => {
@@ -46,7 +46,7 @@ embed.append((data) => {
 | 参数 | 类型 | 描述 |
 | :--- | :--- | :--- |
 | `el` | `HTMLElement` | 要添加的元素。 |
-| `playerId` | `string` | 玩家 ID。 |
+| `playerId` | `string` | 玩家 ID，若传入 id 为 $xxx，则表示从元素的 data-xxx 属性获取玩家 ID。 |
 
 ### `append(render: (data: GameRenderData) => void, playerId: string): void` {#append-render}
 
