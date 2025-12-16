@@ -295,6 +295,8 @@ import type { UnoCard as UnoCardType, UnoGameState } from '../../../../backend/s
 const gameStore = useGameStore()
 
 const gameState = ref<UnoGameState | null>(null)
+// 游戏结果信息
+const gameResult = ref<{ winner?: string } | null>(null)
 // 单独维护一个前端用于显示的倒计时值，优先由后端的 timer_update 推送更新
 const currentTimer = ref<number | null>(null)
 const gameStatus = ref<'waiting' | 'playing' | 'ended'>('waiting')
@@ -589,8 +591,8 @@ const sendMessage = (message: string) => {
 // 位置提示已移除（换向后描述不准确）
 
 const onRoomStart = () => {
-  // 房间开始事件，清除之前的状态
-  gameState.value = null
+  // 房间开始事件，设置状态为playing
+  // 不清除gameState，让它通过game:state命令自然更新
   gameStatus.value = 'playing'
 }
 
@@ -656,10 +658,19 @@ const onCommand = (command: any) => {
       }
       break
     case 'game:over':
-      if (gameState.value) {
-        gameState.value.winner = command.data.winner
-      }
+      // 保存游戏结果
+      gameResult.value = { winner: command.data.winner }
       gameStatus.value = 'ended'
+      // 同步房间状态为 waiting，这样 RoomControls 会显示等待/准备按钮（由房间状态驱动）
+      if (gameStore.roomPlayer && gameStore.roomPlayer.room) {
+        try {
+          gameStore.roomPlayer.room.status = 'waiting'
+        } catch (e) {
+          // 某些情况下对象可能是只读，忽略错误
+        }
+      }
+      // 不立即清理游戏状态，保留它以显示游戏结果
+      // gameState.value = null
       break
     case 'game:timer_update':
       // 后端每秒发送剩余时间（秒）。当计时器从隐藏变为可见（currentTimer 为 null）时，

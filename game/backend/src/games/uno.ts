@@ -568,7 +568,7 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
 
   // 监听房间的 start 事件
   room.on('start', () => {
-    if (!gameState && room.validPlayers.length >= room.minSize) {
+    if ((!gameState || gameState.winner) && room.validPlayers.length >= room.minSize) {
       startGame();
     }
   });
@@ -753,6 +753,9 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
               player.status = PlayerStatus.unready;
             }
           });
+          
+          // 设置房间状态为waiting，允许开始新一局
+          room.status = 'waiting';
           
           // 局结束后踢出所有处于托管的玩家
           if (gameState && gameState.hosted) {
