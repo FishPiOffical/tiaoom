@@ -2,7 +2,7 @@ import { createClient } from 'redis';
 import utils from '@/utils';
 
 export const redisClient = (utils.config && utils.config.persistence?.driver === 'redis') ? createClient({
-  url: `redis://${utils.config.persistence.password ? `:${utils.config.persistence.password}@` : ''}${utils.config.persistence.host || 'localhost'}:${utils.config.persistence.port || 6379}`,
+  url: `redis://${utils.config.persistence.password ? `:${encodeURIComponent(utils.config.persistence.password)}@` : ''}${utils.config.persistence.host || 'localhost'}:${utils.config.persistence.port || 6379}`,
   socket: {
     reconnectStrategy: (retries) => {
       if (retries > 20) {

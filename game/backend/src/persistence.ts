@@ -55,6 +55,7 @@ class MemoryPersistence implements IRoomPersistence {
   async createRoom(room: GameRoom) {
     if (this.rooms.has(room.id)) return this.rooms.get(room.id)!;
     const newRoom = new Room(room);
+    newRoom.roomId = room.id;
     if (!newRoom.createdAt) newRoom.createdAt = Date.now();
     if (!newRoom.updatedAt) newRoom.updatedAt = Date.now();
     this.rooms.set(room.id, newRoom);
@@ -112,9 +113,11 @@ class RedisPersistence implements IRoomPersistence {
     const exists = await this.client.exists(key);
     if (exists) {
         const data = await this.client.get(key);
-        return JSON.parse(data!) as Room;
+        const parsed = JSON.parse(data!);
+        return Object.assign(new Room(), parsed);
     }
     const newRoom = new Room(room);
+    newRoom.roomId = room.id;
     newRoom.createdAt = Date.now();
     newRoom.updatedAt = Date.now();
     await this.client.set(key, JSON.stringify(newRoom));
@@ -126,7 +129,11 @@ class RedisPersistence implements IRoomPersistence {
     const rooms: Room[] = [];
     for (const key of keys) {
       const data = await this.client.get(key);
-      if (data) rooms.push(JSON.parse(data));
+      if (data) {
+        const parsed = JSON.parse(data);
+        const room = Object.assign(new Room(), parsed);
+        rooms.push(room);
+      }
     }
     return rooms;
   }
