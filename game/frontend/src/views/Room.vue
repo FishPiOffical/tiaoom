@@ -1,6 +1,7 @@
 <script lang="ts" setup>
   import msg from '@/components/msg';
   import { useGameStore } from '@/stores/game';
+import { onMounted } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
 
   const gameStore = useGameStore();
@@ -25,8 +26,10 @@
     init();
   })
 
-  init();
-  router.replace('/');
+  onMounted(async () => {
+    init();
+    router.replace('/');
+  })
 
 </script>
 
