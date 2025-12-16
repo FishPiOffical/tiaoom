@@ -587,41 +587,27 @@ const onCommand = (command: any) => {
       }
       previousDirection.value = command.data.direction
 
-      // 检测当前玩家变化（回合切换），并在切换时立即重置前端计时器
-      const newCurrent = command.data.currentPlayer
-      if (previousCurrentPlayer.value === null || previousCurrentPlayer.value !== newCurrent) {
-        // 新一轮开始：直接显示整轮时长（避免 1s 闪烁），并记录切换时间以防止短时间内被后续的 timer_update 覆盖
-        const timeoutMs = typeof command.data.turnTimeout === 'number' ? command.data.turnTimeout : 15000
-        const fullSecs = Math.max(1, Math.round(timeoutMs / 1000))
-        currentTimer.value = fullSecs
-        if (gameState.value) gameState.value.turnTimeLeft = fullSecs
-        lastSwitchAt.value = Date.now()
-        // 在切换时抑制随后短时间内的 timer_update（防止 1s 闪烁）
-        suppressTimerUntil.value = Date.now() + 1200
-        // 切换玩家时如果存在未决的小值延迟，清除它（避免后续延迟覆盖已设置的 fullSecs）
-        if (pendingSmallTimerTimeout.value) {
-          clearTimeout(pendingSmallTimerTimeout.value as any)
-          pendingSmallTimerTimeout.value = null
-          pendingSmallTimer.value = null
-        }
-      }
-      previousCurrentPlayer.value = newCurrent
-
       gameState.value = command.data
-      // 处理 game:state 中的倒计时：如果服务端提供的 turnTimeLeft 很小（<=1），
-      // 则优先尝试用 turnStartTime+turnTimeout 计算或回退到整轮时长，避免被 1s 覆盖。
-      if (typeof command.data.turnTimeLeft !== 'undefined') {
+      
+      // 检测玩家切换 - 如果切换了玩家，重新初始化倒计时显示
+      const playerSwitched = previousCurrentPlayer.value && command.data.currentPlayer !== previousCurrentPlayer.value
+      if (playerSwitched) {
+        // 玩家切换时，初始化为完整回合时长，避免显示小值
+        const timeoutMs = (typeof command.data.turnTimeout === 'number') ? command.data.turnTimeout : 15000
+        const fullSeconds = Math.max(1, Math.round(timeoutMs / 1000))
+        console.log('玩家切换，设置完整倒计时:', fullSeconds)
+        currentTimer.value = fullSeconds
+        // 设置抑制窗口，避免接下来的 timer_update 被忽略
+        suppressTimerUntil.value = Date.now() + 1200
+      } else if (typeof command.data.turnTimeLeft !== 'undefined') {
+        // 同一玩家回合，直接使用服务端提供的 turnTimeLeft
         const serverVal = Number(command.data.turnTimeLeft) || 0
-        if (serverVal > 1) {
-          currentTimer.value = serverVal
-        } else {
-          // 服务端提供的小值（<=1）可能来自旧的 timer_update；保持此前设置的 fullSecs，
-          // 并依赖 suppressTimerUntil 来忽略短时间内的后续小更新。
-          // 如需更精确的计算可以在后续的 timer_update 或新的 game:state 中更新。
-        }
+        currentTimer.value = Math.max(0, serverVal)
       }
-      // 切换时再设置抑制窗口，防止后续短时间的 timer_update 覆盖
-      suppressTimerUntil.value = Date.now() + 1200
+      
+      // 更新前一个玩家记录
+      previousCurrentPlayer.value = command.data.currentPlayer
+
       // 根据游戏状态设置正确的状态
       if (command.data.winner) {
         gameStatus.value = 'ended'
