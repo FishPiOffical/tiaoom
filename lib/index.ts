@@ -117,7 +117,7 @@ export class Tiaoom extends EventEmitter {
         }
       } catch (error) {
         cb?.(error as Error);
-        this.messageInstance?.send({
+        if (message.sender) this.messageInstance?.send({
           type: MessageTypes.PlayerError,
           data: {
             name: (error as Error).name, 
@@ -173,6 +173,10 @@ export class Tiaoom extends EventEmitter {
   }
 
   createRoom(sender: IPlayer, options: IRoomOptions) {
+    if (!sender) {
+      throw new Error('missing player information.');
+    }
+
     if (!options.name) {
       throw new Error('missing room id or name.');
     }
@@ -181,7 +185,7 @@ export class Tiaoom extends EventEmitter {
       throw new Error('room already exists.');
     }
 
-    if (this.rooms.some(r => r.players.some(p => p.id === sender.id))) {
+    if (this.rooms.some(r => r.players.some(p => p.id === sender?.id))) {
       throw new Error('you are already in a room.');
     }
 

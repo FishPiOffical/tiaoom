@@ -1,5 +1,5 @@
 import { Entity, Column } from "typeorm";
-import { IRoom, IRoomPlayer, RoomPlayer } from "tiaoom";
+import { IRoom, RoomPlayer } from "tiaoom";
 
 @Entity({ comment: '房间表', name: 'room' })
 export class Room {

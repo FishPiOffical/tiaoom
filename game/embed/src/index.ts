@@ -189,9 +189,9 @@ class GameEmbed {
       tag.style.margin = '0';
       tag.title = `前往房间【${room.name}】`;
       tag.innerHTML = `
-        <img src="${scriptSrc.origin}/logo.png" alt="♟️" style="width:1.2em;margin-right:0.3em;" />
-        <span style="font-weight:bold;">${gameName}</span>
-        <span style="padding-left: 0.2em" title="${roomPlayer.role == 'player' ? '游戏中...' : '围观中...'}">
+        <img src="${scriptSrc.origin}/logo.png" alt="♟️" style="width:1.2em;margin:0;margin-right:0.3em;height: auto" />
+        <span style="font-weight:bold;margin:0;height:auto;">${gameName}</span>
+        <span style="padding-left: 0.2em;margin:0;height:auto;" title="${roomPlayer.role == 'player' ? '游戏中...' : '围观中...'}">
           ${roomPlayer.role == 'player' ? '🎮' : '👀'}
         </span>
       `;

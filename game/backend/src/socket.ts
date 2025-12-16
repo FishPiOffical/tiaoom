@@ -2,6 +2,7 @@ import http from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { EventEmitter } from "events";
 import { Room, Player, IMessage, IMessagePackage, IMessageEmitterEvents, IMessageData, MessageTypes } from "tiaoom";
+import { LogRepo } from "./entities";
 
 let wsServer: WebSocketServer;
 export class SocketManager extends EventEmitter<IMessageEmitterEvents> implements IMessage {
@@ -25,12 +26,30 @@ export class SocketManager extends EventEmitter<IMessageEmitterEvents> implement
               if (player) message.sender = player;
             }
             this.emit("message", message, (err: Error | null, data?: any) => {
-              if (err) return console.error(err);
+              if (err) {
+                if (!message.sender) socket.send(JSON.stringify({ 
+                  type: MessageTypes.PlayerError, 
+                  data: { name: err.name, message: err.message } 
+                }));
+                LogRepo.save(LogRepo.create({
+                  type: MessageTypes.PlayerError,
+                  data: message.data,
+                  senderId: message.sender?.id,
+                  error: { name: err.name, message: err.message, stack: err.stack },
+                })).catch(console.error);
+                return console.error(err);
+              }
               else socket.send(JSON.stringify({ type: message.type, data }));
             });
           }
         } catch (err) {
           this.emit("error", err as Error);
+          LogRepo.save(LogRepo.create({
+            type: MessageTypes.PlayerError,
+            data: data,
+            senderId: undefined,
+            error: { name: (err as Error).name, message: (err as Error).message, stack: (err as Error).stack },
+          })).catch(console.error);
         }
       });
 
