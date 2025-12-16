@@ -80,3 +80,7 @@ export const weightedRandom = (min: number, max: number, weight: number): number
 export function getIP(req: Request) {
   return req.header('x-forwarded-for') || req.header('x-real-ip') || req.socket.remoteAddress || req.ip || '';
 }
+
+export function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}

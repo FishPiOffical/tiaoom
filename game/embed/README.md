@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-<script src="http://your.deployed.domain/embed.js"></script>
+<script src="http://your.deployed.domain/embed.min.js"></script>
 ```
 
 ## 使用
@@ -16,7 +16,7 @@ const gameEmbed = new GameEmbed();
 embed.listen('.game-badge', 'oid');
 // 也可以直接添加指定元素和玩家 ID
 embed.append(document.getElementById('specific-player')!, 'player-oId-12345');
-// 或使用渲染函数，动态渲染内容（listen 方法同理）
+// 或使用渲染函数，动态渲染内容（listen 方法同理：embed.listen('.game-badge', 'oid', (data) => {})）
 embed.append((data) => {
   if (data.player && data.room) {
     console.log(`Player ${data.player.name} is in room ${data.room.name}`);

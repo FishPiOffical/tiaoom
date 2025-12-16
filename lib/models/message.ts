@@ -93,6 +93,10 @@ export enum MessageTypes {
    */
   PlayerLogout = "player.logout",
   /**
+   * 玩家离线
+   */
+  PlayerOffline = "player.offline",
+  /**
    * *玩家消息
    */
   PlayerMessage = "player.message",
