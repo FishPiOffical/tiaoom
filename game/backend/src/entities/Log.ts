@@ -2,6 +2,9 @@ import { Entity, Column } from "typeorm";
 
 @Entity({ comment: '日志表', name: 'log' })
 export class Log {
+  @Column({ comment: "日志ID", primary: true, unique: true, generated: 'increment' })
+  id: number;
+  
   @Column({ comment: "类型" })
   type: string = '';
 
