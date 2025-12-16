@@ -23,7 +23,7 @@ class MySQLPersistence implements IRoomPersistence {
     return RoomRepo.find();
   }
 
-  async updatePlayerList(roomId: string, players: any[]) {
+  async updatePlayerList(roomId: string, players: RoomPlayer[]) {
     const room = await RoomRepo.findOneBy({ roomId: roomId });
     if (room) {
       room.players = players;
@@ -65,7 +65,7 @@ class MemoryPersistence implements IRoomPersistence {
     return Array.from(this.rooms.values());
   }
 
-  async updatePlayerList(roomId: string, players: any[]) {
+  async updatePlayerList(roomId: string, players: RoomPlayer[]) {
     const room = this.rooms.get(roomId);
     if (room) {
       room.players = players;
@@ -131,7 +131,7 @@ class RedisPersistence implements IRoomPersistence {
     return rooms;
   }
 
-  async updatePlayerList(roomId: string, players: any[]) {
+  async updatePlayerList(roomId: string, players: RoomPlayer[]) {
     const key = this.getKey(roomId);
     const data = await this.client.get(key);
     if (data) {
@@ -179,7 +179,7 @@ class MongoPersistence implements IRoomPersistence {
     return MongoRoomRepo.find();
   }
 
-  async updatePlayerList(roomId: string, players: any[]) {
+  async updatePlayerList(roomId: string, players: RoomPlayer[]) {
     // TypeORM MongoRepository updateOne uses MongoDB driver syntax
     await MongoRoomRepo.updateOne({ roomId: roomId }, { $set: { players, updatedAt: Date.now() } });
   }
