@@ -33,7 +33,7 @@
 | `update` | <code>(room: [IRoom](./models.md#iroom))</code> | 房间更新。 |
 | `player-ready` | <code>(player: [IRoomPlayer](./models.md#iroomplayer))</code> | 当玩家准备时触发（包含玩家信息）。 |
 | `player-unready` | <code>(player: [IRoomPlayer](./models.md#iroomplayer))</code> | 当玩家取消准备时触发（包含玩家信息）。 |
-| `player-offline` | <code>(player: [IRoomPlayer](./models.md#iroomplayer))</code> | 当玩家准备时触发（包含玩家信息）。 |
+| `player-offline` | <code>(player: [IRoomPlayer](./models.md#iroomplayer))</code> | 当玩家离线超过 1 分钟时触发（包含玩家信息）。 |
 | `all-ready` | <code>(players: [IRoomPlayer](./models.md#iroomplayer)[])</code> | 当房间内所有玩家都已准备时触发。 |
 
 ## PlayerEvents (玩家事件) {#playerevents}
