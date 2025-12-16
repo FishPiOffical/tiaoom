@@ -360,7 +360,7 @@ const getPlayersByPosition = computed(() => {
     return allPlayerIds.map(id => ({ id, hand: gameState.value!.players[id] || [] }))
   }
 
-  // 对于普通玩家，只显示其他玩家（不包含自己），并按当前玩家为基准按方向排列
+  // 对于普通玩家，只显示其他玩家（不包含自己），位置固定不受方向影响
   const myId = String(gameStore.player?.id || '')
   const myIndex = allPlayerIds.indexOf(myId)
   if (myIndex === -1) {
@@ -370,10 +370,9 @@ const getPlayersByPosition = computed(() => {
 
   const list: Array<{ id: string, hand: any[] }> = []
   const countOthers = totalPlayers - 1
+  // 固定位置：始终按顺时针方向排列其他玩家，不受游戏当前方向影响
   for (let i = 1; i <= countOthers; i++) {
-    const playerIndex = gameState.value!.direction === 1
-      ? (myIndex + i) % totalPlayers
-      : (myIndex - i + totalPlayers) % totalPlayers
+    const playerIndex = (myIndex + i) % totalPlayers
     const id = allPlayerIds[playerIndex]
     list.push({ id, hand: gameState.value!.players[id] || [] })
   }
