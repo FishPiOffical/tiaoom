@@ -96,6 +96,8 @@ class GameEmbed {
   renders: GameRenderMap[] = [];
   tiaoom = new GameCore(`${scriptSrc.protocol}//${scriptSrc.host}/ws`);
   config: any = {};
+  bgColor: string = '#66cc8a';
+  color: string = 'inherit';
 
   constructor(renders: GameRenderMap[] = []) {
     this.renders = renders;
@@ -107,6 +109,12 @@ class GameEmbed {
     }).onPlayerList(() => {
       this.update();
     });
+    this.bgColor = scriptSrc.searchParams.get('bgColor') || this.bgColor;
+    this.color = scriptSrc.searchParams.get('color') || this.color;
+    if (this.bgColor.match(/^([0-9a-f]{3}|[0-9a-f]{6})$/i) && !this.bgColor.startsWith('#')) 
+      this.bgColor = '#' + this.bgColor;
+    if (this.color.match(/^([0-9a-f]{3}|[0-9a-f]{6})$/i) && !this.color.startsWith('#')) 
+      this.color = '#' + this.color;
   }
   
   append(render: HTMLElement | ((data: GameRenderData) => void), oId: string) {
@@ -170,9 +178,10 @@ class GameEmbed {
       tag.style.fontSize = '1em';
       tag.style.cursor = 'pointer';
       tag.style.padding = '0.1em 0.4em';
-      tag.style.backgroundColor = '#66cc8a';
+      tag.style.backgroundColor = this.bgColor;
       tag.style.borderRadius = '0.25em';
       tag.style.textDecoration = 'none';
+      tag.style.color = this.color;
       tag.title = `前往房间【${room.name}】`;
       tag.innerHTML = `
         <img src="${scriptSrc.origin}/logo.png" alt="♟️" style="width:1.2em;margin-right:0.3em;" />
