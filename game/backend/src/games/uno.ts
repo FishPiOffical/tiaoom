@@ -25,6 +25,8 @@ export interface UnoGameState {
   turnStartTime?: number;
   turnTimeout?: number;
   turnTimeLeft?: number; // 剩余时间（秒）
+  // 托管状态：playerId -> true 表示该玩家被托管
+  hosted?: { [playerId: string]: boolean };
 }
 
 const createDeck = (): UnoCard[] => {
@@ -116,9 +118,10 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
           handleTimeout();
         }
       } else if (gameState && !gameState.winner) {
-        // 没有倒计时状态，开始新的倒计时
-        startTurnTimer();
-      }
+          // 没有倒计时状态，开始新的倒计时（如果当前玩家被托管则缩短为5秒）
+          const initialTimeout = gameState.hosted && gameState.currentPlayer && gameState.hosted[gameState.currentPlayer] ? 5000 : TURN_TIMEOUT;
+          startTurnTimer(initialTimeout);
+        }
     }, 0);
   }
   
@@ -195,7 +198,8 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
     room.emit('message', { content: `UNO游戏开始！${room.validPlayers[0]?.name} 先出牌` });
     
     // 开始第一回合的倒计时
-    startTurnTimer();
+    const initialTimeout = gameState.hosted && gameState.currentPlayer && gameState.hosted[gameState.currentPlayer] ? 5000 : TURN_TIMEOUT;
+    startTurnTimer(initialTimeout);
   };
   
   const canPlayCard = (card: UnoCard, topCard: UnoCard, currentColor: string): boolean => {
@@ -212,7 +216,7 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
   };
 
   // 倒计时管理函数
-  const startTurnTimer = () => {
+  const startTurnTimer = (timeoutMs?: number) => {
     if (currentTimeout) {
       clearTimeout(currentTimeout);
     }
@@ -222,13 +226,14 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
     }
     
     if (gameState && !gameState.winner) {
+      const ms = timeoutMs || TURN_TIMEOUT;
       gameState.turnStartTime = Date.now();
-      gameState.turnTimeout = TURN_TIMEOUT;
-      gameState.turnTimeLeft = TURN_TIMEOUT / 1000; // 转换为秒
+      gameState.turnTimeout = ms;
+      gameState.turnTimeLeft = Math.ceil(ms / 1000); // 转换为秒
       
       currentTimeout = setTimeout(() => {
         handleTimeout();
-      }, TURN_TIMEOUT);
+      }, ms);
       
       // 每秒更新倒计时状态
       countdownInterval = setInterval(() => {
@@ -249,12 +254,189 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
     }
   };
 
+  // 是否被托管
+  const isHosted = (playerId: string) => {
+    return !!(gameState && gameState.hosted && gameState.hosted[playerId]);
+  };
+
+  // 启动托管
+  const startHosting = async (playerId: string) => {
+    if (!gameState) return;
+    gameState.hosted = gameState.hosted || {};
+    if (gameState.hosted[playerId]) return; // 已托管
+    gameState.hosted[playerId] = true;
+    room.emit('message', { content: `玩家 ${playerId} 离线，进入托管。` });
+    await saveGameData();
+    room.emit('command', { type: 'game:state', data: gameState });
+
+    // 如果当前正在该玩家回合，缩短倒计时
+    if (gameState.currentPlayer === playerId && !gameState.winner) {
+      clearTurnTimer();
+      startTurnTimer(5000);
+    }
+  };
+
+  // 停止托管（玩家重连）
+  const stopHosting = async (playerId: string) => {
+    if (!gameState || !gameState.hosted) return;
+    if (!gameState.hosted[playerId]) return;
+    delete gameState.hosted[playerId];
+    room.emit('message', { content: `玩家 ${playerId} 已重连，取消托管。` });
+    await saveGameData();
+    room.emit('command', { type: 'game:state', data: gameState });
+  };
+
+  // 托管代替玩家出牌或抓牌并结束回合
+  const hostPlayTurn = async (playerId: string) => {
+    if (!gameState || gameState.winner) return;
+    const hand = gameState.players[playerId];
+    if (!hand) return;
+
+    const topCard = gameState.discardPile[gameState.discardPile.length - 1];
+
+    // 先尝试出牌（优先非万能牌）
+    let chosenIndex = -1;
+    for (let i = 0; i < hand.length; i++) {
+      const c = hand[i];
+      if (c.type !== 'wild' && canPlayCard(c, topCard, gameState.color)) { chosenIndex = i; break; }
+    }
+    if (chosenIndex === -1) {
+      // 没找到非万能牌，尝试万能牌
+      for (let i = 0; i < hand.length; i++) {
+        const c = hand[i];
+        if (c.type === 'wild' && canPlayCard(c, topCard, gameState.color)) { chosenIndex = i; break; }
+      }
+    }
+
+    const playerSocket = room.players.find(p => p.id === playerId);
+
+    if (chosenIndex !== -1) {
+      const card = hand[chosenIndex];
+      // 简单策略：若是万能牌，选择手牌中最多的颜色
+      let chosenColor: any = undefined;
+      if (card.type === 'wild') {
+        const colorCount: Record<string, number> = { red: 0, blue: 0, green: 0, yellow: 0 };
+        hand.forEach(hc => { if (hc.color && hc.color !== 'black') colorCount[hc.color] = (colorCount[hc.color] || 0) + 1; });
+        const colors = Object.keys(colorCount) as Array<'red'|'blue'|'green'|'yellow'>;
+        colors.sort((a,b) => colorCount[b] - colorCount[a]);
+        chosenColor = colors[0];
+      }
+
+      // 执行出牌逻辑（复用 play_card 的处理）
+      hand.splice(chosenIndex, 1);
+      gameState.discardPile.push(card);
+      const cardName = card.type === 'wild' ? 
+        (card.value === 'wild' ? '变色牌' : '变色+4') : 
+        `${card.color === 'red' ? '红' : card.color === 'blue' ? '蓝' : card.color === 'green' ? '绿' : '黄'}${card.value}`;
+      room.emit('message', { content: `${playerSocket?.name || playerId} (托管) 出了 ${cardName}` });
+
+      if (card.type === 'wild') {
+        if (chosenColor && ['red','blue','green','yellow'].includes(chosenColor)) {
+          gameState.color = chosenColor as any;
+          room.emit('message', { content: `${playerSocket?.name || playerId} 将颜色改为${chosenColor}` });
+        } else {
+          const colors: ('red' | 'blue' | 'green' | 'yellow')[] = ['red','blue','green','yellow'];
+          gameState.color = colors[Math.floor(Math.random() * colors.length)];
+        }
+        if (card.value === 'wild_draw4') {
+          gameState.drawCount += 4;
+          room.emit('message', { content: `下家需要抽4张牌！` });
+        }
+      } else {
+        gameState.color = card.color as any;
+        switch (card.value) {
+          case 'skip':
+            {
+              const nextP = getNextPlayer(Object.keys(gameState.players), gameState.currentPlayer, gameState.direction);
+              const skipped = room.players.find(p => p.id === nextP);
+              room.emit('message', { content: `${skipped?.name} 被跳过了！` });
+              gameState.currentPlayer = nextP;
+            }
+            break;
+          case 'reverse':
+            gameState.direction = (gameState.direction * -1) as 1 | -1;
+            room.emit('message', { content: `方向反转！现在是${gameState.direction === 1 ? '顺时针' : '逆时针'}` });
+            if (Object.keys(gameState.players).length === 2) {
+              const nextP = getNextPlayer(Object.keys(gameState.players), gameState.currentPlayer, gameState.direction);
+              const skipped = room.players.find(p => p.id === nextP);
+              room.emit('message', { content: `${skipped?.name} 被跳过了！` });
+              gameState.currentPlayer = nextP;
+            }
+            break;
+          case 'draw2':
+            gameState.drawCount += 2;
+            room.emit('message', { content: `下家需要抽2张牌！` });
+            break;
+        }
+      }
+
+      // 检查是否获胜
+      if (hand.length === 0) {
+        gameState.winner = playerId;
+        room.emit('message', { content: `🎉 恭喜 ${playerSocket?.name || playerId} 获得胜利！` });
+        clearTurnTimer();
+        await saveGameData();
+        room.emit('command', { type: 'game:state', data: gameState });
+        room.emit('command', { type: 'game:over', data: { winner: playerId } });
+        return;
+      }
+
+      // 记录移动历史
+      moveHistory.push({ player: playerId, action: { type: 'play_card', cardId: card.id, chosenColor }, timestamp: Date.now() });
+
+    } else {
+      // 无牌可出：抓牌（若有累积抽牌则抓完），抓牌后自动结束回合
+      if (gameState.drawCount > 0) {
+        for (let i = 0; i < gameState.drawCount && gameState.deck.length > 0; i++) {
+          const drawn = gameState.deck.pop();
+          if (drawn) hand.push(drawn);
+        }
+        room.emit('message', { content: `${playerSocket?.name || playerId} (托管) 强制抽了 ${gameState.drawCount} 张牌` });
+        gameState.drawCount = 0;
+      } else {
+        if (gameState.deck.length > 0) {
+          const drawn = gameState.deck.pop();
+          if (drawn) hand.push(drawn);
+          room.emit('message', { content: `${playerSocket?.name || playerId} (托管) 抽了一张牌` });
+        }
+      }
+
+      moveHistory.push({ player: playerId, action: { type: 'draw_card' }, timestamp: Date.now() });
+    }
+
+    // 切换到下一个玩家
+    const nextPlayerId = getNextPlayer(Object.keys(gameState.players), gameState.currentPlayer, gameState.direction);
+    const nextPlayer = room.players.find(p => p.id === nextPlayerId);
+    if (nextPlayer) room.emit('message', { content: `轮到 ${nextPlayer.name} 出牌` });
+    gameState.currentPlayer = nextPlayerId;
+
+    // 如果牌堆用完了，重新洗牌
+    if (gameState.deck.length === 0 && gameState.discardPile.length > 1) {
+      const top = gameState.discardPile.pop()!;
+      gameState.deck = shuffleDeck(gameState.discardPile);
+      gameState.discardPile = [top];
+    }
+
+    await saveGameData();
+    room.emit('command', { type: 'game:state', data: gameState });
+
+    // 为下一位玩家启动倒计时，若下一位被托管则为5秒
+    const nextTimeout = isHosted(nextPlayerId) ? 5000 : TURN_TIMEOUT;
+    startTurnTimer(nextTimeout);
+  };
+
   const handleTimeout = async () => {
     if (!gameState || gameState.winner) return;
     
     const currentPlayerId = gameState.currentPlayer;
+    // 如果当前玩家处于托管，使用托管逻辑代替超时自动抽牌
+    if (isHosted(currentPlayerId)) {
+      await hostPlayTurn(currentPlayerId);
+      return;
+    }
+
     const currentPlayerSocket = room.players.find(p => p.id === currentPlayerId);
-    
+
     if (currentPlayerSocket) {
       // 自动抽一张牌
       if (gameState.deck.length > 0) {
@@ -285,8 +467,9 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
       await saveGameData();
       room.emit('command', { type: 'game:state', data: gameState });
       
-      // 清除当前倒计时并开始下一回合的倒计时
-      startTurnTimer();
+      // 清除当前倒计时并开始下一回合的倒计时（若下一位被托管则为5秒）
+      const nextTimeout = gameState.hosted && gameState.hosted[nextPlayerId] ? 5000 : TURN_TIMEOUT;
+      startTurnTimer(nextTimeout);
     }
   };
 
@@ -353,6 +536,10 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
         messageHistory
       }
     });
+    // 如果玩家重连并且之前被托管，则取消托管
+    if (gameState && gameState.hosted && gameState.hosted[player.id]) {
+      stopHosting(player.id);
+    }
   }).on('leave', async (player) => {
     // 如果游戏进行中玩家离开，算作失败
     if (gameState && player.role === 'player') {
@@ -390,6 +577,15 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
   room.on('end', () => {
     // 重置游戏状态，为下一局做准备
     gameState = null;
+  });
+
+  // 玩家离线事件：立即启动托管（room 会在一分钟后触发该事件）
+  room.on('player-offline', async (player) => {
+    try {
+      await startHosting(player.id);
+    } catch (err) {
+      console.error('startHosting error', err);
+    }
   });
 
   return room.on('player-command', async (message: any) => {
@@ -558,6 +754,16 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
             }
           });
           
+          // 局结束后踢出所有处于托管的玩家
+          if (gameState && gameState.hosted) {
+            Object.keys(gameState.hosted).forEach((pid) => {
+              try {
+                room.kickPlayer(pid);
+              } catch (e) {
+                console.warn('踢出托管玩家失败', pid, e);
+              }
+            });
+          }
           // 不立即调用 room.end()，让玩家可以查看结果
           // 等待下一局游戏开始时再重置
           return;
@@ -617,8 +823,8 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
         
         // 清除当前倒计时并开始下一回合的倒计时
         if (!gameState.winner) {
-        
-          startTurnTimer();
+          const nextTimeoutForStart = gameState.hosted && gameState.hosted[gameState.currentPlayer] ? 5000 : TURN_TIMEOUT;
+          startTurnTimer(nextTimeoutForStart);
         }
         break;
       }
@@ -668,7 +874,8 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
         
         // 清除当前倒计时并开始下一回合的倒计时
         if (!gameState.winner) {  
-          startTurnTimer();
+          const nextTimeoutForDraw = gameState.hosted && gameState.hosted[gameState.currentPlayer] ? 5000 : TURN_TIMEOUT;
+          startTurnTimer(nextTimeoutForDraw);
         }
         break;
       }
