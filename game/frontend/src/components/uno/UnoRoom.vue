@@ -219,13 +219,21 @@
 
         <section class="mb-4">
           <h3 class="mb-2 text-lg font-bold">玩家列表</h3>
-          <ul class="mb-4 space-y-1 overflow-y-auto max-h-44">
-            <li v-for="p in gameStore.roomPlayer?.room?.players || []" :key="p.id" class="flex items-center gap-2 p-1 text-sm rounded hover:bg-surface/50" :class="{ 'text-gray-500': p.role === 'watcher' }">
-              <span v-if="p.role === 'player'">[{{ getPlayerStatus(p) }}]</span>
-              <span v-else>[围观中]</span>
-              <span>{{ p.name }}</span>
-            </li>
-          </ul>
+          <PlayerList :players="gameStore.roomPlayer?.room?.players || []">
+            <template #default="{ player: p }">
+              <div class="flex items-center justify-between w-full">
+                <div class="flex items-center gap-2 truncate">
+                  <span v-if="p.role === 'player'">[{{ getPlayerStatus(p) }}]</span>
+                  <span v-else class="text-base-content/60">[围观中]</span>
+                  <span class="truncate max-w-[160px]">{{ p.name }}</span>
+                  <span v-if="gameState?.hosted && gameState.hosted[p.id]" class="ml-1 text-xs badge badge-error">托管</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="badge badge-xs md:badge-sm">{{ gameState?.players?.[p.id]?.length || 0 }} 张</span>
+                </div>
+              </div>
+            </template>
+          </PlayerList>
 
           <div v-if="gameStore.roomPlayer && gameStore.game" class="space-y-2">
             <RoomControls :game="gameStore.game as any" :room-player="gameStore.roomPlayer" :game-status="gameStatus" :is-all-ready="isAllReady" :is-room-full="isRoomFull" :enable-draw-resign="false" />
@@ -233,7 +241,18 @@
         </section>
 
         <section v-if="gameStore.roomPlayer" class="flex flex-col flex-1 min-h-0">
-          <GameChat :messages="roomMessages" :room-player="gameStore.roomPlayer" @send="sendMessage" />
+          <GameChat :messages="roomMessages" :room-player="gameStore.roomPlayer" @send="sendMessage">
+            <template #rules>
+              <ul class="space-y-2 text-sm">
+                <li>1. 每位玩家轮流出牌，回合默认时长 15 秒；若玩家处于托管，回合时长缩短为 5 秒。</li>
+                <li>2. 出牌规则：颜色 或 数值 相同的牌可以出；万能牌（Wild）可以在任意时刻出，并选择颜色。</li>
+                <li>3. 功能牌说明：跳过（Skip）跳过下一位；反转（Reverse）改变出牌方向；+2/+4 会让下一位或指定玩家抽牌并失去出牌机会。</li>
+                <li>4. 当手牌只剩 1 张时须喊 "UNO"（可点击界面上的 UNO 按钮）。未喊将被惩罚抽牌。</li>
+                <li>5. 抽牌：当无法出牌或选择抽牌时，执行抽牌动作；若有累积抽牌计数（drawCount），需按照规则抽取相应张数。</li>
+                <li>6. 胜负：当一位玩家出完手牌时，本局结束，牌数最少者获胜（计分板按规则统计）。</li>
+              </ul>
+            </template>
+          </GameChat>
         </section>
       </aside>
     </main>
@@ -269,6 +288,7 @@ import { useGameStore } from '@/stores/game'
 import UnoCard from './UnoCard.vue'
 import RoomControls from '@/components/common/RoomControls.vue'
 import GameChat from '@/components/common/GameChat.vue'
+import PlayerList from '@/components/player-list/PlayerList.vue'
 import { useGameEvents } from '@/hook/useGameEvents'
 import type { UnoCard as UnoCardType, UnoGameState } from '../../../../backend/src/games/uno'
 
