@@ -8,10 +8,9 @@ export default defineConfig([
     globalName: 'GameHook',
     dts: false,
     target: 'es2018',
-    minify: false,
+    minify: true,
     sourcemap: false,
     clean: false,
-    bundle: true,
     noExternal: ['reconnecting-websocket', 'tiaoom/client'],
   },
 ]);
