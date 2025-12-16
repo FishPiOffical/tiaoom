@@ -163,26 +163,25 @@ class GameEmbed {
       if (!player || !room) return domOrRender.innerHTML = '';
       const roomPlayer = room.players.find(p => p.id === player.id)!;
       const gameName = this.config[room.attrs.type].name;
-      const tag = document.createElement('span');
+      const tag = document.createElement('a');
 
       tag.style.display = 'inline-flex';
       tag.style.alignItems = 'center';
       tag.style.fontSize = '1em';
       tag.style.cursor = 'pointer';
-      tag.style.paddingLeft = '0.4em';
+      tag.style.padding = '0.1em 0.4em';
       tag.style.backgroundColor = '#66cc8a';
       tag.style.borderRadius = '0.25em';
       tag.title = `前往房间【${room.name}】`;
       tag.innerHTML = `
         <img src="${scriptSrc.origin}/logo.png" alt="♟️" style="width:1.2em;margin-right:0.3em;" />
         <span style="font-weight:bold;">${gameName}</span>
-        <span style="padding: 0 0.2em" title="${roomPlayer.role == 'player' ? '游戏中...' : '围观中...'}">
+        <span style="padding-left: 0.2em" title="${roomPlayer.role == 'player' ? '游戏中...' : '围观中...'}">
           ${roomPlayer.role == 'player' ? '🎮' : '👀'}
         </span>
       `;
-      tag.onclick = () => {
-        window.open(`${scriptSrc.origin}/r/${room.id}`, '_blank');
-      };
+      tag.href=`${scriptSrc.origin}/r/${room.id}`;
+      tag.target = '_blank';
       domOrRender.innerHTML = tag.outerHTML;
     }
     this.renders.forEach(item => {
