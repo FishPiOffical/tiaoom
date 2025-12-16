@@ -172,6 +172,7 @@ class GameEmbed {
       tag.style.padding = '0.1em 0.4em';
       tag.style.backgroundColor = '#66cc8a';
       tag.style.borderRadius = '0.25em';
+      tag.style.textDecoration = 'none';
       tag.title = `前往房间【${room.name}】`;
       tag.innerHTML = `
         <img src="${scriptSrc.origin}/logo.png" alt="♟️" style="width:1.2em;margin-right:0.3em;" />
