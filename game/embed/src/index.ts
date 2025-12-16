@@ -1,4 +1,4 @@
-import Tiaoom, { MessageTypes, Player, Room, TiaoomEvents } from 'tiaoom/client';
+import { Tiaoom, MessageTypes, Player, Room, TiaoomEvents } from 'tiaoom/client';
 import ReconnectingWebSocket from 'reconnecting-websocket'
 import { DOMWatcher } from './dom-watcher';
 
