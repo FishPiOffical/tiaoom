@@ -40,7 +40,7 @@ const router = createRouter({
           meta: { requiresAdmin: true }
         },
         {
-          path: 'room/:id',
+          path: 'r/:id',
           name: 'room',
           component: () => import('@/views/Room.vue'),
           meta: { requiresAuth: true }
