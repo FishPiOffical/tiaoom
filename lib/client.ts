@@ -384,7 +384,7 @@ export class Tiaoom {
    * @returns 
    */
   closeRoom(roomId: string, params?: any) {
-    this.send({ type: MessageTypes.RoomClose, data: { roomId, params } });
+    this.send({ type: MessageTypes.RoomClose, data: { id: roomId, params } });
     return this;
   }
 
