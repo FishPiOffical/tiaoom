@@ -46,7 +46,7 @@
             >
                 {{ m.data }}
             </div>
-            <time class="text-base-content/30 text-xs my-0.5">{{ new Date(m.createdAt).toLocaleString() }}</time>
+            <time class="text-base-content/30 text-[10px] my-0.5 px-0.5">{{ new Date(m.createdAt).toLocaleString() }}</time>
           </div>
         </div>
       </section>
@@ -81,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import { useGameStore } from '@/stores/game'
 import { openSmallWindow } from '@/utils/dom'
 import { getComponent } from '@/main';
@@ -95,10 +95,6 @@ function sendMessage() {
   gameStore.game?.command({ type: 'say', data: msg.value })
   msg.value = ''
 }
-
-onMounted(() => {
-  gameStore.initGame()
-})
 
 const hasLiteComponent = (type: string) => {
   try {

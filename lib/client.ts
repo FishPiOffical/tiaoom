@@ -243,6 +243,7 @@ export class Tiaoom {
       this.emit('onPlayerList', [...this.players]);
     });
     this.on("player.login", (player) => {
+      this.players = this.players.filter(p => p.id !== player.id);
       this.players.push(new Player(player));
       this.emit('onPlayerList', [...this.players]);
     });

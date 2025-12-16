@@ -1,29 +1,11 @@
-# Game Rooms - 前后端分离版本
+# 摸鱼棋牌室
 
-这是 tiaoom 游戏项目的前后端分离重构版本，将原有的 Express + EJS + Vue CDN 架构改造为现代化的前后端分离架构。
-
-## 技术栈
-
-### 后端
-- **Express** - Node.js Web 框架
-- **TypeScript** - 类型安全
-- **WebSocket** - 实时通信
-- **Express Session** - 会话管理
-- **CORS** - 跨域支持
-
-### 前端
-- **Vue 3** - 渐进式 JavaScript 框架
-- **TypeScript** - 类型安全
-- **Vite** - 快速的前端构建工具
-- **TailwindCSS** - 实用优先的 CSS 框架
-- **Pinia** - 状态管理
-- **Vue Router** - 路由管理
-- **ReconnectingWebSocket** - WebSocket 自动重连
+这是基于 [tiaoom](https://tiaoom.com) 开发的游戏项目。
 
 ## 项目结构
 
 ```
-game_new/
+game/
 ├── package.json          # 根项目配置（npm workspace）
 ├── backend/              # 后端服务器
 │   ├── src/             # 源代码（从原项目复制）
@@ -65,7 +47,7 @@ game_new/
 
 ```bash
 # 在项目根目录安装所有依赖
-cd game_new
+cd game
 npm install
 ```
 
@@ -80,9 +62,11 @@ npm run dev:backend    # 仅启动后端
 npm run dev:frontend   # 仅启动前端
 ```
 
-- 后端 API: http://127.0.0.1:27016
-- 前端应用: http://localhost:5173
-- WebSocket: ws://127.0.0.1:27016
+- 后端 API: http://127.0.0.1:27015
+- 前端应用: http://localhost:5174
+- WebSocket: ws://127.0.0.1:27015
+
+VSCode 按下 F5 可直接启动调试后端。
 
 ### 生产构建
 
@@ -95,119 +79,65 @@ npm run build:backend
 npm run build:frontend
 ```
 
-## 主要变更
+### 部署
 
-### 架构变更
+生产构建后运行 `node index.js` 即可。
 
-1. **前后端分离**
-   - 后端专注于 API 和 WebSocket 服务
-   - 前端使用 Vue 3 + Vite 独立开发和部署
+可使用 PM2 等进程管理工具进行部署和守护。
 
-2. **移除服务端渲染**
-   - 不再使用 EJS 模板
-   - 前端完全由 Vue 组件构建
-
-3. **现代化构建工具**
-   - 使用 Vite 替代直接引入 Vue CDN
-   - 支持 TypeScript、热更新、模块化
-
-4. **样式重构**
-   - 使用 TailwindCSS 替代手写 CSS
-   - 保持原有设计风格
-
-### API 变更
-
-后端新增的 API 端点：
-
-- `GET /api/config` - 获取配置（WebSocket 地址、游戏列表）
-- `GET /api/session` - 获取当前会话
-- `POST /api/login` - 用户登录
-- `POST /api/logout` - 用户登出
-- 原有的 API 端点保持不变
-
-### 功能保持
-
-✅ 所有原有功能保持不变：
-- 用户登录/登出
-- 摸鱼派登录
-- 创建/加入/离开房间
-- 房间聊天和全局聊天
-- 游戏准备和开始
-- 实时玩家列表和房间列表
-- WebSocket 实时通信
-
-### 游戏组件
-
-- ✅ **Othello (黑白棋)** - 已完成
-- 🚧 **Gobang (五子棋)** - 待实现
-- 🚧 **Connect4 (四子棋)** - 待实现
-- 🚧 **Spy (谁是卧底)** - 待实现
-
-## 开发指南
-
-### 添加新游戏
-
-1. 在 `frontend/src/components/{game}/` 创建游戏组件
-2. 在 `frontend/src/components/index.ts` 注册组件
-3. 后端游戏逻辑保持在 `backend/games/` 中
-
-### 环境配置
-
-可以通过环境变量配置：
-
-**后端** (`backend/.env`):
-```
-PORT=27016
+```base
+pm2 start -n game-room node -- index.js
 ```
 
-**前端** (`frontend/.env`):
-```
-VITE_API_URL=http://127.0.0.1:27016
-```
+## 贡献
 
-## 部署建议
+可以通过在 `backend/src/games` 目录下添加新的游戏模块来扩展游戏内容。游戏界面组件位于 `frontend/src/components/` 目录下。
 
-1. **后端部署**
-   - 构建后端: `cd backend && pnpm build`
-   - 使用 PM2 或类似工具运行: `pm2 start dist/index.js`
+游戏文件名需按照如下规则命名：
 
-2. **前端部署**
-   - 构建前端: `cd frontend && pnpm build`
-   - 将 `dist` 目录部署到静态文件服务器（Nginx、CDN等）
+- 后端游戏逻辑文件：`<GameName>.ts`
+- 前端游戏组件文件：`<GameName>Room.vue`
+- 前端游戏小窗组件：`<GameName>Lite.ts`
 
-3. **反向代理**
-   - 使用 Nginx 将前端静态文件和后端 API 统一代理
+后端需暴露如下：
 
-示例 Nginx 配置：
-```nginx
-server {
-    listen 80;
-    
-    location / {
-        root /path/to/frontend/dist;
-        try_files $uri $uri/ /index.html;
-    }
-    
-    location /api {
-        proxy_pass http://127.0.0.1:27016;
-    }
-    
-    location /ws {
-        proxy_pass http://127.0.0.1:27016;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-    }
-}
+```typescript
+export default (room: Room, { save, restore }: IGameMethod) => void
+export const name = '游戏名称';
+export const minSize = 2; // 最小玩家数
+export const maxSize = 2; // 最大玩家数
+export const description = `游戏描述`;
 ```
 
-## 注意事项
+若要实现游戏游戏数据持久化，请使用 `save` 和 `restore` 方法，例如。
 
-1. 前后端需要分别运行在不同端口
-2. 开发时前端会自动代理 `/api` 请求到后端
-3. WebSocket 地址从后端配置 API 获取
-4. 生产环境需要配置 CORS 允许的源
+```typescript
+// 保存游戏状态
+save({ gameData1: 'xxx', gameData2: 123 });
 
-## 许可证
+// 恢复游戏状态
+const state = restore();
+const gameData1 = state?.gameData1 || 'defaultValue';
+const gameData2 = state?.gameData2 || 0;
+```
 
-与原项目保持一致
+前端组件包含如下属性：
+
+```typescript
+const props = defineProps<{
+  roomPlayer: RoomPlayer & { room: Room }
+  game: GameCore
+}>()
+```
+
+前端可使用如下封装组件实现通用功能：
+
+- `RoomControls`：房间控制面板，含开始游戏、准备等功能。`RoomControlsLite` 为小窗版本。
+- `PlayerList`：玩家列表
+- `GameChat`：游戏内聊天
+- `Icon`：图标组件，支持 Iconify 图标库
+
+## 其他
+
+- 参考 [tiaoom 文档](https://tiaoom.com/) 了解更多 API 和使用方法。
+- [游戏状态嵌入脚本](./embed/README.md) 提供将游戏状态嵌入到任意网页中的能力。

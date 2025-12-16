@@ -116,7 +116,7 @@
                 @click="joinRoom(r)"
                 class="px-2 py-1 btn-xs whitespace-nowrap btn"
               >
-                {{ r.status === 'waiting' && r.players.filter(p => p.role === 'player').length < r.size ? '进入' : '围观' }}
+                {{ r.players.filter(p => p.role === 'player').length < r.size ? '进入' : '围观' }}
               </button>
             </li>
           </ul>
