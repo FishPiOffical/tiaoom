@@ -19,7 +19,11 @@ jobs:
     - name: Install dependencies and build
       run: |
         npm ci
-        cd game
+        npm run build
+        cd game/embed
+        npm ci
+        npm run build
+        cd ..
         npm ci
         npm run build
         cd dist
