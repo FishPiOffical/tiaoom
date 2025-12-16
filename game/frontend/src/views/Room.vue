@@ -21,6 +21,10 @@
     }
   }
 
+  gameStore.game?.onReady(() => {
+    init();
+  })
+
   init();
   router.replace('/');
 
