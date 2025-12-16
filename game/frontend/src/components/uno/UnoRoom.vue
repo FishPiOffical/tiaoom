@@ -70,7 +70,8 @@
                     </div>
                   </div>
                   <div class="flex items-center gap-2 mb-1">
-                    <div v-if="gameState.currentPlayer === playerInfo.id && currentTimer !== null" class="text-xs font-bold animate-pulse" :class="currentTimer <= 5 ? 'text-red-500' : 'text-blue-500'">⏱ {{ currentTimer }}s</div>
+                    <!-- 只有围观玩家或者非当前玩家才显示倒计时，避免与底部的"你"重复 -->
+                    <div v-if="gameState?.currentPlayer === playerInfo.id && currentTimer !== null && (gameStore.roomPlayer?.role === 'watcher' || playerInfo.id !== gameStore.player?.id)" class="text-xs font-bold animate-pulse" :class="currentTimer <= 5 ? 'text-red-500' : 'text-blue-500'">⏱ {{ currentTimer }}s</div>
                     <span class="badge badge-xs md:badge-sm">{{ playerInfo.hand?.length ?? 0 }} 张</span>
                   </div>
                   <div v-if="(playerInfo.hand?.length || 0) === 1" class="text-xs font-bold text-red-500">UNO!</div>
