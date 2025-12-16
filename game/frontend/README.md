@@ -30,7 +30,7 @@ npm run dev:frontend
 npm run dev
 ```
 
-开发服务器会在 http://localhost:5173 启动
+开发服务器会在 http://localhost:5174 启动
 
 ## 构建
 
@@ -51,13 +51,13 @@ npm run preview
 ```
 src/
 ├── api/              # API 请求封装
-├── components/       # 组件
-│   └── games/       # 游戏组件
+├── components/       # 组件，含游戏组件
 ├── core/            # 核心游戏逻辑
 ├── stores/          # Pinia 状态管理
 ├── types/           # TypeScript 类型定义
 ├── views/           # 页面组件
 ├── router/          # 路由配置
+├── layout/          # 布局组件
 ├── App.vue          # 根组件
 ├── main.ts          # 入口文件
 └── style.css        # 全局样式
@@ -73,17 +73,9 @@ src/
 - ✅ 全局聊天
 - ✅ WebSocket 实时通信
 - ✅ 游戏组件系统
-- ✅ 黑白棋游戏
-
-## 游戏组件
-
-- `OthelloRoom` - 黑白棋
-- `GobangRoom` - 五子棋（待实现）
-- `Connect4Room` - 四子棋（待实现）
-- `SpyRoom` - 谁是卧底（待实现）
 
 ## 注意事项
 
-1. 前端默认连接到 `http://127.0.0.1:27016` 的后端 API
+1. 前端默认连接到 `http://127.0.0.1:27015` 的后端 API
 2. WebSocket 地址从后端配置中获取
 3. 需要先启动后端服务器才能正常使用

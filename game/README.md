@@ -83,6 +83,12 @@ npm run build:frontend
 
 生产构建后运行 `node index.js` 即可。
 
+可使用 PM2 等进程管理工具进行部署和守护。
+
+```base
+pm2 start -n game-room node -- index.js
+```
+
 ## 贡献
 
 可以通过在 `backend/src/games` 目录下添加新的游戏模块来扩展游戏内容。游戏界面组件位于 `frontend/src/components/` 目录下。
