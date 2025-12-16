@@ -183,6 +183,10 @@ class GameEmbed {
       tag.style.borderRadius = '0.25em';
       tag.style.textDecoration = 'none';
       tag.style.color = this.color;
+      tag.style.float = 'none';
+      tag.style.userSelect = 'none';
+      tag.style.height = 'auto';
+      tag.style.margin = '0';
       tag.title = `前往房间【${room.name}】`;
       tag.innerHTML = `
         <img src="${scriptSrc.origin}/logo.png" alt="♟️" style="width:1.2em;margin-right:0.3em;" />
