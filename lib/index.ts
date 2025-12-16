@@ -439,7 +439,7 @@ export class Tiaoom extends EventEmitter {
   }
 
   offlinePlayer(sender: IPlayer) {
-    const room = this.rooms.find((room) => room.players.some(p => p.id === sender.id));
+    const room = this.rooms.find((room) => room.players.some(p => p.id === sender?.id));
     if (room) {
       setTimeout(() => {
         if (this.players.some(p => p.id === sender.id)) return; // player is online
