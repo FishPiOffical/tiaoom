@@ -132,7 +132,7 @@ const props = defineProps<{
 
 前端可使用如下封装组件实现通用功能：
 
-- `RoomControls`：房间控制面板
+- `RoomControls`：房间控制面板，含开始游戏、准备等功能。`RoomControlsLite` 为小窗版本。
 - `PlayerList`：玩家列表
 - `GameChat`：游戏内聊天
 - `Icon`：图标组件，支持 Iconify 图标库
