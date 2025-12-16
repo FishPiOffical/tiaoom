@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { EventSubscriber, EntitySubscriberInterface, InsertEvent, UpdateEvent, DataSource, Repository } from 'typeorm';
 import { User } from "./User";
-import { Room } from "./Room";
+import { RoomSQL, RoomMongo, Room } from "./Room";
 import { Log } from "./Log";
 import utils from '@/utils'
 
@@ -31,7 +31,7 @@ export const AppDataSource = utils.config ? new DataSource({
   logging: false,
   ...utils.config.database,
   synchronize: true,
-  entities: [User, Room, Log],
+  entities: [User, Log, ...(utils.config.persistence?.driver == 'mysql' ? [RoomSQL] : [])],
   migrations: [],
   subscribers: [],
   charset: "utf8mb4_unicode_ci"
@@ -40,9 +40,14 @@ export const AppDataSource = utils.config ? new DataSource({
 export {
   User,
   Room,
+  RoomSQL,
+  RoomMongo,
   Log,
 }
 
+export * from './mongo';
+export * from './redis';
+
 export const UserRepo = utils.config ? AppDataSource.getRepository(User) : {} as Repository<User>;
-export const RoomRepo = utils.config ? AppDataSource.getRepository(Room) : {} as Repository<Room>;
+export const RoomRepo = utils.config && utils.config.persistence?.driver == 'mysql' ? AppDataSource.getRepository(RoomSQL) : {} as any;
 export const LogRepo = utils.config ? AppDataSource.getRepository(Log) : {} as Repository<Log>;

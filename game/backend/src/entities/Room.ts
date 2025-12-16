@@ -1,16 +1,78 @@
-import { Entity, Column } from "typeorm";
+import { Entity, Column, PrimaryGeneratedColumn, ObjectIdColumn } from "typeorm";
 import { IRoom, RoomPlayer } from "tiaoom";
 
-@Entity({ comment: '房间表', name: 'room' })
 export class Room {
-  @Column({ comment: "房间ID", primary: true, unique: true })
-  id: string;
-
-  @Column({ comment: "游戏类型" })
+  /**
+   * 游戏类型
+   */
   type: string;
+  /**
+   * 房间名称
+   */
+  name: string;
+  /**
+   * 最小玩家数
+   */
+  minSize: number = 2;
+  /**
+   * 房间容量
+   */
+  size: number = 2;
+  /**
+   * 房间密码
+   */
+  passwd: string = '';
+  /**
+   * 玩家列表
+   */
+  players: RoomPlayer[] = [];
+  /**
+   * 游戏数据
+   */
+  gameData: any;
+  /**
+   * 创建时间
+   */
+  createdAt: number = Date.now();
+  /**
+   * 更新时间
+   */
+  updatedAt: number = Date.now();
+  /**
+   * 房间ID
+   */
+  roomId: string;
+
+  toRoom(): IRoom {
+    return {
+      id: this.roomId,
+      name: this.name,
+      size: this.size,
+      minSize: this.minSize,
+      attrs: {
+        type: this.type,
+        passwd: this.passwd,
+      },
+      players: this.players.map(p => new RoomPlayer(p, p.role)),
+    };
+  }
+
+  constructor(room?: IRoom) {
+    this.type = room?.attrs?.type || '';
+    this.name = room?.name || '';
+    this.minSize = room?.minSize || 2;
+    this.size = room?.size || 2;
+    this.passwd = room?.attrs?.passwd || '';
+    this.players = room?.players || [];
+  }
+}
+
+export abstract class RoomBase extends Room {
+  @Column({ comment: "游戏类型" })
+  type: string = '';
 
   @Column({ comment: "房间名称" })
-  name: string;
+  name: string = '';
 
   @Column({ comment: "最小玩家数" })
   minSize: number = 2;
@@ -25,7 +87,7 @@ export class Room {
   players: RoomPlayer[] = [];
 
   @Column('simple-json', { comment: "游戏数据", nullable: true })
-  gameData: any;
+  gameData: any = null;
 
   @Column('bigint', { comment: "创建时间" })
   createdAt: number = Date.now();
@@ -33,27 +95,37 @@ export class Room {
   @Column('bigint', { comment: "更新时间" })
   updatedAt: number = Date.now();
 
-  toRoom(): IRoom {
-    return {
-      id: this.id,
-      name: this.name,
-      size: this.size,
-      minSize: this.minSize,
-      attrs: {
-        type: this.type,
-        passwd: this.passwd,
-      },
-      players: this.players.map(p => new RoomPlayer(p, p.role)),
-    };
-  }
+  abstract roomId: string;
 
   constructor(room?: IRoom) {
-    this.id = room?.id || '';
-    this.type = room?.attrs?.type || '';
-    this.name = room?.name || '';
-    this.minSize = room?.minSize || 2;
-    this.size = room?.size || 2;
-    this.passwd = room?.attrs?.passwd || '';
-    this.players = room?.players || [];
+    super(room);
+  }
+}
+
+@Entity({ comment: '房间表', name: 'room' })
+export class RoomSQL extends RoomBase {
+  @PrimaryGeneratedColumn()
+  id: number;
+  
+  @Column({ comment: "房间ID", primary: true, unique: true })
+  roomId: string;
+
+  constructor(room?: IRoom) {
+    super(room);
+    this.roomId = room?.id || '';
+  }
+}
+
+@Entity({ comment: '房间表', name: 'room' })
+export class RoomMongo extends RoomBase {
+  @ObjectIdColumn()
+  _id: any;
+
+  @Column({ comment: "房间ID", unique: true })
+  roomId: string;
+
+  constructor(room?: IRoom) {
+    super(room);
+    this.roomId = room?.id || '';
   }
 }

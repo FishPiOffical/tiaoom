@@ -9,7 +9,7 @@ import cookieParser from 'cookie-parser';
 import createRoutes from "./routes/api";
 import utils from './utils'
 import configRouter from "./routes/config";
-import { AppDataSource } from "./entities";
+import { AppDataSource, MongoDataSource, redisClient } from "./entities";
 
 const FileStore = sessionStore(session);
 
@@ -46,6 +46,17 @@ export class Game {
       this.app.use("/config", configRouter);
     } else {
       // API 路由
+      if (utils.config.persistence?.driver === 'mongodb') {
+        await MongoDataSource.initialize().catch(err => {
+          console.error('MongoDB initialization failed:', err);
+          process.exit(1);
+        });
+      } else if (utils.config.persistence?.driver === 'redis' && redisClient) {
+        await redisClient.connect().catch(err => {
+          console.error('Redis connection failed:', err);
+          process.exit(1);
+        });
+      }
       await AppDataSource.initialize()
         .then(() => {
           console.log("Database connected");
