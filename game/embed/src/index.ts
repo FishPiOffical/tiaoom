@@ -64,7 +64,8 @@ class GameCore extends Tiaoom {
 interface GameRenderData { 
   room?: Room, 
   player?: Player, 
-  logo: string, 
+  logo: string,
+  game: string,
   visitRoom: (roomId: string) => void 
 }
 
@@ -104,6 +105,7 @@ class GameEmbed {
     this.renders = renders;
     fetch(`${scriptSrc.origin}/api/config`).then(res => res.json()).then((res) => {
       this.config = res.data;
+      this.update();
     });
     this.tiaoom.run().onRoomList(() => {
       this.update();
@@ -163,13 +165,14 @@ class GameEmbed {
       if (!domOrRender) return;
       if (typeof domOrRender === 'function') {
         domOrRender({ 
+          game: this.config[room?.attrs.type || '']?.name,
           room, player, logo: scriptSrc.origin + '/logo.png', visitRoom: (roomId) => {
             window.open(`${scriptSrc.origin}/r/${roomId}`, '_blank');
           } 
         });
         return;
       }
-      if (!player || !room) return domOrRender.innerHTML = '';
+      if (!player || !room || !this.config[room.attrs.type]) return domOrRender.innerHTML = '';
       const roomPlayer = room.players.find(p => p.id === player.id)!;
       const gameName = this.config[room.attrs.type].name;
       const tag = document.createElement('a');
@@ -189,13 +192,13 @@ class GameEmbed {
       tag.style.margin = '0';
       tag.title = `前往房间【${room.name}】`;
       tag.innerHTML = `
-        <img src="${scriptSrc.origin}/logo.png" alt="♟️" style="width:1.2em;margin-right:0.3em;" />
-        <span style="font-weight:bold;">${gameName}</span>
-        <span style="padding-left: 0.2em" title="${roomPlayer.role == 'player' ? '游戏中...' : '围观中...'}">
+        <img src="${scriptSrc.origin}/logo.png" alt="♟️" style="width:1.2em;margin:0;margin-right:0.3em;height: auto" />
+        <span style="font-weight:bold;margin:0;height:auto;">${gameName}</span>
+        <span style="padding-left: 0.2em;margin:0;height:auto;" title="${roomPlayer.role == 'player' ? '游戏中...' : '围观中...'}">
           ${roomPlayer.role == 'player' ? '🎮' : '👀'}
         </span>
       `;
-      tag.href=`${scriptSrc.origin}/r/${room.id}`;
+      tag.href=`${scriptSrc.origin}/#/r/${room.id}`;
       tag.target = '_blank';
       domOrRender.innerHTML = tag.outerHTML;
     }

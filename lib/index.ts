@@ -74,6 +74,7 @@ export class Tiaoom extends EventEmitter {
 
   run() {
     this.messageInstance?.on("message", (message: any, cb?: (err: Error | null, data?: any) => any) => {
+      message.sender = message.sender ? this.searchPlayer(message.sender) || message.sender : null;
       try {
         switch (message.type) {
           case RecvMessageTypes.RoomList:
@@ -117,7 +118,7 @@ export class Tiaoom extends EventEmitter {
         }
       } catch (error) {
         cb?.(error as Error);
-        this.messageInstance?.send({
+        if (message.sender) this.messageInstance?.send({
           type: MessageTypes.PlayerError,
           data: {
             name: (error as Error).name, 
@@ -173,6 +174,10 @@ export class Tiaoom extends EventEmitter {
   }
 
   createRoom(sender: IPlayer, options: IRoomOptions) {
+    if (!sender) {
+      throw new Error('missing player information.');
+    }
+
     if (!options.name) {
       throw new Error('missing room id or name.');
     }
@@ -181,7 +186,7 @@ export class Tiaoom extends EventEmitter {
       throw new Error('room already exists.');
     }
 
-    if (this.rooms.some(r => r.players.some(p => p.id === sender.id))) {
+    if (this.rooms.some(r => r.players.some(p => p.id === sender?.id))) {
       throw new Error('you are already in a room.');
     }
 
@@ -213,9 +218,9 @@ export class Tiaoom extends EventEmitter {
       throw new Error('room not found.');
     }
 
-    if (sender?.id) {
+    if (sender?.id && !sender.isAdmin) {
       const senderInRoom = roomInstance.searchPlayer(sender);
-      if (!senderInRoom || (!senderInRoom.isCreator && !senderInRoom.isAdmin)) {
+      if (!senderInRoom || !senderInRoom.isCreator) {
         throw new Error('permission denied.');
       }
     }
@@ -233,9 +238,11 @@ export class Tiaoom extends EventEmitter {
       throw new Error('room not found.');
     }
 
-    const senderInRoom = room.searchPlayer(sender);
-    if (!senderInRoom || (!senderInRoom.isCreator && !senderInRoom.isAdmin)) {
-      throw new Error('permission denied.');
+    if (!sender.isAdmin) {
+      const senderInRoom = room.searchPlayer(sender);
+      if (!senderInRoom || !senderInRoom.isCreator) {
+        throw new Error('permission denied.');
+      }
     }
 
     const targetPlayer = room.players.find(p => p.id === data.playerId);
@@ -254,9 +261,14 @@ export class Tiaoom extends EventEmitter {
       throw new Error('room not found.');
     }
 
-    const senderInRoom = room.searchPlayer(sender);
-    if (!senderInRoom || (!senderInRoom.isCreator && !sender.isAdmin)) {
-      throw new Error('permission denied.');
+    const creator = room.players.find(p => p.isCreator);
+    if (!sender.isAdmin) {
+      const senderInRoom = room.searchPlayer(sender);
+      if (!senderInRoom || !senderInRoom.isCreator) {
+        throw new Error('permission denied.');
+      }
+    } else {
+
     }
 
     const targetPlayer = room.players.find(p => p.id === data.playerId);
@@ -268,7 +280,7 @@ export class Tiaoom extends EventEmitter {
       return;
     }
 
-    senderInRoom.isCreator = false;
+    if (creator) creator.isCreator = false;
     targetPlayer.isCreator = true;
 
     this.emit("room-player", room);
