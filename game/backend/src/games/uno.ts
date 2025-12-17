@@ -20,13 +20,14 @@ export interface UnoGameState {
   currentPlayer: string;
   direction: 1 | -1;
   color: 'red' | 'blue' | 'green' | 'yellow';
-  drawCount: number; // 仅用于+4累积
   winner?: string;
   turnStartTime?: number;
   turnTimeout?: number;
   turnTimeLeft?: number; // 剩余时间（秒）
   // 托管状态：playerId -> true 表示该玩家被托管
   hosted?: { [playerId: string]: boolean };
+  // +4质疑状态：记录哪个+4牌已经被处理过（质疑或接受惩罚）
+  wildDraw4Processed?: boolean;
 }
 
 const createDeck = (): UnoCard[] => {
@@ -180,7 +181,7 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
       currentPlayer: playerIds[0],
       direction: 1,
       color: firstCard.color as 'red' | 'blue' | 'green' | 'yellow',
-      drawCount: 0
+      wildDraw4Processed: false
     };
     
     // 设置所有玩家状态为playing（确保房间状态正确）
@@ -202,6 +203,26 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
     startTurnTimer(initialTimeout);
   };
   
+  // 检查是否可以出+4（官方规则：只有在没有任何合法可出的牌时才能使用+4）
+  const canPlayWildDraw4 = (hand: UnoCard[], topCard: UnoCard, currentColor: string): boolean => {
+    // 检查手牌中是否有任何可出的牌
+    for (const card of hand) {
+      // 跳过所有变色牌（包括普通变色牌和+4牌），它们不算作"可出的牌"
+      if (card.type === 'wild') {
+        continue;
+      }
+      // 检查颜色匹配
+      if (card.color === currentColor) {
+        return false; // 有相同颜色的牌，不能出+4
+      }
+      // 检查数字/功能匹配
+      if (card.value === topCard.value) {
+        return false; // 有相同功能的牌，不能出+4
+      }
+    }
+    return true; // 没有任何合法可出的牌，可以使用+4
+  };
+
   const canPlayCard = (card: UnoCard, topCard: UnoCard, currentColor: string): boolean => {
     if (card.type === 'wild') return true;
     if (card.color === currentColor) return true;
@@ -213,6 +234,12 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
     const currentIndex = players.indexOf(currentPlayer);
     const nextIndex = (currentIndex + direction + players.length) % players.length;
     return players[nextIndex];
+  };
+
+  const getPreviousPlayer = (players: string[], currentPlayer: string, direction: 1 | -1): string => {
+    const currentIndex = players.indexOf(currentPlayer);
+    const prevIndex = (currentIndex - direction + players.length) % players.length;
+    return players[prevIndex];
   };
 
   // 倒计时管理函数
@@ -240,7 +267,7 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
         if (gameState && gameState.turnTimeLeft !== undefined) {
           gameState.turnTimeLeft = Math.max(0, gameState.turnTimeLeft - 1);
           // 实时发送倒计时更新给所有玩家
-          room.emit('command', { type: 'game:state', data: gameState });
+          room.emit('command', { type: 'game:state', data: { ...gameState, moveHistory } });
           
           // 当倒计时归零时清除定时器
           if (gameState.turnTimeLeft <= 0) {
@@ -294,6 +321,30 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
 
     const topCard = gameState.discardPile[gameState.discardPile.length - 1];
 
+    // 检查是否面临+4惩罚（只能接受惩罚，托管不能质疑）
+    if (topCard.value === 'wild_draw4' && !gameState.wildDraw4Processed) {
+      // 托管玩家无条件接受+4惩罚
+      for (let i = 0; i < 4 && gameState.deck.length > 0; i++) {
+        const drawn = gameState.deck.pop();
+        if (drawn) hand.push(drawn);
+      }
+      room.emit('message', { content: `${playerId} (托管) 被+4惩罚，抽了4张牌` });
+      
+      // 标记+4已处理
+      gameState.wildDraw4Processed = true;
+      
+      // 跳过当前玩家，直接到下下个玩家
+      const actualNextPlayerId = getNextPlayer(Object.keys(gameState.players), playerId, gameState.direction);
+      const actualNextPlayer = room.players.find(p => p.id === actualNextPlayerId);
+      if (actualNextPlayer) {
+        room.emit('message', { content: `轮到 ${actualNextPlayer.name} 出牌` });
+      }
+      gameState.currentPlayer = actualNextPlayerId;
+      
+      // 切换到下一个玩家后直接返回，不执行后续的出牌逻辑
+      return;
+    }
+
     // 先尝试出牌（优先非万能牌）
     let chosenIndex = -1;
     for (let i = 0; i < hand.length; i++) {
@@ -301,10 +352,20 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
       if (c.type !== 'wild' && canPlayCard(c, topCard, gameState.color)) { chosenIndex = i; break; }
     }
     if (chosenIndex === -1) {
-      // 没找到非万能牌，尝试万能牌
+      // 没找到非万能牌，尝试万能牌（托管模式下，只有当+4是唯一合法选择时才使用）
       for (let i = 0; i < hand.length; i++) {
         const c = hand[i];
-        if (c.type === 'wild' && canPlayCard(c, topCard, gameState.color)) { chosenIndex = i; break; }
+        if (c.type === 'wild') {
+          if (c.value === 'wild_draw4') {
+            // +4只有在没有任何合法可出的牌时才能使用
+            if (canPlayWildDraw4(hand, topCard, gameState.color)) {
+              chosenIndex = i; break;
+            }
+          } else {
+            // 普通变色牌可以随时使用
+            chosenIndex = i; break;
+          }
+        }
       }
     }
 
@@ -339,8 +400,9 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
           gameState.color = colors[Math.floor(Math.random() * colors.length)];
         }
         if (card.value === 'wild_draw4') {
-          gameState.drawCount += 4;
-          room.emit('message', { content: `下家需要抽4张牌！` });
+          // +4效果不累积，等待下一位玩家回合时处理
+          gameState.wildDraw4Processed = false;
+          room.emit('message', { content: `下家将面临+4惩罚！` });
         }
       } else {
         gameState.color = card.color as any;
@@ -393,7 +455,7 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
         await saveGameData();
 
         // 广播最终状态与成就
-        room.emit('command', { type: 'game:state', data: gameState });
+        room.emit('command', { type: 'game:state', data: { ...gameState, moveHistory } });
         room.emit('command', { type: 'game:over', data: { winner: playerId } });
         room.emit('command', { type: 'achievements', data: achievements });
 
@@ -459,6 +521,13 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
             room.emit('message', { content: `${playerSocket?.name || playerId} (托管) 抽了一张牌` });
           }
         }
+      } else if (topCard.value === 'wild_draw4' && !gameState.wildDraw4Processed) {
+        // +4惩罚：无条件抽4张
+        for (let i = 0; i < 4 && gameState.deck.length > 0; i++) {
+          const drawn = gameState.deck.pop();
+          if (drawn) hand.push(drawn);
+        }
+        room.emit('message', { content: `${playerSocket?.name || playerId} (托管) 被+4惩罚，抽了4张牌` });
       } else {
         // 正常情况抽1张牌
         if (gameState.deck.length > 0) {
@@ -520,15 +589,7 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
       }
       gameState.currentPlayer = nextPlayerId;
       
-      // 处理累积抽牌
-      if (gameState.drawCount > 0) {
-        const nextHand = gameState.players[nextPlayerId];
-        for (let i = 0; i < gameState.drawCount && gameState.deck.length > 0; i++) {
-          const drawnCard = gameState.deck.pop();
-          if (drawnCard) nextHand.push(drawnCard);
-        }
-        gameState.drawCount = 0;
-      }
+
       
       // 保存状态并发送更新
       await saveGameData();
@@ -717,18 +778,39 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
       case 'uno:play_card': {
         if (!gameState || gameState.currentPlayer !== sender.id) return;
         
+        // 检查是否面临+4惩罚
+        const topCard = gameState.discardPile[gameState.discardPile.length - 1];
+        if (topCard.value === 'wild_draw4' && !gameState.wildDraw4Processed) {
+          room.emit('message', { content: `${sender.name} 面临+4惩罚，只能质疑或抽牌接受惩罚，不能出其他牌！` });
+          return;
+        }
+        
         const { cardId, chosenColor } = message.data || message.data.data;
         const playerHand = gameState.players[sender.id];
         const cardIndex = playerHand.findIndex(c => c.id === cardId);
         if (cardIndex === -1) return;
         
         const card = playerHand[cardIndex];
-        const topCard = gameState.discardPile[gameState.discardPile.length - 1];
         
         // 检查是否可以出牌
         if (!canPlayCard(card, topCard, gameState.color)) {
           return;
         }
+        
+        // 检查+4的使用限制（只记录是否违规，不禁止出牌）
+        let isIllegalPlay = false;
+        if (card.value === 'wild_draw4') {
+          const canPlayWild4 = canPlayWildDraw4(playerHand, topCard, gameState.color);
+          isIllegalPlay = !canPlayWild4;
+          
+          // 添加调试日志
+          console.log(`+4检查 - 玩家: ${sender.name}, 可出+4: ${canPlayWild4}, 违规: ${isIllegalPlay}`);
+          console.log(`手牌:`, playerHand.map(c => `${c.color}-${c.value}`));
+          console.log(`顶牌: ${topCard.color}-${topCard.value}, 当前颜色: ${gameState.color}`);
+        }
+        
+        // 保存出牌前的颜色（用于+4质疑检查）
+        const previousColor = gameState.color;
         
         // 出牌
         playerHand.splice(cardIndex, 1);
@@ -753,8 +835,10 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
           }
           
           if (card.value === 'wild_draw4') {
-            gameState.drawCount += 4;
-            room.emit('message', { content: `下家需要抽4张牌！` });
+            // +4效果不累积，等待下一位玩家回合时处理
+            // 重置+4处理标志，允许质疑
+            gameState.wildDraw4Processed = false;
+            room.emit('message', { content: `下家将面临+4惩罚！` });
           }
         } else {
           gameState.color = card.color as 'red' | 'blue' | 'green' | 'yellow';
@@ -853,7 +937,7 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
         }
         gameState.currentPlayer = nextPlayerId;
         
-        // 检查+2效果（在新玩家回合开始时立即检查）
+        // 检查+2效果（+4通过质疑机制处理，不在这里立即执行）
         const currentTopCard = gameState.discardPile[gameState.discardPile.length - 1];
         if (currentTopCard.value === 'draw2') {
           const nextHand = gameState.players[nextPlayerId];
@@ -885,6 +969,7 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
             gameState.currentPlayer = actualNextPlayerId;
           }
         }
+
         
         // 如果牌堆用完了，重新洗牌
         if (gameState.deck.length === 0 && gameState.discardPile.length > 1) {
@@ -893,17 +978,18 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
           gameState.discardPile = [topCard];
         }
         
-        // 记录移动历史
+        // 记录移动历史（所有出牌都要记录）
+        // 对于+4，需要记录出牌前的颜色用于质疑检查
         moveHistory.push({
           player: sender.id,
-          action: { type: 'play_card', cardId, chosenColor },
+          action: { type: 'play_card', cardId, chosenColor, illegalWildDraw4: isIllegalPlay, previousColor },
           timestamp: Date.now()
         });
         
         // 保存游戏状态
         await saveGameData();
         
-        room.emit('command', { type: 'game:state', data: gameState });
+        room.emit('command', { type: 'game:state', data: { ...gameState, moveHistory } });
         
         // 清除当前倒计时并开始下一回合的倒计时
         if (!gameState.winner) {
@@ -933,7 +1019,7 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
           }
           
           if (!canPlayAnyCard) {
-            // 不能出牌，强制抽2张
+            // 不能出牌，强制抽2张并跳过
             for (let i = 0; i < 2 && gameState.deck.length > 0; i++) {
               const drawnCard = gameState.deck.pop();
               if (drawnCard) playerHand.push(drawnCard);
@@ -942,11 +1028,30 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
           } else {
             // 可以出牌但玩家选择抽牌，正常抽1张
             if (gameState.deck.length > 0) {
-              const drawnCard = gameState.deck.pop()!;
+              const drawnCard = gameState.deck.pop()!;  
               gameState.players[sender.id].push(drawnCard);
               room.emit('message', { content: `${sender.name} 抽了一张牌` });
             }
           }
+        } else if (topCard.value === 'wild_draw4' && !gameState.wildDraw4Processed) {
+          // +4惩罚：玩家选择接受惩罚，抽4张牌并跳过
+          for (let i = 0; i < 4 && gameState.deck.length > 0; i++) {
+            const drawnCard = gameState.deck.pop();
+            if (drawnCard) playerHand.push(drawnCard);
+          }
+          room.emit('message', { content: `${sender.name} 接受+4惩罚，抽了4张牌并被跳过回合` });
+          
+          // 标记+4已处理
+          gameState.wildDraw4Processed = true;
+          
+          // 跳过当前玩家，直接到下下个玩家
+          const actualNextPlayerId = getNextPlayer(Object.keys(gameState.players), gameState.currentPlayer, gameState.direction);
+          const actualNextPlayer = room.players.find(p => p.id === actualNextPlayerId);
+          if (actualNextPlayer) {
+            room.emit('message', { content: `轮到 ${actualNextPlayer.name} 出牌` });
+          }
+          gameState.currentPlayer = actualNextPlayerId;
+          return; // 提前返回，不执行后续的玩家切换逻辑
         } else {
           // 正常情况抽1张牌
           if (gameState.deck.length === 0) return;
@@ -974,7 +1079,7 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
         // 保存游戏状态
         await saveGameData();
         
-        room.emit('command', { type: 'game:state', data: gameState });
+        room.emit('command', { type: 'game:state', data: { ...gameState, moveHistory } });
         
         // 清除当前倒计时并开始下一回合的倒计时
         if (!gameState.winner) {  
@@ -990,6 +1095,95 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
         if (playerHand.length === 1) {
           room.emit('command', { type: 'uno:called', data: sender.id });
           room.emit('message', { content: `${sender.name} 喊 UNO！` });
+        }
+        break;
+      }
+      
+      case 'uno:challenge': {
+        if (!gameState || gameState.currentPlayer !== sender.id) return;
+        
+        const topCard = gameState.discardPile[gameState.discardPile.length - 1];
+        
+        // 只能对+4进行质疑
+        if (topCard.value !== 'wild_draw4') {
+          room.emit('message', { content: `${sender.name} 只能对变色+4进行质疑！` });
+          return;
+        }
+        
+        // 检查+4是否已经被处理过
+        if (gameState.wildDraw4Processed) {
+          room.emit('message', { content: `这个+4已经被处理过了，无法再次质疑！` });
+          return;
+        }
+        
+        // 找出上一位玩家（打出+4的玩家）
+        const prevPlayerId = getPreviousPlayer(Object.keys(gameState.players), gameState.currentPlayer, gameState.direction);
+        const prevPlayer = room.players.find(p => p.id === prevPlayerId);
+        const prevHand = gameState.players[prevPlayerId];
+        
+        if (!prevPlayer || !prevHand) return;
+        
+        // 获取上一次移动历史，找到出牌前的颜色
+        let previousColor = gameState.color; // 默认使用当前颜色作为后备
+        if (moveHistory.length > 0) {
+          const lastMove = moveHistory[moveHistory.length - 1];
+          if (lastMove.player === prevPlayerId && lastMove.action.type === 'play_card' && lastMove.action.previousColor) {
+            previousColor = lastMove.action.previousColor;
+          }
+        }
+        
+        // 获取出牌时上一位玩家的手牌快照
+        // 这里简化处理，使用当前手牌，实际应该使用出牌时的快照
+        console.log(`质疑检查 - 上家: ${prevPlayer.name}, 顶牌: ${topCard.color}-${topCard.value}, 出牌前颜色: ${previousColor}`);
+        console.log(`上家手牌:`, prevHand.map(c => `${c.color}-${c.value}`));
+        const wasLegalPlay = canPlayWildDraw4(prevHand, topCard, previousColor);
+        console.log(`质疑结果 - 合法: ${wasLegalPlay}`);
+        
+        room.emit('message', { content: `${sender.name} 对 ${prevPlayer.name} 的+4使用提出质疑！` });
+        
+        if (wasLegalPlay) {
+          // +4使用合法，质疑失败
+          room.emit('message', { content: `${prevPlayer.name} 的+4使用合法！${sender.name} 质疑失败，抽6张牌并跳过回合` });
+          
+          // 质疑者抽6张牌
+          const currentHand = gameState.players[sender.id];
+          for (let i = 0; i < 6 && gameState.deck.length > 0; i++) {
+            const drawnCard = gameState.deck.pop();
+            if (drawnCard) currentHand.push(drawnCard);
+          }
+          
+          // 标记+4已处理
+          gameState.wildDraw4Processed = true;
+        } else {
+          // +4使用违规，质疑成功
+          room.emit('message', { content: `${prevPlayer.name} 的+4使用违规！${sender.name} 质疑成功，${prevPlayer.name} 需抽6张牌` });
+          
+          // 违规者抽6张牌
+          for (let i = 0; i < 6 && gameState.deck.length > 0; i++) {
+            const drawnCard = gameState.deck.pop();
+            if (drawnCard) prevHand.push(drawnCard);
+          }
+          
+          // 标记+4已处理
+          gameState.wildDraw4Processed = true;
+        }
+        
+        // 质疑失败或正常情况，切换到下一位玩家
+        const nextPlayerId = getNextPlayer(Object.keys(gameState.players), gameState.currentPlayer, gameState.direction);
+        const nextPlayer = room.players.find(p => p.id === nextPlayerId);
+        if (nextPlayer) {
+          room.emit('message', { content: `轮到 ${nextPlayer.name} 出牌` });
+        }
+        gameState.currentPlayer = nextPlayerId;
+        
+        // 保存游戏状态
+        await saveGameData();
+        room.emit('command', { type: 'game:state', data: { ...gameState, moveHistory } });
+        
+        // 开始下一位玩家的倒计时
+        if (!gameState.winner) {
+          const nextTimeoutForChallengeNext = gameState.hosted && gameState.hosted[gameState.currentPlayer] ? 5000 : TURN_TIMEOUT;
+          startTurnTimer(nextTimeoutForChallengeNext);
         }
         break;
       }
