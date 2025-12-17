@@ -397,10 +397,16 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
         room.emit('command', { type: 'game:over', data: { winner: playerId } });
         room.emit('command', { type: 'achievements', data: achievements });
 
-        // 将所有玩家状态重置为未准备，房间设为 waiting，允许新一局开始
+        // 将所有玩家状态重置为未准备，通知客户端以刷新准备列表
         room.players.forEach(player => {
           if (player.role === 'player') {
-            player.status = PlayerStatus.unready;
+            try {
+              player.isReady = false;
+              player.emit('status', PlayerStatus.unready);
+              room.emit('player-unready', { ...player });
+            } catch (e) {
+              console.warn('无法将玩家设为未准备', player.id, e);
+            }
           }
         });
         // room.status 是只读，改为通过命令广播状态更新给客户端
@@ -787,10 +793,16 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
           room.emit('command', { type: 'game:over', data: { winner: sender.id } });
           room.emit('command', { type: 'achievements', data: achievements });
           
-          // 设置所有玩家状态为unready（游戏结束）
+          // 设置所有玩家状态为unready（游戏结束），并通知客户端
           room.players.forEach(player => {
             if (player.role === 'player') {
-              player.status = PlayerStatus.unready;
+              try {
+                player.isReady = false;
+                player.emit('status', PlayerStatus.unready);
+                room.emit('player-unready', { ...player });
+              } catch (e) {
+                console.warn('无法将玩家设为未准备', player.id, e);
+              }
             }
           });
           
