@@ -13,7 +13,7 @@
     }
   },
   "scripts": {
-    "prepare": "npm run build",
+    "prepublishOnly": "npm run build",
     "build": "tsdown",
     "docs:build": "cd docs && npm run docs:build",
     "docs:dev": "cd docs && npm run docs:dev"

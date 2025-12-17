@@ -5,15 +5,18 @@
   "description": "Game Rooms - Frontend Backend Separated",
   "workspaces": [
     "backend",
-    "frontend"
+    "frontend",
+    "embed"
   ],
   "scripts": {
     "dev:backend": "npm run dev --workspace=backend",
     "dev:frontend": "npm run dev --workspace=frontend",
-    "build": "npm run build --workspace=backend && npm run build --workspace=frontend",
+    "build": "npm run build:embed && npm run build:backend && npm run build:frontend",
     "build:backend": "npm run build --workspace=backend",
     "build:frontend": "npm run build --workspace=frontend",
-    "install:all": "npm install"
+    "build:embed": "npm run build --workspace=embed",
+    "install:all": "npm install",
+    "postinstall": "cd .. && npm install &&npm run build"
   },
   "devDependencies": {
     "@types/node": "^20.4.2",
