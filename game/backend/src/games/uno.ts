@@ -374,10 +374,50 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
       if (hand.length === 0) {
         gameState.winner = playerId;
         room.emit('message', { content: `🎉 恭喜 ${playerSocket?.name || playerId} 获得胜利！` });
+
+        // 更新成就（与主动出牌获胜时一致）
+        room.players.forEach((p) => {
+          if (p.role !== 'player') return;
+          if (!achievements[p.name]) {
+            achievements[p.name] = { win: 0, lost: 0 };
+          }
+          if (p.id === playerId) {
+            achievements[p.name].win += 1;
+          } else {
+            achievements[p.name].lost += 1;
+          }
+        });
+
+        // 清除倒计时并保存最终状态
         clearTurnTimer();
         await saveGameData();
+
+        // 广播最终状态与成就
         room.emit('command', { type: 'game:state', data: gameState });
         room.emit('command', { type: 'game:over', data: { winner: playerId } });
+        room.emit('command', { type: 'achievements', data: achievements });
+
+        // 将所有玩家状态重置为未准备，房间设为 waiting，允许新一局开始
+        room.players.forEach(player => {
+          if (player.role === 'player') {
+            player.status = PlayerStatus.unready;
+          }
+        });
+        // room.status 是只读，改为通过命令广播状态更新给客户端
+        room.emit('command', { type: 'status', data: { status: 'waiting' } });
+
+        // 局结束后踢出所有处于托管的玩家
+        if (gameState && gameState.hosted) {
+          Object.keys(gameState.hosted).forEach((pid) => {
+            try {
+              room.kickPlayer(pid);
+            } catch (e) {
+              console.warn('踢出托管玩家失败', pid, e);
+            }
+          });
+        }
+
+        // 不立即调用 room.end()，让玩家可以查看结果
         return;
       }
 
@@ -754,8 +794,8 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
             }
           });
           
-          // 设置房间状态为waiting，允许开始新一局
-          room.status = 'waiting';
+          // 设置房间状态为waiting，允许开始新一局（通过广播通知客户端，避免写入只读属性）
+          room.emit('command', { type: 'status', data: { status: 'waiting' } });
           
           // 局结束后踢出所有处于托管的玩家
           if (gameState && gameState.hosted) {

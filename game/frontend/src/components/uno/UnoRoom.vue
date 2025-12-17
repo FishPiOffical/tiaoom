@@ -225,7 +225,7 @@
                 <div class="flex items-center gap-2 truncate">
                   <span v-if="p.role === 'player'">[{{ getPlayerStatus(p) }}]</span>
                   <span v-else class="text-base-content/60">[围观中]</span>
-                  <span class="truncate max-w-[160px]">{{ p.name }}</span>
+                  <span class="truncate max-w-40">{{ p.name }}</span>
                   <span v-if="gameState?.hosted && gameState.hosted[p.id]" class="ml-1 text-xs badge badge-error">托管</span>
                 </div>
                 <div class="flex items-center gap-2">
@@ -285,6 +285,7 @@ import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 // 接收父组件可能传入的属性以避免 Vue 的非 props 属性警告
 const props = defineProps<{ game?: any; roomPlayer?: any }>();
 import { useGameStore } from '@/stores/game'
+import { RoomStatus } from 'tiaoom/client'
 import UnoCard from './UnoCard.vue'
 import RoomControls from '@/components/common/RoomControls.vue'
 import GameChat from '@/components/common/GameChat.vue'
@@ -316,9 +317,7 @@ const showNotification = ref(false)
 // 移动历史（用于回放等功能）
 const moveHistory = ref<Array<{player: string, action: any, timestamp: number}>>([])
 
-// 游戏恢复通知
-const showRestoreNotification = ref(false)
-const restoreMessage = ref('')
+// 游戏恢复通知（占位，暂不使用）
 
 // 动画/视觉提示状态
 const playerAnim = ref<Record<string, { type: 'play' | 'draw' | 'skip' | null, until: number }>>({})
@@ -326,7 +325,7 @@ const playerAnim = ref<Record<string, { type: 'play' | 'draw' | 'skip' | null, u
 // 用于检测方向变化
 const previousDirection = ref<number | null>(null)
 const previousCurrentPlayer = ref<string | null>(null)
-const lastSwitchAt = ref<number>(0)
+// const lastSwitchAt = ref<number>(0)  // previously unused
 const suppressTimerUntil = ref<number>(0)
 const pendingSmallTimer = ref<number | null>(null)
 const pendingSmallTimerTimeout = ref<number | null>(null)
@@ -664,7 +663,8 @@ const onCommand = (command: any) => {
       // 同步房间状态为 waiting，这样 RoomControls 会显示等待/准备按钮（由房间状态驱动）
       if (gameStore.roomPlayer && gameStore.roomPlayer.room) {
         try {
-          gameStore.roomPlayer.room.status = 'waiting'
+          // 使用 RoomStatus 枚举以匹配类型定义
+          gameStore.roomPlayer.room.status = RoomStatus.waiting as any
         } catch (e) {
           // 某些情况下对象可能是只读，忽略错误
         }
