@@ -678,6 +678,7 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
       broadcastState();
       room.emit('command', { type: 'game:over', data: { winner: playerId, winnerRole: gameState.winnerRole } });
       room.emit('command', { type: 'achievements', data: achievements });
+      room.end(); // 结束房间，触发 'end' 事件通知前端
       return;
     }
 
@@ -758,6 +759,7 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
   room.on('end', () => {
     gameState = null;
     clearTurnTimer();
+    room.emit('command', { type: 'end' }); // 通知前端游戏结束，允许玩家离开
   });
 
   return room.on('player-command', async (message: any) => {
