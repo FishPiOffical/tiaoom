@@ -23,7 +23,7 @@
           <div class="text-center">
             <h3 class="mb-4 text-2xl font-bold">等待玩家准备</h3>
             <div class="mb-6 text-lg">
-              {{ Object.keys(gameStore.roomPlayer?.room?.players || {}).length }} / {{ gameStore.roomPlayer?.room?.size }} 玩家
+              {{ (gameStore.roomPlayer?.room?.players?.filter(p => p.role === 'player') || []).length }} / {{ gameStore.roomPlayer?.room?.size }} 玩家
             </div>
             <div v-if="gameStore.roomPlayer?.role === 'watcher'" class="mt-4 text-sm text-gray-600">
               你正在围观这场游戏，等待游戏开始
