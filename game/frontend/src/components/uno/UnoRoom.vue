@@ -197,10 +197,10 @@
       </div>
 
       <!-- 右侧栏 -->
-      <aside class="flex flex-col flex-none w-full overflow-y-auto border-t md:pl-4 md:border-t-0 md:border-l border-base-content/20 md:w-80">
-        <section class="mb-2 md:mb-4">
+      <aside class="flex flex-col flex-none w-full border-t md:pl-4 md:border-t-0 md:border-l border-base-content/20 md:w-80 md:h-full">
+        <section class="flex flex-col gap-2 mb-2 md:mb-4 max-h-1/2">
           <h3 class="mb-2 text-base font-bold md:text-lg">📊 计分板</h3>
-          <div v-if="Object.keys(achievements).length" class="overflow-x-auto overflow-y-auto border rounded-box border-base-content/5 bg-base-100 max-h-48">
+          <div v-if="Object.keys(achievements).length" class="overflow-auto border rounded-box border-base-content/5 bg-base-100 max-h-48">
             <table class="table text-xs text-center table-pin-rows table-pin-cols md:text-sm">
               <thead>
                 <tr>
@@ -223,8 +223,8 @@
           <div v-else class="py-4 text-center text-gray-500">暂无战绩</div>
         </section>
 
-        <section class="mb-4">
-          <h3 class="mb-2 text-lg font-bold">玩家列表</h3>
+        <section class="flex flex-col gap-2 mb-4">
+          <h3 class="text-lg font-bold">玩家列表</h3>
           <PlayerList :players="gameStore.roomPlayer?.room?.players || []">
             <template #default="{ player: p }">
               <div class="flex items-center justify-between w-full">
