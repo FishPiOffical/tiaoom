@@ -57,16 +57,17 @@ class YourGameClient extends Tiaoom {
 - 四子棋
 - 黑白棋
 - 谁是卧底
+- UNO (by @csfwff)
+- 斗地主 (by @zhazhahehedian)
   
 ## ⚙️ 调试/运行
+
 1. cd 到 `game`, 执行 `npm install`;
-fix: 直接在game目录下执行可能会报错，需要先在根目录执行
-`npm install --ignore-scripts`
-跳过prepare脚本后，再 `npm run build`构建，最后去game目录执行`npm install`
 2. 使用 Visual Studio Code 运行调试（直接按下`F5`即可），或执行 `npm run dev:backend` 启动后端开发服务器。
 3. 执行 `npm run dev:frontend` 启动前端开发服务器，访问 `http://localhost:5173`。
+4. 首次访问会跳转到 `/config` 页面，配置好 MySQL (>=7.0) 数据库与持久化选项（可选）后保存，回到首页即可开始开发。
 
-> 本地调试可修改 `game/frontend/src/views/Login.vue` 中的`const loginType = ref('fishpi')` 为 `normal`，即可切换为用户名登录模式。
+> 更多开发细节见 [摸鱼派棋牌室开发指南](./game/#readme)
 
 ## 📁 目录与文件
 - .vscode - VSCode 调试配置

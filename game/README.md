@@ -1,4 +1,4 @@
-# 摸鱼棋牌室
+# 摸鱼派棋牌室开发指南
 
 这是基于 [tiaoom](https://tiaoom.com) 开发的游戏项目。
 
@@ -14,20 +14,27 @@ game/
 │   ├── index.ts         # 后端入口
 │   ├── package.json     # 后端依赖
 │   └── tsconfig.json
-└── frontend/            # 前端应用
-    ├── src/
-    │   ├── api/              # API 请求
-    │   ├── components/       # Vue 组件
-    │   │   └── games/       # 游戏组件
-    │   ├── core/            # 核心游戏逻辑
-    │   ├── stores/          # Pinia 状态管理
-    │   ├── types/           # TypeScript 类型
-    │   ├── views/           # 页面组件
-    │   ├── router/          # 路由配置
-    │   └── main.ts          # 入口文件
-    ├── package.json
-    ├── vite.config.ts
-    └── tailwind.config.js
+├── frontend/            # 前端应用
+│   ├── src/
+│   │   ├── api/              # API 请求
+│   │   ├── components/       # Vue 组件
+│   │   │   └── games/       # 游戏组件
+│   │   ├── core/            # 核心游戏逻辑
+│   │   ├── stores/          # Pinia 状态管理
+│   │   ├── types/           # TypeScript 类型
+│   │   ├── views/           # 页面组件
+│   │   ├── router/          # 路由配置
+│   │   └── main.ts          # 入口文件
+│   ├── package.json
+│   ├── vite.config.ts
+│   └── tailwind.config.js
+├── embed/               # 游戏状态嵌入脚本
+│   ├── src/
+│   │   └── index.ts
+│   ├── package.json
+│   ├── tsdown.config.ts
+│   └── tsconfig.json
+└── README.md            # 本文件
 ```
 
 ## 依赖管理
@@ -38,6 +45,13 @@ game/
 - 各子包保持独立的 dependencies
 - 使用 `npm install` 一次性安装所有依赖
 - 使用 `npm run <script> --workspace=<package>` 操作特定包
+
+## 环境要求
+
+- Node.js >= 18.x
+- npm >= 9.x
+- MySQL >= 7.0
+- 推荐使用 VSCode 进行开发
 
 ## 快速开始
 
@@ -132,12 +146,32 @@ const props = defineProps<{
 
 前端可使用如下封装组件实现通用功能：
 
-- `RoomControls`：房间控制面板，含开始游戏、准备等功能。`RoomControlsLite` 为小窗版本。
+- `RoomControls`：房间控制面板，含开始游戏、准备等功能，会自动按照房间状态变化，有其他功能按钮，可以通过插槽插入。`RoomControlsLite` 为小窗版本。
 - `PlayerList`：玩家列表
 - `GameChat`：游戏内聊天
 - `Icon`：图标组件，支持 Iconify 图标库
 
+`useGameStore` 提供游戏状态管理，方便在组件间共享游戏状态。
+
+下列表格列出了其暴露的所有属性和方法：
+
+| 属性/方法 | 类型 | 描述 |
+| :--- | :--- | :--- |
+| `game` | `GameCore` | 游戏核心实例，用于与服务器通信，继承自 Tiaoom |
+| `player` | `User` | 当前登录的用户信息 |
+| `players` | `Player[]` | 当前在线玩家列表 |
+| `rooms` | `Room[]` | 当前房间列表 |
+| `games` | `Record<string, GameConfig>` | 游戏配置信息 |
+| `globalMessages` | `Message[]` | 全局聊天消息列表 |
+| `roomPlayer` | `RoomPlayer` | 当前用户在房间中的玩家对象（含房间信息） |
+| `playerStatus` | `string` | 当前用户的状态 |
+| `initConfig()` | `Promise<void>` | 初始化加载游戏配置，游戏内无需调用 |
+| `checkSession()` | `Promise<boolean>` | 检查用户登录会话状态，游戏内无需调用 |
+| `initGame()` | `GameCore` | 初始化游戏连接，建立 WebSocket，游戏内无需调用 |
+| `login(name)` | `Promise<boolean>` | 用户登录，游戏内无需调用 |
+| `logout()` | `Promise<boolean>` | 用户登出，游戏内无需调用 |
+
 ## 其他
 
-- 参考 [tiaoom 文档](https://tiaoom.com/) 了解更多 API 和使用方法。
-- [游戏状态嵌入脚本](./embed/README.md) 提供将游戏状态嵌入到任意网页中的能力。
+- [tiaoom 文档](https://tiaoom.com/) 了解更多 API 和使用方法。
+- [游戏状态嵌入脚本](./embed/#readme) 提供将游戏状态嵌入到任意网页中的能力。
