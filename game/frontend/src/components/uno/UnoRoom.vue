@@ -696,6 +696,12 @@ const onCommand = (command: any) => {
       // 保存游戏结果
       gameResult.value = { winner: command.data.winner }
       gameStatus.value = 'ended'
+      
+      // 清除托管标记显示
+      if (gameState.value && gameState.value.hosted) {
+        gameState.value.hosted = {}
+      }
+      
       // 同步房间状态为 waiting，这样 RoomControls 会显示等待/准备按钮（由房间状态驱动）
       if (gameStore.roomPlayer && gameStore.roomPlayer.room) {
         try {

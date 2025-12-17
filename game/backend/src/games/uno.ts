@@ -483,6 +483,13 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
 
         // 清除倒计时并保存最终状态
         clearTurnTimer();
+        
+        // 清除所有托管标记
+        if (gameState.hosted) {
+          gameState.hosted = {};
+          room.emit('message', { content: '游戏结束，清除所有托管标记' });
+        }
+        
         await saveGameData();
 
         // 广播最终状态与成就
@@ -903,7 +910,12 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
           
           // 清除倒计时
           clearTurnTimer();
-        
+          
+          // 清除所有托管标记
+          if (gameState.hosted) {
+            gameState.hosted = {};
+            room.emit('message', { content: '游戏结束，清除所有托管标记' });
+          }
           
           // 保存成就和最终状态
           await saveGameData();
