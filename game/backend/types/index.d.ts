@@ -25,4 +25,13 @@ interface IConfig {
     database: string;
     entityPrefix?: string;
   };
+  persistence?: {
+    driver: 'none' | 'mysql' | 'redis' | 'mongodb';
+    host?: string;
+    port?: number;
+    username?: string;
+    password?: string;
+    database?: string;
+    prefix?: string;
+  };
 }
