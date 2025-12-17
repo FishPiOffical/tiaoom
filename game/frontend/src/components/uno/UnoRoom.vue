@@ -23,7 +23,7 @@
           <div class="text-center">
             <h3 class="mb-4 text-2xl font-bold">等待玩家准备</h3>
             <div class="mb-6 text-lg">
-              {{ Object.keys(gameStore.roomPlayer?.room?.players || {}).length }} / {{ gameStore.roomPlayer?.room?.size }} 玩家
+              {{ (gameStore.roomPlayer?.room?.players?.filter(p => p.role === 'player') || []).length }} / {{ gameStore.roomPlayer?.room?.size }} 玩家
             </div>
             <div v-if="gameStore.roomPlayer?.role === 'watcher'" class="mt-4 text-sm text-gray-600">
               你正在围观这场游戏，等待游戏开始
@@ -83,12 +83,12 @@
 
             <!-- 左上角状态信息（方向 / 当前颜色 / 抽牌计数） -->
             <div v-if="gameState" class="absolute z-40 flex flex-wrap items-center gap-2 top-2 left-2 md:top-4 md:left-4 md:gap-3 max-w-60 md:max-w-80">
-              <div class="flex items-center gap-1 px-2 py-1 text-xs rounded-lg shadow-md md:gap-2 md:text-sm bg-white/90 md:px-3 md:py-2 backdrop-blur-sm">
+              <div class="flex items-center gap-1 px-2 py-1 text-xs rounded-lg shadow-md md:gap-2 md:text-sm bg-base-200 md:px-3 md:py-2 backdrop-blur-sm">
                 <div class="text-base md:text-lg">{{ gameState.direction === 1 ? '↻' : '↺' }}</div>
                 <span class="hidden font-medium md:inline">{{ gameState.direction === 1 ? '顺时针' : '逆时针' }}</span>
               </div>
 
-              <div class="flex items-center gap-1 px-2 py-1 text-xs rounded-lg shadow-md md:gap-2 md:text-sm bg-white/90 md:px-3 md:py-2 backdrop-blur-sm">
+              <div class="flex items-center gap-1 px-2 py-1 text-xs rounded-lg shadow-md md:gap-2 md:text-sm bg-base-200 md:px-3 md:py-2 backdrop-blur-sm">
                 <span class="hidden font-medium md:inline">当前颜色:</span>
                 <div class="w-4 h-4 border-2 border-gray-800 rounded md:w-5 md:h-5"
                   :class="{
@@ -123,6 +123,7 @@
                     <div v-if="gameState?.currentPlayer === gameStore.player?.id && currentTimer !== null" class="text-sm font-bold" :class="currentTimer <= 5 ? 'text-red-500' : 'text-blue-500'">⏱ {{ currentTimer }}s</div>
                     <span class="badge badge-xs md:badge-sm">{{ (gameState?.players?.[gameStore.player?.id || '']?.length) || 0 }} 张</span>
                   </div>
+                  <div v-if="(gameState?.players?.[gameStore.player?.id || '']?.length || 0) === 1" class="text-sm font-bold text-red-500 animate-pulse">UNO!</div>
                 </div>
               </div>
             </div>
@@ -162,9 +163,9 @@
           <div v-if="gameStore.roomPlayer?.role === 'player'" class="p-2 rounded-lg md:p-4 bg-base-100">
             <div class="flex items-center justify-between mb-2 md:mb-4">
               <span class="text-sm md:font-medium">我的手牌</span>
-              <div class="flex items-center gap-2">
+              <!-- <div class="flex items-center gap-2">
                 <button v-if="gameState.players?.[gameStore.player?.id || '']?.length === 2" @click="callUno" class="btn btn-xs md:btn-sm btn-warning">UNO!</button>
-              </div>
+              </div> -->
             </div>
 
             <div class="flex flex-wrap gap-1 md:gap-2 mb-2 md:mb-4 min-h-20 md:min-h-[100px] max-h-44 md:max-h-40 overflow-y-auto">
@@ -196,10 +197,10 @@
       </div>
 
       <!-- 右侧栏 -->
-      <aside class="flex flex-col flex-none w-full overflow-y-auto border-t md:pl-4 md:border-t-0 md:border-l border-base-content/20 md:w-80">
-        <section class="mb-2 md:mb-4">
+      <aside class="flex flex-col flex-none w-full border-t md:pl-4 md:border-t-0 md:border-l border-base-content/20 md:w-80 md:h-full">
+        <section class="flex flex-col gap-2 mb-2 md:mb-4 max-h-1/2">
           <h3 class="mb-2 text-base font-bold md:text-lg">📊 计分板</h3>
-          <div v-if="Object.keys(achievements).length" class="overflow-x-auto overflow-y-auto border rounded-box border-base-content/5 bg-base-100 max-h-48">
+          <div v-if="Object.keys(achievements).length" class="overflow-auto border rounded-box border-base-content/5 bg-base-100 max-h-48">
             <table class="table text-xs text-center table-pin-rows table-pin-cols md:text-sm">
               <thead>
                 <tr>
@@ -222,8 +223,8 @@
           <div v-else class="py-4 text-center text-gray-500">暂无战绩</div>
         </section>
 
-        <section class="mb-4">
-          <h3 class="mb-2 text-lg font-bold">玩家列表</h3>
+        <section class="flex flex-col gap-2 mb-4">
+          <h3 class="text-lg font-bold">玩家列表</h3>
           <PlayerList :players="gameStore.roomPlayer?.room?.players || []">
             <template #default="{ player: p }">
               <div class="flex items-center justify-between w-full">
@@ -695,6 +696,12 @@ const onCommand = (command: any) => {
       // 保存游戏结果
       gameResult.value = { winner: command.data.winner }
       gameStatus.value = 'ended'
+      
+      // 清除托管标记显示
+      if (gameState.value && gameState.value.hosted) {
+        gameState.value.hosted = {}
+      }
+      
       // 同步房间状态为 waiting，这样 RoomControls 会显示等待/准备按钮（由房间状态驱动）
       if (gameStore.roomPlayer && gameStore.roomPlayer.room) {
         try {
