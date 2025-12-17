@@ -14,7 +14,10 @@ router.get("/", (req, res) => {
 });
 
 router.post("/", (req, res) => {
-  const { webport, goldenKey, host, port, username, password, database, prefix, marketKey } = req.body;
+  const { 
+    webport, goldenKey, host, port, username, password, database, prefix, marketKey,
+    persistence_driver, persistence_host, persistence_port, persistence_username, persistence_password, persistence_database, persistence_prefix
+  } = req.body;
   
   const config: IConfig = {
     webport, secret: {
@@ -26,6 +29,15 @@ router.post("/", (req, res) => {
     database: {
       host, port, username, password, database, entityPrefix: prefix + (prefix.endsWith('_') ? '' : '_')
     },
+    persistence: {
+      driver: persistence_driver || 'none',
+      host: persistence_host,
+      port: persistence_port,
+      username: persistence_username,
+      password: persistence_password,
+      database: persistence_database,
+      prefix: persistence_prefix
+    }
   }
 
   fs.writeFileSync(path.join(__dirname, "..", "config.json"), JSON.stringify(config, null, 2));

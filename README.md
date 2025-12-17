@@ -60,6 +60,9 @@ class YourGameClient extends Tiaoom {
   
 ## ⚙️ 调试/运行
 1. cd 到 `game`, 执行 `npm install`;
+fix: 直接在game目录下执行可能会报错，需要先在根目录执行
+`npm install --ignore-scripts`
+跳过prepare脚本后，再 `npm run build`构建，最后去game目录执行`npm install`
 2. 使用 Visual Studio Code 运行调试（直接按下`F5`即可），或执行 `npm run dev:backend` 启动后端开发服务器。
 3. 执行 `npm run dev:frontend` 启动前端开发服务器，访问 `http://localhost:5173`。
 

@@ -57,6 +57,14 @@
             text-align: center;
             color: var(--text-color);
             margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo {
+            height: 40px;
+            margin-right: 0.5rem;
         }
         
         #configForm {
@@ -76,7 +84,7 @@
             color: var(--label-color);
             margin-bottom: 0.5rem;
         }
-        input {
+        input, select {
             width: 100%;
             padding: 0.5rem;
             border: 1px solid var(--input-border);
@@ -86,7 +94,7 @@
             font-size: 1rem;
             box-sizing: border-box;
         }
-        input:focus {
+        input:focus, select:focus {
             outline: none;
             border-color: var(--button-bg);
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
@@ -150,7 +158,10 @@
 </head>
 <body>
     <div class="container">
-        <h1>服务器初始化配置</h1>
+        <h1>
+            <img src="/logo.png" alt="Logo" class="logo">
+            <span>服务器初始化配置</span>
+        </h1>
         <form id="configForm">
             <div class="section-title">基本设置</div>
             <div class="form-group">
@@ -184,6 +195,44 @@
                 <input type="text" id="prefix" name="prefix">
             </div>
 
+            <div class="section-title">持久化设置</div>
+            <div class="form-group">
+                <label for="persistence_driver">持久化方式</label>
+                <select id="persistence_driver" name="persistence_driver">
+                    <option value="none">无</option>
+                    <option value="mysql">MySQL</option>
+                    <option value="redis">Redis</option>
+                    <option value="mongodb">MongoDB</option>
+                </select>
+            </div>
+
+            <div id="persistence_config" style="display: none; grid-column: 1 / -1; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label for="persistence_host">主机地址</label>
+                    <input type="text" id="persistence_host" name="persistence_host">
+                </div>
+                <div class="form-group">
+                    <label for="persistence_port">端口</label>
+                    <input type="number" id="persistence_port" name="persistence_port">
+                </div>
+                <div class="form-group">
+                    <label for="persistence_username">用户名</label>
+                    <input type="text" id="persistence_username" name="persistence_username">
+                </div>
+                <div class="form-group">
+                    <label for="persistence_password">密码</label>
+                    <input type="password" id="persistence_password" name="persistence_password">
+                </div>
+                <div class="form-group" id="persistence_database_group">
+                    <label for="persistence_database">数据库名</label>
+                    <input type="text" id="persistence_database" name="persistence_database">
+                </div>
+                <div class="form-group">
+                    <label for="persistence_prefix">前缀</label>
+                    <input type="text" id="persistence_prefix" name="persistence_prefix">
+                </div>
+            </div>
+
             <div class="section-title">摸鱼派密钥设置（可选）</div>
             <div class="form-group">
                 <label for="goldenKey">Golden Key (积分密钥)</label>
@@ -200,6 +249,24 @@
     </div>
 
     <script>
+        const persistenceDriver = document.getElementById('persistence_driver');
+        const persistenceConfig = document.getElementById('persistence_config');
+        const persistenceDatabaseGroup = document.getElementById('persistence_database_group');
+
+        persistenceDriver.addEventListener('change', () => {
+            const value = persistenceDriver.value;
+            if (value === 'redis' || value === 'mongodb') {
+                persistenceConfig.style.display = 'grid';
+                if (value === 'mongodb') {
+                    persistenceDatabaseGroup.style.display = 'block';
+                } else {
+                    persistenceDatabaseGroup.style.display = 'none';
+                }
+            } else {
+                persistenceConfig.style.display = 'none';
+            }
+        });
+
         document.getElementById('configForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const submitBtn = document.getElementById('submitBtn');
@@ -214,7 +281,7 @@
             
             // Convert FormData to JSON object, handling numbers
             for (let [key, value] of formData.entries()) {
-                if (key === 'webport' || key === 'port') {
+                if (key === 'webport' || key === 'port' || key === 'persistence_port') {
                     data[key] = Number(value);
                 } else {
                     data[key] = value;

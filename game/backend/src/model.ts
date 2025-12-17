@@ -1,39 +1,28 @@
 import { Room as GameRoom } from "tiaoom";
-import { Room, RoomRepo } from "./entities";
+import { PersistenceFactory } from "./persistence";
 
 export class Model {
   static async createRoom(room: GameRoom) {
-    if (await RoomRepo.findOneBy({ id: room.id })) return room;
-    const newRoom = new Room(room);
-    return RoomRepo.save(RoomRepo.create(newRoom));
+    return PersistenceFactory.getPersistence().createRoom(room);
   }
 
   static getRooms() {
-    return RoomRepo.find();
+    return PersistenceFactory.getPersistence().getRooms();
   }
 
   static async updatePlayerList(roomId: string, players: any[]) {
-    const room = await RoomRepo.findOneBy({ id: roomId });
-    if (room) {
-      room.players = players;
-      await RoomRepo.update({ id: roomId }, room);
-    }
+    return PersistenceFactory.getPersistence().updatePlayerList(roomId, players);
   }
 
   static async saveGameData(roomId: string, gameData: any) {
-    const room = await RoomRepo.findOneBy({ id: roomId });
-    if (room) {
-      room.gameData = gameData;
-      await RoomRepo.update({ id: roomId }, room);
-    }
+    return PersistenceFactory.getPersistence().saveGameData(roomId, gameData);
   }
 
   static async getGameData(roomId: string) {
-    const room = await RoomRepo.findOneBy({ id: roomId });
-    return room ? room.gameData : null;
+    return PersistenceFactory.getPersistence().getGameData(roomId);
   }
 
   static async closeRoom(roomId: string) {
-    await RoomRepo.delete({ id: roomId });
+    return PersistenceFactory.getPersistence().closeRoom(roomId);
   }
 }

@@ -40,7 +40,7 @@ const router = createRouter({
           meta: { requiresAdmin: true }
         },
         {
-          path: 'room/:id',
+          path: 'r/:id',
           name: 'room',
           component: () => import('@/views/Room.vue'),
           meta: { requiresAuth: true }
@@ -80,7 +80,7 @@ router.beforeEach(async (to, _from, next) => {
   }
 
   const redirectAfterLogin = localStorage.getItem('redirect-after-login')
-  if (redirectAfterLogin) {
+  if (redirectAfterLogin && to.path !== '/login') {
     localStorage.removeItem('redirect-after-login')
     next(redirectAfterLogin)
     return
