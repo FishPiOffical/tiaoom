@@ -60,6 +60,8 @@ export interface DoudizhuGameState {
   turnTimeout?: number;
   turnTimeLeft?: number;
   bombCount: number; // 炸弹数量（用于计算倍数）
+  // 托管状态：playerId -> true 表示该玩家被托管
+  hosted?: { [playerId: string]: boolean };
 }
 
 // 创建一副牌
@@ -291,6 +293,7 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
   const BID_TIMEOUT = 15000; // 叫地主15秒
   let currentTimeout: NodeJS.Timeout | null = null;
   let timerInterval: NodeJS.Timeout | null = null;
+  let timerGeneration = 0; // 用于标识当前倒计时的代数，防止旧回调执行
 
   const saveGameData = async () => {
     try {
@@ -318,6 +321,9 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
 
   const startTurnTimer = (timeoutMs: number, onTimeout: () => void) => {
     clearTurnTimer();
+    timerGeneration++; // 增加代数，使旧的回调失效
+    const currentGeneration = timerGeneration;
+
     if (gameState) {
       gameState.turnStartTime = Date.now();
       gameState.turnTimeout = timeoutMs;
@@ -329,6 +335,10 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
 
     // 每秒更新倒计时并广播
     timerInterval = setInterval(() => {
+      // 检查是否是当前代的计时器
+      if (currentGeneration !== timerGeneration) {
+        return;
+      }
       if (gameState && gameState.turnTimeLeft !== undefined && gameState.turnTimeLeft > 0) {
         gameState.turnTimeLeft--;
         room.emit('command', { type: 'timer:update', data: { timeLeft: gameState.turnTimeLeft } });
@@ -336,6 +346,10 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
     }, 1000);
 
     currentTimeout = setTimeout(() => {
+      // 检查是否是当前代的计时器，防止旧回调执行
+      if (currentGeneration !== timerGeneration) {
+        return;
+      }
       clearTurnTimer();
       onTimeout();
     }, timeoutMs);
@@ -352,6 +366,79 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
     if (gameState) {
       room.emit('command', { type: 'game:state', data: gameState });
     }
+  };
+
+  // 托管相关常量
+  const HOSTED_TIMEOUT = 5000; // 托管玩家5秒倒计时
+
+  // 是否被托管
+  const isHosted = (playerId: string) => {
+    return !!(gameState && gameState.hosted && gameState.hosted[playerId]);
+  };
+
+  // 启动托管
+  const startHosting = async (playerId: string) => {
+    if (!gameState || gameState.phase === 'ended') return;
+    gameState.hosted = gameState.hosted || {};
+    if (gameState.hosted[playerId]) return; // 已托管
+    gameState.hosted[playerId] = true;
+    const player = room.players.find(p => p.id === playerId);
+    room.emit('message', { content: `${player?.name || playerId} 离线，进入托管` });
+    await saveGameData();
+    broadcastState();
+
+    // 如果当前正在该玩家回合，缩短倒计时
+    const isCurrentTurn = (gameState.phase === 'bidding' && gameState.currentBidder === playerId) ||
+                          (gameState.phase === 'playing' && gameState.currentPlayer === playerId);
+    if (isCurrentTurn) {
+      clearTurnTimer();
+      if (gameState.phase === 'bidding') {
+        startTurnTimer(HOSTED_TIMEOUT, () => handleBidTimeout());
+      } else {
+        startTurnTimer(HOSTED_TIMEOUT, () => handlePlayTimeout());
+      }
+    }
+  };
+
+  // 停止托管（玩家重连）
+  const stopHosting = async (playerId: string) => {
+    if (!gameState || !gameState.hosted) return;
+    if (!gameState.hosted[playerId]) return;
+    delete gameState.hosted[playerId];
+    const player = room.players.find(p => p.id === playerId);
+    room.emit('message', { content: `${player?.name || playerId} 已重连，取消托管` });
+    await saveGameData();
+    broadcastState();
+  };
+
+  // 托管自动叫地主（不叫）
+  const hostBid = async (playerId: string) => {
+    if (!gameState || gameState.phase !== 'bidding') return;
+    const player = room.players.find(p => p.id === playerId);
+    const actionName = gameState.bidRound === 0 ? '不叫' : '不抢';
+    room.emit('message', { content: `${player?.name || playerId} (托管) ${actionName}` });
+    await processBid(playerId, false);
+  };
+
+  // 托管自动出牌
+  const hostPlayTurn = async (playerId: string) => {
+    if (!gameState || gameState.phase !== 'playing') return;
+    const hand = gameState.players[playerId];
+    if (!hand || hand.length === 0) return;
+
+    const player = room.players.find(p => p.id === playerId);
+
+    // 如果可以 pass（上家有人出牌且不是自己）
+    if (gameState.lastPlayer && gameState.lastPlayer !== playerId) {
+      room.emit('message', { content: `${player?.name || playerId} (托管) 不出` });
+      await processPass(playerId);
+      return;
+    }
+
+    // 必须出牌，出最小的单张
+    const smallestCard = hand[hand.length - 1];
+    room.emit('message', { content: `${player?.name || playerId} (托管) 出牌` });
+    await processPlay(playerId, [smallestCard.id]);
   };
 
   const startGame = async () => {
@@ -411,16 +498,21 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
   };
 
   const handleBidTimeout = async () => {
-    if (!gameState || gameState.phase !== 'bidding') return;
+    if (!gameState || gameState.phase !== 'bidding' || !gameState.currentBidder) return;
 
-    // 超时默认不叫/不抢
     const currentBidder = gameState.currentBidder;
-    if (currentBidder) {
-      const player = room.players.find(p => p.id === currentBidder);
-      const actionName = gameState.bidRound === 0 ? '不叫' : '不抢';
-      room.emit('message', { content: `${player?.name} 超时，自动${actionName}` });
-      await processBid(currentBidder, false);
+
+    // 如果玩家被托管，使用托管逻辑
+    if (isHosted(currentBidder)) {
+      await hostBid(currentBidder);
+      return;
     }
+
+    // 普通超时处理
+    const player = room.players.find(p => p.id === currentBidder);
+    const actionName = gameState.bidRound === 0 ? '不叫' : '不抢';
+    room.emit('message', { content: `${player?.name} 超时，自动${actionName}` });
+    await processBid(currentBidder, false);
   };
 
   const processBid = async (playerId: string, bid: boolean) => {
@@ -474,7 +566,8 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
       const nextBidder = room.players.find(p => p.id === nextBidderId);
       room.emit('message', { content: `请 ${nextBidder?.name} 选择是否抢地主` });
 
-      startTurnTimer(BID_TIMEOUT, () => handleBidTimeout());
+      const nextTimeout = isHosted(nextBidderId) ? HOSTED_TIMEOUT : BID_TIMEOUT;
+      startTurnTimer(nextTimeout, () => handleBidTimeout());
     } else {
       // 玩家不叫/不抢
       const actionName = gameState.bidRound === 0 ? '不叫' : '不抢';
@@ -513,7 +606,8 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
       const nextActionName = gameState.lastBidder ? '抢地主' : '叫地主';
       room.emit('message', { content: `请 ${nextBidder?.name} 选择是否${nextActionName}` });
 
-      startTurnTimer(BID_TIMEOUT, () => handleBidTimeout());
+      const nextTimeout = isHosted(gameState.currentBidder!) ? HOSTED_TIMEOUT : BID_TIMEOUT;
+      startTurnTimer(nextTimeout, () => handleBidTimeout());
     }
   };
 
@@ -538,27 +632,37 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
     await saveGameData();
     broadcastState();
 
-    // 开始出牌倒计时
-    startTurnTimer(TURN_TIMEOUT, () => handlePlayTimeout());
+    // 开始出牌倒计时（如果地主被托管则缩短时间）
+    const timeout = isHosted(landlordId) ? HOSTED_TIMEOUT : TURN_TIMEOUT;
+    startTurnTimer(timeout, () => handlePlayTimeout());
   };
 
   const handlePlayTimeout = async () => {
     if (!gameState || gameState.phase !== 'playing') return;
 
-    const currentPlayer = room.players.find(p => p.id === gameState!.currentPlayer);
+    const currentPlayerId = gameState.currentPlayer;
+
+    // 如果玩家被托管，使用托管逻辑
+    if (isHosted(currentPlayerId)) {
+      await hostPlayTurn(currentPlayerId);
+      return;
+    }
+
+    // 普通超时处理
+    const currentPlayer = room.players.find(p => p.id === currentPlayerId);
 
     // 超时自动pass或出最小的牌
-    if (gameState.lastPlayer && gameState.lastPlayer !== gameState.currentPlayer) {
+    if (gameState.lastPlayer && gameState.lastPlayer !== currentPlayerId) {
       // 可以pass
       room.emit('message', { content: `${currentPlayer?.name} 超时，自动不出` });
-      await processPass(gameState.currentPlayer);
+      await processPass(currentPlayerId);
     } else {
       // 必须出牌，出最小的单张
-      const hand = gameState.players[gameState.currentPlayer];
+      const hand = gameState.players[currentPlayerId];
       if (hand.length > 0) {
         const smallestCard = hand[hand.length - 1];
         room.emit('message', { content: `${currentPlayer?.name} 超时，自动出牌` });
-        await processPlay(gameState.currentPlayer, [smallestCard.id]);
+        await processPlay(currentPlayerId, [smallestCard.id]);
       }
     }
   };
@@ -587,7 +691,8 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
 
     await saveGameData();
     broadcastState();
-    startTurnTimer(TURN_TIMEOUT, () => handlePlayTimeout());
+    const nextTimeout = isHosted(gameState.currentPlayer) ? HOSTED_TIMEOUT : TURN_TIMEOUT;
+    startTurnTimer(nextTimeout, () => handlePlayTimeout());
   };
 
   const processPlay = async (playerId: string, cardIds: string[]) => {
@@ -689,7 +794,8 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
 
     await saveGameData();
     broadcastState();
-    startTurnTimer(TURN_TIMEOUT, () => handlePlayTimeout());
+    const nextTimeout = isHosted(gameState.currentPlayer) ? HOSTED_TIMEOUT : TURN_TIMEOUT;
+    startTurnTimer(nextTimeout, () => handlePlayTimeout());
   };
 
   // 恢复游戏状态
@@ -700,11 +806,39 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
       }
     });
 
-    if (gameState.phase === 'bidding') {
-      startTurnTimer(BID_TIMEOUT, () => handleBidTimeout());
-    } else if (gameState.phase === 'playing') {
-      startTurnTimer(TURN_TIMEOUT, () => handlePlayTimeout());
-    }
+    // 延迟恢复倒计时，确保函数已定义
+    setTimeout(() => {
+      if (!gameState || gameState.phase === 'ended') return;
+
+      // 计算剩余时间
+      if (gameState.turnStartTime && gameState.turnTimeout) {
+        const elapsed = Date.now() - gameState.turnStartTime;
+        const remaining = gameState.turnTimeout - elapsed;
+
+        if (remaining > 0) {
+          // 还有剩余时间，继续倒计时
+          if (gameState.phase === 'bidding') {
+            startTurnTimer(remaining, () => handleBidTimeout());
+          } else if (gameState.phase === 'playing') {
+            startTurnTimer(remaining, () => handlePlayTimeout());
+          }
+        } else {
+          // 倒计时已过期，立即处理超时
+          if (gameState.phase === 'bidding') {
+            handleBidTimeout();
+          } else if (gameState.phase === 'playing') {
+            handlePlayTimeout();
+          }
+        }
+      } else {
+        // 没有倒计时状态，开始新的倒计时
+        if (gameState.phase === 'bidding') {
+          startTurnTimer(BID_TIMEOUT, () => handleBidTimeout());
+        } else if (gameState.phase === 'playing') {
+          startTurnTimer(TURN_TIMEOUT, () => handlePlayTimeout());
+        }
+      }
+    }, 0);
   }
 
   // 监听玩家加入
@@ -724,6 +858,11 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
           messageHistory
         }
       });
+
+      // 如果玩家重连并且之前被托管，则取消托管
+      if (gameState.hosted && gameState.hosted[player.id]) {
+        stopHosting(player.id);
+      }
     }
   }).on('leave', async (player) => {
     if (gameState && gameState.phase !== 'ended' && player.role === 'player') {
@@ -760,6 +899,15 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
     gameState = null;
     clearTurnTimer();
     room.emit('command', { type: 'end' }); // 通知前端游戏结束，允许玩家离开
+  });
+
+  // 玩家离线事件：启动托管
+  room.on('player-offline', async (player) => {
+    try {
+      await startHosting(player.id);
+    } catch (err) {
+      console.error('startHosting error', err);
+    }
   });
 
   return room.on('player-command', async (message: any) => {
