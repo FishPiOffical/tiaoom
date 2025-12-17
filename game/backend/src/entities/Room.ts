@@ -99,6 +99,12 @@ export abstract class RoomBase extends Room {
 
   constructor(room?: IRoom) {
     super(room);
+    this.type = room?.attrs?.type || '';
+    this.name = room?.name || '';
+    this.minSize = room?.minSize || 2;
+    this.size = room?.size || 2;
+    this.passwd = room?.attrs?.passwd || '';
+    this.players = room?.players || [];
   }
 }
 
