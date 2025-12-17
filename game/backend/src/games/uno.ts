@@ -20,7 +20,7 @@ export interface UnoGameState {
   currentPlayer: string;
   direction: 1 | -1;
   color: 'red' | 'blue' | 'green' | 'yellow';
-  drawCount: number;
+  drawCount: number; // 仅用于+4累积
   winner?: string;
   turnStartTime?: number;
   turnTimeout?: number;
@@ -364,8 +364,8 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
             }
             break;
           case 'draw2':
-            gameState.drawCount += 2;
-            room.emit('message', { content: `下家需要抽2张牌！` });
+            // +2效果不累积，等待下一位玩家回合时处理
+            room.emit('message', { content: `下家将面临+2惩罚！` });
             break;
         }
       }
@@ -431,15 +431,36 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
       moveHistory.push({ player: playerId, action: { type: 'play_card', cardId: card.id, chosenColor }, timestamp: Date.now() });
 
     } else {
-      // 无牌可出：抓牌（若有累积抽牌则抓完），抓牌后自动结束回合
-      if (gameState.drawCount > 0) {
-        for (let i = 0; i < gameState.drawCount && gameState.deck.length > 0; i++) {
-          const drawn = gameState.deck.pop();
-          if (drawn) hand.push(drawn);
+      // 无牌可出：检查是否面临+2惩罚
+      const topCard = gameState.discardPile[gameState.discardPile.length - 1];
+      
+      if (topCard.value === 'draw2') {
+        // 面临+2惩罚，检查是否可以出牌
+        let canPlayAnyCard = false;
+        for (const card of hand) {
+          if (card.color === topCard.color && card.type !== 'wild') {
+            canPlayAnyCard = true;
+            break;
+          }
         }
-        room.emit('message', { content: `${playerSocket?.name || playerId} (托管) 强制抽了 ${gameState.drawCount} 张牌` });
-        gameState.drawCount = 0;
+        
+        if (!canPlayAnyCard) {
+          // 不能出牌，强制抽2张
+          for (let i = 0; i < 2 && gameState.deck.length > 0; i++) {
+            const drawn = gameState.deck.pop();
+            if (drawn) hand.push(drawn);
+          }
+          room.emit('message', { content: `${playerSocket?.name || playerId} (托管) 无法出牌，抽了2张牌` });
+        } else {
+          // 可以出牌但托管选择不出，抽1张牌
+          if (gameState.deck.length > 0) {
+            const drawn = gameState.deck.pop();
+            if (drawn) hand.push(drawn);
+            room.emit('message', { content: `${playerSocket?.name || playerId} (托管) 抽了一张牌` });
+          }
+        }
       } else {
+        // 正常情况抽1张牌
         if (gameState.deck.length > 0) {
           const drawn = gameState.deck.pop();
           if (drawn) hand.push(drawn);
@@ -759,8 +780,8 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
               }
               break;
             case 'draw2':
-              gameState.drawCount += 2;
-              room.emit('message', { content: `下家需要抽2张牌！` });
+              // +2效果不累积，等待下一位玩家回合时处理
+              room.emit('message', { content: `下家将面临+2惩罚！` });
               break;
           }
         }
@@ -832,28 +853,36 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
         }
         gameState.currentPlayer = nextPlayerId;
         
-        // 处理抽牌累积
-        if (gameState.drawCount > 0) {
-          const nextPlayerId = getNextPlayer(Object.keys(gameState.players), gameState.currentPlayer, gameState.direction);
+        // 检查+2效果（在新玩家回合开始时立即检查）
+        const currentTopCard = gameState.discardPile[gameState.discardPile.length - 1];
+        if (currentTopCard.value === 'draw2') {
           const nextHand = gameState.players[nextPlayerId];
-          let canBlock = false;
           
-          // 检查下一个玩家是否有+2或+4可以反击
+          // 检查是否可以出牌（官方规则：只检查是否有与+2颜色相同的牌）
+          let canPlayAnyCard = false;
           for (const card of nextHand) {
-            if ((card.value === 'draw2' && gameState.drawCount >= 2) || 
-                (card.value === 'wild_draw4' && gameState.drawCount >= 4)) {
-              canBlock = true;
+            // 检查是否有与+2颜色相同的牌（不包括变色牌和+4）
+            if (card.color === currentTopCard.color && card.type !== 'wild') {
+              canPlayAnyCard = true;
               break;
             }
           }
           
-          if (!canBlock) {
-            // 强制抽牌
-            for (let i = 0; i < gameState.drawCount && gameState.deck.length > 0; i++) {
+          if (!canPlayAnyCard) {
+            // 不能出牌，强制抽2张并结束回合
+            for (let i = 0; i < 2 && gameState.deck.length > 0; i++) {
               const drawnCard = gameState.deck.pop();
               if (drawnCard) nextHand.push(drawnCard);
             }
-            gameState.drawCount = 0;
+            room.emit('message', { content: `${room.players.find(p => p.id === nextPlayerId)?.name} 无法出牌，抽了2张牌并被跳过回合` });
+            
+            // 跳过该玩家，直接到下下个玩家
+            const actualNextPlayerId = getNextPlayer(Object.keys(gameState.players), nextPlayerId, gameState.direction);
+            const actualNextPlayer = room.players.find(p => p.id === actualNextPlayerId);
+            if (actualNextPlayer) {
+              room.emit('message', { content: `轮到 ${actualNextPlayer.name} 出牌` });
+            }
+            gameState.currentPlayer = actualNextPlayerId;
           }
         }
         
@@ -889,17 +918,37 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
           return;
         }
         
-        // 如果有累积抽牌，必须抽完
-        if (gameState.drawCount > 0) {
-          const playerHand = gameState.players[sender.id];
-          for (let i = 0; i < gameState.drawCount && gameState.deck.length > 0; i++) {
-            const drawnCard = gameState.deck.pop();
-            if (drawnCard) playerHand.push(drawnCard);
+        // 检查是否面临+2惩罚
+        const topCard = gameState.discardPile[gameState.discardPile.length - 1];
+        const playerHand = gameState.players[sender.id];
+        
+        if (topCard.value === 'draw2') {
+          // 面临+2惩罚，检查是否可以出牌
+          let canPlayAnyCard = false;
+          for (const card of playerHand) {
+            if (card.color === topCard.color && card.type !== 'wild') {
+              canPlayAnyCard = true;
+              break;
+            }
           }
-          room.emit('message', { content: `${sender.name} 强制抽了 ${gameState.drawCount} 张牌` });
-          gameState.drawCount = 0;
+          
+          if (!canPlayAnyCard) {
+            // 不能出牌，强制抽2张
+            for (let i = 0; i < 2 && gameState.deck.length > 0; i++) {
+              const drawnCard = gameState.deck.pop();
+              if (drawnCard) playerHand.push(drawnCard);
+            }
+            room.emit('message', { content: `${sender.name} 无法出牌，抽了2张牌并被跳过回合` });
+          } else {
+            // 可以出牌但玩家选择抽牌，正常抽1张
+            if (gameState.deck.length > 0) {
+              const drawnCard = gameState.deck.pop()!;
+              gameState.players[sender.id].push(drawnCard);
+              room.emit('message', { content: `${sender.name} 抽了一张牌` });
+            }
+          }
         } else {
-          // 正常抽一张牌
+          // 正常情况抽1张牌
           if (gameState.deck.length === 0) return;
           
           const drawnCard = gameState.deck.pop()!;
