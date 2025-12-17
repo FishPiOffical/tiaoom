@@ -1149,6 +1149,14 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
           
           // 标记+4已处理
           gameState.wildDraw4Processed = true;
+          
+          // 质疑失败，切换到下一位玩家
+          const nextPlayerId = getNextPlayer(Object.keys(gameState.players), gameState.currentPlayer, gameState.direction);
+          const nextPlayer = room.players.find(p => p.id === nextPlayerId);
+          if (nextPlayer) {
+            room.emit('message', { content: `轮到 ${nextPlayer.name} 出牌` });
+          }
+          gameState.currentPlayer = nextPlayerId;
         } else {
           // +4使用违规，质疑成功
           room.emit('message', { content: `${prevPlayer.name} 的+4使用违规！${sender.name} 质疑成功，${prevPlayer.name} 需抽4张牌` });
@@ -1161,15 +1169,10 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
           
           // 标记+4已处理
           gameState.wildDraw4Processed = true;
+          
+          // 质疑成功，当前玩家（质疑者）继续他的回合，不切换玩家
+          room.emit('message', { content: `${sender.name} 质疑成功，继续你的回合` });
         }
-        
-        // 质疑失败或正常情况，切换到下一位玩家
-        const nextPlayerId = getNextPlayer(Object.keys(gameState.players), gameState.currentPlayer, gameState.direction);
-        const nextPlayer = room.players.find(p => p.id === nextPlayerId);
-        if (nextPlayer) {
-          room.emit('message', { content: `轮到 ${nextPlayer.name} 出牌` });
-        }
-        gameState.currentPlayer = nextPlayerId;
         
         // 保存游戏状态
         await saveGameData();
