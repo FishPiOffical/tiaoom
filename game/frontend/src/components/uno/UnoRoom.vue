@@ -99,10 +99,7 @@
                   }"></div>
               </div>
 
-              <div v-if="gameState.drawCount > 0" class="flex items-center gap-1 px-2 py-1 text-xs border border-orange-300 rounded-lg shadow-md md:gap-2 md:text-sm bg-orange-100/90 md:px-3 md:py-2 backdrop-blur-sm">
-                <div class="text-xs font-bold text-orange-600 md:text-sm">+{{ gameState.drawCount }}</div>
-                <span class="hidden font-medium text-orange-700 md:inline">累积抽牌</span>
-              </div>
+
             </div>
 
             <!-- 底部中央：当前玩家（自己）显示块（仅普通玩家可见） -->
@@ -175,7 +172,15 @@
             </div>
 
             <div class="flex flex-col gap-2 sm:flex-row">
-              <button @click="drawCard" :disabled="!isCurrentPlayer" class="btn btn-sm md:btn-base" :class="gameState.drawCount > 0 ? 'btn-warning animate-pulse' : 'btn-secondary'">抽牌 <span v-if="gameState.drawCount > 0" class="ml-2 text-xs badge badge-error">+{{ gameState.drawCount }}</span></button>
+              <button @click="drawCard" :disabled="!isCurrentPlayer" class="btn btn-sm md:btn-base btn-secondary">抽牌</button>
+              <button 
+                @click="challengeDraw4" 
+                :disabled="!isCurrentPlayer || !canChallengeDraw4"
+                class="btn btn-sm md:btn-base"
+                :class="canChallengeDraw4 ? 'btn-warning' : 'btn-disabled'"
+              >
+                质疑+4
+              </button>
             </div>
           </div>
         </div>
@@ -225,7 +230,7 @@
                 <div class="flex items-center gap-2 truncate">
                   <span v-if="p.role === 'player'">[{{ getPlayerStatus(p) }}]</span>
                   <span v-else class="text-base-content/60">[围观中]</span>
-                  <span class="truncate max-w-[160px]">{{ p.name }}</span>
+                  <span class="truncate max-w-40">{{ p.name }}</span>
                   <span v-if="gameState?.hosted && gameState.hosted[p.id]" class="ml-1 text-xs badge badge-error">托管</span>
                 </div>
                 <div class="flex items-center gap-2">
@@ -246,10 +251,12 @@
               <ul class="space-y-2 text-sm">
                 <li>1. 每位玩家轮流出牌，回合默认时长 15 秒；若玩家处于托管，回合时长缩短为 5 秒。</li>
                 <li>2. 出牌规则：颜色 或 数值 相同的牌可以出；万能牌（Wild）可以在任意时刻出，并选择颜色。</li>
-                <li>3. 功能牌说明：跳过（Skip）跳过下一位；反转（Reverse）改变出牌方向；+2/+4 会让下一位或指定玩家抽牌并失去出牌机会。</li>
-                <li>4. 当手牌只剩 1 张时须喊 "UNO"（可点击界面上的 UNO 按钮）。未喊将被惩罚抽牌。</li>
-                <li>5. 抽牌：当无法出牌或选择抽牌时，执行抽牌动作；若有累积抽牌计数（drawCount），需按照规则抽取相应张数。</li>
-                <li>6. 胜负：当一位玩家出完手牌时，本局结束，牌数最少者获胜（计分板按规则统计）。</li>
+                <li>3. 功能牌说明：跳过（Skip）跳过下一位；反转（Reverse）改变出牌方向；+2/+4 会让下一位玩家抽牌并跳过回合。</li>
+                <li>4. +4规则：只有在没有任何合法可出的牌时才能使用+4。目标玩家可以选择质疑+4的合法性。</li>
+                <li>5. 质疑机制：质疑成功时，出牌者抽4张牌，质疑者继续出牌；质疑失败时，质疑者抽6张牌并被跳过。</li>
+                <li>6. 当手牌只剩 1 张时须喊 "UNO"（可点击界面上的 UNO 按钮）。未喊将被惩罚抽牌。</li>
+                <li>7. 抽牌：当无法出牌或选择抽牌时，执行抽牌动作；+2/+4惩罚会立即执行。</li>
+                <li>8. 胜负：当一位玩家出完手牌时，本局结束，该玩家获胜。</li>
               </ul>
             </template>
           </GameChat>
@@ -285,6 +292,7 @@ import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 // 接收父组件可能传入的属性以避免 Vue 的非 props 属性警告
 const props = defineProps<{ game?: any; roomPlayer?: any }>();
 import { useGameStore } from '@/stores/game'
+import { RoomStatus } from 'tiaoom/client'
 import UnoCard from './UnoCard.vue'
 import RoomControls from '@/components/common/RoomControls.vue'
 import GameChat from '@/components/common/GameChat.vue'
@@ -295,6 +303,8 @@ import type { UnoCard as UnoCardType, UnoGameState } from '../../../../backend/s
 const gameStore = useGameStore()
 
 const gameState = ref<UnoGameState | null>(null)
+// 游戏结果信息
+const gameResult = ref<{ winner?: string } | null>(null)
 // 单独维护一个前端用于显示的倒计时值，优先由后端的 timer_update 推送更新
 const currentTimer = ref<number | null>(null)
 const gameStatus = ref<'waiting' | 'playing' | 'ended'>('waiting')
@@ -314,9 +324,7 @@ const showNotification = ref(false)
 // 移动历史（用于回放等功能）
 const moveHistory = ref<Array<{player: string, action: any, timestamp: number}>>([])
 
-// 游戏恢复通知
-const showRestoreNotification = ref(false)
-const restoreMessage = ref('')
+// 游戏恢复通知（占位，暂不使用）
 
 // 动画/视觉提示状态
 const playerAnim = ref<Record<string, { type: 'play' | 'draw' | 'skip' | null, until: number }>>({})
@@ -324,7 +332,7 @@ const playerAnim = ref<Record<string, { type: 'play' | 'draw' | 'skip' | null, u
 // 用于检测方向变化
 const previousDirection = ref<number | null>(null)
 const previousCurrentPlayer = ref<string | null>(null)
-const lastSwitchAt = ref<number>(0)
+// const lastSwitchAt = ref<number>(0)  // previously unused
 const suppressTimerUntil = ref<number>(0)
 const pendingSmallTimer = ref<number | null>(null)
 const pendingSmallTimerTimeout = ref<number | null>(null)
@@ -360,7 +368,7 @@ const getPlayersByPosition = computed(() => {
     return allPlayerIds.map(id => ({ id, hand: gameState.value!.players[id] || [] }))
   }
 
-  // 对于普通玩家，只显示其他玩家（不包含自己），并按当前玩家为基准按方向排列
+  // 对于普通玩家，只显示其他玩家（不包含自己），位置固定不受方向影响
   const myId = String(gameStore.player?.id || '')
   const myIndex = allPlayerIds.indexOf(myId)
   if (myIndex === -1) {
@@ -370,10 +378,9 @@ const getPlayersByPosition = computed(() => {
 
   const list: Array<{ id: string, hand: any[] }> = []
   const countOthers = totalPlayers - 1
+  // 固定位置：始终按顺时针方向排列其他玩家，不受游戏当前方向影响
   for (let i = 1; i <= countOthers; i++) {
-    const playerIndex = gameState.value!.direction === 1
-      ? (myIndex + i) % totalPlayers
-      : (myIndex - i + totalPlayers) % totalPlayers
+    const playerIndex = (myIndex + i) % totalPlayers
     const id = allPlayerIds[playerIndex]
     list.push({ id, hand: gameState.value!.players[id] || [] })
   }
@@ -443,19 +450,11 @@ const canPlayCard = (card: UnoCardType) => {
 }
 
 const showCantPlayNotification = () => {
-  if (gameState.value && gameState.value.drawCount > 0) {
-    forceDrawMessage.value = `必须抽 ${gameState.value.drawCount} 张牌！`
-    showNotification.value = true
-    setTimeout(() => {
-      showNotification.value = false
-    }, 2000)
-  } else {
-    cantPlayMessage.value = '这张牌不能出！'
-    showNotification.value = true
-    setTimeout(() => {
-      showNotification.value = false
-    }, 1500)
-  }
+  cantPlayMessage.value = '这张牌不能出！'
+  showNotification.value = true
+  setTimeout(() => {
+    showNotification.value = false
+  }, 1500)
 }
 
 const showDirectionChangeNotification = (newDirection: number) => {
@@ -577,6 +576,37 @@ const callUno = () => {
   gameStore.game?.command(gameStore.roomPlayer?.room?.id || '', { type: 'uno:call', data: {} })
 }
 
+const canChallengeDraw4 = computed(() => {
+  if (!isCurrentPlayer.value || !gameState.value) return false
+  
+  // 检查顶部牌是否为+4
+  const topCard = gameState.value.discardPile[gameState.value.discardPile.length - 1]
+  if (!topCard || topCard.value !== 'wild_draw4') return false
+  
+  // 检查+4是否已经被处理过（新增的检查）
+  if (gameState.value.wildDraw4Processed) return false
+  
+  // 检查最近的移动历史，确保+4是上家刚出的
+  if (moveHistory.value.length === 0) return false
+  
+  const lastMove = moveHistory.value[moveHistory.value.length - 1]
+  if (lastMove.action.type !== 'play_card') return false
+  
+  // 检查最后出牌的玩家是否不是当前玩家
+  const currentPlayerId = gameStore.roomPlayer?.id
+  if (lastMove.player === currentPlayerId) return false
+  
+  // 确保当前玩家确实是下家（轮到当前玩家出牌）
+  if (gameState.value.currentPlayer !== currentPlayerId) return false
+  
+  return true
+})
+
+const challengeDraw4 = () => {
+  if (!isCurrentPlayer.value || !canChallengeDraw4.value) return
+  gameStore.game?.command(gameStore.roomPlayer?.room?.id || '', { type: 'uno:challenge', data: {} })
+}
+
 const sendMessage = (message: string) => {
   gameStore.game?.say(message, gameStore.roomPlayer?.room?.id || '')
 }
@@ -590,8 +620,8 @@ const sendMessage = (message: string) => {
 // 位置提示已移除（换向后描述不准确）
 
 const onRoomStart = () => {
-  // 房间开始事件，清除之前的状态
-  gameState.value = null
+  // 房间开始事件，设置状态为playing
+  // 不清除gameState，让它通过game:state命令自然更新
   gameStatus.value = 'playing'
 }
 
@@ -613,6 +643,11 @@ const onCommand = (command: any) => {
       previousDirection.value = command.data.direction
 
       gameState.value = command.data
+      
+      // 如果命令数据中包含 moveHistory，则更新它
+      if (command.data.moveHistory) {
+        moveHistory.value = command.data.moveHistory
+      }
       
       // 检测玩家切换 - 如果切换了玩家，重新初始化倒计时显示
       const playerSwitched = previousCurrentPlayer.value && command.data.currentPlayer !== previousCurrentPlayer.value
@@ -657,10 +692,20 @@ const onCommand = (command: any) => {
       }
       break
     case 'game:over':
-      if (gameState.value) {
-        gameState.value.winner = command.data.winner
-      }
+      // 保存游戏结果
+      gameResult.value = { winner: command.data.winner }
       gameStatus.value = 'ended'
+      // 同步房间状态为 waiting，这样 RoomControls 会显示等待/准备按钮（由房间状态驱动）
+      if (gameStore.roomPlayer && gameStore.roomPlayer.room) {
+        try {
+          // 使用 RoomStatus 枚举以匹配类型定义
+          gameStore.roomPlayer.room.status = RoomStatus.waiting as any
+        } catch (e) {
+          // 某些情况下对象可能是只读，忽略错误
+        }
+      }
+      // 不立即清理游戏状态，保留它以显示游戏结果
+      // gameState.value = null
       break
     case 'game:timer_update':
       // 后端每秒发送剩余时间（秒）。当计时器从隐藏变为可见（currentTimer 为 null）时，
@@ -779,6 +824,12 @@ const onCommand = (command: any) => {
       if (command.data) {
         console.log('收到game:full_restore命令:', command.data)
         gameState.value = command.data.gameState
+        
+        // 如果命令数据中包含 moveHistory，则更新它
+        if (command.data.moveHistory) {
+          moveHistory.value = command.data.moveHistory
+        }
+        
         achievements.value = command.data.achievements
         roomMessages.value = command.data.messageHistory || []
         moveHistory.value = command.data.moveHistory || []
