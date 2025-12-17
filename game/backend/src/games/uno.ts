@@ -28,6 +28,8 @@ export interface UnoGameState {
   hosted?: { [playerId: string]: boolean };
   // +4质疑状态：记录哪个+4牌已经被处理过（质疑或接受惩罚）
   wildDraw4Processed?: boolean;
+  // +2惩罚状态：记录+2惩罚是否已被处理
+  draw2Processed?: boolean;
 }
 
 const createDeck = (): UnoCard[] => {
@@ -181,7 +183,8 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
       currentPlayer: playerIds[0],
       direction: 1,
       color: firstCard.color as 'red' | 'blue' | 'green' | 'yellow',
-      wildDraw4Processed: false
+      wildDraw4Processed: false,
+      draw2Processed: false
     };
     
     // 设置所有玩家状态为playing（确保房间状态正确）
@@ -321,6 +324,30 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
 
     const topCard = gameState.discardPile[gameState.discardPile.length - 1];
 
+    // 检查是否面临+2惩罚（只能接受惩罚）
+    if (topCard.value === 'draw2' && !gameState.draw2Processed) {
+      // 托管玩家无条件接受+2惩罚
+      for (let i = 0; i < 2 && gameState.deck.length > 0; i++) {
+        const drawn = gameState.deck.pop();
+        if (drawn) hand.push(drawn);
+      }
+      room.emit('message', { content: `${playerId} (托管) 被+2惩罚，抽了2张牌` });
+      
+      // 标记+2已处理
+      gameState.draw2Processed = true;
+      
+      // 跳过当前玩家，直接到下下个玩家
+      const actualNextPlayerId = getNextPlayer(Object.keys(gameState.players), playerId, gameState.direction);
+      const actualNextPlayer = room.players.find(p => p.id === actualNextPlayerId);
+      if (actualNextPlayer) {
+        room.emit('message', { content: `轮到 ${actualNextPlayer.name} 出牌` });
+      }
+      gameState.currentPlayer = actualNextPlayerId;
+      
+      // 切换到下一个玩家后直接返回，不执行后续的出牌逻辑
+      return;
+    }
+
     // 检查是否面临+4惩罚（只能接受惩罚，托管不能质疑）
     if (topCard.value === 'wild_draw4' && !gameState.wildDraw4Processed) {
       // 托管玩家无条件接受+4惩罚
@@ -386,6 +413,10 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
       // 执行出牌逻辑（复用 play_card 的处理）
       hand.splice(chosenIndex, 1);
       gameState.discardPile.push(card);
+      
+      // 重置+2处理标志（新回合开始）
+      gameState.draw2Processed = false;
+      
       const cardName = card.type === 'wild' ? 
         (card.value === 'wild' ? '变色牌' : '变色+4') : 
         `${card.color === 'red' ? '红' : card.color === 'blue' ? '蓝' : card.color === 'green' ? '绿' : '黄'}${card.value}`;
@@ -426,8 +457,8 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
             }
             break;
           case 'draw2':
-            // +2效果不累积，等待下一位玩家回合时处理
-            room.emit('message', { content: `下家将面临+2惩罚！` });
+            // +2惩罚：下家必须抽2张牌并结束回合
+            room.emit('message', { content: `下家将面临+2惩罚！必须抽2张牌并结束回合` });
             break;
         }
       }
@@ -493,35 +524,10 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
       moveHistory.push({ player: playerId, action: { type: 'play_card', cardId: card.id, chosenColor }, timestamp: Date.now() });
 
     } else {
-      // 无牌可出：检查是否面临+2惩罚
+      // 无牌可出：检查是否面临+4惩罚
       const topCard = gameState.discardPile[gameState.discardPile.length - 1];
       
-      if (topCard.value === 'draw2') {
-        // 面临+2惩罚，检查是否可以出牌
-        let canPlayAnyCard = false;
-        for (const card of hand) {
-          if (card.color === topCard.color && card.type !== 'wild') {
-            canPlayAnyCard = true;
-            break;
-          }
-        }
-        
-        if (!canPlayAnyCard) {
-          // 不能出牌，强制抽2张
-          for (let i = 0; i < 2 && gameState.deck.length > 0; i++) {
-            const drawn = gameState.deck.pop();
-            if (drawn) hand.push(drawn);
-          }
-          room.emit('message', { content: `${playerSocket?.name || playerId} (托管) 无法出牌，抽了2张牌` });
-        } else {
-          // 可以出牌但托管选择不出，抽1张牌
-          if (gameState.deck.length > 0) {
-            const drawn = gameState.deck.pop();
-            if (drawn) hand.push(drawn);
-            room.emit('message', { content: `${playerSocket?.name || playerId} (托管) 抽了一张牌` });
-          }
-        }
-      } else if (topCard.value === 'wild_draw4' && !gameState.wildDraw4Processed) {
+      if (topCard.value === 'wild_draw4' && !gameState.wildDraw4Processed) {
         // +4惩罚：无条件抽4张
         for (let i = 0; i < 4 && gameState.deck.length > 0; i++) {
           const drawn = gameState.deck.pop();
@@ -778,8 +784,12 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
       case 'uno:play_card': {
         if (!gameState || gameState.currentPlayer !== sender.id) return;
         
-        // 检查是否面临+4惩罚
+        // 检查是否面临+2或+4惩罚
         const topCard = gameState.discardPile[gameState.discardPile.length - 1];
+        if (topCard.value === 'draw2' && !gameState.draw2Processed) {
+          room.emit('message', { content: `${sender.name} 面临+2惩罚，只能抽牌接受惩罚，不能出牌！` });
+          return;
+        }
         if (topCard.value === 'wild_draw4' && !gameState.wildDraw4Processed) {
           room.emit('message', { content: `${sender.name} 面临+4惩罚，只能质疑或抽牌接受惩罚，不能出其他牌！` });
           return;
@@ -815,6 +825,9 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
         // 出牌
         playerHand.splice(cardIndex, 1);
         gameState.discardPile.push(card);
+        
+        // 重置+2处理标志（新回合开始）
+        gameState.draw2Processed = false;
         
         // 发送出牌系统消息
         const cardName = card.type === 'wild' ? 
@@ -864,8 +877,8 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
               }
               break;
             case 'draw2':
-              // +2效果不累积，等待下一位玩家回合时处理
-              room.emit('message', { content: `下家将面临+2惩罚！` });
+              // +2惩罚：下家必须抽2张牌并结束回合
+              room.emit('message', { content: `下家将面临+2惩罚！必须抽2张牌并结束回合` });
               break;
           }
         }
@@ -939,35 +952,26 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
         
         // 检查+2效果（+4通过质疑机制处理，不在这里立即执行）
         const currentTopCard = gameState.discardPile[gameState.discardPile.length - 1];
-        if (currentTopCard.value === 'draw2') {
+        if (currentTopCard.value === 'draw2' && !gameState.draw2Processed) {
           const nextHand = gameState.players[nextPlayerId];
           
-          // 检查是否可以出牌（官方规则：只检查是否有与+2颜色相同的牌）
-          let canPlayAnyCard = false;
-          for (const card of nextHand) {
-            // 检查是否有与+2颜色相同的牌（不包括变色牌和+4）
-            if (card.color === currentTopCard.color && card.type !== 'wild') {
-              canPlayAnyCard = true;
-              break;
-            }
+          // 强制抽2张牌并跳过回合
+          for (let i = 0; i < 2 && gameState.deck.length > 0; i++) {
+            const drawnCard = gameState.deck.pop();
+            if (drawnCard) nextHand.push(drawnCard);
           }
+          room.emit('message', { content: `${room.players.find(p => p.id === nextPlayerId)?.name} 被+2惩罚，抽了2张牌并被跳过回合` });
           
-          if (!canPlayAnyCard) {
-            // 不能出牌，强制抽2张并结束回合
-            for (let i = 0; i < 2 && gameState.deck.length > 0; i++) {
-              const drawnCard = gameState.deck.pop();
-              if (drawnCard) nextHand.push(drawnCard);
-            }
-            room.emit('message', { content: `${room.players.find(p => p.id === nextPlayerId)?.name} 无法出牌，抽了2张牌并被跳过回合` });
-            
-            // 跳过该玩家，直接到下下个玩家
-            const actualNextPlayerId = getNextPlayer(Object.keys(gameState.players), nextPlayerId, gameState.direction);
-            const actualNextPlayer = room.players.find(p => p.id === actualNextPlayerId);
-            if (actualNextPlayer) {
-              room.emit('message', { content: `轮到 ${actualNextPlayer.name} 出牌` });
-            }
-            gameState.currentPlayer = actualNextPlayerId;
+          // 标记+2已处理
+          gameState.draw2Processed = true;
+          
+          // 跳过该玩家，直接到下下个玩家
+          const actualNextPlayerId = getNextPlayer(Object.keys(gameState.players), nextPlayerId, gameState.direction);
+          const actualNextPlayer = room.players.find(p => p.id === actualNextPlayerId);
+          if (actualNextPlayer) {
+            room.emit('message', { content: `轮到 ${actualNextPlayer.name} 出牌` });
           }
+          gameState.currentPlayer = actualNextPlayerId;
         }
 
         
@@ -1008,31 +1012,25 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
         const topCard = gameState.discardPile[gameState.discardPile.length - 1];
         const playerHand = gameState.players[sender.id];
         
-        if (topCard.value === 'draw2') {
-          // 面临+2惩罚，检查是否可以出牌
-          let canPlayAnyCard = false;
-          for (const card of playerHand) {
-            if (card.color === topCard.color && card.type !== 'wild') {
-              canPlayAnyCard = true;
-              break;
-            }
+        if (topCard.value === 'draw2' && !gameState.draw2Processed) {
+          // 面临+2惩罚，必须抽2张牌并跳过回合
+          for (let i = 0; i < 2 && gameState.deck.length > 0; i++) {
+            const drawnCard = gameState.deck.pop();
+            if (drawnCard) playerHand.push(drawnCard);
           }
+          room.emit('message', { content: `${sender.name} 被+2惩罚，抽了2张牌并被跳过回合` });
           
-          if (!canPlayAnyCard) {
-            // 不能出牌，强制抽2张并跳过
-            for (let i = 0; i < 2 && gameState.deck.length > 0; i++) {
-              const drawnCard = gameState.deck.pop();
-              if (drawnCard) playerHand.push(drawnCard);
-            }
-            room.emit('message', { content: `${sender.name} 无法出牌，抽了2张牌并被跳过回合` });
-          } else {
-            // 可以出牌但玩家选择抽牌，正常抽1张
-            if (gameState.deck.length > 0) {
-              const drawnCard = gameState.deck.pop()!;  
-              gameState.players[sender.id].push(drawnCard);
-              room.emit('message', { content: `${sender.name} 抽了一张牌` });
-            }
+          // 标记+2已处理
+          gameState.draw2Processed = true;
+          
+          // 跳过当前玩家，直接到下下个玩家
+          const actualNextPlayerId = getNextPlayer(Object.keys(gameState.players), gameState.currentPlayer, gameState.direction);
+          const actualNextPlayer = room.players.find(p => p.id === actualNextPlayerId);
+          if (actualNextPlayer) {
+            room.emit('message', { content: `轮到 ${actualNextPlayer.name} 出牌` });
           }
+          gameState.currentPlayer = actualNextPlayerId;
+          return; // 提前返回，不执行后续的玩家切换逻辑
         } else if (topCard.value === 'wild_draw4' && !gameState.wildDraw4Processed) {
           // +4惩罚：玩家选择接受惩罚，抽4张牌并跳过
           for (let i = 0; i < 4 && gameState.deck.length > 0; i++) {
