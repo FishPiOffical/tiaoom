@@ -83,12 +83,12 @@
 
             <!-- 左上角状态信息（方向 / 当前颜色 / 抽牌计数） -->
             <div v-if="gameState" class="absolute z-40 flex flex-wrap items-center gap-2 top-2 left-2 md:top-4 md:left-4 md:gap-3 max-w-60 md:max-w-80">
-              <div class="flex items-center gap-1 px-2 py-1 text-xs rounded-lg shadow-md md:gap-2 md:text-sm bg-white/90 md:px-3 md:py-2 backdrop-blur-sm">
+              <div class="flex items-center gap-1 px-2 py-1 text-xs rounded-lg shadow-md md:gap-2 md:text-sm bg-base-200 md:px-3 md:py-2 backdrop-blur-sm">
                 <div class="text-base md:text-lg">{{ gameState.direction === 1 ? '↻' : '↺' }}</div>
                 <span class="hidden font-medium md:inline">{{ gameState.direction === 1 ? '顺时针' : '逆时针' }}</span>
               </div>
 
-              <div class="flex items-center gap-1 px-2 py-1 text-xs rounded-lg shadow-md md:gap-2 md:text-sm bg-white/90 md:px-3 md:py-2 backdrop-blur-sm">
+              <div class="flex items-center gap-1 px-2 py-1 text-xs rounded-lg shadow-md md:gap-2 md:text-sm bg-base-200 md:px-3 md:py-2 backdrop-blur-sm">
                 <span class="hidden font-medium md:inline">当前颜色:</span>
                 <div class="w-4 h-4 border-2 border-gray-800 rounded md:w-5 md:h-5"
                   :class="{
@@ -123,6 +123,7 @@
                     <div v-if="gameState?.currentPlayer === gameStore.player?.id && currentTimer !== null" class="text-sm font-bold" :class="currentTimer <= 5 ? 'text-red-500' : 'text-blue-500'">⏱ {{ currentTimer }}s</div>
                     <span class="badge badge-xs md:badge-sm">{{ (gameState?.players?.[gameStore.player?.id || '']?.length) || 0 }} 张</span>
                   </div>
+                  <div v-if="(gameState?.players?.[gameStore.player?.id || '']?.length || 0) === 1" class="text-sm font-bold text-red-500 animate-pulse">UNO!</div>
                 </div>
               </div>
             </div>
@@ -162,9 +163,9 @@
           <div v-if="gameStore.roomPlayer?.role === 'player'" class="p-2 rounded-lg md:p-4 bg-base-100">
             <div class="flex items-center justify-between mb-2 md:mb-4">
               <span class="text-sm md:font-medium">我的手牌</span>
-              <div class="flex items-center gap-2">
+              <!-- <div class="flex items-center gap-2">
                 <button v-if="gameState.players?.[gameStore.player?.id || '']?.length === 2" @click="callUno" class="btn btn-xs md:btn-sm btn-warning">UNO!</button>
-              </div>
+              </div> -->
             </div>
 
             <div class="flex flex-wrap gap-1 md:gap-2 mb-2 md:mb-4 min-h-20 md:min-h-[100px] max-h-44 md:max-h-40 overflow-y-auto">

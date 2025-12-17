@@ -1132,20 +1132,17 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
         
         // 获取出牌时上一位玩家的手牌快照
         // 这里简化处理，使用当前手牌，实际应该使用出牌时的快照
-        console.log(`质疑检查 - 上家: ${prevPlayer.name}, 顶牌: ${topCard.color}-${topCard.value}, 出牌前颜色: ${previousColor}`);
-        console.log(`上家手牌:`, prevHand.map(c => `${c.color}-${c.value}`));
         const wasLegalPlay = canPlayWildDraw4(prevHand, topCard, previousColor);
-        console.log(`质疑结果 - 合法: ${wasLegalPlay}`);
         
         room.emit('message', { content: `${sender.name} 对 ${prevPlayer.name} 的+4使用提出质疑！` });
         
         if (wasLegalPlay) {
           // +4使用合法，质疑失败
-          room.emit('message', { content: `${prevPlayer.name} 的+4使用合法！${sender.name} 质疑失败，抽4张牌并跳过回合` });
+          room.emit('message', { content: `${prevPlayer.name} 的+4使用合法！${sender.name} 质疑失败，抽6张牌并跳过回合` });
           
-          // 质疑者抽4张牌
+          // 质疑者抽6张牌
           const currentHand = gameState.players[sender.id];
-          for (let i = 0; i < 4 && gameState.deck.length > 0; i++) {
+          for (let i = 0; i < 6 && gameState.deck.length > 0; i++) {
             const drawnCard = gameState.deck.pop();
             if (drawnCard) currentHand.push(drawnCard);
           }
@@ -1154,10 +1151,10 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
           gameState.wildDraw4Processed = true;
         } else {
           // +4使用违规，质疑成功
-          room.emit('message', { content: `${prevPlayer.name} 的+4使用违规！${sender.name} 质疑成功，${prevPlayer.name} 需抽6张牌` });
+          room.emit('message', { content: `${prevPlayer.name} 的+4使用违规！${sender.name} 质疑成功，${prevPlayer.name} 需抽4张牌` });
           
-          // 违规者抽6张牌
-          for (let i = 0; i < 6 && gameState.deck.length > 0; i++) {
+          // 违规者抽4张牌
+          for (let i = 0; i < 4 && gameState.deck.length > 0; i++) {
             const drawnCard = gameState.deck.pop();
             if (drawnCard) prevHand.push(drawnCard);
           }
