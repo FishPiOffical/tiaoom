@@ -1143,11 +1143,11 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
         
         if (wasLegalPlay) {
           // +4使用合法，质疑失败
-          room.emit('message', { content: `${prevPlayer.name} 的+4使用合法！${sender.name} 质疑失败，抽6张牌并跳过回合` });
+          room.emit('message', { content: `${prevPlayer.name} 的+4使用合法！${sender.name} 质疑失败，抽4张牌并跳过回合` });
           
-          // 质疑者抽6张牌
+          // 质疑者抽4张牌
           const currentHand = gameState.players[sender.id];
-          for (let i = 0; i < 6 && gameState.deck.length > 0; i++) {
+          for (let i = 0; i < 4 && gameState.deck.length > 0; i++) {
             const drawnCard = gameState.deck.pop();
             if (drawnCard) currentHand.push(drawnCard);
           }
