@@ -587,29 +587,70 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
     const currentPlayerSocket = room.players.find(p => p.id === currentPlayerId);
 
     if (currentPlayerSocket) {
-      // 自动抽一张牌
-      if (gameState.deck.length > 0) {
-        const drawnCard = gameState.deck.pop()!;
-        gameState.players[currentPlayerId].push(drawnCard);
-        room.emit('message', { content: `${currentPlayerSocket.name} 超时，自动抽了一张牌` });
-      }
+      const playerHand = gameState.players[currentPlayerId];
       
-      // 切换到下一个玩家
-      const nextPlayerId = getNextPlayer(Object.keys(gameState.players), gameState.currentPlayer, gameState.direction);
-      const nextPlayer = room.players.find(p => p.id === nextPlayerId);
-      if (nextPlayer) {
-        room.emit('message', { content: `轮到 ${nextPlayer.name} 出牌` });
-      }
-      gameState.currentPlayer = nextPlayerId;
+      // 检查是否面临惩罚
+      const topCard = gameState.discardPile[gameState.discardPile.length - 1];
       
-
+      if (topCard.value === 'draw2' && !gameState.draw2Processed) {
+        // 面临+2惩罚，必须抽2张牌并跳过回合
+        for (let i = 0; i < 2 && gameState.deck.length > 0; i++) {
+          const drawnCard = gameState.deck.pop();
+          if (drawnCard) playerHand.push(drawnCard);
+        }
+        room.emit('message', { content: `${currentPlayerSocket.name} 超时，被+2惩罚，抽了2张牌并被跳过回合` });
+        
+        // 标记+2已处理
+        gameState.draw2Processed = true;
+        
+        // 跳过当前玩家，直接到下下个玩家
+        const actualNextPlayerId = getNextPlayer(Object.keys(gameState.players), currentPlayerId, gameState.direction);
+        const actualNextPlayer = room.players.find(p => p.id === actualNextPlayerId);
+        if (actualNextPlayer) {
+          room.emit('message', { content: `轮到 ${actualNextPlayer.name} 出牌` });
+        }
+        gameState.currentPlayer = actualNextPlayerId;
+      } else if (topCard.value === 'wild_draw4' && !gameState.wildDraw4Processed) {
+        // 面临+4惩罚，无条件抽4张牌并跳过
+        for (let i = 0; i < 4 && gameState.deck.length > 0; i++) {
+          const drawnCard = gameState.deck.pop();
+          if (drawnCard) playerHand.push(drawnCard);
+        }
+        room.emit('message', { content: `${currentPlayerSocket.name} 超时，接受+4惩罚，抽了4张牌并被跳过回合` });
+        
+        // 标记+4已处理
+        gameState.wildDraw4Processed = true;
+        
+        // 跳过当前玩家，直接到下下个玩家
+        const actualNextPlayerId = getNextPlayer(Object.keys(gameState.players), currentPlayerId, gameState.direction);
+        const actualNextPlayer = room.players.find(p => p.id === actualNextPlayerId);
+        if (actualNextPlayer) {
+          room.emit('message', { content: `轮到 ${actualNextPlayer.name} 出牌` });
+        }
+        gameState.currentPlayer = actualNextPlayerId;
+      } else {
+        // 正常情况抽1张牌
+        if (gameState.deck.length > 0) {
+          const drawnCard = gameState.deck.pop()!;
+          playerHand.push(drawnCard);
+          room.emit('message', { content: `${currentPlayerSocket.name} 超时，自动抽了一张牌` });
+        }
+        
+        // 切换到下一个玩家
+        const nextPlayerId = getNextPlayer(Object.keys(gameState.players), gameState.currentPlayer, gameState.direction);
+        const nextPlayer = room.players.find(p => p.id === nextPlayerId);
+        if (nextPlayer) {
+          room.emit('message', { content: `轮到 ${nextPlayer.name} 出牌` });
+        }
+        gameState.currentPlayer = nextPlayerId;
+      }
       
       // 保存状态并发送更新
       await saveGameData();
       room.emit('command', { type: 'game:state', data: gameState });
       
       // 清除当前倒计时并开始下一回合的倒计时（若下一位被托管则为5秒）
-      const nextTimeout = gameState.hosted && gameState.hosted[nextPlayerId] ? 5000 : TURN_TIMEOUT;
+      const nextTimeout = gameState.hosted && gameState.hosted[gameState.currentPlayer] ? 5000 : TURN_TIMEOUT;
       startTurnTimer(nextTimeout);
     }
   };
