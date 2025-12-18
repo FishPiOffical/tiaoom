@@ -14,7 +14,7 @@
         <input 
           v-model="inputText" 
           type="text"
-          @keyup.enter="handleSend" 
+          @keydown.enter="handleSend" 
           :placeholder="placeholder" 
           class="flex-1 input join-item"
         />
@@ -102,7 +102,8 @@ const emit = defineEmits<{
 const inputText = ref('')
 const rulesModal = ref<InstanceType<typeof RulesModal> | null>(null)
 
-function handleSend() {
+function handleSend(e:any) {
+  if (e.isComposing) return
   if (!inputText.value.trim() || !roomPlayer.value) return
   if (!props.canSend) return
   
