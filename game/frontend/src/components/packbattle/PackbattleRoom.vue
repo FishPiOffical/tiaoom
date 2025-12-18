@@ -59,6 +59,17 @@
         @lose="requestLose"
       />
 
+      <PlayerList :players="roomPlayer.room.players">
+        <template #default="{ player: p }">
+          <span v-if="p.role === 'player'">
+            <span>[{{ getRoleLabel(p) }}]</span>
+            <span>[{{ getPlayerStatus(p) }}]</span>
+          </span>
+          <span v-else>[围观中]</span>
+          <span>{{ p.name }}</span>
+        </template>
+      </PlayerList>
+
       <GameChat>
         <template #rules>
           <ul class="space-y-2 text-sm">
@@ -104,6 +115,23 @@ const winnerRole = computed(() => {
   if (!result || !result.value || !result.value.winner) return ''
   return result.value.winner.id === active?.value?.id ? '出租车司机' : '夏洛克'
 })
+
+function getRoleLabel(p: any) {
+  if (p.role !== 'player') return '观众'
+  if (gameStatus.value !== 'playing') return '玩家'
+  if (active?.value?.id === p.id) return '出租车司机'
+  if (passive?.value?.id === p.id) return '夏洛克'
+  return '玩家'
+}
+
+function getPlayerStatus(p: any) {
+  if (!p.isReady) return '未准备'
+  if (gameStatus.value === 'waiting') return '准备好了'
+  if (phase.value === 'pick' && active?.value?.id === p.id) return '思考中'
+  if (phase.value === 'swap' && passive?.value?.id === p.id) return '思考中'
+  if (gameStatus.value === 'playing') return '等待中'
+  return '准备好了'
+}
 
 function requestDraw() {
   if (props.roomPlayer.room.status !== RoomStatus.playing) return
