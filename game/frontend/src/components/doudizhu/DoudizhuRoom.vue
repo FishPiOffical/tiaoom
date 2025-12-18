@@ -5,15 +5,15 @@
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-4">
           <h2 class="text-xl font-bold">斗地主</h2>
-          <div class="badge badge-primary" v-if="gameState">
+          <div class="badge badge-primary" v-if="gameState && (gameStatus === 'playing' || gameStatus === 'calling' || gameStatus === 'grabbing' || gameStatus === 'counter-grabbing')">
             {{ Object.keys(gameState.players || {}).length }} 玩家
           </div>
-          <div v-if="gameState?.landlord" class="badge badge-warning">
+          <div v-if="gameState?.landlord && (gameStatus === 'playing' || gameStatus === 'calling' || gameStatus === 'grabbing' || gameStatus === 'counter-grabbing')" class="badge badge-warning">
             地主: {{ getPlayerName(gameState.landlord) }}
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <div v-if="gameState?.bombCount" class="badge badge-error">
+          <div v-if="gameState?.bombCount && (gameStatus === 'playing' || gameStatus === 'calling' || gameStatus === 'grabbing' || gameStatus === 'counter-grabbing')" class="badge badge-error">
             炸弹 x{{ gameState.bombCount }}
           </div>
         </div>
@@ -48,14 +48,14 @@
         </div>
 
         <!-- 游戏进行中 -->
-        <div v-else-if="(gameStatus === 'playing' || gameStatus === 'bidding') && gameState" class="flex flex-col flex-1">
+        <div v-else-if="(gameStatus === 'playing' || gameStatus === 'calling' || gameStatus === 'grabbing' || gameStatus === 'counter-grabbing') && gameState" class="flex flex-col flex-1">
           <!-- 游戏桌面 -->
           <div class="relative flex-1 p-4 rounded-lg bg-base-100">
             <!-- 其他玩家区域 -->
             <div class="flex justify-between mb-4">
               <div v-for="(playerId, index) in otherPlayers" :key="playerId"
                    class="flex flex-col items-center p-3 rounded-lg bg-base-200"
-                   :class="{ 'ring-2 ring-primary': gameState.currentPlayer === playerId || gameState.currentBidder === playerId }">
+                   :class="{ 'ring-2 ring-primary': isPlayerCurrentTurn(playerId) }">
                 <div class="flex items-center gap-2 mb-2">
                   <div class="w-10 h-10 flex items-center justify-center rounded-full bg-base-300 font-bold">
                     {{ getPlayerName(playerId).substring(0, 1).toUpperCase() }}
@@ -64,13 +64,13 @@
                     <div class="font-medium">{{ getPlayerName(playerId) }}</div>
                     <div class="flex items-center gap-1">
                       <span v-if="gameState.landlord === playerId" class="badge badge-warning badge-xs">地主</span>
-                      <span v-else class="badge badge-info badge-xs">农民</span>
+                      <span v-else-if="gameState.landlord" class="badge badge-info badge-xs">农民</span>
                       <span class="badge badge-sm">{{ gameState.players[playerId]?.length || 0 }} 张</span>
                     </div>
                   </div>
                 </div>
                 <!-- 倒计时 -->
-                <div v-if="(gameState.currentPlayer === playerId || gameState.currentBidder === playerId) && currentTimer !== null"
+                <div v-if="isPlayerCurrentTurn(playerId) && currentTimer !== null"
                      class="text-sm font-bold"
                      :class="currentTimer <= 5 ? 'text-red-500' : 'text-blue-500'">
                   ⏱ {{ currentTimer }}s
@@ -81,9 +81,21 @@
             <!-- 中央区域：上一手牌/底牌 -->
             <div class="flex flex-col items-center justify-center flex-1 min-h-32">
               <!-- 叫地主阶段显示底牌（翻开后） -->
-              <div v-if="gameState.phase === 'bidding'" class="text-center">
+              <div v-if="gameState.phase === 'calling'" class="text-center">
                 <p class="mb-2 text-lg font-bold">叫地主阶段</p>
                 <p class="text-gray-600">等待玩家叫地主...</p>
+              </div>
+
+              <!-- 抢地主阶段 -->
+              <div v-if="gameState.phase === 'grabbing'" class="text-center">
+                <p class="mb-2 text-lg font-bold">抢地主阶段</p>
+                <p class="text-gray-600">{{ getPlayerName(gameState.caller || '') }} 叫了地主，等待其他玩家抢地主...</p>
+              </div>
+
+              <!-- 反抢地主阶段 -->
+              <div v-if="gameState.phase === 'counter-grabbing'" class="text-center">
+                <p class="mb-2 text-lg font-bold">反抢地主阶段</p>
+                <p class="text-gray-600">{{ getPlayerName(gameState.lastGrabber || '') }} 抢了地主，等待 {{ getPlayerName(gameState.caller || '') }} 是否反抢...</p>
               </div>
 
               <!-- 地主确定后显示底牌 -->
@@ -138,13 +150,37 @@
           <!-- 自己的手牌区域 -->
           <div v-if="gameStore.roomPlayer?.role === 'player'" class="p-4 rounded-lg bg-base-100 mt-2">
             <!-- 叫地主阶段 -->
-            <div v-if="gameState.phase === 'bidding' && gameState.currentBidder === gameStore.player?.id" class="mb-4">
+            <div v-if="gameState.phase === 'calling' && gameState.currentBidder === gameStore.player?.id" class="mb-4">
               <div class="flex gap-2 justify-center">
                 <button @click="callLandlord(true)" class="btn btn-warning">
-                  {{ gameState.lastBidder ? '抢地主' : '叫地主' }}
+                  叫地主
                 </button>
                 <button @click="callLandlord(false)" class="btn btn-secondary">
-                  {{ gameState.lastBidder ? '不抢' : '不叫' }}
+                  不叫
+                </button>
+              </div>
+            </div>
+
+            <!-- 抢地主阶段（原叫地主者不能抢） -->
+            <div v-if="gameState.phase === 'grabbing' && gameState.currentBidder === gameStore.player?.id && gameState.caller !== gameStore.player?.id" class="mb-4">
+              <div class="flex gap-2 justify-center">
+                <button @click="callLandlord(true)" class="btn btn-warning">
+                  抢地主
+                </button>
+                <button @click="callLandlord(false)" class="btn btn-secondary">
+                  不抢
+                </button>
+              </div>
+            </div>
+
+            <!-- 反抢地主阶段（只有原叫地主者可以反抢） -->
+            <div v-if="gameState.phase === 'counter-grabbing' && gameState.currentBidder === gameStore.player?.id && gameState.caller === gameStore.player?.id" class="mb-4">
+              <div class="flex gap-2 justify-center">
+                <button @click="callLandlord(true)" class="btn btn-error">
+                  反抢
+                </button>
+                <button @click="callLandlord(false)" class="btn btn-secondary">
+                  不反抢
                 </button>
               </div>
             </div>
@@ -211,12 +247,17 @@
           <PlayerList :players="gameStore.roomPlayer?.room?.players || []">
             <template #default="{ player: p }">
               <div class="flex items-center justify-between w-full">
-                <div class="flex items-center gap-2">
-                  <span v-if="gameState?.landlord === p.id" class="badge badge-warning badge-xs">地主</span>
-                  <span v-else-if="gameState?.landlord" class="badge badge-info badge-xs">农民</span>
-                  <span class="truncate max-w-[120px]">{{ p.name }}</span>
+                <div class="flex items-center gap-2 truncate">
+                  <span v-if="p.role === 'player'">[{{ getPlayerStatus(p) }}]</span>
+                  <span v-else class="text-base-content/60">[围观中]</span>
+                  <!-- 只在游戏进行中显示身份标签 -->
+                  <template v-if="gameStatus === 'playing' || gameStatus === 'calling' || gameStatus === 'grabbing' || gameStatus === 'counter-grabbing'">
+                    <span v-if="gameState?.landlord === p.id" class="badge badge-warning badge-xs">地主</span>
+                    <span v-else-if="gameState?.landlord && gameState?.players?.[p.id]" class="badge badge-info badge-xs">农民</span>
+                  </template>
+                  <span class="truncate max-w-[100px]">{{ p.name }}</span>
                 </div>
-                <span class="badge badge-sm">{{ gameState?.players?.[p.id]?.length || 0 }} 张</span>
+                <span class="badge badge-sm" v-if="gameStatus === 'playing' || gameStatus === 'calling' || gameStatus === 'grabbing' || gameStatus === 'counter-grabbing'">{{ gameState?.players?.[p.id]?.length || 0 }} 张</span>
               </div>
             </template>
           </PlayerList>
@@ -268,6 +309,7 @@ import RoomControls from '@/components/common/RoomControls.vue'
 import GameChat from '@/components/common/GameChat.vue'
 import PlayerList from '@/components/player-list/PlayerList.vue'
 import { useGameEvents } from '@/hook/useGameEvents'
+import { RoomStatus } from 'tiaoom/client'
 import type { DoudizhuGameState, DoudizhuCard as DoudizhuCardType } from '../../../../backend/src/games/doudizhu'
 
 const props = defineProps<{ game?: any; roomPlayer?: any }>()
@@ -276,7 +318,7 @@ const gameStore = useGameStore()
 
 const gameState = ref<DoudizhuGameState | null>(null)
 const currentTimer = ref<number | null>(null)
-const gameStatus = ref<'waiting' | 'bidding' | 'playing' | 'ended'>('waiting')
+const gameStatus = ref<'waiting' | 'calling' | 'grabbing' | 'counter-grabbing' | 'playing' | 'ended'>('waiting')
 const achievements = ref<Record<string, { win: number; lost: number }>>({})
 const roomMessages = ref<Array<{ content: string, sender?: any }>>([])
 const selectedCards = ref<string[]>([])
@@ -296,7 +338,7 @@ const otherPlayers = computed(() => {
 
 const isCurrentPlayer = computed(() => {
   if (!gameState.value || !gameStore.player?.id) return false
-  if (gameState.value.phase === 'bidding') {
+  if (gameState.value.phase === 'calling' || gameState.value.phase === 'grabbing' || gameState.value.phase === 'counter-grabbing') {
     return gameState.value.currentBidder === gameStore.player.id
   }
   return gameState.value.currentPlayer === gameStore.player.id
@@ -340,6 +382,32 @@ const getPlayerName = (playerId: string) => {
   return player?.name || '未知玩家'
 }
 
+const getPlayerStatus = (p: any) => {
+  if (!p.isReady) return '未准备'
+  if (gameStatus.value === 'waiting' || gameStatus.value === 'ended') return '已准备'
+  // 游戏中，检查是否是当前回合
+  if ((gameState.value?.phase === 'calling' || gameState.value?.phase === 'grabbing' || gameState.value?.phase === 'counter-grabbing') && gameState.value.currentBidder === p.id) {
+    if (gameState.value.phase === 'calling') return '叫地主中'
+    if (gameState.value.phase === 'grabbing') return '抢地主中'
+    return '反抢中'
+  }
+  if (gameState.value?.phase === 'playing' && gameState.value.currentPlayer === p.id) return '出牌中'
+  if (gameStatus.value === 'playing' || gameStatus.value === 'calling' || gameStatus.value === 'grabbing' || gameStatus.value === 'counter-grabbing') return '等待中'
+  return '已准备'
+}
+
+// 判断某玩家是否是当前回合（用于显示高亮和倒计时）
+const isPlayerCurrentTurn = (playerId: string) => {
+  if (!gameState.value) return false
+  if (gameState.value.phase === 'calling' || gameState.value.phase === 'grabbing' || gameState.value.phase === 'counter-grabbing') {
+    return gameState.value.currentBidder === playerId
+  }
+  if (gameState.value.phase === 'playing') {
+    return gameState.value.currentPlayer === playerId
+  }
+  return false
+}
+
 const toggleCardSelection = (cardId: string) => {
   if (!isCurrentPlayer.value || gameState.value?.phase !== 'playing') return
   const index = selectedCards.value.indexOf(cardId)
@@ -355,7 +423,7 @@ const clearSelection = () => {
 }
 
 const callLandlord = (bid: boolean) => {
-  if (!gameState.value || gameState.value.phase !== 'bidding') return
+  if (!gameState.value || (gameState.value.phase !== 'calling' && gameState.value.phase !== 'grabbing' && gameState.value.phase !== 'counter-grabbing')) return
   if (gameState.value.currentBidder !== gameStore.player?.id) return
 
   gameStore.game?.command(gameStore.roomPlayer?.room?.id || '', {
@@ -400,7 +468,10 @@ watch(() => gameStore.roomPlayer?.room?.status, (newStatus) => {
   if (newStatus === 'playing' && gameStatus.value === 'waiting') {
     gameStatus.value = 'playing'
   } else if (newStatus === 'waiting') {
-    gameStatus.value = 'waiting'
+    // 如果当前是 ended 状态，不要覆盖（让用户看到游戏结束界面）
+    if (gameStatus.value !== 'ended') {
+      gameStatus.value = 'waiting'
+    }
   }
 })
 
@@ -413,6 +484,9 @@ const onRoomStart = () => {
 
 const onRoomEnd = () => {
   gameStatus.value = 'waiting'
+  gameState.value = null  // 清空游戏状态，重置身份等信息
+  currentTimer.value = null  // 清空倒计时
+  clearSelection()  // 清空选中的牌
 }
 
 const onCommand = (command: any) => {
@@ -421,8 +495,12 @@ const onCommand = (command: any) => {
       gameState.value = command.data
       if (command.data.phase === 'ended') {
         gameStatus.value = 'ended'
-      } else if (command.data.phase === 'bidding') {
-        gameStatus.value = 'bidding'
+      } else if (command.data.phase === 'calling') {
+        gameStatus.value = 'calling'
+      } else if (command.data.phase === 'grabbing') {
+        gameStatus.value = 'grabbing'
+      } else if (command.data.phase === 'counter-grabbing') {
+        gameStatus.value = 'counter-grabbing'
       } else {
         gameStatus.value = 'playing'
       }
@@ -443,6 +521,14 @@ const onCommand = (command: any) => {
         gameState.value.winnerRole = command.data.winnerRole
       }
       gameStatus.value = 'ended'
+      // 同步房间状态为 waiting，这样 RoomControls 会显示等待/准备按钮
+      if (gameStore.roomPlayer && gameStore.roomPlayer.room) {
+        try {
+          gameStore.roomPlayer.room.status = RoomStatus.waiting as any
+        } catch (e) {
+          // 某些情况下对象可能是只读，忽略错误
+        }
+      }
       break
     case 'doudizhu:landlord':
       // 地主确定
@@ -461,11 +547,31 @@ const onCommand = (command: any) => {
         if (command.data.status === 'ended') {
           gameStatus.value = 'ended'
         } else if (command.data.status === 'playing') {
-          gameStatus.value = gameState.value?.phase === 'bidding' ? 'bidding' : 'playing'
-        } else {
-          gameStatus.value = 'waiting'
+          // 根据 gameState.phase 设置正确的状态
+          if (gameState.value?.phase === 'calling') {
+            gameStatus.value = 'calling'
+          } else if (gameState.value?.phase === 'grabbing') {
+            gameStatus.value = 'grabbing'
+          } else if (gameState.value?.phase === 'counter-grabbing') {
+            gameStatus.value = 'counter-grabbing'
+          } else {
+            gameStatus.value = 'playing'
+          }
+        } else if (command.data.status === 'waiting') {
+          // 如果当前是 ended 状态，不要覆盖（让用户看到游戏结束界面）
+          // 只有当不是 ended 时才设置为 waiting
+          if (gameStatus.value !== 'ended') {
+            gameStatus.value = 'waiting'
+          }
         }
       }
+      break
+    case 'end':
+      // 游戏结束命令，重置状态以便玩家可以离开或重新准备
+      gameStatus.value = 'waiting'
+      gameState.value = null
+      currentTimer.value = null
+      clearSelection()
       break
   }
 }
