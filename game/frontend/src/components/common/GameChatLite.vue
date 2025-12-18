@@ -46,7 +46,7 @@
             <input 
               v-model="msg" 
               type="text"
-              @keyup.enter="send" 
+              @keydown.enter="send" 
               placeholder="随便聊聊" 
               class="flex-1 input input-sm join-item input-bordered focus:outline-none"
             />
@@ -95,7 +95,8 @@ function sendToGlobal() {
   msg.value = ''
 }
 
-function send() {
+function send(e:any) {
+  if (e.isComposing) return
   if (roomPlayer.value) {
     sendToRoom()
   } else {

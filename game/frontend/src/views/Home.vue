@@ -10,7 +10,7 @@
         <input 
           v-model="msg" 
           type="text"
-          @keyup.enter="sendMessage" 
+          @keydown.enter="sendMessage" 
           placeholder="随便聊聊" 
           class="flex-1 input join-item"
         />
@@ -90,7 +90,8 @@ const gameStore = useGameStore()
 
 const msg = ref('')
 
-function sendMessage() {
+function sendMessage(e:any) {
+  if (e.isComposing) return
   if (!msg.value.trim()) return
   gameStore.game?.command({ type: 'say', data: msg.value })
   msg.value = ''
