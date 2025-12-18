@@ -1,4 +1,4 @@
-import { Room, PlayerStatus } from "tiaoom";
+import { Room, PlayerStatus, PlayerRole } from "tiaoom";
 import { IGameMethod } from "./index";
 
 export const name = "斗地主";
@@ -49,11 +49,12 @@ export interface DoudizhuGameState {
   lastPlay: PlayResult | null; // 上一手牌
   lastPlayer: string | null; // 上一个出牌的玩家
   passCount: number; // 连续pass次数
-  phase: 'bidding' | 'playing' | 'ended'; // 游戏阶段
-  bidding: { playerId: string; bid: boolean }[]; // 叫地主记录
-  currentBidder: string | null; // 当前叫地主的玩家
-  lastBidder: string | null; // 上一个叫地主的玩家（用于抢地主）
-  bidRound: number; // 当前是第几轮叫地主（0=叫地主轮，1+=抢地主轮）
+  phase: 'calling' | 'grabbing' | 'counter-grabbing' | 'playing' | 'ended'; // 游戏阶段：叫地主/抢地主/反抢/出牌/结束
+  currentBidder: string | null; // 当前叫/抢地主的玩家
+  calledPlayers: string[]; // 叫地主阶段已操作的玩家列表
+  grabbedPlayers: string[]; // 抢地主阶段已操作的玩家列表
+  caller: string | null; // 叫地主的玩家（原叫地主者）
+  lastGrabber: string | null; // 最后一个抢地主的玩家（候选地主）
   winner: string | null;
   winnerRole: 'landlord' | 'farmer' | null;
   turnStartTime?: number;
@@ -388,11 +389,11 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
     broadcastState();
 
     // 如果当前正在该玩家回合，缩短倒计时
-    const isCurrentTurn = (gameState.phase === 'bidding' && gameState.currentBidder === playerId) ||
+    const isCurrentTurn = ((gameState.phase === 'calling' || gameState.phase === 'grabbing' || gameState.phase === 'counter-grabbing') && gameState.currentBidder === playerId) ||
                           (gameState.phase === 'playing' && gameState.currentPlayer === playerId);
     if (isCurrentTurn) {
       clearTurnTimer();
-      if (gameState.phase === 'bidding') {
+      if (gameState.phase === 'calling' || gameState.phase === 'grabbing' || gameState.phase === 'counter-grabbing') {
         startTurnTimer(HOSTED_TIMEOUT, () => handleBidTimeout());
       } else {
         startTurnTimer(HOSTED_TIMEOUT, () => handlePlayTimeout());
@@ -411,11 +412,11 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
     broadcastState();
   };
 
-  // 托管自动叫地主（不叫）
+  // 托管自动叫/抢/反抢地主（不叫/不抢/不反抢）
   const hostBid = async (playerId: string) => {
-    if (!gameState || gameState.phase !== 'bidding') return;
+    if (!gameState || (gameState.phase !== 'calling' && gameState.phase !== 'grabbing' && gameState.phase !== 'counter-grabbing')) return;
     const player = room.players.find(p => p.id === playerId);
-    const actionName = gameState.bidRound === 0 ? '不叫' : '不抢';
+    const actionName = gameState.phase === 'calling' ? '不叫' : (gameState.phase === 'grabbing' ? '不抢' : '不反抢');
     room.emit('message', { content: `${player?.name || playerId} (托管) ${actionName}` });
     await processBid(playerId, false);
   };
@@ -445,12 +446,25 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
     clearTurnTimer();
 
     const deck = shuffleDeck(createDeck());
-    const playerIds = room.validPlayers.map(p => p.id);
+
+    // 获取所有已准备的玩家，只取前3个参与游戏
+    const readyPlayers = room.validPlayers.filter(p => p.isReady);
+    const gamePlayers = readyPlayers.slice(0, 3);
+    const playerIds = gamePlayers.map(p => p.id);
 
     if (playerIds.length !== 3) {
       room.emit('message', { content: '斗地主需要3名玩家！' });
       return;
     }
+
+    // 将未参与游戏的玩家设为围观者
+    room.players.forEach(player => {
+      if (player.role === PlayerRole.player && !playerIds.includes(player.id)) {
+        player.role = PlayerRole.watcher;
+        player.isReady = false;
+        room.emit('message', { content: `${player.name} 成为围观者` });
+      }
+    });
 
     // 发牌：每人17张，3张底牌
     const hands: { [playerId: string]: DoudizhuCard[] } = {};
@@ -469,19 +483,20 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
       lastPlay: null,
       lastPlayer: null,
       passCount: 0,
-      phase: 'bidding',
-      bidding: [],
+      phase: 'calling', // 叫地主阶段
       currentBidder: playerIds[0],
-      lastBidder: null,
-      bidRound: 0,
+      calledPlayers: [], // 叫地主阶段已操作玩家
+      grabbedPlayers: [], // 抢地主阶段已操作玩家
+      caller: null, // 叫地主的人
+      lastGrabber: null, // 最后抢地主的人
       winner: null,
       winnerRole: null,
       bombCount: 0
     };
 
-    // 设置所有玩家状态为playing
+    // 只设置参与游戏的玩家状态为playing
     room.players.forEach(player => {
-      if (player.role === 'player') {
+      if (player.role === PlayerRole.player && playerIds.includes(player.id)) {
         player.status = PlayerStatus.playing;
       }
     });
@@ -498,7 +513,7 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
   };
 
   const handleBidTimeout = async () => {
-    if (!gameState || gameState.phase !== 'bidding' || !gameState.currentBidder) return;
+    if (!gameState || (gameState.phase !== 'calling' && gameState.phase !== 'grabbing' && gameState.phase !== 'counter-grabbing') || !gameState.currentBidder) return;
 
     const currentBidder = gameState.currentBidder;
 
@@ -510,113 +525,198 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
 
     // 普通超时处理
     const player = room.players.find(p => p.id === currentBidder);
-    const actionName = gameState.bidRound === 0 ? '不叫' : '不抢';
+    const actionName = gameState.phase === 'calling' ? '不叫' : (gameState.phase === 'grabbing' ? '不抢' : '不反抢');
     room.emit('message', { content: `${player?.name} 超时，自动${actionName}` });
     await processBid(currentBidder, false);
   };
 
-  const processBid = async (playerId: string, bid: boolean) => {
-    if (!gameState || gameState.phase !== 'bidding') return;
-
-    gameState.bidding.push({ playerId, bid });
-    const player = room.players.find(p => p.id === playerId);
+  // 获取抢地主阶段的下一个玩家（跳过原叫地主者）
+  const getNextGrabber = (currentId: string): string | null => {
+    if (!gameState || !gameState.caller) return null;
     const playerIds = Object.keys(gameState.players);
+    let nextId = getNextPlayer(currentId);
 
-    if (bid) {
-      // 玩家叫/抢地主
-      const actionName = gameState.bidRound === 0 ? '叫地主' : '抢地主';
-      room.emit('message', { content: `${player?.name} ${actionName}！` });
+    // 如果下一个是原叫地主者，再跳一个
+    if (nextId === gameState.caller) {
+      nextId = getNextPlayer(nextId);
+    }
 
-      // 记录当前叫地主的人
-      gameState.lastBidder = playerId;
-      gameState.bidRound++;
+    // 如果已经操作过，返回null
+    if (gameState.grabbedPlayers.includes(nextId)) {
+      return null;
+    }
 
-      // 计算下一个应该叫地主的人
-      const nextBidderId = getNextPlayer(playerId);
+    return nextId;
+  };
 
-      // 检查是否回到了上一个叫地主的人（说明其他人都有机会抢了）
-      // 或者已经经过了所有人（bidRound >= 3 表示三轮都有人叫/抢）
-      const bidsInCurrentRound = gameState.bidding.filter(b => b.bid).length;
+  const processBid = async (playerId: string, bid: boolean) => {
+    if (!gameState || (gameState.phase !== 'calling' && gameState.phase !== 'grabbing' && gameState.phase !== 'counter-grabbing')) return;
 
-      // 如果已经有3次叫/抢地主，或者下一个人就是最后叫地主的人，则确定地主
-      if (bidsInCurrentRound >= 3) {
-        // 最后一个抢的人成为地主
-        finalizeLandlord(playerId);
-        return;
-      }
+    const player = room.players.find(p => p.id === playerId);
 
-      // 检查是否所有人都已经有过一次抢地主的机会
-      // 在第一个人叫地主后，其他两人都需要有机会抢
-      const otherPlayers = playerIds.filter(id => id !== gameState!.lastBidder);
-      const allOthersHadChance = otherPlayers.every(id =>
-        gameState!.bidding.some(b => b.playerId === id && gameState!.bidding.indexOf(b) > gameState!.bidding.findIndex(bb => bb.playerId === gameState!.lastBidder && bb.bid))
-      );
+    // ===== 叫地主阶段 =====
+    if (gameState.phase === 'calling') {
+      // 记录该玩家已操作
+      gameState.calledPlayers.push(playerId);
 
-      if (allOthersHadChance) {
-        // 所有其他人都已经有过机会，最后叫的人成为地主
-        finalizeLandlord(gameState.lastBidder!);
-        return;
-      }
+      if (bid) {
+        // 玩家叫地主
+        room.emit('message', { content: `${player?.name} 叫地主！` });
 
-      // 继续下一个人抢地主
-      gameState.currentBidder = nextBidderId;
-      await saveGameData();
-      broadcastState();
+        // 记录叫地主的人，进入抢地主阶段
+        gameState.caller = playerId;
+        gameState.phase = 'grabbing';
 
-      const nextBidder = room.players.find(p => p.id === nextBidderId);
-      room.emit('message', { content: `请 ${nextBidder?.name} 选择是否抢地主` });
-
-      const nextTimeout = isHosted(nextBidderId) ? HOSTED_TIMEOUT : BID_TIMEOUT;
-      startTurnTimer(nextTimeout, () => handleBidTimeout());
-    } else {
-      // 玩家不叫/不抢
-      const actionName = gameState.bidRound === 0 ? '不叫' : '不抢';
-      room.emit('message', { content: `${player?.name} ${actionName}` });
-
-      // 检查是否所有人都不叫（第一轮都不叫才重新发牌）
-      if (gameState.bidRound === 0 && gameState.bidding.length >= 3 && !gameState.bidding.some(b => b.bid)) {
-        // 所有人都不叫，重新发牌
-        room.emit('message', { content: '没有人叫地主，重新发牌' });
-        await startGame();
-        return;
-      }
-
-      // 如果已经有人叫过地主
-      if (gameState.lastBidder) {
-        // 检查是否所有其他人都已经表态（不抢）
-        const otherPlayers = playerIds.filter(id => id !== gameState!.lastBidder);
-        const currentBidIndex = gameState.bidding.findIndex(b => b.playerId === gameState!.lastBidder && b.bid);
-        const allOthersResponded = otherPlayers.every(id =>
-          gameState!.bidding.slice(currentBidIndex + 1).some(b => b.playerId === id)
-        );
-
-        if (allOthersResponded) {
-          // 其他人都不抢，最后叫的人成为地主
-          finalizeLandlord(gameState.lastBidder);
+        // 找到下一个非叫地主者开始抢
+        const nextGrabberId = getNextGrabber(playerId);
+        if (!nextGrabberId) {
+          // 没有人可以抢（理论上不会发生，因为有3个玩家）
+          finalizeLandlord(playerId);
           return;
         }
+
+        gameState.currentBidder = nextGrabberId;
+        await saveGameData();
+        broadcastState();
+
+        const nextBidder = room.players.find(p => p.id === nextGrabberId);
+        room.emit('message', { content: `请 ${nextBidder?.name} 选择是否抢地主` });
+
+        const nextTimeout = isHosted(nextGrabberId) ? HOSTED_TIMEOUT : BID_TIMEOUT;
+        startTurnTimer(nextTimeout, () => handleBidTimeout());
+      } else {
+        // 玩家不叫
+        room.emit('message', { content: `${player?.name} 不叫` });
+
+        // 检查是否所有人都已操作
+        if (gameState.calledPlayers.length >= 3) {
+          // 所有人都不叫，流局重新发牌
+          room.emit('message', { content: '没有人叫地主，重新发牌' });
+          await startGame();
+          return;
+        }
+
+        // 下一个人继续叫
+        gameState.currentBidder = getNextPlayer(playerId);
+        await saveGameData();
+        broadcastState();
+
+        const nextBidder = room.players.find(p => p.id === gameState!.currentBidder);
+        room.emit('message', { content: `请 ${nextBidder?.name} 选择是否叫地主` });
+
+        const nextTimeout = isHosted(gameState.currentBidder!) ? HOSTED_TIMEOUT : BID_TIMEOUT;
+        startTurnTimer(nextTimeout, () => handleBidTimeout());
+      }
+      return;
+    }
+
+    // ===== 抢地主阶段 =====
+    if (gameState.phase === 'grabbing') {
+      // 原叫地主者不能参与抢地主
+      if (playerId === gameState.caller) {
+        return;
       }
 
-      // 下一个人叫/抢地主
-      gameState.currentBidder = getNextPlayer(playerId);
+      // 记录该玩家已操作
+      gameState.grabbedPlayers.push(playerId);
+
+      if (bid) {
+        // 玩家抢地主
+        room.emit('message', { content: `${player?.name} 抢地主！` });
+
+        // 更新候选地主为最后抢地主的人
+        gameState.lastGrabber = playerId;
+      } else {
+        // 玩家不抢
+        room.emit('message', { content: `${player?.name} 不抢` });
+      }
+
+      // 检查是否所有非叫地主者都已操作（共2人）
+      if (gameState.grabbedPlayers.length >= 2) {
+        // 所有人都已操作
+        if (gameState.lastGrabber) {
+          // 有人抢地主，进入反抢阶段
+          gameState.phase = 'counter-grabbing';
+          gameState.currentBidder = gameState.caller;
+          await saveGameData();
+          broadcastState();
+
+          const callerPlayer = room.players.find(p => p.id === gameState!.caller);
+          room.emit('message', { content: `请 ${callerPlayer?.name} 选择是否反抢` });
+
+          const nextTimeout = isHosted(gameState.caller!) ? HOSTED_TIMEOUT : BID_TIMEOUT;
+          startTurnTimer(nextTimeout, () => handleBidTimeout());
+        } else {
+          // 没人抢，原叫者直接成为地主（跳过反抢阶段）
+          finalizeLandlord(gameState.caller!);
+        }
+        return;
+      }
+
+      // 还有人没操作，继续
+      const nextGrabberId = getNextGrabber(playerId);
+      if (!nextGrabberId) {
+        // 所有人都已操作
+        if (gameState.lastGrabber) {
+          // 有人抢地主，进入反抢阶段
+          gameState.phase = 'counter-grabbing';
+          gameState.currentBidder = gameState.caller;
+          await saveGameData();
+          broadcastState();
+
+          const callerPlayer = room.players.find(p => p.id === gameState!.caller);
+          room.emit('message', { content: `请 ${callerPlayer?.name} 选择是否反抢` });
+
+          const nextTimeout = isHosted(gameState.caller!) ? HOSTED_TIMEOUT : BID_TIMEOUT;
+          startTurnTimer(nextTimeout, () => handleBidTimeout());
+        } else {
+          // 没人抢，原叫者直接成为地主
+          finalizeLandlord(gameState.caller!);
+        }
+        return;
+      }
+
+      gameState.currentBidder = nextGrabberId;
       await saveGameData();
       broadcastState();
 
-      const nextBidder = room.players.find(p => p.id === gameState!.currentBidder);
-      const nextActionName = gameState.lastBidder ? '抢地主' : '叫地主';
-      room.emit('message', { content: `请 ${nextBidder?.name} 选择是否${nextActionName}` });
+      const nextBidder = room.players.find(p => p.id === nextGrabberId);
+      room.emit('message', { content: `请 ${nextBidder?.name} 选择是否抢地主` });
 
-      const nextTimeout = isHosted(gameState.currentBidder!) ? HOSTED_TIMEOUT : BID_TIMEOUT;
+      const nextTimeout = isHosted(nextGrabberId) ? HOSTED_TIMEOUT : BID_TIMEOUT;
       startTurnTimer(nextTimeout, () => handleBidTimeout());
+      return;
+    }
+
+    // ===== 反抢地主阶段 =====
+    if (gameState.phase === 'counter-grabbing') {
+      // 只有原叫地主者可以反抢
+      if (playerId !== gameState.caller) {
+        return;
+      }
+
+      if (bid) {
+        // 原叫者反抢成功，成为地主
+        room.emit('message', { content: `${player?.name} 反抢地主！` });
+        finalizeLandlord(gameState.caller!);
+      } else {
+        // 原叫者不反抢，候选地主成为地主
+        room.emit('message', { content: `${player?.name} 不反抢` });
+        finalizeLandlord(gameState.lastGrabber!);
+      }
     }
   };
 
   const finalizeLandlord = async (landlordId: string) => {
     if (!gameState) return;
 
+    // 先清除叫地主阶段的倒计时，防止双重倒计时
+    clearTurnTimer();
+
     gameState.landlord = landlordId;
     gameState.phase = 'playing';
     gameState.currentPlayer = landlordId;
+    gameState.currentBidder = null; // 清除叫地主状态，防止前端显示双重倒计时
     gameState.passCount = 0;
 
     // 地主获得底牌
@@ -763,7 +863,7 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
       // 更新成就
       const isLandlord = playerId === gameState.landlord;
       room.players.forEach(p => {
-        if (p.role !== 'player') return;
+        if (p.role !== PlayerRole.player) return;
         if (!achievements[p.name]) {
           achievements[p.name] = { win: 0, lost: 0 };
         }
@@ -775,6 +875,11 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
         }
       });
 
+      // 清除托管状态
+      if (gameState.hosted) {
+        gameState.hosted = {};
+      }
+
       const winnerName = player?.name;
       const roleName = isLandlord ? '地主' : '农民';
       room.emit('message', { content: `🎉 ${winnerName} (${roleName}) 获胜！` });
@@ -783,7 +888,26 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
       broadcastState();
       room.emit('command', { type: 'game:over', data: { winner: playerId, winnerRole: gameState.winnerRole } });
       room.emit('command', { type: 'achievements', data: achievements });
-      room.end(); // 结束房间，触发 'end' 事件通知前端
+
+      // 设置所有玩家状态为未准备，并通知客户端
+      room.players.forEach(p => {
+        if (p.role === PlayerRole.player) {
+          try {
+            p.isReady = false;
+            p.status = PlayerStatus.unready;
+            p.emit('status', PlayerStatus.unready);
+            room.emit('player-unready', { ...p, roomId: room.id, isReady: false });
+          } catch (e) {
+            console.warn('无法将玩家设为未准备', p.id, e);
+          }
+        }
+      });
+
+      // 通知客户端房间状态变为等待
+      room.emit('command', { type: 'status', data: { status: 'waiting' } });
+
+      // 不立即调用 room.end()，让玩家可以查看结果
+      // 下一局开始时会重置 gameState
       return;
     }
 
@@ -800,8 +924,10 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
 
   // 恢复游戏状态
   if (gameState && gameState.phase !== 'ended') {
+    // 只设置参与游戏的玩家为playing状态
+    const gamePlayerIds = Object.keys(gameState.players);
     room.players.forEach(player => {
-      if (player.role === 'player') {
+      if (player.role === PlayerRole.player && gamePlayerIds.includes(player.id)) {
         player.status = PlayerStatus.playing;
       }
     });
@@ -817,14 +943,14 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
 
         if (remaining > 0) {
           // 还有剩余时间，继续倒计时
-          if (gameState.phase === 'bidding') {
+          if (gameState.phase === 'calling' || gameState.phase === 'grabbing' || gameState.phase === 'counter-grabbing') {
             startTurnTimer(remaining, () => handleBidTimeout());
           } else if (gameState.phase === 'playing') {
             startTurnTimer(remaining, () => handlePlayTimeout());
           }
         } else {
           // 倒计时已过期，立即处理超时
-          if (gameState.phase === 'bidding') {
+          if (gameState.phase === 'calling' || gameState.phase === 'grabbing' || gameState.phase === 'counter-grabbing') {
             handleBidTimeout();
           } else if (gameState.phase === 'playing') {
             handlePlayTimeout();
@@ -832,7 +958,7 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
         }
       } else {
         // 没有倒计时状态，开始新的倒计时
-        if (gameState.phase === 'bidding') {
+        if (gameState.phase === 'calling' || gameState.phase === 'grabbing' || gameState.phase === 'counter-grabbing') {
           startTurnTimer(BID_TIMEOUT, () => handleBidTimeout());
         } else if (gameState.phase === 'playing') {
           startTurnTimer(TURN_TIMEOUT, () => handlePlayTimeout());
@@ -890,7 +1016,8 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
   });
 
   room.on('start', () => {
-    if (!gameState && room.validPlayers.length === 3) {
+    // 如果没有游戏状态，或者游戏已结束，则可以开始新游戏
+    if ((!gameState || gameState.phase === 'ended') && room.validPlayers.length >= 3) {
       startGame();
     }
   });
@@ -932,8 +1059,18 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
 
     switch (commandType) {
       case 'doudizhu:bid': {
-        if (!gameState || gameState.phase !== 'bidding') return;
+        if (!gameState || (gameState.phase !== 'calling' && gameState.phase !== 'grabbing' && gameState.phase !== 'counter-grabbing')) return;
         if (gameState.currentBidder !== sender.id) return;
+        // 抢地主阶段，原叫地主者不能操作
+        if (gameState.phase === 'grabbing' && sender.id === gameState.caller) {
+          sender.emit('command', { type: 'doudizhu:invalid', data: { message: '你已经叫过地主，不能抢地主' } });
+          return;
+        }
+        // 反抢阶段，只有原叫地主者可以操作
+        if (gameState.phase === 'counter-grabbing' && sender.id !== gameState.caller) {
+          sender.emit('command', { type: 'doudizhu:invalid', data: { message: '只有原叫地主者可以反抢' } });
+          return;
+        }
         clearTurnTimer();
         await processBid(sender.id, message.data?.bid === true);
         break;
