@@ -136,7 +136,7 @@ function onPlayMessage(msg: IMessage) {
 function onCommand(cmd: any) {
   switch (cmd.type) {
     case 'status':
-      messages.value = cmd.data.messageHistory;
+      messages.value = cmd.data.messageHistory || [];
       break
   }
 }

@@ -295,11 +295,8 @@ const props = defineProps<{ game?: any; roomPlayer?: any }>();
 import { useGameStore } from '@/stores/game'
 import { RoomStatus } from 'tiaoom/client'
 import UnoCard from './UnoCard.vue'
-import RoomControls from '@/components/common/RoomControls.vue'
-import GameChat from '@/components/common/GameChat.vue'
-import PlayerList from '@/components/player-list/PlayerList.vue'
 import { useGameEvents } from '@/hook/useGameEvents'
-import type { UnoCard as UnoCardType, UnoGameState } from '../../../../backend/src/games/uno'
+import type { UnoCard as UnoCardType, UnoGameState } from '$/backend/src/games/uno'
 
 const gameStore = useGameStore()
 

@@ -305,12 +305,9 @@
 import { computed, ref, onMounted, watch } from 'vue'
 import { useGameStore } from '@/stores/game'
 import DoudizhuCard from './DoudizhuCard.vue'
-import RoomControls from '@/components/common/RoomControls.vue'
-import GameChat from '@/components/common/GameChat.vue'
-import PlayerList from '@/components/player-list/PlayerList.vue'
 import { useGameEvents } from '@/hook/useGameEvents'
 import { RoomStatus } from 'tiaoom/client'
-import type { DoudizhuGameState, DoudizhuCard as DoudizhuCardType } from '../../../../backend/src/games/doudizhu'
+import type { DoudizhuGameState, DoudizhuCard as DoudizhuCardType } from '$/backend/src/games/doudizhu'
 
 const props = defineProps<{ game?: any; roomPlayer?: any }>()
 
