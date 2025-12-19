@@ -85,46 +85,49 @@ export function useTetris(game: GameCore, roomPlayer: RoomPlayer & { room: Room 
   }
 
   function moveLeft() {
-    if (gameStatus.value !== 'playing') return
+    if (gameStatus.value !== 'playing' || roomPlayer.role !== 'player') return
     game?.command(roomPlayer.room.id, { type: 'tetris:move_left' })
   }
 
   function moveRight() {
-    if (gameStatus.value !== 'playing') return
+    if (gameStatus.value !== 'playing' || roomPlayer.role !== 'player') return
     game?.command(roomPlayer.room.id, { type: 'tetris:move_right' })
   }
 
   function moveDown() {
-    if (gameStatus.value !== 'playing') return
+    if (gameStatus.value !== 'playing' || roomPlayer.role !== 'player') return
     game?.command(roomPlayer.room.id, { type: 'tetris:move_down' })
   }
 
   function rotate() {
-    if (gameStatus.value !== 'playing') return
+    if (gameStatus.value !== 'playing' || roomPlayer.role !== 'player') return
     game?.command(roomPlayer.room.id, { type: 'tetris:rotate' })
   }
 
   function drop() {
-    if (gameStatus.value !== 'playing') return
+    if (gameStatus.value !== 'playing' || roomPlayer.role !== 'player') return
     game?.command(roomPlayer.room.id, { type: 'tetris:drop' })
   }
 
   function pause() {
-    if (gameStatus.value !== 'playing' || !gameState.value) return
+    if (gameStatus.value !== 'playing' || roomPlayer.role !== 'player' || !gameState.value) return
     game?.command(roomPlayer.room.id, { type: 'tetris:pause' })
   }
 
   function startGame() {
+    if (gameStatus.value !== 'waiting' || roomPlayer.role !== 'player') return
     game?.command(roomPlayer.room.id, { type: 'start' })
   }
   
   function restartGame() {
     // 发送特殊命令处理重新开始
+    if (roomPlayer.role !== 'player') return
     game?.command(roomPlayer.room.id, { type: 'tetris:restart' })
   }
   
   function endGame() {
     // 结束游戏，回到等待状态
+    if (roomPlayer.role !== 'player') return
     game?.command(roomPlayer.room.id, { type: 'end' })
   }
 

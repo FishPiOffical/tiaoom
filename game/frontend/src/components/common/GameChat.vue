@@ -80,8 +80,7 @@
 import { computed, ref } from 'vue'
 import { PlayerRole, RoomPlayer, RoomStatus } from 'tiaoom/client'
 import { IMessage } from '..'
-import RulesModal from '../rule/RulesModal.vue'
-import Icon from '../icon/Icon.vue';
+import RulesModal from './RulesModal.vue'
 import { openSmallWindow } from '@/utils/dom';
 import { useGameStore } from '@/stores/game';
 import { useGameEvents } from '@/hook/useGameEvents';

@@ -414,7 +414,12 @@ export default async function onRoom(room: Room, {save, restore}: IGameMethod) {
   });
 
   return room.on('player-command', async (message: any) => {
-    const sender = room.players.find((p) => p.id === message.sender?.id);
+    // 允许观众使用的指令
+    const publicCommands = ['say', 'status'];
+    const players = publicCommands.includes(message.type)
+      ? room.players
+      : room.validPlayers;
+    const sender = players.find((p) => p.id == message.sender?.id)!;
     if (!sender) return;
 
     const commandType = message.type || message.data?.type;
