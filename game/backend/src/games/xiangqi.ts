@@ -15,6 +15,7 @@ import { sleep } from "@/utils";
 type Side = 'red' | 'green'
 // Piece codes: rR/rN/rB/rA/rK/rC/rP for red; gR/gN/gB/gA/gK/gC/gP for green
 export default async function onRoom(room: Room, { save, restore }: IGameMethod) {
+  const TURN_MS = 60_000
   const gameData = await restore();
 
   type Phase = 'waiting' | 'playing'
@@ -123,7 +124,7 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
 
   function startTurnCountdown(forPlayer: RoomPlayer) {
     if (turnTimer) { clearTimeout(turnTimer); turnTimer = null }
-    countdownEndAt = Date.now() + 30_000
+    countdownEndAt = Date.now() + TURN_MS
     room.emit('command', { type: 'countdown', data: { end: countdownEndAt, player: forPlayer.id } })
     turnTimer = setTimeout(() => {
       const winner = room.validPlayers.find(p => p.id !== forPlayer.id)
@@ -131,7 +132,7 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
         room.emit('message', { content: `${forPlayer.name} 超时，${winner.name} 获胜！` })
         endWithWinner(winner)
       }
-    }, 30_000)
+    }, TURN_MS)
     saveGameData()
   }
 
@@ -458,4 +459,4 @@ export const maxSize = 2
 export const description = `中国象棋：随机红/绿方，红方先手。服务器严格校验走法（马别腿/象塞眼/炮隔子/九宫/过河兵）、将帅对脸与自陷将军；吃掉将/帅即胜。`;
  
 // Updated: Server enforces piece movement rules and 30s turn countdown.
-export const description_extra = `规则：服务器严格校验走法与将帅对脸；每回合 30 秒超时判负；吃掉对方将/帅即胜。`;
+export const description_extra = `规则：服务器严格校验走法与将帅对脸；每回合 60 秒超时判负；吃掉对方将/帅即胜。`;

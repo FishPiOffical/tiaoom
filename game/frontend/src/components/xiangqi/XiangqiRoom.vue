@@ -5,7 +5,7 @@
       <div class="inline-block bg-base-200 border-2 border-base-content/20 p-8 rounded shadow-xl">
         <div class="relative xiangqi-board" :class="{ 'rotate-180': rotateBoard }">
           <!-- SVG Grid -->
-          <svg class="absolute inset-0 w-full h-full" viewBox="0 0 360 405" preserveAspectRatio="none">
+          <svg class="absolute inset-0 w-full h-full overflow-visible" style="overflow: visible" viewBox="0 0 360 405" preserveAspectRatio="none">
             <!-- Outer border (two separate boxes with river gap) -->
             <rect x="0" y="0" width="360" height="180" fill="none" stroke="currentColor" stroke-width="2" class="text-base-content/60" />
             <rect x="0" y="225" width="360" height="180" fill="none" stroke="currentColor" stroke-width="2" class="text-base-content/60" />
@@ -36,6 +36,51 @@
             <!-- Palace diagonals (Red bottom: rows 7-9, at y=280-360) -->
             <line x1="135" y1="315" x2="225" y2="405" stroke="currentColor" stroke-width="1" class="text-base-content/40" />
             <line x1="225" y1="315" x2="135" y2="405" stroke="currentColor" stroke-width="1" class="text-base-content/40" />
+
+            <!-- Last move highlight (from/to) -->
+            <g v-if="lastMove" pointer-events="none">
+              <!-- from: dashed vivid ring (with contrast underlay) -->
+              <circle
+                :cx="svgX(lastMove.from.y)"
+                :cy="svgY(lastMove.from.x)"
+                r="22"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="5"
+                class="text-base-content/25"
+              />
+              <circle
+                :cx="svgX(lastMove.from.y)"
+                :cy="svgY(lastMove.from.x)"
+                r="22"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="3"
+                stroke-dasharray="8 6"
+                stroke-linecap="round"
+                class="text-accent"
+              />
+              <!-- to: solid vivid ring (with contrast underlay) -->
+              <circle
+                :cx="svgX(lastMove.to.y)"
+                :cy="svgY(lastMove.to.x)"
+                r="22"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="6"
+                class="text-base-content/25"
+              />
+              <circle
+                :cx="svgX(lastMove.to.y)"
+                :cy="svgY(lastMove.to.x)"
+                r="22"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="5"
+                stroke-linecap="round"
+                class="text-warning"
+              />
+            </g>
           </svg>
 
           <!-- Intersection marks and pieces grid -->
@@ -46,7 +91,7 @@
                    :style="{ left: ((c-1)*45) + 'px', transform: 'translate(-50%, -50%)', width: '45px', height: '45px' }"
                    @click="onCellClick(r-1, c-1)">
                 <!-- Intersection marks (corner ticks at non-edge points) -->
-                <svg v-if="shouldShowIntersectionMark(r-1, c-1)" class="absolute inset-0 pointer-events-none" width="40" height="40" viewBox="0 0 40 40">
+                <svg v-if="shouldShowIntersectionMark(r-1, c-1)" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none" width="40" height="40" viewBox="0 0 40 40">
                   <!-- 4 corners: 4 L-shaped right angles, vertex faces the center cross -->
                   <!-- Top-left (vertex near center, legs outward) -->
                   <line x1="16" y1="16" x2="16" y2="12" stroke="currentColor" stroke-width="1.5" class="text-base-content/60" />
@@ -65,13 +110,15 @@
                 <!-- Piece -->
                 <button
                   v-if="board[r-1][c-1]"
+                  type="button"
                   class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 rounded-full border-2 flex items-center justify-center text-base leading-none font-bold shadow-md transition z-10"
                   :class="[
                     getPieceClasses(board[r-1][c-1]),
                     selected && selected.x === (r-1) && selected.y === (c-1) ? 'ring-2 ring-primary ring-offset-2' : ''
                   ]"
+                  @click.stop.prevent="onCellClick(r-1, c-1)"
                 >
-                  <span :class="{ 'rotate-180': rotateBoard }">{{ pieceText(board[r-1][c-1]) }}</span>
+                  <span class="select-none" :class="{ 'rotate-180': rotateBoard }">{{ pieceText(board[r-1][c-1]) }}</span>
                 </button>
               </div>
             </div>
@@ -88,8 +135,21 @@
       </div>
 
       <!-- Turn indicator -->
-      <div v-if="gameStatus === 'playing'" class="mt-3 text-base flex items-center gap-3">
-        <div>轮到：<b class="ml-1">{{ currentPlayer?.name }}</b></div>
+      <div v-if="gameStatus === 'playing'" class="mt-3 flex items-center justify-center gap-4 text-lg p-1">
+        <div class="flex items-center gap-3">
+          <div class="w-6 h-6 flex items-center justify-center bg-base-300 rounded-full border border-base-content/20">
+            <span
+              class="w-full h-full rounded-full"
+              :class="
+                currentPlayer?.attributes?.side === 'red'
+                  ? 'bg-red-600 border border-white/20 shadow-md'
+                  : 'bg-green-600 border border-white/20 shadow-md'
+              "
+            />
+          </div>
+          <b class="text-base-content">{{ currentPlayer?.name }}</b>
+        </div>
+
         <div class="text-sm">倒计时：<span class="badge badge-outline">{{ countdown }}s</span></div>
       </div>
     </section>
@@ -125,11 +185,7 @@
       <GameChat>
         <template #rules>
           <ul class="space-y-2 text-sm">
-            <li>1. 红方先手；双方轮流走子（服务器校验走法和将帅对脸）。</li>
-            <li>2. 棋子落在十字线交点上；河界分隔“楚河/汉界”。</li>
-            <li>3. 吃掉对方将/帅即胜。</li>
-            <li>4. 每回合有 30 秒思考时间，超时判负。</li>
-            <li>5. 明牌聊天：所有人可见；观众在对局中仅能与其他观众交流。</li>
+            <li>1. 中国象棋，无需多言。</li>
           </ul>
         </template>
       </GameChat>
@@ -153,6 +209,7 @@ const {
   currentPlayer,
   board,
   selected,
+  lastMove,
   countdown,
   trySelectOrMove,
 } = useXiangqi(props.game, props.roomPlayer)
@@ -214,6 +271,14 @@ function getPlayerStatus(p: any) {
   if (gameStatus.value === 'playing') return '等待中'
   return '准备好了'
 }
+
+function svgX(col: number) {
+  return col * 45
+}
+
+function svgY(row: number) {
+  return row <= 4 ? row * 45 : 225 + (row - 5) * 45
+}
 </script>
 
 <style scoped>
@@ -221,5 +286,8 @@ function getPlayerStatus(p: any) {
   width: 360px;
   height: 405px;
   font-family: var(--font-kai);
+  -webkit-user-select: none;
+  user-select: none;
 }
+
 </style>
