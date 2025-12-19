@@ -96,7 +96,6 @@ const {
   rotate,
   drop,
   pause,
-  startGame,
   restartGame,
   clearedLines
 } = useTetris(props.game, props.roomPlayer)

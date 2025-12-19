@@ -192,9 +192,6 @@
 import { useTetris } from './useTetris'
 import type { RoomPlayer, Room } from 'tiaoom/client'
 import type { GameCore } from '@/core/game'
-import GameChat from '@/components/common/GameChat.vue'
-import PlayerList from '@/components/player-list/PlayerList.vue'
-import RoomControls from '@/components/common/RoomControls.vue'
 
 const props = defineProps<{
   roomPlayer: RoomPlayer & { room: Room }
@@ -213,7 +210,6 @@ const {
   rotate,
   drop,
   pause,
-  startGame,
   restartGame,
   endGame,
   clearedLines

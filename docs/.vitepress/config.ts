@@ -21,29 +21,43 @@ export default defineConfig({
     nav: [
       { text: '首页', link: '/' },
       { text: '指南', link: '/guide/getting-started' },
-      { text: 'API', link: '/api/server' }
+      { text: '棋牌室', link: '/game/' },
     ],
 
-    sidebar: [
-      {
-        text: '指南',
-        items: [
-          { text: '快速开始', link: '/guide/getting-started' },
-          { text: '游戏开发', link: '/guide/game-development' },
-          { text: '通信实现', link: '/guide/communication' },
-          { text: '错误处理', link: '/guide/error-handling' },
-        ]
-      },
-      {
-        text: 'API 参考',
-        items: [
-          { text: '服务端 API', link: '/api/server' },
-          { text: '客户端 API', link: '/api/client' },
-          { text: '事件列表', link: '/api/events' },
-          { text: '数据模型', link: '/api/models' }
-        ]
-      }
-    ],
+    sidebar: { 
+      '/game/': [
+        {
+          text: '摸鱼棋牌室',
+          items: [
+            { text: '项目介绍', link: '/game/' },
+            { text: '快速开始', link: '/game/getting-started' },
+            { text: '调试部署', link: '/game/deploy' },
+            { text: '开发详解', link: '/game/development' },
+            { text: '游戏嵌入', link: '/game/embed' },
+          ]
+        }
+      ],
+      '/guide/': [
+        {
+          text: '指南',
+          items: [
+            { text: '快速开始', link: '/guide/getting-started' },
+            { text: '游戏开发', link: '/guide/game-development' },
+            { text: '通信实现', link: '/guide/communication' },
+            { text: '错误处理', link: '/guide/error-handling' },
+          ]
+        },
+        {
+          text: 'API 参考',
+          items: [
+            { text: '服务端 API', link: '/guide/api/server' },
+            { text: '客户端 API', link: '/guide/api/client' },
+            { text: '事件列表', link: '/guide/api/events' },
+            { text: '数据模型', link: '/guide/api/models' }
+          ]
+        }
+      ]
+    },
 
     socialLinks: [
       { 

@@ -3,7 +3,20 @@
     <section class="flex-1 md:h-full flex flex-col items-center justify-start md:justify-center overflow-auto p-4">
       <!-- 棋盘 -->
       <div class="inline-block bg-base-300 border border-base-content/20 p-2 rounded shadow-2xl m-auto">
+        <!-- 顶部留白 -->
+        <div class="flex">
+          <div class="w-[6vw] md:w-7 h-[6vw] md:h-7"></div>
+          <div v-for="col in 19" :key="col" class="w-[6vw] md:w-7 h-[6vw] md:h-7"></div>
+          <div class="w-[6vw] md:w-7 h-[6vw] md:h-7"></div>
+        </div>
+        
         <div v-for="(row, rowIndex) in board" :key="rowIndex" class="flex">
+          <!-- 左侧数字坐标 -->
+          <div class="w-[6vw] md:w-7 h-[6vw] md:h-7 flex items-center justify-center text-base-content/30 text-xs md:text-xs">
+            {{ 19 - rowIndex }}
+          </div>
+          
+          <!-- 棋盘格子 -->
           <div 
             v-for="(cell, colIndex) in row" 
             :key="colIndex"
@@ -35,6 +48,18 @@
               ]"
             />
           </div>
+          
+          <!-- 右侧留白 -->
+          <div class="w-[6vw] md:w-7 h-[6vw] md:h-7"></div>
+        </div>
+        
+        <!-- 底部字母坐标 -->
+        <div class="flex">
+          <div class="w-[6vw] md:w-7"></div>
+          <div v-for="col in 19" :key="col" class="w-[6vw] md:w-7 h-[6vw] md:h-7 flex items-center justify-center text-base-content/30 text-xs md:text-xs">
+            {{ String.fromCharCode(64 + col) }}
+          </div>
+          <div class="w-[6vw] md:w-7"></div>
         </div>
       </div>
       
