@@ -1,23 +1,36 @@
 <template>
-  <section class="flex flex-col items-center justify-center p-2 py-4" ref="containerRef">
+  <section class="flex flex-col items-center justify-center p-2 py-4 max-w-[99vw] max-h-[95vh] overflow-hidden" ref="containerRef">
     <!-- 棋盘 -->
-    <div class="inline-block bg-base-300 border border-base-content/20 p-2 rounded shadow-2xl m-auto">
+    <div class="inline-block p-2 m-auto border rounded shadow-2xl bg-base-300 border-base-content/20">
+      <!-- 顶部留白 -->
+      <div class="flex">
+        <div class="w-[4vw] md:w-6 h-[4vw] md:h-6"></div>
+        <div v-for="col in 19" :key="col" class="w-[4vw] md:w-6 h-[4vw] md:h-6"></div>
+        <div class="w-[4vw] md:w-6 h-[4vw] md:h-6"></div>
+      </div>
+      
       <div v-for="(row, rowIndex) in board" :key="rowIndex" class="flex">
+        <!-- 左侧数字坐标 -->
+        <div class="w-[4vw] md:w-6 h-[4vw] md:h-6 flex items-center justify-center text-base-content/30 text-xs md:text-xs">
+          {{ 19 - rowIndex }}
+        </div>
+        
+        <!-- 棋盘格子 -->
         <div 
           v-for="(cell, colIndex) in row" 
           :key="colIndex"
           :data-pos="`${rowIndex}-${colIndex}`"
           @click="placePiece(rowIndex, colIndex)" 
-          class="relative w-[4.7vw] h-[4.7vw] md:w-7 md:h-7 flex items-center justify-center"
+          class="relative w-[4vw] h-[4vw] md:w-6 md:h-6 flex items-center justify-center"
           :class="{ 'cursor-pointer': currentPlayer?.id === roomPlayer.id && cell === 0 }"
         >
           <!-- 棋盘网格线 -->
-          <div class="absolute bg-base-content/30 h-px top-1/2 -translate-y-1/2 z-0"
+          <div class="absolute z-0 h-px -translate-y-1/2 bg-base-content/30 top-1/2"
             :class="[
               colIndex === 0 ? 'left-1/2 w-1/2' : (colIndex === row.length - 1 ? 'left-0 w-1/2' : 'left-0 w-full')
             ]"
           ></div>
-          <div class="absolute bg-base-content/30 w-px left-1/2 -translate-x-1/2 z-0"
+          <div class="absolute z-0 w-px -translate-x-1/2 bg-base-content/30 left-1/2"
             :class="[
               rowIndex === 0 ? 'top-1/2 h-1/2' : (rowIndex === board.length - 1 ? 'top-0 h-1/2' : 'top-0 h-full')
             ]"
@@ -27,13 +40,25 @@
           <!-- 棋子 -->
           <span 
             v-if="cell > 0"
-            class="w-[3vw] h-[3vw] md:w-6 md:h-6 rounded-full z-10 relative transition-all duration-200"
+            class="w-[3vw] md:w-5 h-[3vw] md:h-5 rounded-full z-10 relative transition-all duration-200"
             :class="[
               cell === 1 ? 'bg-black border border-white/20 shadow-lg' : 'bg-white border border-black/20 shadow-lg',
               currentPlace?.x === rowIndex && currentPlace?.y === colIndex ? 'ring-2 ring-error scale-90' : ''
             ]"
           />
         </div>
+        
+        <!-- 右侧留白 -->
+        <div class="w-[4vw] md:w-6 h-[4vw] md:h-6"></div>
+      </div>
+      
+      <!-- 底部字母坐标 -->
+      <div class="flex">
+        <div class="w-[4vw] md:w-6"></div>
+        <div v-for="col in 19" :key="col" class="w-[4vw] md:w-6 h-[4vw] md:h-6 flex items-center justify-center text-base-content/30 text-xs md:text-xs">
+          {{ String.fromCharCode(64 + col) }}
+        </div>
+        <div class="w-[4vw] md:w-6"></div>
       </div>
     </div>
     
