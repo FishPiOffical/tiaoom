@@ -165,11 +165,6 @@
         @lose="requestLose"
       />
 
-      <!-- Explicit leave button -->
-      <div class="flex gap-2">
-          <button class="btn btn-sm" @click="props.game?.leaveRoom(roomPlayer.room.id)">离开房间</button>
-      </div>
-
       <!-- Player list -->
       <PlayerList :players="roomPlayer.room.players">
         <template #default="{ player: p }">
