@@ -93,18 +93,20 @@
             class="pb-5 overflow-auto flex-none"
             :style="roomsPanelHeightPx !== null ? { height: roomsPanelHeightPx + 'px' } : undefined"
           >
-            <section class="flex justify-between mb-2">
-              <h2 class="text-sm font-bold text-base-content/60 uppercase tracking-wider mb-2 flex items-center gap-1">
-                <Icon icon="fluent:chess-16-filled" size="1.5em"/>
-                <span>在线房间 ({{ gameStore.rooms.length }})</span>
-              </h2>
-              <select v-model="gameType" class="text-xs select w-[10em]">
-                <option value="">全部游戏</option>
-                <option v-for="(game, key) in gameStore.games" :key="key" :value="key">
-                  {{ game.name }}
-                </option>
-              </select>
-            </section>
+            <div class="sticky top-0 z-10 bg-base-200/80 backdrop-blur">
+              <section class="flex justify-between mb-2">
+                <h2 class="text-sm font-bold text-base-content/60 uppercase tracking-wider mb-2 flex items-center gap-1">
+                  <Icon icon="fluent:chess-16-filled" size="1.5em"/>
+                  <span>在线房间 ({{ gameStore.rooms.length }})</span>
+                </h2>
+                <select v-model="gameType" class="text-xs select w-[10em]">
+                  <option value="">全部游戏</option>
+                  <option v-for="(game, key) in gameStore.games" :key="key" :value="key">
+                    {{ game.name }}
+                  </option>
+                </select>
+              </section>
+            </div>
             <ul class="space-y-2">
               <li v-for="r in roomList" :key="r.id" class="flex items-center justify-between p-2 rounded bg-base-300/50 hover:bg-base-300 transition-colors">
                 <div class="flex items-center gap-2 overflow-hidden">
@@ -130,16 +132,19 @@
 
           <!-- Draggable splitter -->
           <div
+            ref="splitterEl"
             class="sidebar-splitter bg-base-content/20 cursor-row-resize select-none touch-none"
             title="拖拽调整面板高度"
             @pointerdown="onSplitterPointerDown"
           />
 
           <div class="overflow-auto flex-1 min-h-0 pt-3">
-            <h2 class="text-sm font-bold text-base-content/60 uppercase tracking-wider mb-2 flex items-center gap-1">
-              <Icon icon="fluent:people-16-filled" size="1.5em"/>
-              <span>在线玩家 ({{ gameStore.players.length }})</span>
-            </h2>
+            <div class="sticky top-0 z-10 bg-base-200/80 backdrop-blur">
+              <h2 class="text-sm font-bold text-base-content/60 uppercase tracking-wider mb-2 flex items-center gap-1">
+                <Icon icon="fluent:people-16-filled" size="1.5em"/>
+                <span>在线玩家 ({{ gameStore.players.length }})</span>
+              </h2>
+            </div>
             <ul class="space-y-1">
               <li v-for="p in gameStore.players" :key="p.id" class="text-sm text-base-content/80">
                 - {{ p.name }}
@@ -186,6 +191,7 @@ const isDesktopSidebarCollapsed = ref(false)
 
 const panelsEl = ref<HTMLElement | null>(null)
 const roomsEl = ref<HTMLElement | null>(null)
+const splitterEl = ref<HTMLElement | null>(null)
 const roomsPanelHeightPx = ref<number | null>(null)
 
 function joinRoom(r: IRoomOptions) {
@@ -215,10 +221,23 @@ onMounted(() => {
 
   // Preserve current default sizing by measuring after first render.
   nextTick(() => {
-    if (!roomsEl.value) return
+    if (!roomsEl.value || !panelsEl.value) return
     if (roomsPanelHeightPx.value !== null) return
+
     const measured = Math.round(roomsEl.value.getBoundingClientRect().height)
-    if (measured > 0) roomsPanelHeightPx.value = measured
+    if (measured <= 0) return
+
+    // Requested: make rooms panel default about 5x current height.
+    const multiplier = 5
+    const desired = measured * multiplier
+
+    const minRooms = 120
+    const minPlayers = 120
+    const splitterHeight = Math.max(1, Math.round((splitterEl.value?.getBoundingClientRect().height ?? 1)))
+    const containerHeight = Math.round(panelsEl.value.getBoundingClientRect().height)
+    const maxRooms = Math.max(minRooms, containerHeight - splitterHeight - minPlayers)
+
+    roomsPanelHeightPx.value = Math.round(Math.min(maxRooms, Math.max(minRooms, desired)))
   })
 })
 
