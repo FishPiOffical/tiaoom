@@ -5,7 +5,7 @@
   >
     <!-- 棋盘 -->
     <div
-      class="inline-block bg-base-300 border border-base-content/20 p-1 rounded shadow-2xl m-auto max-w-[90vw] max-h-[90vh]"
+      class="inline-block bg-base-300 border border-base-content/20 p-1 rounded shadow-2xl m-auto max-w-[99vw] max-h-[90vh]"
     >
       <!-- 顶部横坐标 (A-H) -->
       <div class="flex">
