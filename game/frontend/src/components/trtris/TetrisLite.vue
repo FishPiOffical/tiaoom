@@ -32,6 +32,33 @@
           </div>
         </div>
       </div>
+    
+        <!-- 下一个方块预览 -->
+        <div class="absolute top-4 right-4 bg-base-200 p-2 rounded-box" v-if="renderedNextPiece">
+          <h4 class="text-xs mb-1 text-center">下一个</h4>
+          <div class="preview-container flex items-center justify-center" style="width: 80px; height: 80px;">
+            <div class="preview-grid inline-block">
+              <div
+                v-for="(row, y) in renderedNextPiece.shape"
+                :key="y"
+                class="preview-row flex"
+              >
+                <div
+                  v-for="(cell, x) in row"
+                  :key="x"
+                  class="preview-cell w-3 h-3 border border-base-content/10 relative"
+                  :class="{ filled: cell !== 0 }"
+                >
+                  <div 
+                    v-if="cell !== 0"
+                    class="absolute inset-0 rounded-sm"
+                    :style="{ backgroundColor: getColorValue(renderedNextPiece.color), boxShadow: 'inset 2px 2px 4px oklch(var(--w) / 0.2), inset -2px -2px 4px oklch(var(--b) / 0.2)' }"
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
       <!-- 游戏结束提示 -->
       <div v-if="gameState?.gameOver" class="absolute inset-0 bg-black/80 flex items-center justify-center rounded">
@@ -48,23 +75,6 @@
           <h2 class="text-lg font-bold text-warning mb-4">游戏暂停</h2>
           <button @click="pause" class="btn btn-primary btn-sm">继续游戏</button>
         </div>
-      </div>
-    </div>
-
-    <!-- 移动端控制 -->
-    <div class="md:hidden w-full max-w-md mt-4">
-      <div class="grid grid-cols-3 gap-2">
-        <div></div>
-        <button @click="rotate" class="btn btn-secondary btn-sm">↻</button>
-        <div></div>
-        
-        <button @click="moveLeft" class="btn btn-secondary btn-sm">←</button>
-        <button @click="moveDown" class="btn btn-secondary btn-sm">↓</button>
-        <button @click="moveRight" class="btn btn-secondary btn-sm">→</button>
-        
-        <div></div>
-        <button @click="drop" class="btn btn-accent btn-sm">.Drop</button>
-        <div></div>
       </div>
     </div>
 
@@ -118,25 +128,25 @@ function getColorValue(colorClass: string) {
   
   // 如果是CSS类名，映射为实际颜色值
   const colorMap: Record<string, string> = {
-    'bg-cyan-500': '#00bcd4',
-    'bg-blue-500': '#2196f3',
-    'bg-orange-500': '#ff9800',
-    'bg-yellow-500': '#ffeb3b',
-    'bg-green-500': '#4caf50',
-    'bg-purple-500': '#9c27b0',
-    'bg-red-500': '#f44336',
-    'bg-gray-500': '#9e9e9e'
+    'bg-cyan-500': 'oklch(var(--p))',      // 使用 DaisyUI 主题变量
+    'bg-blue-500': 'oklch(var(--s))',      // 使用 DaisyUI 主题变量
+    'bg-orange-500': 'oklch(var(--a))',    // 使用 DaisyUI 主题变量
+    'bg-yellow-500': 'oklch(var(--wa))',   // 使用 DaisyUI 主题变量
+    'bg-green-500': 'oklch(var(--su))',    // 使用 DaisyUI 主题变量
+    'bg-purple-500': 'oklch(var(--er))',   // 使用 DaisyUI 主题变量
+    'bg-red-500': 'oklch(var(--pc))',      // 使用 DaisyUI 主题变量
+    'bg-gray-500': 'oklch(var(--b3))'      // 使用 DaisyUI 主题变量
   }
   
-  return colorMap[colorClass] || '#9e9e9e'
+  return colorMap[colorClass] || 'oklch(var(--b3))'
 }
 </script>
 
 <style scoped>
 .board-cell.filled {
-  border-color: rgba(0, 0, 0, 0.3);
-  box-shadow: inset 2px 2px 4px rgba(255, 255, 255, 0.2),
-    inset -2px -2px 4px rgba(0, 0, 0, 0.2);
+  border-color: oklch(var(--bc) / 0.3);
+  box-shadow: inset 2px 2px 4px oklch(var(--w) / 0.2),
+    inset -2px -2px 4px oklch(var(--b) / 0.2);
 }
 
 .board-cell.current {
@@ -168,7 +178,7 @@ function getColorValue(colorClass: string) {
 }
 
 @keyframes clear {
-  0% { background-color: white; opacity: 0.8; }
+  0% { background-color: oklch(var(--w)); opacity: 0.8; }
   100% { background-color: transparent; opacity: 1; }
 }
 

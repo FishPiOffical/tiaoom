@@ -135,17 +135,21 @@ export function useTetris(game: GameCore, roomPlayer: RoomPlayer & { room: Room 
   const handleKeyDown = (e: KeyboardEvent) => {
     if (document.activeElement !== document.body) return;
     
-    switch (e.key) {
-      case 'ArrowLeft':
+    switch (e.key.toLowerCase()) {
+      case 'arrowleft':
+      case 'a':
         moveLeft();
         break;
-      case 'ArrowRight':
+      case 'arrowright':
+      case 'd':
         moveRight();
         break;
-      case 'ArrowDown':
+      case 'arrowdown':
+      case 's':
         moveDown();
         break;
-      case 'ArrowUp':
+      case 'arrowup':
+      case 'w':
         rotate();
         break;
       case ' ':
@@ -153,7 +157,6 @@ export function useTetris(game: GameCore, roomPlayer: RoomPlayer & { room: Room 
         e.preventDefault();
         break;
       case 'p':
-      case 'P':
         pause();
         break;
     }
@@ -276,7 +279,7 @@ export function useTetris(game: GameCore, roomPlayer: RoomPlayer & { room: Room 
   const renderedNextPiece = computed(() => {
     if (!gameState.value || !gameState.value.nextPiece) return null
 
-    const TETROMINOES = {
+    const TETROMINOES: Record<TetrominoType, { shape: number[][], color: string }> = {
       I: {
         shape: [
           [0, 0, 0, 0],
@@ -284,7 +287,7 @@ export function useTetris(game: GameCore, roomPlayer: RoomPlayer & { room: Room 
           [0, 0, 0, 0],
           [0, 0, 0, 0]
         ],
-        color: 'bg-cyan-500'
+        color: '#00bcd4'  // 青色
       },
       J: {
         shape: [
@@ -292,7 +295,7 @@ export function useTetris(game: GameCore, roomPlayer: RoomPlayer & { room: Room 
           [1, 1, 1],
           [0, 0, 0]
         ],
-        color: 'bg-blue-500'
+        color: '#2196f3'  // 蓝色
       },
       L: {
         shape: [
@@ -300,14 +303,14 @@ export function useTetris(game: GameCore, roomPlayer: RoomPlayer & { room: Room 
           [1, 1, 1],
           [0, 0, 0]
         ],
-        color: 'bg-orange-500'
+        color: '#ff9800'  // 橙色
       },
       O: {
         shape: [
           [1, 1],
           [1, 1]
         ],
-        color: 'bg-yellow-500'
+        color: '#ffeb3b'  // 黄色
       },
       S: {
         shape: [
@@ -315,7 +318,7 @@ export function useTetris(game: GameCore, roomPlayer: RoomPlayer & { room: Room 
           [1, 1, 0],
           [0, 0, 0]
         ],
-        color: 'bg-green-500'
+        color: '#4caf50'  // 绿色
       },
       T: {
         shape: [
@@ -323,7 +326,7 @@ export function useTetris(game: GameCore, roomPlayer: RoomPlayer & { room: Room 
           [1, 1, 1],
           [0, 0, 0]
         ],
-        color: 'bg-purple-500'
+        color: '#9c27b0'  // 紫色
       },
       Z: {
         shape: [
@@ -331,21 +334,18 @@ export function useTetris(game: GameCore, roomPlayer: RoomPlayer & { room: Room 
           [0, 1, 1],
           [0, 0, 0]
         ],
-        color: 'bg-red-500'
+        color: '#f44336'  // 红色
       }
     }
 
     const nextPieceType = gameState.value.nextPiece
-    const pieceData = TETROMINOES[nextPieceType] || {
-      shape: [[1, 1], [1, 1]],
-      color: 'bg-gray-500'
-    }
+    const pieceData = TETROMINOES[nextPieceType]
 
-    return {
+    return pieceData ? {
       type: nextPieceType,
       shape: pieceData.shape,
       color: pieceData.color
-    }
+    } : null
   })
 
   return {
