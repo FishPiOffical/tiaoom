@@ -3,7 +3,22 @@
     <section class="flex-1 md:h-full flex flex-col items-center justify-start md:justify-center overflow-auto p-4">
       <!-- 棋盘 -->
       <div class="inline-block bg-base-300 border border-base-content/20 p-2 rounded shadow-2xl m-auto">
+        <!-- 顶部横坐标 (A-H) -->
+        <div class="flex">
+          <div class="w-[10vw] md:w-8 h-[8] md:h-8 flex items-center justify-center text-xs font-bold text-base-content/60"></div>
+          <div v-for="colIndex in 8" :key="'col-top-' + colIndex" 
+               class="w-[10vw] md:w-8 h-[8] md:h-8 flex items-center justify-center text-xs font-bold text-base-content/60">
+            {{ String.fromCharCode(64 + colIndex) }}
+          </div>
+          <div class="w-[10vw] md:w-8 h-[8] md:h-8 flex items-center justify-center text-xs font-bold text-base-content/60"></div>
+        </div>
+        
+        <!-- 棋盘行 -->
         <div v-for="(row, rowIndex) in board" :key="rowIndex" class="flex">
+          <!-- 左侧纵坐标 (8-1) -->
+          <div class="w-[10vw] md:w-8 h-[10vw] md:h-8 flex items-center justify-center text-xs font-bold text-base-content/60">
+            {{ 8 - rowIndex }}
+          </div>
           <div 
             v-for="(cell, colIndex) in row" 
             :key="colIndex" 
@@ -31,6 +46,20 @@
               class="absolute w-2 h-2 rounded-full bg-base-content/30"
             ></div>
           </div>
+          <!-- 右侧纵坐标 (8-1) -->
+          <div class="w-[10vw] md:w-8 h-[10vw] md:h-8 flex items-center justify-center text-xs font-bold text-base-content/60">
+            {{ 8 - rowIndex }}
+          </div>
+        </div>
+        
+        <!-- 底部横坐标 (A-H) -->
+        <div class="flex">
+          <div class="w-[10vw] md:w-8 h-[8] md:h-8 flex items-center justify-center text-xs font-bold text-base-content/60"></div>
+          <div v-for="colIndex in 8" :key="'col-bottom-' + colIndex" 
+               class="w-[10vw] md:w-8 h-[8] md:h-8 flex items-center justify-center text-xs font-bold text-base-content/60">
+            {{ String.fromCharCode(64 + colIndex) }}
+          </div>
+          <div class="w-[10vw] md:w-8 h-[8] md:h-8 flex items-center justify-center text-xs font-bold text-base-content/60"></div>
         </div>
       </div>
       
