@@ -25,8 +25,8 @@
               :style="{ backgroundColor: cell?.filled && !cell?.color?.startsWith('outline-') ? getColorValue(cell.color) : 'transparent' }"
             >
               <!-- Ghost piece outline -->
-              <div 
-                v-if="cell?.filled && cell?.color?.startsWith('outline-')" 
+              <div
+                v-if="cell?.filled && cell?.color?.startsWith('outline-')"
                 class="absolute inset-0 border-2 rounded-sm ghost-outline"
                 :style="{ borderColor: getColorValue(cell.color.replace('outline-', '')) }"
               ></div>
@@ -51,69 +51,60 @@
           </div>
         </div>
       </div>
-
-      <!-- 移动端控制 -->
-      <div class="md:hidden w-full max-w-md mt-4">
-        <div class="grid grid-cols-3 gap-2">
-          <div></div>
-          <button @click="rotate" class="btn btn-secondary btn-lg">↻</button>
-          <div></div>
-          
-          <button @click="moveLeft" class="btn btn-secondary btn-lg">←</button>
-          <button @click="moveDown" class="btn btn-secondary btn-lg">↓</button>
-          <button @click="moveRight" class="btn btn-secondary btn-lg">→</button>
-          
-          <div></div>
-          <button @click="drop" class="btn btn-accent btn-lg">.DropDown</button>
-          <div></div>
-        </div>
-      </div>
     </section>
-    
+
     <!-- 侧边栏 -->
     <aside class="w-full md:w-96 flex-none border-t md:border-t-0 md:border-l border-border pt-4 md:pt-0 md:pl-4 space-y-4 md:h-full flex flex-col">
-      <section class="inline-flex flex-col gap-2 max-h-1/2">
+      <section class="inline-flex flex-col gap-2">
         <!-- 游戏信息面板 -->
         <div class="bg-base-100 rounded-box p-4 border border-base-content/10">
           <h3 class="font-bold text-lg mb-3 text-center">俄罗斯方块</h3>
-          
+
           <div class="space-y-2">
             <div class="flex justify-between">
               <span class="text-base-content/70">分数:</span>
               <span class="font-mono font-bold">{{ gameState?.score || 0 }}</span>
             </div>
-            
+
             <div class="flex justify-between">
               <span class="text-base-content/70">等级:</span>
               <span class="font-mono font-bold">{{ gameState?.level || 1 }}</span>
             </div>
-            
+
             <div class="flex justify-between">
               <span class="text-base-content/70">消行:</span>
               <span class="font-mono font-bold">{{ gameState?.lines || 0 }}</span>
             </div>
           </div>
-          
+
           <!-- 下一个方块预览 -->
           <div class="mt-4">
             <h4 class="text-base-content/70 text-sm mb-2">下一个:</h4>
-            <div class="preview-grid inline-block bg-base-200 p-2 rounded" v-if="renderedNextPiece">
-              <div
-                v-for="(row, y) in renderedNextPiece.shape"
-                :key="y"
-                class="preview-row flex"
-              >
+            <div class="preview-container bg-base-200 p-2 rounded flex items-center justify-center" style="width: 120px; height: 120px;">
+              <div class="preview-grid inline-block" v-if="renderedNextPiece">
                 <div
-                  v-for="(cell, x) in row"
-                  :key="x"
-                  class="preview-cell w-5 h-5 border border-base-content/10"
-                  :class="{ filled: cell !== 0 }"
-                  :style="{ backgroundColor: cell !== 0 ? getColorValue(renderedNextPiece.color) : 'transparent' }"
-                />
+                  v-for="(row, y) in renderedNextPiece.shape"
+                  :key="y"
+                  class="preview-row flex"
+                >
+                  <div
+                    v-for="(cell, x) in row"
+                    :key="x"
+                    class="preview-cell w-5 h-5 border border-base-content/10 relative"
+                    :class="{ filled: cell !== 0 }"
+                  >
+                    <div
+                      v-if="cell !== 0"
+                      class="absolute inset-0 rounded-sm"
+                      :style="{ backgroundColor: getColorValue(renderedNextPiece.color), boxShadow: 'inset 2px 2px 4px oklch(var(--w) / 0.2), inset -2px -2px 4px oklch(var(--b) / 0.2)' }"
+                    ></div>
+                  </div>
+                </div>
               </div>
+              <div v-else class="text-sm text-base-content/50">加载中...</div>
             </div>
           </div>
-          
+
           <!-- 控制按钮 -->
           <div class="mt-4 flex flex-col gap-2">
             <div class="flex gap-2">
@@ -135,43 +126,21 @@
           </div>
         </div>
 
-        <!-- 成就表 -->
-        <section v-if="Object.keys(achievements).length" class="overflow-auto rounded-box border border-base-content/5 bg-base-100 max-h-50 min-h-30">
-          <table class="table table-pin-rows table-pin-cols text-center">
-            <thead>
-              <tr>
-                <th class="bg-base-300">玩家</th>
-                <th class="bg-base-300">胜</th>
-                <th class="bg-base-300">负</th>
-                <th class="bg-base-300">和</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(achievement, playerName) in achievements" :key="playerName">
-                <td class="">{{ playerName }}</td>
-                <td class="">{{ achievement.win }}</td>
-                <td class="">{{ achievement.lost }}</td>
-                <td class="">{{ achievement.draw }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </section>
-        
         <hr v-if="Object.keys(achievements).length" class="border-border" />
-        
+
         <!-- 玩家列表 -->
         <PlayerList :players="roomPlayer.room.players" />
-        
+
         <!-- 操作按钮 -->
         <RoomControls
           :game="game"
           :room-player="roomPlayer"
           :game-status="gameStatus"
         />
-        
+
         <hr class="border-base-content/20" />
       </section>
-      
+
       <GameChat>
         <template #rules>
           <ul class="space-y-2 text-sm">
@@ -181,6 +150,7 @@
             <li>4. 空格 : 瞬间下落</li>
             <li>5. P : 暂停/继续</li>
             <li>6. 消除多行可获得更高分数</li>
+            <li>7. WASD : 方向控制（不区分大小写）</li>
           </ul>
         </template>
       </GameChat>
@@ -192,6 +162,9 @@
 import { useTetris } from './useTetris'
 import type { RoomPlayer, Room } from 'tiaoom/client'
 import type { GameCore } from '@/core/game'
+import GameChat from '@/components/common/GameChat.vue'
+import PlayerList from '@/components/common/PlayerList.vue'
+import RoomControls from '@/components/common/RoomControls.vue'
 
 const props = defineProps<{
   roomPlayer: RoomPlayer & { room: Room }
@@ -204,11 +177,6 @@ const {
   achievements,
   renderedBoardWithGhost,
   renderedNextPiece,
-  moveLeft,
-  moveRight,
-  moveDown,
-  rotate,
-  drop,
   pause,
   restartGame,
   endGame,
@@ -221,28 +189,28 @@ function getColorValue(colorClass: string) {
   if (colorClass.startsWith('#') || colorClass.startsWith('rgb')) {
     return colorClass
   }
-  
+
   // 如果是CSS类名，映射为实际颜色值
   const colorMap: Record<string, string> = {
-    'bg-cyan-500': '#00bcd4',
-    'bg-blue-500': '#2196f3',
-    'bg-orange-500': '#ff9800',
-    'bg-yellow-500': '#ffeb3b',
-    'bg-green-500': '#4caf50',
-    'bg-purple-500': '#9c27b0',
-    'bg-red-500': '#f44336',
-    'bg-gray-500': '#9e9e9e'
+    'bg-cyan-500': 'oklch(var(--p))',      // 使用 DaisyUI 主题变量
+    'bg-blue-500': 'oklch(var(--s))',      // 使用 DaisyUI 主题变量
+    'bg-orange-500': 'oklch(var(--a))',    // 使用 DaisyUI 主题变量
+    'bg-yellow-500': 'oklch(var(--wa))',   // 使用 DaisyUI 主题变量
+    'bg-green-500': 'oklch(var(--su))',    // 使用 DaisyUI 主题变量
+    'bg-purple-500': 'oklch(var(--er))',   // 使用 DaisyUI 主题变量
+    'bg-red-500': 'oklch(var(--pc))',      // 使用 DaisyUI 主题变量
+    'bg-gray-500': 'oklch(var(--b3))'      // 使用 DaisyUI 主题变量
   }
-  
-  return colorMap[colorClass] || '#9e9e9e'
+
+  return colorMap[colorClass] || 'oklch(var(--b3))'
 }
 </script>
 
 <style scoped>
 .board-cell.filled {
-  border-color: rgba(0, 0, 0, 0.3);
-  box-shadow: inset 2px 2px 4px rgba(255, 255, 255, 0.2),
-    inset -2px -2px 4px rgba(0, 0, 0, 0.2);
+  border-color: oklch(var(--bc) / 0.3);
+  box-shadow: inset 2px 2px 4px oklch(var(--w) / 0.2),
+    inset -2px -2px 4px oklch(var(--b) / 0.2);
 }
 
 .board-cell.current {
@@ -274,7 +242,7 @@ function getColorValue(colorClass: string) {
 }
 
 @keyframes clear {
-  0% { background-color: white; opacity: 0.8; }
+  0% { background-color: oklch(var(--w)); opacity: 0.8; }
   100% { background-color: transparent; opacity: 1; }
 }
 
