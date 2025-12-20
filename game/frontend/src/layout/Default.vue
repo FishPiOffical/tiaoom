@@ -138,15 +138,21 @@
             @pointerdown="onSplitterPointerDown"
           />
 
-          <div class="overflow-auto flex-1 min-h-0 pt-3">
-            <div class="sticky top-0 z-10 bg-base-200/80 backdrop-blur">
-              <h2 class="text-sm font-bold text-base-content/60 uppercase tracking-wider mb-2 flex items-center gap-1">
-                <Icon icon="fluent:people-16-filled" size="1.5em"/>
+          <div class="overflow-auto flex-1 min-h-0">
+            <div class="sticky top-0 z-10 bg-base-200/100 p-2 rounded">
+              <h2
+                class="text-sm font-bold text-base-content/60 uppercase tracking-wider flex items-center gap-1"
+              >
+                <Icon icon="fluent:people-16-filled" size="1.5em" />
                 <span>在线玩家 ({{ gameStore.players.length }})</span>
               </h2>
             </div>
             <ul class="space-y-1">
-              <li v-for="p in gameStore.players" :key="p.id" class="text-sm text-base-content/80">
+              <li
+                v-for="p in gameStore.players"
+                :key="p.id"
+                class="text-sm text-base-content/80"
+              >
                 - {{ p.name }}
               </li>
             </ul>
