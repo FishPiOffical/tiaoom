@@ -1,10 +1,10 @@
 # 通信实现
 
-Tiaoom 的后端通信核心在于 [`IMessage`](/api/models#imessage) 接口的实现。通过实现该接口，你可以适配不同的通信协议（如 WebSocket、Socket.IO，RPC 等）。
+Tiaoom 的后端通信核心在于 [`IMessage`](./api/models#imessage) 接口的实现。通过实现该接口，你可以适配不同的通信协议（如 WebSocket、Socket.IO，RPC 等）。
 
-## [`IMessage`](/api/models#imessage) 接口
+## [`IMessage`](./api/models#imessage) 接口
 
-[`IMessage`](/api/models#imessage) 接口定义了后端通信类必须具备的基本能力，包括事件监听、消息发送和连接管理。
+[`IMessage`](./api/models#imessage) 接口定义了后端通信类必须具备的基本能力，包括事件监听、消息发送和连接管理。
 
 ```typescript
 export interface IMessage extends EventEmitter<IMessageEmitterEvents> {
@@ -37,12 +37,12 @@ export interface IMessage extends EventEmitter<IMessageEmitterEvents> {
 
 ## 接收前端消息
 
-当后端收到来自前端的消息时，需要将其转换为 [`IMessageData`](/api/models#imessagedata) 格式，并通过 `this.emit('message', ...)` 触发 Tiaoom 库的内部处理逻辑。
+当后端收到来自前端的消息时，需要将其转换为 [`IMessageData`](./api/models#imessagedata) 格式，并通过 `this.emit('message', ...)` 触发 Tiaoom 库的内部处理逻辑。
 
 **关键步骤：**
 
-1.  **解析消息**：将收到的原始数据（如 JSON 字符串）解析为 [`IMessageData`](/api/models#imessagedata) 对象。
-2.  **关联发送者**：除了登录消息外，其他消息都需要找到对应的 [`Player`](/api/models#player) 对象，并赋值给 `message.sender`。这是库识别消息来源的关键。
+1.  **解析消息**：将收到的原始数据（如 JSON 字符串）解析为 [`IMessageData`](./api/models#imessagedata) 对象。
+2.  **关联发送者**：除了登录消息外，其他消息都需要找到对应的 [`Player`](./api/models#player) 对象，并赋值给 `message.sender`。这是库识别消息来源的关键。
 3.  **触发事件**：调用 `this.emit("message", message, callback)` 将消息交给 Tiaoom 处理。`callback` 用于处理库返回的响应结果。
 
 ```typescript
@@ -80,7 +80,7 @@ socket.on("message", (data: any) => {
 
 ### 1. 玩家消息 (`player.`)
 
-当消息类型以 `player.` 开头时，表示该消息是发送给特定玩家的。`message.sender` 字段包含了目标玩家的信息，也就是 [`Player`](/api/models#player)。
+当消息类型以 `player.` 开头时，表示该消息是发送给特定玩家的。`message.sender` 字段包含了目标玩家的信息，也就是 [`Player`](./api/models#player)。
 
 **处理逻辑：**
 - 查找所有属于该玩家 ID 的连接（Socket）。
@@ -104,7 +104,7 @@ if (message.type.startsWith('player.') && message.sender) {
 
 ### 2. 房间消息 (`room.`)
 
-当消息类型以 `room.` 开头时，表示该消息是发送给特定房间内的所有玩家的。此时 `message.sender` 通常被视为房间对象（[`Room`](/api/models#room)）。
+当消息类型以 `room.` 开头时，表示该消息是发送给特定房间内的所有玩家的。此时 `message.sender` 通常被视为房间对象（[`Room`](./api/models#room)）。
 
 **处理逻辑：**
 - 遍历房间内的所有玩家。
@@ -180,7 +180,7 @@ socket.on("close", () => {
 
 ## 前端通信
 
-前端通信主要依赖于继承实现 [`tiaoom/client`](/api/client) 模块中的 `Tiaoom` 类中的两个抽象方法。
+前端通信主要依赖于继承实现 [`tiaoom/client`](./api/client) 模块中的 `Tiaoom` 类中的两个抽象方法。
 
 - `connect()`：用于建立与后端服务器的连接。
-- `send(message: { type: `[`MessageTypes`](/api/models#messagetypes-client)`, data?: any })`：用于发送消息到服务器。
+- `send(message: { type: `[`MessageTypes`](./api/models#messagetypes-client)`, data?: any })`：用于发送消息到服务器。
