@@ -275,9 +275,9 @@ client.on('room.command', (cmd) => {
 
 Tiaoom 处理了房间管理的繁重工作：
 
-- **创建**: [`createRoom(options)`](.../api/client.md#createroom)
-- **加入**: [`joinRoom(roomId)`](.../api/client.md#joinroom)
-- **离开**: [`leaveRoom(roomId)`](.../api/client.md#leaveroom)
-- **准备状态**: [`ready(roomId, isReady)`](.../api/client.md#ready)
-- **踢人**: [`kickPlayer(roomId, playerId)`](.../api/client.md#kickplayer)
-- **转让房主**: [`transferRoom(roomId, playerId)`](.../api/client.md#transferroom)
+- **创建**: [`createRoom(options)`](./api/client.md#createroom)
+- **加入**: [`joinRoom(roomId)`](./api/client.md#joinroom)
+- **离开**: [`leaveRoom(roomId)`](./api/client.md#leaveroom)
+- **准备状态**: [`ready(roomId, isReady)`](./api/client.md#ready)
+- **踢人**: [`kickPlayer(roomId, playerId)`](./api/client.md#kickplayer)
+- **转让房主**: [`transferRoom(roomId, playerId)`](./api/client.md#transferroom)
