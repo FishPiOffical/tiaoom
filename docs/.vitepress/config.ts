@@ -35,6 +35,21 @@ export default defineConfig({
             { text: '开发详解', link: '/game/development' },
             { text: '游戏嵌入', link: '/game/embed' },
           ]
+        },
+        {
+          text: '前端公共组件',
+          items: [
+            { text: '组件概览', link: '/game/components/' },
+            { text: 'CreateRoom', link: '/game/components/CreateRoom' },
+            { text: 'GameChat', link: '/game/components/GameChat' },
+            { text: 'GameChatLite', link: '/game/components/GameChatLite' },
+            { text: 'Icon', link: '/game/components/Icon' },
+            { text: 'PlayerList', link: '/game/components/PlayerList' },
+            { text: 'RoomControls', link: '/game/components/RoomControls' },
+            { text: 'RoomControlsLite', link: '/game/components/RoomControlsLite' },
+            { text: 'RulesModal', link: '/game/components/RulesModal' },
+            { text: 'ThemeController', link: '/game/components/ThemeController' },
+          ]
         }
       ],
       '/guide/': [
