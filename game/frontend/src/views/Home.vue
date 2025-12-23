@@ -1,10 +1,10 @@
 <template>
-  <main class="flex-1 p-4 md:p-6 overflow-auto bg-base-100 w-full">
+  <main class="flex-1 overflow-auto bg-base-100 w-full">
     <!-- 创建房间 -->
-    <CreateRoom v-if="!gameStore.roomPlayer" />
+    <CreateRoom v-if="!gameStore.roomPlayer" class="p-4" />
     
     <!-- 全局聊天 -->
-    <section v-if="!gameStore.roomPlayer" class="mt-8 space-y-4 max-w-2xl mx-auto flex flex-col">
+    <section v-if="!gameStore.roomPlayer" class="mt-8 px-4 space-y-4 max-w-2xl mx-auto flex flex-col">
       <div class="border-t border-base-content/20 pt-4"></div>
       <div class="join w-full">
         <input 
@@ -54,7 +54,7 @@
     
     <!-- 房间内容 -->
     <section v-if="gameStore.roomPlayer" class="h-full flex flex-col">
-      <header class="border-b border-base-content/20 flex justify-between items-center">
+      <header class="border-b border-base-content/20 flex justify-between items-center px-4 py-2">
         <h3 class="text-xl font-light text-base-content pb-2">
           我的房间: {{ gameStore.roomPlayer.room.name }} 
           <span class="text-sm text-base-content/60 ml-2">
@@ -75,7 +75,7 @@
       </header>
       
       <!-- 动态游戏组件 -->
-      <div class="flex-1 overflow-auto">
+      <div class="flex-1 overflow-auto md:p-4">
         <component 
           v-if="gameStore.roomPlayer.room.attrs?.type" 
           :is="gameStore.roomPlayer.room.attrs.type + '-room'" 
