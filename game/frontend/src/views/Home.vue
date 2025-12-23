@@ -88,7 +88,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useGameStore } from '@/stores/game'
 import { openSmallWindow } from '@/utils/dom'
 import { getComponent } from '@/main';
@@ -105,12 +105,13 @@ function sendMessage(e:any) {
   msg.value = ''
 }
 
-const hasLiteComponent = (type: string) => {
+const hasLiteComponent = computed(() => {
   try {
-    getComponent(type.slice(0, 1).toUpperCase() + type.slice(1) + 'Lite')
-    return true
+    const type = gameStore.roomPlayer?.room.attrs?.type;
+    if (!type) return false
+    return !!getComponent(type.slice(0, 1).toUpperCase() + type.slice(1) + 'Lite')
   } catch {
     return false
   }
-}
+})
 </script>
