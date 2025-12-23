@@ -53,18 +53,25 @@
     </section>
     
     <!-- 房间内容 -->
-    <section v-if="gameStore.roomPlayer" class="space-y-4 h-full flex flex-col">
-      <header class="border-b border-base-content/20 flex justify-between">
+    <section v-if="gameStore.roomPlayer" class="h-full flex flex-col">
+      <header class="border-b border-base-content/20 flex justify-between items-center">
         <h3 class="text-xl font-light text-base-content pb-2">
           我的房间: {{ gameStore.roomPlayer.room.name }} 
           <span class="text-sm text-base-content/60 ml-2">
             ({{ gameStore.roomPlayer.room.players.filter(p => p.role === 'player').length }}/{{ gameStore.roomPlayer.room.size }})
           </span>
         </h3>
-        <span>
-          <button v-if="hasLiteComponent" class="btn btn-text hidden md:inline tooltip tooltip-left" data-tip="弹出" @click="openSmallWindow('/#/lite')"><Icon icon="majesticons:open-line" /></button>
-          {{ getComponent(gameStore.roomPlayer.room.attrs.type + '-lite') }}
-        </span>
+        <section>
+          <RoomControls
+            v-if="gameStore.game"
+            :game="gameStore.game" 
+            :room-player="gameStore.roomPlayer"
+          >
+            <button v-if="hasLiteComponent" class="btn btn-sm btn-circle btn-soft hidden md:flex tooltip tooltip-left" data-tip="弹出" @click="openSmallWindow('/#/lite')">
+              <Icon icon="majesticons:open-line" />
+            </button>
+          </RoomControls>
+        </section>
       </header>
       
       <!-- 动态游戏组件 -->
@@ -85,6 +92,7 @@ import { ref } from 'vue'
 import { useGameStore } from '@/stores/game'
 import { openSmallWindow } from '@/utils/dom'
 import { getComponent } from '@/main';
+import RoomControls from '@/components/common/RoomControls.vue';
 
 const gameStore = useGameStore()
 

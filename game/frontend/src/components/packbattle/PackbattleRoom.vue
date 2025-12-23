@@ -50,14 +50,21 @@
     </section>
 
     <aside class="w-full md:w-96 flex-none border-t md:border-t-0 md:border-l border-base-content/20 pt-4 md:pt-0 md:pl-4 space-y-4 md:h-full flex flex-col">
-      <RoomControls
-        :game="game"
-        :room-player="roomPlayer"
-        :current-player="phase === 'pick' ? active : (phase === 'swap' ? passive : null)"
-        :enable-draw-resign="true"
-        @draw="requestDraw"
-        @lose="requestLose"
-      />
+      <!-- 操作按钮 -->
+      <div v-if="isPlaying && roomPlayer.role === PlayerRole.player" class="group flex gap-2">
+        <button class="btn" 
+          @click="requestDraw"
+          :disabled="(phase === 'pick' ? active?.id : passive?.id) !== roomPlayer.id"
+        >
+          求和
+        </button>
+        <button class="btn" 
+          @click="requestLose"
+          :disabled="(phase === 'pick' ? active?.id : passive?.id) !== roomPlayer.id"
+        >
+          认输
+        </button>
+      </div>
 
       <PlayerList :players="roomPlayer.room.players">
         <template #default="{ player: p }">
@@ -87,11 +94,9 @@
 </template>
 
 <script setup lang="ts">
-import type { RoomPlayer, Room } from 'tiaoom/client'
-import { RoomStatus } from 'tiaoom/client'
+import { PlayerRole, type RoomPlayer, type Room } from 'tiaoom/client'
 import type { GameCore } from '@/core/game'
 import GameChat from '@/components/common/GameChat.vue'
-import RoomControls from '@/components/common/RoomControls.vue'
 import { usePackbattle } from './usePackbattle'
 import { computed } from 'vue'
 
@@ -100,6 +105,7 @@ const props = defineProps<{ roomPlayer: RoomPlayer & { room: Room }, game: GameC
 const packImg = new URL('@/assets/images/pack.png', import.meta.url).href
 
 const {
+  isPlaying,
   gameStatus,
   phase,
   active,
@@ -109,6 +115,8 @@ const {
   result,
   give,
   decideSwap,
+  requestDraw,
+  requestLose,
 } = usePackbattle(props.game, props.roomPlayer)
 
 const winnerRole = computed(() => {
@@ -131,15 +139,5 @@ function getPlayerStatus(p: any) {
   if (phase.value === 'swap' && passive?.value?.id === p.id) return '思考中'
   if (gameStatus.value === 'playing') return '等待中'
   return '准备好了'
-}
-
-function requestDraw() {
-  if (props.roomPlayer.room.status !== RoomStatus.playing) return
-  props.game?.command(props.roomPlayer.room.id, { type: 'request-draw' })
-}
-
-function requestLose() {
-  if (props.roomPlayer.room.status !== RoomStatus.playing) return
-  props.game?.command(props.roomPlayer.room.id, { type: 'request-lose' })
 }
 </script>

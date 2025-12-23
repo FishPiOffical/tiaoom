@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { Room, RoomPlayer } from 'tiaoom/client'
 import { GameCore } from '@/core/game';
 import { useGameEvents } from '@/hook/useGameEvents';
@@ -83,7 +83,10 @@ export function useOthello(game: GameCore, roomPlayer: RoomPlayer & { room: Room
     game?.command(roomPlayer.room.id, { type: 'request-lose' })
   }
 
+  const isPlaying = computed(() => roomPlayer.room.status === 'playing')
+
   return {
+    isPlaying,
     gameStatus,
     currentPlayer,
     board,

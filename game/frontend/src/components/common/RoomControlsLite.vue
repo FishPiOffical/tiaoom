@@ -50,34 +50,13 @@
         >
           <Icon icon="mdi:login" />
         </button>
-      </div>
-
-      <!-- Playing: Player Actions (Draw/Resign) -->
-      <div v-if="isPlaying && roomPlayer.role === PlayerRole.player" class="group flex gap-2">
-        <slot name="playing-actions">
-            <button class="btn btn-circle btn-soft btn-warning tooltip" 
-              v-if="enableDrawResign"
-              @click="$emit('draw')"
-              :disabled="currentPlayer?.id !== roomPlayer.id"
-              data-tip="请求和棋"
-            >
-              <Icon icon="mdi:handshake" />
-            </button>
-            <button class="btn btn-circle btn-soft btn-success tooltip" 
-              v-if="enableDrawResign"
-              @click="$emit('lose')"
-              :disabled="currentPlayer?.id !== roomPlayer.id"
-              data-tip="认输"
-            >
-              <Icon icon="mdi:flag" />
-            </button>
-        </slot>
-      </div>
-      
+      </div>      
       <!-- Extra Slot -->
-      <slot />
+      <slot></slot>
     </div>
-    <p class="opacity-30 text-xs mt-3 content-end">游戏中可按下 <kbd class="kbd kbd-xs">Esc</kbd> 键显示/隐藏控制面板</p>
+    <p class="opacity-30 text-xs m-3 content-end" v-if="roomPlayer.role === PlayerRole.watcher">
+      游戏中可按下 <kbd class="kbd kbd-xs">Esc</kbd> 键显示/隐藏控制面板
+    </p>
   </div>
 </template>
 
@@ -109,6 +88,7 @@ const isRoomFull = computed(() => {
 
 const showControl = ref(false);
 hotkeys('esc', () => {
+  if (props.roomPlayer.role !== PlayerRole.watcher) return;
   showControl.value = !showControl.value;
 });
 

@@ -156,14 +156,21 @@
 
     <!-- Sidebar -->
     <aside class="w-full md:w-96 flex-none border-t md:border-t-0 md:border-l border-base-content/20 pt-4 md:pt-0 md:pl-4 space-y-4 md:h-full flex flex-col">
-      <RoomControls
-        :game="game"
-        :room-player="roomPlayer"
-        :current-player="currentPlayer"
-        :enable-draw-resign="true"
-        @draw="requestDraw"
-        @lose="requestLose"
-      />
+      <!-- 操作按钮 -->
+      <div v-if="isPlaying && roomPlayer.role === PlayerRole.player" class="group flex gap-2">
+        <button class="btn" 
+          @click="requestDraw"
+          :disabled="currentPlayer?.id !== roomPlayer.id"
+        >
+          请求和棋
+        </button>
+        <button class="btn" 
+          @click="requestLose"
+          :disabled="currentPlayer?.id !== roomPlayer.id"
+        >
+          认输
+        </button>
+      </div>
 
       <!-- Player list -->
       <PlayerList :players="roomPlayer.room.players">
@@ -189,17 +196,16 @@
 </template>
 
 <script setup lang="ts">
-import type { RoomPlayer, Room } from 'tiaoom/client'
-import { RoomStatus } from 'tiaoom/client'
+import { PlayerRole, type RoomPlayer, type Room } from 'tiaoom/client'
 import type { GameCore } from '@/core/game'
 import { computed } from 'vue'
-import RoomControls from '@/components/common/RoomControls.vue'
 import GameChat from '@/components/common/GameChat.vue'
 import { useXiangqi } from './useXiangqi'
 
 const props = defineProps<{ roomPlayer: RoomPlayer & { room: Room }, game: GameCore }>()
 
 const {
+  isPlaying,
   gameStatus,
   currentPlayer,
   board,
@@ -207,6 +213,8 @@ const {
   lastMove,
   countdown,
   trySelectOrMove,
+  requestDraw,
+  requestLose,
 } = useXiangqi(props.game, props.roomPlayer)
 
 // UI helpers
@@ -241,16 +249,6 @@ const rotateBoard = computed(() => {
   const side = (props.roomPlayer as any).attributes?.side
   return side === 'green'
 })
-
-function requestDraw() {
-  if (props.roomPlayer.room.status !== RoomStatus.playing) return
-  props.game?.command(props.roomPlayer.room.id, { type: 'request-draw' })
-}
-
-function requestLose() {
-  if (props.roomPlayer.room.status !== RoomStatus.playing) return
-  props.game?.command(props.roomPlayer.room.id, { type: 'request-lose' })
-}
 
 function getRoleLabel(p: any) {
   if (p.role !== 'player') return '观众'

@@ -98,7 +98,10 @@ export function useConnect4(game: GameCore, roomPlayer: RoomPlayer & { room: Roo
     game?.command(roomPlayer.room.id, { type: 'request-lose' })
   }
 
+  const isPlaying = computed(() => roomPlayer.room.status === 'playing')
+
   return {
+    isPlaying,
     gameStatus,
     currentPlayer,
     board,

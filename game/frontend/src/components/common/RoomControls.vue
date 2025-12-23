@@ -1,29 +1,33 @@
 <template>
-  <div class="flex flex-col gap-2">
+  <div class="flex flex-row items-center gap-2 py-2">
     <!-- Waiting: Player Actions -->
     <div v-if="!isPlaying && roomPlayer.role === PlayerRole.player" class="group flex gap-2">
-      <button class="btn" 
+      <button class="btn btn-circle btn-sm btn-soft tooltip tooltip-left" 
         @click="game?.leaveRoom(roomPlayer.room.id)"
         :disabled="roomPlayer.isReady"
+        data-tip="离开房间"
       >
-        离开房间
+        <Icon icon="mdi:logout" />
       </button>
-      <button class="btn" 
+      <button class="btn btn-circle btn-sm btn-soft tooltip tooltip-left" 
         @click="game?.leaveSeat(roomPlayer.room.id)"
         :disabled="roomPlayer.isReady"
+        data-tip="离开座位"
       >
-        离开座位
+        <Icon icon="mdi:account-minus" />
       </button>
-      <button class="btn btn-accent" 
+      <button class="btn btn-accent btn-sm btn-circle tooltip tooltip-left" 
         @click="game?.ready(roomPlayer.room.id, !roomPlayer.isReady)"
+        :data-tip="roomPlayer.isReady ? '取消' : '准备'"
       >
-        {{ roomPlayer.isReady ? '取消' : '准备' }}
+        <Icon :icon="roomPlayer.isReady ? 'mdi:close' : 'mdi:check'" />
       </button>
-      <button class="btn btn-primary" 
+      <button class="btn btn-primary btn-sm btn-circle tooltip tooltip-left" 
         @click="game?.startGame(roomPlayer.room.id)" 
         :disabled="!isAllReady"
+        data-tip="开始游戏"
       >
-        开始游戏
+        <Icon icon="mdi:play" />
       </button>
     </div>
 
@@ -42,27 +46,6 @@
         加入游戏
       </button>
     </div>
-
-    <!-- Playing: Player Actions (Draw/Resign) -->
-    <div v-if="isPlaying && roomPlayer.role === PlayerRole.player" class="group flex gap-2">
-       <slot name="playing-actions">
-          <button class="btn" 
-            v-if="enableDrawResign"
-            @click="$emit('draw')"
-            :disabled="currentPlayer?.id !== roomPlayer.id"
-          >
-            请求和棋
-          </button>
-          <button class="btn" 
-            v-if="enableDrawResign"
-            @click="$emit('lose')"
-            :disabled="currentPlayer?.id !== roomPlayer.id"
-          >
-            认输
-          </button>
-       </slot>
-    </div>
-    
     <!-- Extra Slot -->
     <slot />
   </div>

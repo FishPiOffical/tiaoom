@@ -54,7 +54,7 @@
           <div class="relative p-2 md:p-4 rounded-lg bg-base-100 md:flex-1 max-h-[50vh] md:max-h-none overflow-y-auto md:overflow-visible">
             <!-- 其他玩家区域 -->
             <div class="flex justify-between mb-2 md:mb-4 gap-2">
-              <div v-for="(playerId, index) in otherPlayers" :key="playerId"
+              <div v-for="playerId in otherPlayers" :key="playerId"
                    class="flex flex-col items-center p-1 md:p-3 rounded-lg bg-base-200 flex-1 min-w-0"
                    :class="{ 'ring-2 ring-primary': isPlayerCurrentTurn(playerId) }">
                 <div class="flex items-center gap-1 md:gap-2 mb-1 md:mb-2">
@@ -149,7 +149,7 @@
           </div>
 
           <!-- 自己的手牌区域 -->
-          <div v-if="gameStore.roomPlayer?.role === 'player'" class="p-2 md:p-4 rounded-lg bg-base-100 mt-2 flex-shrink-0">
+          <div v-if="gameStore.roomPlayer?.role === 'player'" class="p-2 md:p-4 rounded-lg bg-base-100 mt-2 shrink-0">
             <!-- 叫地主阶段 -->
             <div v-if="gameState.phase === 'calling' && gameState.currentBidder === gameStore.player?.id" class="mb-4">
               <div class="flex gap-2 justify-center">
@@ -208,7 +208,7 @@
                 :card="card"
                 :selected="selectedCards.includes(card.id)"
                 :selectable="gameState.phase === 'playing' && isCurrentPlayer"
-                class="flex-shrink-0"
+                class="shrink-0"
                 @click="toggleCardSelection(card.id)"
               />
             </div>
@@ -233,7 +233,7 @@
               </thead>
               <tbody>
                 <tr v-for="(achievement, playerName) in achievements" :key="playerName">
-                  <td class="font-medium truncate max-w-[80px]">{{ playerName }}</td>
+                  <td class="font-medium truncate max-w-20">{{ playerName }}</td>
                   <td class="text-green-600">{{ achievement.win }}</td>
                   <td class="text-red-600">{{ achievement.lost }}</td>
                   <td>{{ ((achievement.win / (achievement.win + achievement.lost)) * 100 || 0).toFixed(1) }}%</td>
@@ -264,17 +264,6 @@
               </div>
             </template>
           </PlayerList>
-
-          <div v-if="gameStore.roomPlayer && gameStore.game" class="mt-4">
-            <RoomControls
-              :game="gameStore.game as any"
-              :room-player="gameStore.roomPlayer"
-              :game-status="gameStatus"
-              :is-all-ready="isAllReady"
-              :is-room-full="isRoomFull"
-              :enable-draw-resign="false"
-            />
-          </div>
         </section>
 
         <!-- 聊天区域 -->
@@ -362,18 +351,6 @@ const isWinner = computed(() => {
   const isLandlord = gameStore.player.id === gameState.value.landlord
   const landlordWon = gameState.value.winnerRole === 'landlord'
   return isLandlord === landlordWon
-})
-
-const isAllReady = computed(() => {
-  if (!gameStore.roomPlayer?.room) return false
-  const players = gameStore.roomPlayer.room.players.filter((p: any) => p.role === 'player')
-  return players.length >= 3 && players.every((p: any) => p.isReady)
-})
-
-const isRoomFull = computed(() => {
-  if (!gameStore.roomPlayer?.room) return false
-  const playerCount = gameStore.roomPlayer.room.players.filter((p: any) => p.role === 'player').length
-  return playerCount >= 3
 })
 
 // 方法

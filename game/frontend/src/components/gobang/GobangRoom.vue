@@ -122,14 +122,20 @@
         </PlayerList>
         
         <!-- 操作按钮 -->
-        <RoomControls
-          :game="game"
-          :room-player="roomPlayer"
-          :current-player="currentPlayer"
-          :enable-draw-resign="true"
-          @draw="requestDraw"
-          @lose="requestLose"
-        />
+        <div v-if="isPlaying && roomPlayer.role === PlayerRole.player" class="group flex gap-2">
+          <button class="btn" 
+            @click="requestDraw"
+            :disabled="currentPlayer?.id !== roomPlayer.id"
+          >
+            请求和棋
+          </button>
+          <button class="btn" 
+            @click="requestLose"
+            :disabled="currentPlayer?.id !== roomPlayer.id"
+          >
+            认输
+          </button>
+        </div>
         
         <hr class="border-base-content/20" />
         
@@ -156,7 +162,7 @@
 </template>
 
 <script setup lang="ts">
-import type { RoomPlayer, Room } from 'tiaoom/client';
+import { PlayerRole, type RoomPlayer, type Room } from 'tiaoom/client';
 import type { GameCore } from '@/core/game'
 import GameChat from '@/components/common/GameChat.vue'
 import { useGobang } from './useGobang';
@@ -167,6 +173,7 @@ const props = defineProps<{
 }>()
 
 const {
+  isPlaying,
   achivents,
   gameStatus,
   currentPlayer,

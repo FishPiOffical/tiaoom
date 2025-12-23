@@ -240,10 +240,6 @@
               </div>
             </template>
           </PlayerList>
-
-          <div v-if="gameStore.roomPlayer && gameStore.game" class="space-y-2">
-            <RoomControls :game="gameStore.game as any" :room-player="gameStore.roomPlayer" :game-status="gameStatus" :is-all-ready="isAllReady" :is-room-full="isRoomFull" :enable-draw-resign="false" />
-          </div>
         </section>
 
         <section v-if="gameStore.roomPlayer" class="flex flex-col flex-1 min-h-0">
@@ -480,20 +476,6 @@ const getPlayerStatus = (p: any) => {
   if (gameStatus.value === 'playing') return '等待中'
   return '已准备'
 }
-
-
-
-const isAllReady = computed(() => {
-  if (!gameStore.roomPlayer?.room) return false
-  const players = gameStore.roomPlayer.room.players.filter(p => p.role === 'player')
-  return players.length >= gameStore.roomPlayer.room.minSize && players.every(p => p.isReady)
-})
-
-const isRoomFull = computed(() => {
-  if (!gameStore.roomPlayer?.room) return false
-  const playerCount = gameStore.roomPlayer.room.players.filter(p => p.role === 'player').length
-  return playerCount >= gameStore.roomPlayer.room.size
-})
 
 // 根据玩家位置计算样式（使用极坐标计算，支持 2-6 人）
 const getPlayerPositionStyle = (index: number, totalPlayers: number) => {

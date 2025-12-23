@@ -77,11 +77,6 @@
         </div>
       </div>
     </div>
-
-    <RoomControlsLite
-      :game="game"
-      :room-player="roomPlayer"
-    />
   </section>
 </template>
 
@@ -90,7 +85,6 @@ import { onMounted, ref } from 'vue'
 import { useTetris } from './useTetris'
 import type { RoomPlayer, Room } from 'tiaoom/client'
 import type { GameCore } from '@/core/game'
-import RoomControlsLite from '@/components/common/RoomControlsLite.vue'
 
 const props = defineProps<{
   roomPlayer: RoomPlayer & { room: Room }

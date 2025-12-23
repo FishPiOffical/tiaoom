@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { Room, RoomPlayer } from 'tiaoom/client'
 import { GameCore } from '@/core/game'
 import { useGameEvents } from '@/hook/useGameEvents'
@@ -169,7 +169,20 @@ export function useXiangqi(game: GameCore, roomPlayer: RoomPlayer & { room: Room
     game?.command(roomPlayer.room.id, { type: 'move', data: { from, to: { x, y } } })
   }
 
+  function requestDraw() {
+    if (roomPlayer.room.status !== 'playing') return
+    game?.command(roomPlayer.room.id, { type: 'request-draw' })
+  }
+
+  function requestLose() {
+    if (roomPlayer.room.status !== 'playing') return
+    game?.command(roomPlayer.room.id, { type: 'request-lose' })
+  }
+
+  const isPlaying = computed(() => roomPlayer.room.status === 'playing')
+
   return {
+    isPlaying,
     gameStatus,
     currentPlayer,
     board,
@@ -178,5 +191,7 @@ export function useXiangqi(game: GameCore, roomPlayer: RoomPlayer & { room: Room
     lastMove,
     countdown,
     trySelectOrMove,
+    requestDraw,
+    requestLose,
   }
 }

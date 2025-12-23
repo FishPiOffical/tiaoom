@@ -136,24 +136,34 @@
       <span class="opacity-80">{{ countdown }}s</span>
     </div>
 
-    <RoomControlsLite
-      :game="game"
-      :room-player="roomPlayer"
-      :current-player="currentPlayer"
-      :enable-draw-resign="true"
-      @draw="requestDraw"
-      @lose="requestLose"
-    />
+    <div 
+    v-if="roomPlayer.room.status !== 'playing' || showControl" class="fixed z-100 bg-base-300/60 top-0 left-0 w-full h-full flex flex-col items-center justify-center">
+      <div v-if="isPlaying && roomPlayer.role === PlayerRole.player" class="group flex gap-2">
+        <button class="btn btn-circle btn-soft btn-warning tooltip" 
+          @click="requestDraw"
+          :disabled="currentPlayer?.id !== roomPlayer.id"
+          data-tip="请求和棋"
+        >
+          <Icon icon="mdi:handshake" />
+        </button>
+        <button class="btn btn-circle btn-soft btn-success tooltip" 
+          @click="requestLose"
+          :disabled="currentPlayer?.id !== roomPlayer.id"
+          data-tip="认输"
+        >
+          <Icon icon="mdi:flag" />
+        </button>
+      </div>
+    </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import type { Room, RoomPlayer } from 'tiaoom/client'
-import { RoomStatus } from 'tiaoom/client'
+import { PlayerRole, type Room, type RoomPlayer } from 'tiaoom/client'
 import type { GameCore } from '@/core/game'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import RoomControlsLite from '@/components/common/RoomControlsLite.vue'
 import { useXiangqi } from './useXiangqi'
+import hotkeys from 'hotkeys-js'
 
 const props = defineProps<{
   roomPlayer: RoomPlayer & { room: Room }
@@ -161,6 +171,7 @@ const props = defineProps<{
 }>()
 
 const {
+  isPlaying,
   gameStatus,
   currentPlayer,
   board,
@@ -168,6 +179,8 @@ const {
   lastMove,
   countdown,
   trySelectOrMove,
+  requestDraw,
+  requestLose,
 } = useXiangqi(props.game, props.roomPlayer)
 
 const containerRef = ref<HTMLElement>()
@@ -212,15 +225,11 @@ function onCellClick(x: number, y: number) {
   trySelectOrMove(x, y)
 }
 
-function requestDraw() {
-  if (props.roomPlayer.room.status !== RoomStatus.playing) return
-  props.game?.command(props.roomPlayer.room.id, { type: 'request-draw' })
-}
-
-function requestLose() {
-  if (props.roomPlayer.room.status !== RoomStatus.playing) return
-  props.game?.command(props.roomPlayer.room.id, { type: 'request-lose' })
-}
+const showControl = ref(false);
+hotkeys('esc', () => {
+  if (props.roomPlayer.role == PlayerRole.watcher) return;
+  showControl.value = !showControl.value;
+});
 
 function pieceText(p: string) {
   const side = p[0] === 'r' ? 'red' : 'green'

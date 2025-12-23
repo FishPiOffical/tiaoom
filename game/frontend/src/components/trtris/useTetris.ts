@@ -205,7 +205,7 @@ export function useTetris(game: GameCore, roomPlayer: RoomPlayer & { room: Room 
   })
 
   // 计算带阴影预览的游戏板
-  const renderedBoardWithGhost = computed(() => {
+  const renderedBoardWithGhost = computed<BoardCell[][]>(() => {
     if (!gameState.value) return []
 
     // 深拷贝游戏板

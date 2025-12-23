@@ -4,7 +4,11 @@
     <main class="flex-1 bg-base-100 w-full">
       <!-- 创建房间 -->
       <CreateRoom v-if="!gameStore.roomPlayer" />
-        
+      <RoomControlsLite
+        v-if="gameStore.game"
+        :game="gameStore.game" 
+        :room-player="gameStore.roomPlayer"
+      />
       <!-- 房间内容 -->
       <component 
         v-if="gameStore.roomPlayer?.room.attrs?.type" 

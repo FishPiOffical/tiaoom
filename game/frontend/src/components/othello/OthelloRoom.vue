@@ -122,14 +122,20 @@
         </PlayerList>
         
         <!-- 操作按钮 -->
-        <RoomControls
-          :game="game"
-          :room-player="roomPlayer"
-          :current-player="currentPlayer"
-          :enable-draw-resign="true"
-          @draw="requestDraw"
-          @lose="requestLose"
-        />
+        <div v-if="isPlaying && roomPlayer.role === PlayerRole.player" class="group flex gap-2">
+          <button class="btn" 
+            @click="requestDraw"
+            :disabled="currentPlayer?.id !== roomPlayer.id"
+          >
+            请求和棋
+          </button>
+          <button class="btn" 
+            @click="requestLose"
+            :disabled="currentPlayer?.id !== roomPlayer.id"
+          >
+            认输
+          </button>
+        </div>
         
         <hr class="border-base-content/20" />
       </section>
@@ -148,7 +154,7 @@
 </template>
 
 <script setup lang="ts">
-import { Room, RoomPlayer } from 'tiaoom/client'
+import { PlayerRole, Room, RoomPlayer } from 'tiaoom/client'
 import { GameCore } from '@/core/game';
 import { useOthello } from './useOthello';
 
@@ -166,6 +172,7 @@ const {
   placePiece,
   requestDraw,
   requestLose,
+  isPlaying,
 } = useOthello(props.game, props.roomPlayer)
 
 function getPlayerStatus(p: any) {

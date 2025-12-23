@@ -131,13 +131,6 @@
         <!-- 玩家列表 -->
         <PlayerList :players="roomPlayer.room.players" />
 
-        <!-- 操作按钮 -->
-        <RoomControls
-          :game="game"
-          :room-player="roomPlayer"
-          :game-status="gameStatus"
-        />
-
         <hr class="border-base-content/20" />
       </section>
 
@@ -162,9 +155,6 @@
 import { useTetris } from './useTetris'
 import type { RoomPlayer, Room } from 'tiaoom/client'
 import type { GameCore } from '@/core/game'
-import GameChat from '@/components/common/GameChat.vue'
-import PlayerList from '@/components/common/PlayerList.vue'
-import RoomControls from '@/components/common/RoomControls.vue'
 
 const props = defineProps<{
   roomPlayer: RoomPlayer & { room: Room }

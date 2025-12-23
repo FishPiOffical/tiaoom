@@ -83,26 +83,19 @@
     <aside class="w-full lg:w-96 flex-none border-t lg:border-t-0 lg:border-l border-base-content/20 pt-4 lg:pt-0 lg:pl-4 space-y-4 lg:h-full flex flex-col">
       <section class="inline-flex flex-col gap-2 max-h-1/2">
         <!-- 操作按钮 -->
-        <RoomControls
-          :game="game"
-          :room-player="roomPlayer"
-          :game-status="gameStatus"
-          :enable-draw-resign="false"
-        >
-          <!-- 发言控制 -->
-          <div v-if="roomPlayer.role === 'player' && canSpeak && gameStatus === 'talking'" class="group flex flex-col gap-2">
-            <button @click="sendTalked" class="btn block btn-accent">
-              结束发言 {{ countdown > 0 ? `(${countdown}s)` : '' }}
-            </button>
-            <hr class="border-base-content/20" />
-          </div>
+        <!-- 发言控制 -->
+        <div v-if="roomPlayer.role === 'player' && canSpeak && gameStatus === 'talking'" class="group flex flex-col gap-2">
+          <button @click="sendTalked" class="btn block btn-accent">
+            结束发言 {{ countdown > 0 ? `(${countdown}s)` : '' }}
+          </button>
+          <hr class="border-base-content/20" />
+        </div>
 
-          <!-- 投票倒计时 -->
+        <!-- 投票倒计时 -->
           <div v-if="gameStatus === 'voting'" class="text-center p-2 bg-base-200 rounded-lg">
              <div class="text-sm opacity-70">投票倒计时</div>
              <div class="text-xl font-bold" :class="{'text-error': countdown < 30}">{{ countdown }}s</div>
           </div>
-        </RoomControls>        
         <!-- 玩家列表 -->
         <PlayerList :players="roomPlayer.room.players.filter(p => p.role != 'player')" />
       </section>
