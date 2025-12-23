@@ -79,27 +79,7 @@
     <aside class="w-full md:w-96 flex-none border-t md:border-t-0 md:border-l border-base-content/20 pt-4 md:pt-0 md:pl-4 space-y-4 md:h-full flex flex-col">
       <section class="inline-flex flex-col gap-2 max-h-1/2">
         <!-- 成就表 -->
-        <section v-if="Object.keys(achivents).length" class="overflow-auto rounded-box border border-base-content/5 bg-base-100 max-h-50 min-h-30">
-          <table class="table table-pin-rows table-pin-cols text-center">
-            <thead>
-              <tr>
-                <th class="bg-base-300">玩家</th>
-                <th class="bg-base-300">胜</th>
-                <th class="bg-base-300">负</th>
-                <th class="bg-base-300">和</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(achivement, playerName) in achivents" :key="playerName">
-                <td class="">{{ playerName }}</td>
-                <td class="">{{ achivement.win }}</td>
-                <td class="">{{ achivement.lost }}</td>
-                <td class="">{{ achivement.draw }}</td>
-              </tr>
-            </tbody>
-          </table>
-          <hr class="border-base-content/20" />
-        </section>       
+        <AchievementTable :achievements="achivents" show-draw />
         
         <!-- 玩家列表 -->
         <PlayerList :players="roomPlayer.room.players">
@@ -157,6 +137,7 @@
 import { PlayerRole, Room, RoomPlayer } from 'tiaoom/client'
 import { GameCore } from '@/core/game';
 import { useOthello } from './useOthello';
+import AchievementTable from '@/components/common/AchievementTable.vue';
 
 const props = defineProps<{
   roomPlayer: RoomPlayer & { room: Room }

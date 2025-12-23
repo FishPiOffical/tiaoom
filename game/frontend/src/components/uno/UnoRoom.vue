@@ -200,27 +200,7 @@
       <aside class="flex flex-col flex-none w-full border-t md:pl-4 md:border-t-0 md:border-l border-base-content/20 md:w-80 md:h-full">
         <section class="flex flex-col gap-2 mb-2 md:mb-4 max-h-1/2">
           <h3 class="mb-2 text-base font-bold md:text-lg">📊 计分板</h3>
-          <div v-if="Object.keys(achievements).length" class="overflow-auto border rounded-box border-base-content/5 bg-base-100 max-h-48">
-            <table class="table text-xs text-center table-pin-rows table-pin-cols md:text-sm">
-              <thead>
-                <tr>
-                  <th class="text-xs bg-base-300">玩家</th>
-                  <th class="text-xs bg-base-300">胜</th>
-                  <th class="text-xs bg-base-300">负</th>
-                  <th class="hidden text-xs bg-base-300 md:table-cell">胜率</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(achievement, playerName) in achievements" :key="playerName">
-                  <td class="font-medium truncate max-w-[60px]">{{ playerName }}</td>
-                  <td class="text-green-600">{{ achievement.win }}</td>
-                  <td class="text-red-600">{{ achievement.lost }}</td>
-                  <td class="hidden md:table-cell">{{ ((achievement.win / (achievement.win + achievement.lost)) * 100 || 0).toFixed(1) }}%</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div v-else class="py-4 text-center text-gray-500">暂无战绩</div>
+          <AchievementTable :achievements="achievements" />
         </section>
 
         <section class="flex flex-col gap-2 mb-4">
@@ -293,6 +273,9 @@ import { RoomStatus } from 'tiaoom/client'
 import UnoCard from './UnoCard.vue'
 import { useGameEvents } from '@/hook/useGameEvents'
 import type { UnoCard as UnoCardType, UnoGameState } from '$/backend/src/games/uno'
+import AchievementTable from '@/components/common/AchievementTable.vue'
+import PlayerList from '@/components/common/PlayerList.vue'
+import GameChat from '@/components/common/GameChat.vue'
 
 const gameStore = useGameStore()
 

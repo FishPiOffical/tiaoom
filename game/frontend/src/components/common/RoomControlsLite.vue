@@ -69,8 +69,6 @@ import hotkeys from 'hotkeys-js';
 const props = defineProps<{
   roomPlayer: RoomPlayer & { room: Room },
   game: GameCore,  
-  currentPlayer?: Player | null,
-  enableDrawResign?: boolean
 }>()
 
 defineEmits(['draw', 'lose'])

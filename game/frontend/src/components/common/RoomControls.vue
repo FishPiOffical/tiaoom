@@ -53,14 +53,12 @@
 
 <script setup lang="ts">
 import { GameCore } from '@/core/game';
-import { RoomPlayer, Player, Room, PlayerRole, RoomStatus } from 'tiaoom/client';
+import { RoomPlayer, Room, PlayerRole, RoomStatus } from 'tiaoom/client';
 import { computed } from 'vue';
 
 const props = defineProps<{
   roomPlayer: RoomPlayer & { room: Room },
   game: GameCore,  
-  currentPlayer?: Player | null,
-  enableDrawResign?: boolean
 }>()
 
 defineEmits(['draw', 'lose'])

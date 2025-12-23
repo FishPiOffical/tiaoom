@@ -221,27 +221,7 @@
         <!-- 计分板 -->
         <section class="mb-4">
           <h3 class="mb-2 text-lg font-bold">📊 计分板</h3>
-          <div v-if="Object.keys(achievements).length" class="overflow-x-auto border rounded-box border-base-content/5 bg-base-100 max-h-48">
-            <table class="table text-sm text-center table-pin-rows">
-              <thead>
-                <tr>
-                  <th class="bg-base-300">玩家</th>
-                  <th class="bg-base-300">胜</th>
-                  <th class="bg-base-300">负</th>
-                  <th class="bg-base-300">胜率</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(achievement, playerName) in achievements" :key="playerName">
-                  <td class="font-medium truncate max-w-20">{{ playerName }}</td>
-                  <td class="text-green-600">{{ achievement.win }}</td>
-                  <td class="text-red-600">{{ achievement.lost }}</td>
-                  <td>{{ ((achievement.win / (achievement.win + achievement.lost)) * 100 || 0).toFixed(1) }}%</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div v-else class="py-4 text-center text-gray-500">暂无战绩</div>
+          <AchievementTable :achievements="achievements" />
         </section>
 
         <!-- 玩家列表 -->
@@ -300,6 +280,9 @@ import DoudizhuCard from './DoudizhuCard.vue'
 import { useGameEvents } from '@/hook/useGameEvents'
 import { RoomStatus } from 'tiaoom/client'
 import type { DoudizhuGameState, DoudizhuCard as DoudizhuCardType } from '$/backend/src/games/doudizhu'
+import AchievementTable from '@/components/common/AchievementTable.vue'
+import PlayerList from '@/components/common/PlayerList.vue'
+import GameChat from '@/components/common/GameChat.vue'
 
 const props = defineProps<{ game?: any; roomPlayer?: any }>()
 
