@@ -78,28 +78,43 @@
     <!-- 侧边栏 -->
     <aside class="w-full md:w-96 flex-none border-t md:border-t-0 md:border-l border-base-content/20 pt-4 md:pt-0 md:pl-4 space-y-4 md:h-full flex flex-col">
       <section class="inline-flex flex-col gap-2 max-h-1/2">
+        <div role="tablist" class="tabs tabs-lift">
+          <a role="tab" class="tab tooltip tooltip-bottom" :class="{ 'tab-active': activeTab === 'players' }" @click="activeTab = 'players'">
+            <Icon icon="fluent:people-16-filled" />
+            <span class="ml-2">玩家列表</span>
+          </a>
+          <a v-if="Object.keys(achivents).length > 0" role="tab" class="tab tooltip tooltip-bottom" :class="{ 'tab-active': activeTab === 'achievements' }" @click="activeTab = 'achievements'">
+            <Icon icon="ri:sword-fill" />
+            <span class="ml-2">战绩</span>
+          </a>
+        </div>
+
         <!-- 成就表 -->
-        <AchievementTable :achievements="achivents" show-draw />
+        <div v-show="activeTab === 'achievements'">
+          <AchievementTable :achievements="achivents" show-draw />
+        </div>
         
         <!-- 玩家列表 -->
-        <PlayerList :players="roomPlayer.room.players">
-          <template #default="{ player: p }">
-            <span v-if="p.role === 'player'" class="inline-flex gap-2 items-center">
-              <span>[{{ getPlayerStatus(p) }}]</span>
-              <template v-if="p.attributes.color ?? false">
-                <div class="w-4 h-4 flex items-center justify-center bg-base-300 rounded-full border border-base-content/20">
-                  <span 
-                    class="w-full h-full rounded-full"
-                    :class="p.attributes.color === 1 ? 'bg-black border border-white/20 shadow-md' : 'bg-white border border-black/20 shadow-md'"
-                  />
-                </div>
-                <span>{{ board.flat().filter(b => b == p.attributes.color).length }}</span>
-              </template>
-            </span>
-            <span v-else>[围观中]</span>
-            <span>{{ p.name }}</span>
-          </template>
-        </PlayerList>
+        <div v-show="activeTab === 'players'">
+          <PlayerList :players="roomPlayer.room.players">
+            <template #default="{ player: p }">
+              <span v-if="p.role === 'player'" class="inline-flex gap-2 items-center">
+                <span>[{{ getPlayerStatus(p) }}]</span>
+                <template v-if="p.attributes.color ?? false">
+                  <div class="w-4 h-4 flex items-center justify-center bg-base-300 rounded-full border border-base-content/20">
+                    <span 
+                      class="w-full h-full rounded-full"
+                      :class="p.attributes.color === 1 ? 'bg-black border border-white/20 shadow-md' : 'bg-white border border-black/20 shadow-md'"
+                    />
+                  </div>
+                  <span>{{ board.flat().filter(b => b == p.attributes.color).length }}</span>
+                </template>
+              </span>
+              <span v-else>[围观中]</span>
+              <span>{{ p.name }}</span>
+            </template>
+          </PlayerList>
+        </div>
         
         <!-- 操作按钮 -->
         <div v-if="isPlaying && roomPlayer.role === PlayerRole.player" class="group flex gap-2">
@@ -138,11 +153,15 @@ import { PlayerRole, Room, RoomPlayer } from 'tiaoom/client'
 import { GameCore } from '@/core/game';
 import { useOthello } from './useOthello';
 import AchievementTable from '@/components/common/AchievementTable.vue';
+import Icon from '@/components/common/Icon.vue';
+import { ref } from 'vue';
 
 const props = defineProps<{
   roomPlayer: RoomPlayer & { room: Room }
   game: GameCore
 }>()
+
+const activeTab = ref<'players' | 'achievements'>('players')
 
 const {
   gameStatus,

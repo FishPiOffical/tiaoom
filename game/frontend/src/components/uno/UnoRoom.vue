@@ -199,27 +199,38 @@
       <!-- 右侧栏 -->
       <aside class="flex flex-col flex-none w-full border-t md:pl-4 md:border-t-0 md:border-l border-base-content/20 md:w-80 md:h-full">
         <section class="flex flex-col gap-2 mb-2 md:mb-4 max-h-1/2">
-          <h3 class="mb-2 text-base font-bold md:text-lg">📊 计分板</h3>
-          <AchievementTable :achievements="achievements" />
-        </section>
+          <div role="tablist" class="tabs tabs-lift">
+            <a role="tab" class="tab tooltip tooltip-bottom" :class="{ 'tab-active': activeTab === 'players' }" @click="activeTab = 'players'">
+              <Icon icon="fluent:people-16-filled" />
+              <span class="ml-2">玩家列表</span>
+            </a>
+            <a v-if="Object.keys(achievements).length > 0" role="tab" class="tab tooltip tooltip-bottom" :class="{ 'tab-active': activeTab === 'achievements' }" @click="activeTab = 'achievements'">
+              <Icon icon="ri:sword-fill" />
+              <span class="ml-2">战绩</span>
+            </a>
+          </div>
 
-        <section class="flex flex-col gap-2 mb-4">
-          <h3 class="text-lg font-bold">玩家列表</h3>
-          <PlayerList :players="gameStore.roomPlayer?.room?.players || []">
-            <template #default="{ player: p }">
-              <div class="flex items-center justify-between w-full">
-                <div class="flex items-center gap-2 truncate">
-                  <span v-if="p.role === 'player'">[{{ getPlayerStatus(p) }}]</span>
-                  <span v-else class="text-base-content/60">[围观中]</span>
-                  <span class="truncate max-w-40">{{ p.name }}</span>
-                  <span v-if="gameState?.hosted && gameState.hosted[p.id]" class="ml-1 text-xs badge badge-error">托管</span>
+          <div v-show="activeTab === 'achievements'">
+            <AchievementTable :achievements="achievements" />
+          </div>
+
+          <div v-show="activeTab === 'players'">
+            <PlayerList :players="gameStore.roomPlayer?.room?.players || []">
+              <template #default="{ player: p }">
+                <div class="flex items-center justify-between w-full">
+                  <div class="flex items-center gap-2 truncate">
+                    <span v-if="p.role === 'player'">[{{ getPlayerStatus(p) }}]</span>
+                    <span v-else class="text-base-content/60">[围观中]</span>
+                    <span class="truncate max-w-40">{{ p.name }}</span>
+                    <span v-if="gameState?.hosted && gameState.hosted[p.id]" class="ml-1 text-xs badge badge-error">托管</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="badge badge-xs md:badge-sm">{{ gameState?.players?.[p.id]?.length || 0 }} 张</span>
+                  </div>
                 </div>
-                <div class="flex items-center gap-2">
-                  <span class="badge badge-xs md:badge-sm">{{ gameState?.players?.[p.id]?.length || 0 }} 张</span>
-                </div>
-              </div>
-            </template>
-          </PlayerList>
+              </template>
+            </PlayerList>
+          </div>
         </section>
 
         <section v-if="gameStore.roomPlayer" class="flex flex-col flex-1 min-h-0">
@@ -276,6 +287,9 @@ import type { UnoCard as UnoCardType, UnoGameState } from '$/backend/src/games/u
 import AchievementTable from '@/components/common/AchievementTable.vue'
 import PlayerList from '@/components/common/PlayerList.vue'
 import GameChat from '@/components/common/GameChat.vue'
+import Icon from '@/components/common/Icon.vue'
+
+const activeTab = ref<'players' | 'achievements'>('players')
 
 const gameStore = useGameStore()
 
