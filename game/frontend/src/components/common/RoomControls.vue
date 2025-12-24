@@ -36,14 +36,16 @@
       <button class="btn" 
         @click="game?.leaveRoom(roomPlayer.room.id)"
         :disabled="roomPlayer.isReady"
+        data-tip="离开房间"
       >
-        离开房间
+        <Icon icon="mdi:logout" />
       </button>
       <button class="btn" 
         v-if="!isRoomFull && !isPlaying" 
         @click="game?.joinRoom(roomPlayer.room.id)"
+        data-tip="加入游戏"
       >
-        加入游戏
+        <Icon icon="mdi:gamepad-right" />
       </button>
     </div>
     <!-- Extra Slot -->
