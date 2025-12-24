@@ -94,11 +94,7 @@ const props = defineProps<{
 const {
   gameState,
   renderedBoardWithGhost,
-  moveLeft,
-  moveRight,
-  moveDown,
-  rotate,
-  drop,
+  renderedNextPiece,
   pause,
   restartGame,
   clearedLines
