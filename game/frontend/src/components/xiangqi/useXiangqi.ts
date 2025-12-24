@@ -9,7 +9,7 @@ export type Piece = string | ''
 type Side = 'red' | 'green'
 
 export function useXiangqi(game: GameCore, roomPlayer: RoomPlayer & { room: Room }) {
-  const gameStatus = ref<'waiting' | 'playing'>('waiting')
+  const gameStatus = computed(() => roomPlayer.room.status)
   const currentPlayer = ref<any>(null)
   const board = ref<Piece[][]>(Array(10).fill(0).map(() => Array(9).fill('')))
   const achivents = ref<Record<string, any>>({})
@@ -52,13 +52,11 @@ export function useXiangqi(game: GameCore, roomPlayer: RoomPlayer & { room: Room
   }
 
   function onRoomStart() {
-    gameStatus.value = 'playing'
     selected.value = null
     lastMove.value = null
   }
 
   function onRoomEnd() {
-    gameStatus.value = 'waiting'
     currentPlayer.value = null
     selected.value = null
     lastMove.value = null
@@ -71,7 +69,6 @@ export function useXiangqi(game: GameCore, roomPlayer: RoomPlayer & { room: Room
 
     switch (cmd.type) {
       case 'status':
-        gameStatus.value = cmd.data.status
         currentPlayer.value = cmd.data.current
         applyBoard(cmd.data.board)
         achivents.value = cmd.data.achivents || {}
@@ -82,11 +79,9 @@ export function useXiangqi(game: GameCore, roomPlayer: RoomPlayer & { room: Room
         break
       case 'turn':
         currentPlayer.value = cmd.data.player
-        gameStatus.value = 'playing'
-        // countdown will be sent separately, but reset locally
         break
       case 'countdown':
-        startCountdown(cmd.data.end)
+        startCountdown(cmd.data.seconds)
         break
       case 'move':
         selected.value = null
@@ -116,16 +111,17 @@ export function useXiangqi(game: GameCore, roomPlayer: RoomPlayer & { room: Room
     'room.command': onCommand,
   })
 
-  function startCountdown(endAt: number) {
-    if (!endAt) return
+  function startCountdown(seconds: number) {
     if (ticker) { clearInterval(ticker); ticker = null }
-    const update = () => {
-      const left = Math.max(0, Math.ceil((endAt - Date.now()) / 1000))
-      countdown.value = left
-      if (left <= 0 && ticker) { clearInterval(ticker); ticker = null }
-    }
-    update()
-    ticker = setInterval(update, 250)
+    countdown.value = seconds
+    ticker = setInterval(() => {
+      countdown.value--
+      if (countdown.value <= 0) {
+        countdown.value = 0
+        clearInterval(ticker)
+        ticker = null
+      }
+    }, 1000)
   }
 
   function trySelectOrMove(x: number, y: number) {

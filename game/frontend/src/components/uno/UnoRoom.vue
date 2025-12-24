@@ -298,7 +298,11 @@ const gameState = ref<UnoGameState | null>(null)
 const gameResult = ref<{ winner?: string } | null>(null)
 // 单独维护一个前端用于显示的倒计时值，优先由后端的 timer_update 推送更新
 const currentTimer = ref<number | null>(null)
-const gameStatus = ref<'waiting' | 'playing' | 'ended'>('waiting')
+const gameStatus = computed(() => {
+  if (gameStore.roomPlayer?.room?.status === 'playing') return 'playing'
+  if (gameState.value?.winner) return 'ended'
+  return 'waiting'
+})
 const achievements = ref<Record<string, { win: number; lost: number }>>({})
 const roomMessages = ref<Array<{ content: string, sender?: any }>>([])
 
@@ -380,28 +384,9 @@ const getPlayersByPosition = computed(() => {
 })
 
 // 监听房间状态变化，同步 gameStatus
-watch(() => gameStore.roomPlayer?.room?.status, (newStatus) => {
-  console.log('房间状态变化:', newStatus, '角色:', gameStore.roomPlayer?.role, '当前gameStatus:', gameStatus.value)
-  
-  // 围观玩家的特殊处理：如果房间状态是playing，直接设置为playing状态
-  if (gameStore.roomPlayer?.role === 'watcher' && newStatus === 'playing') {
-    console.log('围观玩家设置游戏状态为playing')
-    gameStatus.value = 'playing'
-    return
-  }
-  
-  // 如果已经有游戏状态且游戏未结束，不要切换到waiting
-  if (gameStore.roomPlayer?.role === 'watcher' && gameState.value && !gameState.value.winner) {
-    console.log('围观玩家保持当前状态，不切换到waiting')
-    return
-  }
-  
-  if (newStatus === 'playing' && gameStatus.value !== 'ended') {
-    gameStatus.value = 'playing'
-  } else if (newStatus === 'waiting') {
-    gameStatus.value = 'waiting'
-  }
-})
+// watch(() => gameStore.roomPlayer?.room?.status, (newStatus) => {
+//   console.log('房间状态变化:', newStatus, '角色:', gameStore.roomPlayer?.role, '当前gameStatus:', gameStatus.value)
+// })
 
 const getPlayerName = (playerId: string | number) => {
   const player = gameStore.roomPlayer?.room?.players.find(p => p.id === String(playerId))
@@ -599,13 +584,11 @@ const sendMessage = (message: string) => {
 const onRoomStart = () => {
   // 房间开始事件，设置状态为playing
   // 不清除gameState，让它通过game:state命令自然更新
-  gameStatus.value = 'playing'
 }
 
 const onRoomEnd = () => {
   // 房间结束事件，重置为等待状态
   // 注意：不清除游戏状态，因为游戏可能仍在进行中用于查看结果
-  gameStatus.value = 'waiting'
   // 只有在确实需要开始新游戏时才清除状态
 }
 
@@ -662,16 +645,10 @@ const onCommand = (command: any) => {
       previousCurrentPlayer.value = command.data.currentPlayer
 
       // 根据游戏状态设置正确的状态
-      if (command.data.winner) {
-        gameStatus.value = 'ended'
-      } else {
-        gameStatus.value = 'playing'
-      }
       break
     case 'game:over':
       // 保存游戏结果
       gameResult.value = { winner: command.data.winner }
-      gameStatus.value = 'ended'
       
       // 清除托管标记显示
       if (gameState.value && gameState.value.hosted) {
@@ -791,14 +768,6 @@ const onCommand = (command: any) => {
       if (command.data && gameStore.roomPlayer?.room) {
         console.log('收到status命令:', command.data.status, '角色:', gameStore.roomPlayer.role)
         gameStore.roomPlayer.room.status = command.data.status
-        
-        // 围观玩家的特殊处理：如果房间状态是playing，就设置为playing
-        if (command.data.status === 'playing') {
-          console.log('房间状态为playing，设置游戏状态为playing')
-          gameStatus.value = 'playing'
-        } else {
-          gameStatus.value = command.data.status === 'playing' ? 'playing' : 'waiting'
-        }
       }
       break
     /* duplicate timer_update handler removed - handled above */
@@ -816,12 +785,6 @@ const onCommand = (command: any) => {
         achievements.value = command.data.achievements
         roomMessages.value = command.data.messageHistory || []
         moveHistory.value = command.data.moveHistory || []
-        // 根据游戏状态设置正确的状态
-        if (command.data.gameState) {
-          gameStatus.value = command.data.gameState.winner ? 'ended' : 'playing'
-        } else {
-          gameStatus.value = 'waiting'
-        }
         
         // 显示恢复成功通知（使用中央浮动的 transient 通知）
         showTransient('游戏数据已成功恢复', 3000)
@@ -917,9 +880,6 @@ onMounted(() => {
     // 请求消息历史
     gameStore.game.command(roomId, { type: 'message_history' })
     
-    // 设置初始游戏状态
-    gameStatus.value = gameStore.roomPlayer.room.status === 'playing' ? 'playing' : 'waiting'
-    
     // 围观玩家的特殊处理：捕获局部引用以避免在闭包中出现可空类型的窄化失效
     if (gameStore.roomPlayer?.role === 'watcher') {
       const rp = gameStore.roomPlayer
@@ -944,12 +904,6 @@ onMounted(() => {
           console.error('gameStore.game或roomId无效，无法发送命令')
         }
 
-        // 如果房间状态已经是playing，立即设置状态
-        if (rp?.room?.status === 'playing') {
-          console.log('围观玩家房间状态为playing，设置游戏状态为playing')
-          gameStatus.value = 'playing'
-        }
-
         // 简单的重试机制
         setTimeout(() => {
           if (!gameState.value && rp?.room?.status === 'playing' && g && rid) {
@@ -963,7 +917,6 @@ onMounted(() => {
         setTimeout(() => {
           if (!gameState.value && rp?.room?.status === 'playing') {
             console.log('围观玩家多次尝试仍无法获取游戏状态，保持playing状态但显示加载提示')
-            gameStatus.value = 'playing'
           }
         }, 3000)
       }, 100)
