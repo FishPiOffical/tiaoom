@@ -33,14 +33,14 @@
 
     <!-- Watcher Actions -->
     <div v-if="roomPlayer.role === PlayerRole.watcher" class="group flex gap-2">
-      <button class="btn" 
+      <button class="btn btn-circle btn-sm btn-soft tooltip tooltip-left" 
         @click="game?.leaveRoom(roomPlayer.room.id)"
         :disabled="roomPlayer.isReady"
         data-tip="离开房间"
       >
         <Icon icon="mdi:logout" />
       </button>
-      <button class="btn" 
+      <button class="btn btn-circle btn-sm btn-soft tooltip tooltip-left" 
         v-if="!isRoomFull && !isPlaying" 
         @click="game?.joinRoom(roomPlayer.room.id)"
         data-tip="加入游戏"
