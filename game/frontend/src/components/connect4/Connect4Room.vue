@@ -63,7 +63,7 @@
             <Icon icon="fluent:people-16-filled" />
             <span class="ml-2">玩家列表</span>
           </a>
-          <a v-if="Object.keys(achivents).length > 0" role="tab" class="tab tooltip tooltip-bottom" :class="{ 'tab-active': activeTab === 'achievements' }" @click="activeTab = 'achievements'">
+          <a v-if="Object.keys(achievements).length > 0" role="tab" class="tab tooltip tooltip-bottom" :class="{ 'tab-active': activeTab === 'achievements' }" @click="activeTab = 'achievements'">
             <Icon icon="ri:sword-fill" />
             <span class="ml-2">战绩</span>
           </a>
@@ -71,14 +71,14 @@
 
         <!-- 成就表 -->
         <div v-show="activeTab === 'achievements'">
-          <AchievementTable :achievements="achivents" show-draw />
+          <AchievementTable :achievements="achievements" show-draw />
         </div>
         
         <!-- 玩家列表 -->
         <div v-show="activeTab === 'players'">
           <PlayerList :players="roomPlayer.room.players">
             <template #default="{ player: p }">
-              <span v-if="p.role === 'player'">
+              <span v-if="p.role === 'player'" class="inline-flex gap-2 items-center">
                 <span>[{{ getPlayerStatus(p) }}]</span>
                 <template v-if="p.attributes.color ?? false">
                   <div class="w-4 h-4 flex items-center justify-center bg-base-300 rounded-full border border-base-content/20">
@@ -146,7 +146,7 @@ const activeTab = ref<'players' | 'achievements'>('players')
 
 const {
   isPlaying,
-  achivents,
+  achievements,
   gameStatus,
   currentPlayer,
   board,

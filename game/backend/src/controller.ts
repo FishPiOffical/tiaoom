@@ -3,7 +3,7 @@ import http from "http";
 import { IPlayer, IRoomOptions, IRoomPlayer, IRoomPlayerOptions, Player, PlayerRole, PlayerStatus, RoomPlayer, } from "tiaoom";
 import { Room, Tiaoom } from "tiaoom";
 import { SocketManager } from "./socket";
-import Games, { IGameInfo } from "./games";
+import Games, { GameRoom, IGame, IGameInfo } from "./games";
 import { Model } from "./model";
 import { UserRepo } from "./entities";
 
@@ -33,24 +33,35 @@ export class Controller extends Tiaoom {
 
   get games() {
     return Object.keys(Games).reduce((obj, key) => {
-      obj[key] = { ...Games[key] };
+      obj[key] = { ...Games[key] } as IGameInfo;
       return obj;
     }, {} as Record<string, IGameInfo>);
   }
 
+  
+
   run() {
-    return super.run().on("room", (room: Room) => {
+    return super.run().on("room", async (room: Room) => {
       const gameType = room.attrs?.type;
       Model.createRoom(room);
       if (gameType && Games[gameType]) {
-        Games[gameType].default(room, {
-          save: (data: Record<string, any>) => {
-            return Model.saveGameData(room.id, data);
-          },
-          restore: () => {
-            return Model.getGameData(room.id);
-          }
-        });
+        const defaultExport = Games[gameType].default;
+        if (defaultExport.prototype instanceof GameRoom) {
+          const GameClass = defaultExport as new (room: Room) => GameRoom;
+          const gameRoomInstance = new GameClass(room);
+          const data = await Model.getGameData(room.id);
+          Object.assign(gameRoomInstance, data || {});
+          gameRoomInstance.init();
+        } else {
+          (defaultExport as IGame['default'])(room, {
+            save: (data: Record<string, any>) => {
+              return Model.saveGameData(room.id, data);
+            },
+            restore: () => {
+              return Model.getGameData(room.id);
+            }
+          });
+        }
       }
       else console.error("game not found:", room);
       function updatePlayerList() {
@@ -62,6 +73,7 @@ export class Controller extends Tiaoom {
         .on('end', () => {
           room.players.forEach(p => {
             p.isReady = false;
+            p.status = PlayerStatus.unready;
             p.emit('status', PlayerStatus.unready);
           });
           this.emit('room-player', room);

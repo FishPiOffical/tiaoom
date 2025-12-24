@@ -1,6 +1,6 @@
 <template>
   <section
-    class="flex flex-col items-center justify-center p-2 py-4 overflow-hidden"
+    class="flex flex-col items-center justify-center p-2 py-4"
     ref="containerRef"
   >
     <!-- 棋盘 -->
@@ -80,7 +80,7 @@
 
     <!-- 当前回合 -->
     <div
-      v-if="gameStatus === 'playing'"
+      v-if="isPlaying"
       class="flex items-center justify-center gap-3 mt-2 -mb-2 text-sm"
     >
       <div
@@ -133,7 +133,6 @@ const props = defineProps<{
 
 const {
   isPlaying,
-  gameStatus,
   currentPlayer,
   board,
   currentPlace,

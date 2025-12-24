@@ -4,12 +4,24 @@ import { isObject } from './is';
 import { IConfig } from '#/index';
 import { Request } from 'express';
 
+/**
+ * 返回一个对象，剔除指定的键
+ * @param obj 对象
+ * @param keys key 列表
+ * @returns 
+ */
 export function omit(obj: any, keys: string[]) {
   return Object.fromEntries(
     Object.entries(obj).filter(([key]) => !keys.includes(key))
   );
 }
 
+/**
+ * 返回一个对象，只包含指定的键
+ * @param obj 对象
+ * @param keys key 列表
+ * @returns 
+ */
 export function pick(obj: any, keys: string[]) {
   return Object.fromEntries(
     Object.entries(obj).filter(([key]) => keys.includes(key))

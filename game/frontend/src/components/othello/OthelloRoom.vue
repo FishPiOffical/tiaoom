@@ -64,7 +64,7 @@
       </div>
       
       <!-- 当前回合 -->
-      <div v-if="gameStatus === 'playing'" class="flex items-center justify-center gap-3 mt-4 text-lg p-1">
+      <div v-if="isPlaying" class="flex items-center justify-center gap-3 mt-4 text-lg p-1">
         <div class="w-6 h-6 flex items-center justify-center bg-base-300 rounded-full border border-base-content/20">
           <span 
             class="w-full h-full rounded-full"
@@ -83,7 +83,7 @@
             <Icon icon="fluent:people-16-filled" />
             <span class="ml-2">玩家列表</span>
           </a>
-          <a v-if="Object.keys(achivents).length > 0" role="tab" class="tab tooltip tooltip-bottom" :class="{ 'tab-active': activeTab === 'achievements' }" @click="activeTab = 'achievements'">
+          <a v-if="Object.keys(achievements).length > 0" role="tab" class="tab tooltip tooltip-bottom" :class="{ 'tab-active': activeTab === 'achievements' }" @click="activeTab = 'achievements'">
             <Icon icon="ri:sword-fill" />
             <span class="ml-2">战绩</span>
           </a>
@@ -91,7 +91,7 @@
 
         <!-- 成就表 -->
         <div v-show="activeTab === 'achievements'">
-          <AchievementTable :achievements="achivents" show-draw />
+          <AchievementTable :achievements="achievements" show-draw />
         </div>
         
         <!-- 玩家列表 -->
@@ -164,11 +164,10 @@ const props = defineProps<{
 const activeTab = ref<'players' | 'achievements'>('players')
 
 const {
-  gameStatus,
   currentPlayer,
   board,
   currentPlace,
-  achivents,
+  achievements,
   placePiece,
   requestDraw,
   requestLose,
@@ -177,9 +176,9 @@ const {
 
 function getPlayerStatus(p: any) {
   if (!p.isReady) return '未准备'
-  if (props.roomPlayer.room.status === 'waiting') return '准备好了'
+  if (!isPlaying.value) return '准备好了'
   if (p.id === currentPlayer.value?.id) return '思考中'
-  if (props.roomPlayer.room.status === 'playing') return '等待中'
+  if (isPlaying.value) return '等待中'
   return '准备好了'
 }
 

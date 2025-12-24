@@ -1,5 +1,5 @@
 <template>
-  <section class="flex flex-col items-center justify-center p-2 py-4 max-w-[99vw] max-h-[95vh] overflow-hidden" ref="containerRef">
+  <section class="flex flex-col items-center justify-center p-2 py-4" ref="containerRef">
     <!-- 棋盘 -->
     <div class="inline-block p-2 m-auto border rounded shadow-2xl bg-base-300 border-base-content/20">
       <!-- 顶部留白 -->
@@ -63,7 +63,7 @@
     </div>
     
     <!-- 当前回合 -->
-    <div v-if="gameStatus === 'playing'" class="flex items-center justify-center gap-3 mt-2 -mb-2 text-sm">
+    <div v-if="isPlaying" class="flex items-center justify-center gap-3 mt-2 -mb-2 text-sm">
       <div class="w-[1.4em] h-[1.4em] flex items-center justify-center bg-base-300 rounded-full border border-base-content/20">
         <span 
           class="w-full h-full rounded-full"
@@ -109,7 +109,6 @@ const props = defineProps<{
 
 const {
   isPlaying,
-  gameStatus,
   currentPlayer,
   board,
   currentPlace,

@@ -1,6 +1,5 @@
-import { Model } from "@/model";
-import { IRoomPlayer, PlayerRole, Room, RoomPlayer, RoomStatus } from "tiaoom";
-import { IGameMethod } from ".";
+import { PlayerRole, PlayerStatus, RoomPlayer, RoomStatus } from "tiaoom";
+import { GameRoom, IGameCommand } from ".";
 import { sleep } from "@/utils";
 
 /**
@@ -53,6 +52,14 @@ function checkOthelloMove(board: number[][], { x, y }: { x: number, y: number },
   return markValidPlaces(newBoard, 3 - player);
 }
 
+/**
+ * 检查指定位置是否为有效落子点
+ * @param {number[][]} board 棋盘
+ * @param {number} x - 当前落子位置 行索引
+ * @param {number} y - 当前落子位置 列索引
+ * @param {number} player - 当前玩家（1黑棋，2白棋）
+ * @returns 是否为有效落子点
+ */
 function isValidPlace(board: number[][], { x, y }: { x: number; y: number }, player: number) {
   const piece = board[x][y];
   const size = board.length;
@@ -117,6 +124,12 @@ function isValidPlace(board: number[][], { x, y }: { x: number; y: number }, pla
   return piecesValid.length > 0;
 }
 
+/**
+ * 标记所有可落子的位置
+ * @param {number[][]} board 棋盘
+ * @param {number} player 当前玩家
+ * @returns 标记后的棋盘
+ */
 function markValidPlaces(board: number[][], player: number) {
   const size = board.length;
   // 标记所有不可落子的位置
@@ -133,6 +146,11 @@ function markValidPlaces(board: number[][], player: number) {
 
 }
 
+/**
+ * 检查黑白棋游戏是否结束及胜负情况
+ * @param {number[][]} board 棋盘
+ * @returns 胜利方（1黑棋，2白棋），0平局，null 游戏未结束
+ */
 function isWin(board: number[][]): number | null {
   const placeCount = board.flat().filter(cell => cell === 0).length;
   const blackCount = board.flat().filter(cell => cell === 1).length;
@@ -145,69 +163,45 @@ function isWin(board: number[][]): number | null {
   return null; // 游戏未结束
 }
 
-export default async function onRoom(room: Room, { save, restore }: IGameMethod) {
-  const data = await restore();
-  const size = 8;
-  let messageHistory: { content: string, sender?: IRoomPlayer }[] = data?.messageHistory || [];
-  let currentPlayer: RoomPlayer | undefined = room.validPlayers.find(p => p.id === data?.currentPlayerId);
-  let lastLosePlayer: RoomPlayer | undefined = data?.lastLosePlayerId
-    ? room.validPlayers.find(p => p.id === data.lastLosePlayerId)
-    : undefined;
-  let gameStatus: 'waiting' | 'playing' = data?.gameStatus ?? 'waiting';
-  let board: number[][] = data?.board ?? Array.from({ length: size }, () => Array(size).fill(-1));
+const size = 8;
+export const name = '黑白棋';
+export const minSize = 2;
+export const maxSize = 2;
+export const description = `两个玩家轮流在8x8的棋盘上放置黑白棋子，通过夹击对方棋子将其翻转为己方颜色。
+游戏结束时，棋盘上棋子数量多的一方获胜。`;
 
-  let achivents: Record<string, { win: number; lost: number; draw: number }> = data?.achivents ?? {};
+class OthelloGameRoom extends GameRoom {
+  currentPlayer?: RoomPlayer;
+  lastLosePlayer?: RoomPlayer;
+  board: number[][] = Array.from({ length: size }, () => Array(size).fill(-1))
 
-  function saveGameData() {
-    return save({
-      board,
-      currentPlayerId: currentPlayer?.id,
-      gameStatus,
-      messageHistory,
-      lastLosePlayerId: lastLosePlayer?.id,
-      achivents
-    });
-  }
-
-  function saveAchivents(winner?: RoomPlayer | null) {
-    room.validPlayers.forEach((p) => {
-      if (!achivents[p.name]) {
-        achivents[p.name] = { win: 0, lost: 0, draw: 0 };
-      }
-      if (p.id === winner?.id) {
-        achivents[p.name].win += 1;
-      } else {
-        achivents[p.name].lost += 1;
+  init() {
+    return super.init().on('player-offline', async (player) => {
+      await sleep(4 * 60 * 1000); // 等待 4 分钟，判定为离线
+      if (!this.isPlayerOnline(player)) return;
+      this.room.kickPlayer(player);
+      if (this.room.status === RoomStatus.playing && player.role === PlayerRole.player) {
+        this.room.emit('message', { content: `玩家 ${player.name} 已离线，游戏结束。` });
+        this.lastLosePlayer = this.room.validPlayers.find((p) => p.id != player.id)!;
+        this.saveAchievements(this.lastLosePlayer);
+        this.room.end();
+        return;
       }
     });
   }
 
-  room.on('join', (player) => {
-    room.validPlayers.find((p) => p.id === player.id)?.emit('command', {
-      type: 'achivents',
-      data: achivents
-    });
-  }).on('player-offline', async (player) => {
-    await sleep(4 * 60 * 1000); // 等待 4 分钟，判定为离线
-    room.kickPlayer(player);
-    if (gameStatus === 'playing' && player.role === 'player') {
-      room.emit('message', { content: `玩家 ${player.name} 已离线，游戏结束。` });
-      lastLosePlayer = room.validPlayers.find((p) => p.id != player.id)!;
-      gameStatus = 'waiting';
-      saveAchivents(lastLosePlayer);
-      room.emit('command', { type: 'achivements', data: achivents });
-      room.end();
-      saveGameData();
-      return;
+  getStatus(sender: RoomPlayer) {
+    return {
+      ...super.getStatus(sender),
+      current: this.currentPlayer,
+      board: this.board,
+      color: sender.attributes?.color,
     }
-  }).on('player-command', (message: any) => {
-    // 允许观众使用的指令
-    const publicCommands = ['say', 'status'];
-    const players = publicCommands.includes(message.type)
-      ? room.players
-      : room.validPlayers;
-    const sender = players.find((p) => p.id == message.sender?.id)!;
-    if (!sender) return;
+  }
+
+  onCommand(message: IGameCommand): void {
+    super.onCommand(message);
+    const sender = message.sender as RoomPlayer;
     /**
      * # room command
      * - say: player say something
@@ -222,50 +216,24 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
      * - request-draw: player request draw
      */
     switch (message.type) {
-      case 'say':
-        // 游玩时间观众发言仅广播给其他观众
-        if (sender.role != PlayerRole.player && room.status == RoomStatus.playing) {
-          room.watchers.forEach((watcher) => {
-            watcher.emit('message', { content: `${message.data}`, sender });
-          });
-          return;
-        }
-        room.emit('message', { content: `${message.data}`, sender });
-        break;
-      case 'status': {
-        const player = room.players.find((p) => p.id == message.data.id);
-        if (!player) break;
-        player.emit('command', {
-          type: 'status',
-          data: {
-            status: gameStatus,
-            current: currentPlayer,
-            messageHistory,
-            board,
-            color: player.attributes?.color,
-            achivents: achivents
-          }
-        });
-        break;
-      }
       case 'place': {
-        if (gameStatus !== 'playing') {
+        if (this.room.status !== RoomStatus.playing) {
           sender.emit('message', { content: `游戏未开始，无法落子。` });
           break;
         }
-        if (sender.id !== currentPlayer?.id) {
-          sender.emit('message', { content: `轮到玩家 ${currentPlayer?.name} 落子。` });
+        if (sender.id !== this.currentPlayer?.id) {
+          sender.emit('message', { content: `轮到玩家 ${this.currentPlayer?.name} 落子。` });
           break;
         }
         const { x, y } = message.data;
-        if (board[x][y] !== 0) {
+        if (this.board[x][y] !== 0) {
           sender.emit('message', { content: `该位置已有棋子，请重新落子。` });
           break;
         }
         const color = sender.attributes?.color;
-        let result = checkOthelloMove(board, { x, y }, color);
+        let result = checkOthelloMove(this.board, { x, y }, color);
         if (!result) {
-          sender.emit('command', { type: 'board', data: board });
+          sender.emit('command', { type: 'board', data: this.board });
           sender.emit('message', { content: `无效落子！` });
           return;
         }
@@ -273,51 +241,48 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
         if (!result.flat().some(cell => cell === 0) && result.flat().filter(cell => cell <= 0).length) {
           result = markValidPlaces(result, color);
           if (!result.flat().some(cell => cell === 0)) {
-            room.emit('message', { content: `双方均无法落子，结算！` });
+            this.room.emit('message', { content: `双方均无法落子，结算！` });
           } else {
-            room.emit('message', { content: `${3 - color ? '黑' : '白'}方无法落子，跳过！` });
-            currentPlayer = room.validPlayers.find((p) => p.id != currentPlayer?.id)!;
+            this.room.emit('message', { content: `${3 - color ? '黑' : '白'}方无法落子，跳过！` });
+            this.currentPlayer = this.room.validPlayers.find((p) => p.id != this.currentPlayer?.id)!;
           }
         }
 
-        board = result;
-        room.emit('command', { type: 'board', data: board });
-        room.emit('command', { type: 'place', data: { x, y } });
+        this.board = result;
+        this.room.emit('command', { type: 'board', data: this.board });
+        this.room.emit('command', { type: 'place', data: { x, y } });
 
-        const winnerPlayer = isWin(board);
+        const winnerPlayer = isWin(this.board);
         if (winnerPlayer !== null) {
           // 棋盘已满，游戏结束
           let winner: RoomPlayer | null = null;
           if (winnerPlayer === 1) {
-            room.emit('message', { content: `玩家 ${room.validPlayers.find(p => p.attributes?.color === 1)?.name} 获胜！` });
-            winner = room.validPlayers.find(p => p.attributes?.color === 1)!;
-            lastLosePlayer = room.validPlayers.find(p => p.attributes?.color === 2)!;
+            this.room.emit('message', { content: `玩家 ${this.room.validPlayers.find(p => p.attributes?.color === 1)?.name} 获胜！` });
+            winner = this.room.validPlayers.find(p => p.attributes?.color === 1)!;
+            this.lastLosePlayer = this.room.validPlayers.find(p => p.attributes?.color === 2)!;
           } else if (winnerPlayer === 2) {
-            room.emit('message', { content: `玩家 ${room.validPlayers.find(p => p.attributes?.color === 2)?.name} 获胜！` });
-            winner = room.validPlayers.find(p => p.attributes?.color === 2)!;
-            lastLosePlayer = room.validPlayers.find(p => p.attributes?.color === 1)!;
+            this.room.emit('message', { content: `玩家 ${this.room.validPlayers.find(p => p.attributes?.color === 2)?.name} 获胜！` });
+            winner = this.room.validPlayers.find(p => p.attributes?.color === 2)!;
+            this.lastLosePlayer = this.room.validPlayers.find(p => p.attributes?.color === 1)!;
           } else {
-            room.emit('message', { content: `游戏以平局结束！` });
+            this.room.emit('message', { content: `游戏以平局结束！` });
           }
-          gameStatus = 'waiting';
-          saveAchivents(winner);
-          room.emit('command', { type: 'achivements', data: achivents });
-          room.end();
-          saveGameData();
+          this.saveAchievements(winner);
+          this.room.end();
           return;
         }
         // 切换当前玩家
-        const current = room.validPlayers.find((p) => p.id != currentPlayer?.id);
+        const current = this.room.validPlayers.find((p) => p.id != this.currentPlayer?.id);
         if (current) {
-          currentPlayer = current;
-          room.emit('command', { type: 'place-turn', data: { player: currentPlayer } });
-          saveGameData();
+          this.currentPlayer = current;
+          this.room.emit('command', { type: 'place-turn', data: { player: this.currentPlayer } });
+          this.save();
         }
         break;
       }
       case 'request-draw': {
-        room.emit('message', { content: `玩家 ${sender.name} 请求和棋。` });
-        const otherPlayer = room.validPlayers.find((p) => p.id != sender.id)!;
+        this.room.emit('message', { content: `玩家 ${sender.name} 请求和棋。` });
+        const otherPlayer = this.room.validPlayers.find((p) => p.id != sender.id)!;
         otherPlayer.emit('command', {
           type: 'request-draw',
           data: { player: sender }
@@ -325,73 +290,63 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
         break;
       }
       case 'request-lose': {
-        room.emit('message', { content: `玩家 ${sender.name} 认输。` });
-        gameStatus = 'waiting';
-        room.validPlayers.forEach((player) => {
-          if (!achivents[player.name]) {
-            achivents[player.name] = { win: 0, lost: 0, draw: 0 };
+        this.room.emit('message', { content: `玩家 ${sender.name} 认输。` });
+        this.room.validPlayers.forEach((player) => {
+          if (!this.achievements[player.name]) {
+            this.achievements[player.name] = { win: 0, lost: 0, draw: 0 };
           }
           if (player.id == sender.id) {
-            achivents[player.name].lost += 1;
+            this.achievements[player.name].lost += 1;
           } else {
-            achivents[player.name].win += 1;
+            this.achievements[player.name].win += 1;
           }
         });
-        lastLosePlayer = room.validPlayers.find((p) => p.id == sender.id);
-        room.emit('command', { type: 'achivements', data: achivents });
-        room.end();
-        saveGameData();
+        this.lastLosePlayer = this.room.validPlayers.find((p) => p.id == sender.id);
+        this.saveAchievements(this.room.validPlayers.find((p) => p.id != sender.id));
+        this.room.end();
         break;
       }
       case 'draw': {
         if (!message.data.agree) {
-          room.emit('message', { content: `玩家 ${sender.name} 拒绝和棋，游戏继续。` });
+          this.room.emit('message', { content: `玩家 ${sender.name} 拒绝和棋，游戏继续。` });
           break;
         }
-        room.emit('message', { content: `玩家 ${sender.name} 同意和棋，游戏结束。` });
-        lastLosePlayer = room.validPlayers.find((p) => p.id != sender.id)!;
-        gameStatus = 'waiting';
-        room.validPlayers.forEach((player) => {
-          if (!achivents[player.name]) {
-            achivents[player.name] = { win: 0, lost: 0, draw: 0 };
-          }
-          achivents[player.name].draw += 1;
-        });
-        room.end();
-        saveGameData();
+        this.room.emit('message', { content: `玩家 ${sender.name} 同意和棋，游戏结束。` });
+        this.lastLosePlayer = this.room.validPlayers.find((p) => p.id != sender.id)!;
+        this.saveAchievements(null);
+        this.room.end();
         break;
       }
       default:
         break;
     }
-  }).on('start', () => {
-    if (room.validPlayers.length < room.minSize) {
-      return room.emit('message', { content: `玩家人数不足，无法开始游戏。` });
+  }
+
+  onStart() {
+    if (this.room.validPlayers.length < this.room.minSize) {
+      return this.room.emit('message', { content: `玩家人数不足，无法开始游戏。` });
     }
-    if (!room.validPlayers.some((p) => p.id == lastLosePlayer?.id)) {
-      lastLosePlayer = undefined;
+    if (!this.room.validPlayers.some((p) => p.id == this.lastLosePlayer?.id)) {
+      this.lastLosePlayer = undefined;
     }
-    currentPlayer = lastLosePlayer || room.validPlayers[0];
-    board = Array.from({ length: size }, () => Array(size).fill(-1));
+    this.currentPlayer = this.lastLosePlayer || this.room.validPlayers[0];
+    this.board = Array.from({ length: size }, () => Array(size).fill(-1));
     // 初始化黑白棋起始位置
-    board[size / 2 - 1][size / 2 - 1] = 2; // 白
-    board[size / 2][size / 2] = 2;         // 白
-    board[size / 2 - 1][size / 2] = 1;     // 黑
-    board[size / 2][size / 2 - 1] = 1;     // 黑
+    this.board[size / 2 - 1][size / 2 - 1] = 2; // 白
+    this.board[size / 2][size / 2] = 2;         // 白
+    this.board[size / 2 - 1][size / 2] = 1;     // 黑
+    this.board[size / 2][size / 2 - 1] = 1;     // 黑
 
     // 标记所有可落子的位置
-    board[size / 2 - 2][size / 2 - 1] = 0;
-    board[size / 2 - 1][size / 2 - 2] = 0;
-    board[size / 2][size / 2 + 1] = 0;
-    board[size / 2 + 1][size / 2] = 0;
-    gameStatus = 'playing';
-    messageHistory = [];
+    this.board[size / 2 - 2][size / 2 - 1] = 0;
+    this.board[size / 2 - 1][size / 2 - 2] = 0;
+    this.board[size / 2][size / 2 + 1] = 0;
+    this.board[size / 2 + 1][size / 2] = 0;
+    this.messageHistory = [];
 
-    gameStatus = 'playing';
-    messageHistory = [];
-    currentPlayer.attributes = { color: 1 }; // 黑子先行
-    room.validPlayers.forEach((player) => {
-      if (player.id !== currentPlayer?.id) {
+    this.currentPlayer.attributes = { color: 1 }; // 黑子先行
+    this.room.validPlayers.forEach((player) => {
+      if (player.id !== this.currentPlayer?.id) {
         player.attributes = { color: 2 }; // 白子
         player.emit('command', {
           type: 'color',
@@ -404,22 +359,11 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
         });
       }
     });
-    room.emit('command', { type: 'achivements', data: achivents });
-    room.emit('message', { content: `游戏开始。玩家 ${currentPlayer.name} 执黑先行。` });
-    room.emit('command', { type: 'place-turn', data: { player: currentPlayer } });
-    room.emit('command', { type: 'board', data: board });
-    saveGameData();
-  }).on('end', () => {
-    room.emit('command', { type: 'end' });
-  }).on('message', (message: { content: string; sender?: IRoomPlayer }) => {
-    messageHistory.unshift(message);
-    if (messageHistory.length > 100) messageHistory.splice(messageHistory.length - 100);
-    saveGameData();
-  });
+    this.room.emit('command', { type: 'achivements', data: this.achievements });
+    this.room.emit('message', { content: `游戏开始。玩家 ${this.currentPlayer.name} 执黑先行。` });
+    this.room.emit('command', { type: 'place-turn', data: { player: this.currentPlayer } });
+    this.room.emit('command', { type: 'board', data: this.board });
+  }
 }
 
-export const name = '黑白棋';
-export const minSize = 2;
-export const maxSize = 2;
-export const description = `两个玩家轮流在8x8的棋盘上放置黑白棋子，通过夹击对方棋子将其翻转为己方颜色。
-游戏结束时，棋盘上棋子数量多的一方获胜。`;
+export default OthelloGameRoom;

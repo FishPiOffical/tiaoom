@@ -64,7 +64,7 @@
       </div>
       
       <!-- 当前回合 -->
-      <div v-if="gameStatus === 'playing'" class="flex items-center justify-center gap-3 mt-4 text-lg">
+      <div v-if="isPlaying" class="flex items-center justify-center gap-3 mt-4 text-lg">
         <div class="w-5 h-5 flex items-center justify-center bg-base-300 rounded-full border border-base-content/20">
           <span 
             class="w-4 h-4 rounded-full"
@@ -83,7 +83,7 @@
             <Icon icon="fluent:people-16-filled" />
             <span class="ml-2">玩家列表</span>
           </a>
-          <a v-if="Object.keys(achivents).length > 0" role="tab" class="tab tooltip tooltip-bottom" :class="{ 'tab-active': activeTab === 'achievements' }" @click="activeTab = 'achievements'">
+          <a v-if="Object.keys(achievements).length > 0" role="tab" class="tab tooltip tooltip-bottom" :class="{ 'tab-active': activeTab === 'achievements' }" @click="activeTab = 'achievements'">
             <Icon icon="ri:sword-fill" />
             <span class="ml-2">战绩</span>
           </a>
@@ -91,14 +91,14 @@
 
         <!-- 成就表 -->
         <div v-show="activeTab === 'achievements'">
-          <AchievementTable :achievements="achivents" show-draw />
+          <AchievementTable :achievements="achievements" show-draw />
         </div>
         
         <!-- 玩家列表 -->
         <div v-show="activeTab === 'players'">
           <PlayerList :players="roomPlayer.room.players">
             <template #default="{ player: p }">
-              <span v-if="p.role === 'player'">
+              <span v-if="p.role === 'player'" class="inline-flex gap-2 items-center">
                 <span>[{{ getPlayerStatus(p) }}]</span>
                 <template v-if="p.attributes.color ?? false">
                   <div class="w-4 h-4 flex items-center justify-center bg-base-300 rounded-full border border-base-content/20">
@@ -173,8 +173,7 @@ const activeTab = ref<'players' | 'achievements'>('players')
 
 const {
   isPlaying,
-  achivents,
-  gameStatus,
+  achievements,
   currentPlayer,
   board,
   currentPlace,
@@ -186,9 +185,9 @@ const {
 
 function getPlayerStatus(p: any) {
   if (!p.isReady) return '未准备'
-  if (gameStatus.value === 'waiting') return '准备好了'
+  if (!isPlaying.value) return '准备好了'
   if (p.id === currentPlayer.value?.id) return '思考中'
-  if (gameStatus.value === 'playing') return '等待中'
+  if (isPlaying.value) return '等待中'
   return '准备好了'
 }
 

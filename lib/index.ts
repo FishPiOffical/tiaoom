@@ -1,7 +1,7 @@
 import { EventEmitter } from "events";
 import { TiaoomEvents } from "@lib/events";
 import { IMessage, RecvMessageTypes, MessageTypes } from "@lib/models/message";
-import { IRoom, IRoomPlayer, Room, IRoomOptions, IRoomPlayerOptions } from "@lib/models/room";
+import { IRoom, IRoomPlayer, Room, IRoomOptions, IRoomPlayerOptions, RoomStatus, PlayerRole } from "@lib/models/room";
 import { IPlayer, Player, IPlayerOptions, PlayerStatus } from "@lib/models/player";
 
 export interface ITiaoomOptions {
@@ -299,9 +299,22 @@ export class Tiaoom extends EventEmitter {
         this.messageInstance?.send({ type: `player.${type}` as MessageTypes, data: message, sender: playerInstance });
       });
       this.emit("player", playerInstance, true);
+
+      const room = this.rooms.find(r => r.players.some(p => p.id === playerInstance!.id));
+      if (room) {
+        const playerIndex = room.players.findIndex(p => p.id === playerInstance!.id);
+        if (playerIndex >= 0) {
+          const status = room?.status == RoomStatus.playing ? PlayerStatus.playing : PlayerStatus.online;
+          playerInstance.status = status;
+          playerInstance.attributes = Object.assign({}, room.players[playerIndex].attributes, playerInstance.attributes);
+          Object.assign(room.players[playerIndex], playerInstance);
+          room.emit('update', room);
+        }
+      }
     }
-    
+
     playerInstance.emit("status", playerInstance.status);
+
     cb?.({ player: playerInstance });
     return playerInstance;
   }
@@ -403,7 +416,7 @@ export class Tiaoom extends EventEmitter {
       room.emit("all-ready", room.players);
     }
 
-    playerInstance.emit("status", PlayerStatus.ready);
+    playerInstance.status = PlayerStatus.ready;
 
     room.emit("player-ready", { ...player, ...roomPlayer });
     room.emit('update', room);
@@ -433,7 +446,7 @@ export class Tiaoom extends EventEmitter {
     }
 
     roomPlayer.isReady = false;
-    playerInstance.emit("status", PlayerStatus.unready);
+    playerInstance.status = PlayerStatus.unready;
     room.emit("player-unready", { ...player, ...roomPlayer });
     room.emit('update', room);
 
@@ -454,8 +467,13 @@ export class Tiaoom extends EventEmitter {
     const room = this.rooms.find((room) => room.players.some(p => p.id === sender?.id));
     if (room) {
       setTimeout(() => {
-        if (this.players.some(p => p.id === sender.id)) return; // player is online
-        room.emit("player-offline", room.players.find(p => p.id === sender.id)!);
+        const playerInstance = room.players.find(p => p.id === sender.id && p.role === PlayerRole.player);
+        if (this.players.some(p => p.id === sender.id) || !playerInstance) 
+          return; // player is online
+        playerInstance.status = PlayerStatus.offline;
+        room.emit("player-offline", playerInstance);
+        playerInstance.status = PlayerStatus.offline;
+        room.emit('update', room);
       }, 60 * 1000); // 1 minute later
     }
     this.removePlayer(sender);

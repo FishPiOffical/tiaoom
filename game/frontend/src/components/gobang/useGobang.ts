@@ -5,19 +5,16 @@ import { useGameEvents } from '@/hook/useGameEvents';
 import { confirm } from '@/components/msgbox';
 
 export function useGobang(game: GameCore, roomPlayer: RoomPlayer & { room: Room }) {
-  const gameStatus = ref<'waiting' | 'playing'>('waiting')
   const currentPlayer = ref<any>()
   const board = ref(Array(19).fill(0).map(() => Array(19).fill(0)))
-  const achivents = ref<Record<string, any>>({})
+  const achievements = ref<Record<string, any>>({})
   const currentPlace = ref<{ x: number; y: number } | null>(null)
 
   function onRoomStart() {
-    gameStatus.value = 'playing'
     currentPlace.value = null
   }
 
   function onRoomEnd() {
-    gameStatus.value = 'waiting'
     currentPlayer.value = null
   }
 
@@ -26,24 +23,22 @@ export function useGobang(game: GameCore, roomPlayer: RoomPlayer & { room: Room 
     
     switch (cmd.type) {
       case 'status':
-        gameStatus.value = cmd.data.status
         currentPlayer.value = cmd.data.current
         board.value = cmd.data.board
-        achivents.value = cmd.data.achivents || {}
+        achievements.value = cmd.data.achievements || {}
         break
       case 'board':
         board.value = cmd.data
         break
       case 'place-turn':
         currentPlayer.value = cmd.data.player
-        gameStatus.value = 'playing'
         break
       case 'place':
         const { x, y } = cmd.data
         currentPlace.value = { x, y }
         break
-      case 'achivements':
-        achivents.value = cmd.data
+      case 'achievements':
+        achievements.value = cmd.data
         break
       case 'request-draw':
         confirm(`玩家 ${cmd.data.player.name} 请求和棋。是否同意？`, '和棋', {
@@ -58,7 +53,7 @@ export function useGobang(game: GameCore, roomPlayer: RoomPlayer & { room: Room 
   }
 
   function placePiece(row: number, col: number) {
-    if (gameStatus.value !== 'playing') return
+    if (!isPlaying.value) return
     if (currentPlayer.value?.id !== roomPlayer.id) return
     if (board.value[row][col] !== 0) return
     game?.command(roomPlayer.room.id, { type: 'place', data: { x: row, y: col } })
@@ -87,10 +82,9 @@ export function useGobang(game: GameCore, roomPlayer: RoomPlayer & { room: Room 
 
   return {
     isPlaying,
-    gameStatus,
     currentPlayer,
     board,
-    achivents,
+    achievements,
     currentPlace,
     placePiece,
     requestDraw,
