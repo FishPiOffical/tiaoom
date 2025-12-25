@@ -56,19 +56,15 @@ class TetrisGameRoom extends GameRoom {
       if (!this.isPlayerOnline(player)) return;
       this.room.kickPlayer(player);
       if (this.room.status === RoomStatus.playing && player.role === PlayerRole.player) {
-        this.room.emit('message', { content: `玩家 ${player.name} 已离线，游戏结束。` });
+        this.say(`玩家 ${player.name} 已离线，游戏结束。`);
         this.finishGame();
       }
     }).on('join', (player) => {
-      this.room.validPlayers.find((p) => p.id === player.id)?.emit('command', {
-        type: 'achievements',
-        data: this.achievements
-      });
       if (this.gameState) {
-         this.room.validPlayers.find((p) => p.id === player.id)?.emit('command', {
-            type: 'game:state',
-            data: this.gameState
-         });
+        const p = this.room.validPlayers.find((p) => p.id === player.id);
+        if (p?.role === PlayerRole.player) {
+          this.commandTo('game:state', { gameState: this.gameState }, p);
+        }
       }
     });
   }
@@ -83,7 +79,7 @@ class TetrisGameRoom extends GameRoom {
 
   onStart() {
       if (this.room.validPlayers.length < this.room.minSize) {
-        return this.room.emit('message', { content: `玩家人数不足，无法开始游戏。` });
+        return this.say(`玩家人数不足，无法开始游戏。`);
       }
       this.startGame();
   }
@@ -108,27 +104,27 @@ class TetrisGameRoom extends GameRoom {
     switch (commandType) {
       case 'tetris:move_left':
         this.movePiece(-1, 0);
-        this.room.emit('command', {type: 'game:state', data: this.gameState});
+        this.command('game:state', this.gameState, sender);
         break;
 
       case 'tetris:move_right':
         this.movePiece(1, 0);
-        this.room.emit('command', {type: 'game:state', data: this.gameState});
+        this.command('game:state', this.gameState, sender);
         break;
 
       case 'tetris:move_down':
         this.movePiece(0, 1);
-        this.room.emit('command', {type: 'game:state', data: this.gameState});
+        this.command('game:state', this.gameState, sender);
         break;
 
       case 'tetris:rotate':
         this.rotatePieceHandler();
-        this.room.emit('command', {type: 'game:state', data: this.gameState});
+        this.command('game:state', this.gameState, sender);
         break;
 
       case 'tetris:drop':
         this.dropPiece();
-        this.room.emit('command', {type: 'game:state', data: this.gameState});
+        this.command('game:state', this.gameState, sender);
         break;
 
       case 'tetris:pause':
@@ -160,7 +156,7 @@ class TetrisGameRoom extends GameRoom {
     });
 
     this.save();
-    this.room.emit('command', {type: 'game:state', data: this.gameState});
+    this.command('game:state', this.gameState);
     this.startGameLoop();
   }
 
@@ -170,7 +166,7 @@ class TetrisGameRoom extends GameRoom {
     this.gameLoop = setInterval(() => {
       if (this.gameState && !this.gameState.gameOver && !this.gameState.isPaused) {
         this.movePiece(0, 1);
-        this.room.emit('command', {type: 'game:state', data: this.gameState});
+        this.command('game:state', this.gameState);
       }
     }, DROP_INTERVAL_BASE / (this.gameState?.level || 1));
   }
@@ -198,9 +194,9 @@ class TetrisGameRoom extends GameRoom {
       }
       this.achievements[player.name].lost += 1;
     });
+    this.command('achievements', this.achievements);
     
-    this.room.emit('message', { content: `游戏已结束` });
-    this.room.emit('command', { type: 'achievements', data: this.achievements });
+    this.say(`游戏已结束`);
     this.room.end();
     this.save();
   }
@@ -247,8 +243,8 @@ class TetrisGameRoom extends GameRoom {
         }
         this.achievements[player.name].lost += 1;
       });
-      this.room.emit('command', { type: 'achievements', data: this.achievements });
-      this.room.emit('message', {content: `游戏结束！最终得分：${this.gameState.score}`});
+      this.command('achievements', this.achievements);
+      this.say(`游戏结束！最终得分：${this.gameState.score}`);
     }
   }
 

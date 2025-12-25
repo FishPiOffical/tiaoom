@@ -73,16 +73,16 @@ class SpyGameRoom extends GameRoom {
   }
 
   voteTimer() {
-    this.room.emit('message', { content: `投票超时，未投票玩家视为弃权。` });
+    this.say(`投票超时，未投票玩家视为弃权。`);
     const unvotedPlayers = this.alivePlayers.filter(p => !this.votePlayers.some(vp => vp.id === p.id));
     unvotedPlayers.forEach(p => {
-      this.room.emit('player-command', { type: 'voted', sender: { id: p.id }, data: { id: null } });
+      this.virtualCommand('voted', { id: null }, p);
     });
   }
 
   startTurnTimer() {
     if (this.gameStatus === 'talking' && this.currentTalkPlayer) {
-      this.room.emit('message', { content: `玩家 ${this.currentTalkPlayer.name} 发言超时，判定死亡。` });
+      this.say(`玩家 ${this.currentTalkPlayer.name} 发言超时，判定死亡。`);
       this.handlePlayerDeath(this.currentTalkPlayer);
     }
   }
@@ -110,11 +110,11 @@ class SpyGameRoom extends GameRoom {
   onSay(message: IGameCommand) {
     const sender = message.sender as RoomPlayer;
     if (this.gameStatus == 'voting') {
-      sender.emit('message', { content: `现在是投票时间，你不能说话。` });
+      this.sayTo(`现在是投票时间，你不能说话。`, sender);
       return;
     }
     if (this.gameStatus == 'talking' && sender.id != this.currentTalkPlayer?.id) {
-      sender.emit('message', { content: `现在不是你的发言时间。` });
+      this.sayTo(`现在不是你的发言时间。`, sender);
       return;
     }
     if (this.room.status == RoomStatus.playing) {
@@ -122,7 +122,7 @@ class SpyGameRoom extends GameRoom {
         message.data = message.data.replace(new RegExp(word, 'ig'), ''.padStart(word.length, '*'));
       });
     }
-    this.room.emit('message', { content: `${message.data}`, sender });
+    this.say(`${message.data}`, sender);
 
     // 倒计时逻辑
     if (this.gameStatus == 'talking' && sender.id == this.currentTalkPlayer?.id) {
@@ -139,26 +139,26 @@ class SpyGameRoom extends GameRoom {
     switch (message.type) {
       case 'talked':
         if (this.gameStatus != 'talking') {
-          sender.emit('message', { content: `现在不是发言时间。` });
+          this.sayTo(`现在不是发言时间。`, sender);
           return;
         }
         if (sender.id != this.currentTalkPlayer?.id) {
-          sender.emit('message', { content: `现在不是你的发言时间。` });
+          this.sayTo(`现在不是你的发言时间。`, sender);
           return;
         }
         this.handleTalkEnd(sender);
         break;
       case 'voted':
         if (this.gameStatus != 'voting') {
-          sender.emit('message', { content: `现在不是投票时间。` });
+          this.sayTo(`现在不是投票时间。`, sender);
           return;
         }
         if (this.votePlayers.some(p => p.id === sender.id)) {
-          sender.emit('message', { content: `你已经投票过了。` });
+          this.sayTo(`你已经投票过了。`, sender);
           return;
         }
         if (!this.alivePlayers.some((p) => p.id == sender.id)) {
-          sender.emit('message', { content: `你不是房间内的玩家，不能投票。` });
+          this.sayTo(`你不是房间内的玩家，不能投票。`, sender);
           return;
         }
 
@@ -167,16 +167,16 @@ class SpyGameRoom extends GameRoom {
           if (votePlayer && this.alivePlayers.some(p => p.id === votePlayer.id)) {
             this.vote.push(votePlayer);
           } else if (votePlayer) {
-            return sender.emit('message', { content: `玩家 ${votePlayer?.name} 不能被投票。` });
-          } else return sender.emit('message', { content: `你投票的玩家不在房间内。` });
+            return this.sayTo(`玩家 ${votePlayer?.name} 不能被投票。`, sender);
+          } else return this.sayTo(`你投票的玩家不在房间内。`, sender);
         } else {
-          this.room.emit('message', { content: `玩家 ${sender.name} 弃权。` });
+          this.say(`玩家 ${sender.name} 弃权。`);
         }
 
         this.votePlayers.push(sender);
-        sender.emit('command', { type: 'voted' });
+        this.commandTo('voted', {}, sender);
         if (message.data?.id) {
-          this.room.emit('message', { content: `玩家 ${sender.name} 已投票。` });
+          this.say(`玩家 ${sender.name} 已投票。`);
         }
         if (this.votePlayers.length != this.alivePlayers.length) return;
 
@@ -188,11 +188,11 @@ class SpyGameRoom extends GameRoom {
         }, {} as { [key: string]: number });
 
         if (Object.keys(voteResult).length === 0) {
-          this.room.emit('message', { content: `无人投票。无人死亡。` });
+          this.say(`无人投票。无人死亡。`);
           this.vote = [];
           this.votePlayers = [];
           this.gameStatus = 'talking';
-          this.room.emit('message', { content: `游戏继续。玩家 ${this.alivePlayers[0].name} 发言。` });
+          this.say(`游戏继续。玩家 ${this.alivePlayers[0].name} 发言。`);
           this.startTurn(this.alivePlayers[0]);
           return;
         }
@@ -200,11 +200,11 @@ class SpyGameRoom extends GameRoom {
         const maxVote = Math.max(...Object.values(voteResult));
         const maxVotePlayer = Object.keys(voteResult).filter((id) => voteResult[id] == maxVote).map((id) => this.room.validPlayers.find((p) => p.id == id)!);
         if (maxVotePlayer.length > 1) {
-          this.room.emit('message', { content: `玩家 ${maxVotePlayer.map(p => p!.name).join(',')} 投票相同。无人死亡。` });
+          this.say(`玩家 ${maxVotePlayer.map(p => p!.name).join(',')} 投票相同。无人死亡。`);
           this.vote = [];
           this.votePlayers = [];
           this.gameStatus = 'talking';
-          this.room.emit('message', { content: `游戏继续。玩家 ${this.alivePlayers[0].name} 发言。` });
+          this.say(`游戏继续。玩家 ${this.alivePlayers[0].name} 发言。`);
           this.startTurn(this.alivePlayers[0]);
           return;
         }
@@ -219,7 +219,7 @@ class SpyGameRoom extends GameRoom {
 
   onStart() {
     if (this.room.validPlayers.length < this.room.minSize) {
-      return this.room.emit('message', { content: `玩家人数不足，无法开始游戏。` });
+      return this.say(`玩家人数不足，无法开始游戏。`);
     }
     this.vote = [];
     this.votePlayers = [];
@@ -238,18 +238,18 @@ class SpyGameRoom extends GameRoom {
     this.words[spyIndex] = questWord[spyWordIndex];
     this.spyPlayer = this.room.validPlayers[spyIndex];
     this.room.validPlayers.forEach((player, index) => {
-      player.emit('command', { type: 'word', data: { word: this.words[index] } });
+      this.commandTo('word', { word: this.words[index] }, player);
       this.alivePlayers.push(player);
     })
-    this.room.emit('message', { content: `游戏开始。玩家 ${this.room.validPlayers[0].name} 首先发言。` });
+    this.say(`游戏开始。玩家 ${this.room.validPlayers[0].name} 首先发言。`);
     this.gameStatus = 'talking';
     this.startTurn(this.room.validPlayers[0]);
   }
 
   startVote() {
     this.gameStatus = 'voting';
-    this.room.emit('message', { content: `所有玩家都已发言，投票开始。` });
-    this.room.emit('command', { type: 'vote' });
+    this.say(`所有玩家都已发言，投票开始。`);
+    this.command('vote');
 
     this.startTimer(() => {
       this.voteTimer();
@@ -259,7 +259,7 @@ class SpyGameRoom extends GameRoom {
 
   startTurn(player: RoomPlayer) {
     this.currentTalkPlayer = player;
-    this.room.emit('command', { type: 'talk', data: { player } });
+    this.command('talk', { player });
 
     this.startTimer(() => {
       this.startTurnTimer();
@@ -270,18 +270,18 @@ class SpyGameRoom extends GameRoom {
   handlePlayerDeath(deadPlayer: RoomPlayer) {
     this.stopTimer('turn');
 
-    this.room.emit('command', { type: 'dead', data: { player: deadPlayer } });
+    this.command('dead', { player: deadPlayer });
     const deadIndex = this.alivePlayers.findIndex((p) => p.id == deadPlayer.id);
     if (deadIndex > -1) this.alivePlayers.splice(deadIndex, 1);
 
     if (deadPlayer.name == this.spyPlayer?.name) {
-      this.room.emit('message', { content: `玩家 ${deadPlayer.name} 死亡。间谍死亡。玩家胜利。` });
+      this.say(`玩家 ${deadPlayer.name} 死亡。间谍死亡。玩家胜利。`);
       this.room.validPlayers.forEach((player) => {
         if (!this.alivePlayers.some(p => p.id === player.id)) this.alivePlayers.push(player);
       });
       this.room.end();
     } else if (this.alivePlayers.length == 2) {
-      this.room.emit('message', { content: `玩家 ${deadPlayer.name} 死亡。间谍 ${this.spyPlayer?.name} 胜利。` });
+      this.say(`玩家 ${deadPlayer.name} 死亡。间谍 ${this.spyPlayer?.name} 胜利。`);
       this.room.validPlayers.forEach((player) => {
         if (!this.alivePlayers.some(p => p.id === player.id)) this.alivePlayers.push(player);
       });
@@ -291,7 +291,7 @@ class SpyGameRoom extends GameRoom {
         // 若在投票环节死亡，则开始下一轮发言
         this.gameStatus = 'talking';
         this.startTurn(this.alivePlayers[0]);
-        this.room.emit('message', { content: `玩家 ${deadPlayer.name} 死亡。游戏继续。玩家 ${this.alivePlayers[0].name} 发言。` });
+        this.say(`玩家 ${deadPlayer.name} 死亡。游戏继续。玩家 ${this.alivePlayers[0].name} 发言。`);
       } else {
         // 若因发言超时导致该玩家死亡，则切换到下一位玩家
         // 因为当前玩家已经移除出 alivePlayers。所以“deadIndex”的玩家就是下一个玩家。
@@ -303,7 +303,7 @@ class SpyGameRoom extends GameRoom {
         } else {
           this.startTurn(nextPlayer);
           this.gameStatus = 'talking';
-          this.room.emit('message', { content: `玩家 ${deadPlayer.name} 死亡。游戏继续。玩家 ${nextPlayer.name} 发言。` });
+          this.say(`玩家 ${deadPlayer.name} 死亡。游戏继续。玩家 ${nextPlayer.name} 发言。`);
         }
       }
     }
@@ -322,7 +322,7 @@ class SpyGameRoom extends GameRoom {
       return;
     }
 
-    this.room.emit('message', { content: `玩家 ${sender.name} 发言结束。玩家 ${nextPlayer.name} 开始发言。` });
+    this.say(`玩家 ${sender.name} 发言结束。玩家 ${nextPlayer.name} 开始发言。`);
     this.startTurn(nextPlayer);
   }
 }

@@ -37,15 +37,10 @@ class XiangqiGameRoom extends GameRoom {
       if (!this.isPlayerOnline(player)) return;
       this.room.kickPlayer(player);
       if (this.room.status === RoomStatus.playing && player.role === PlayerRole.player) {
-        this.room.emit('message', { content: `玩家 ${player.name} 已离线，游戏结束。` });
+        this.say(`玩家 ${player.name} 已离线，游戏结束。`);
         const winner = this.room.validPlayers.find((p) => p.id !== player.id)!;
         this.finishGame(winner);
       }
-    }).on('join', (player) => {
-      this.room.validPlayers.find((p) => p.id === player.id)?.emit('command', {
-        type: 'achievements',
-        data: this.achievements
-      });
     });
   }
 
@@ -61,14 +56,14 @@ class XiangqiGameRoom extends GameRoom {
 
   onStart() {
     if (this.room.validPlayers.length < this.room.minSize) {
-      return this.room.emit('message', { content: `玩家人数不足，无法开始游戏。` });
+      return this.say(`玩家人数不足，无法开始游戏。`);
     }
     this.stopTimer();
     this.messageHistory = [];
     this.resetForNewGame();
-    this.room.emit('command', { type: 'achievements', data: this.achievements });
-    this.room.emit('message', { content: `游戏开始。红方（先手）：${this.currentPlayer?.name}。` });
-    this.room.emit('command', { type: 'turn', data: { player: this.currentPlayer } });
+    this.command('achievements', this.achievements);
+    this.command('turn', { player: this.currentPlayer });
+    this.say(`游戏开始。红方（先手）：${this.currentPlayer?.name}。`);
     this.broadcastBoard();
     if (this.currentPlayer) this.startTurnTimer();
     this.save();
@@ -79,43 +74,64 @@ class XiangqiGameRoom extends GameRoom {
     const sender = message.sender as RoomPlayer;
     switch (message.type) {
       case 'move': {
-        if (this.room.status !== RoomStatus.playing) { sender.emit('message', { content: `游戏未开始。` }); break }
-        if (sender.id !== this.currentPlayer?.id) { sender.emit('message', { content: `不是你的回合。` }); break }
+        if (this.room.status !== RoomStatus.playing) {
+          this.sayTo(`游戏未开始。`, sender);
+          break;
+        }
+        if (sender.id !== this.currentPlayer?.id) {
+          this.sayTo(`不是你的回合。`, sender);
+          break;
+        }
         const { from, to } = message.data || {}
-        if (!from || !to) { sender.emit('message', { content: `参数错误。` }); break }
+        if (!from || !to) { 
+          this.sayTo(`参数错误。`, sender); 
+          break;
+        }
         const { x: fx, y: fy } = from
         const { x: tx, y: ty } = to
-        if (fx<0||fx>9||fy<0||fy>8||tx<0||tx>9||ty<0||ty>8) { sender.emit('message', { content: `越界。` }); break }
+        if (fx<0||fx>9||fy<0||fy>8||tx<0||tx>9||ty<0||ty>8) { 
+          this.sayTo(`越界。`, sender); 
+          break;
+        }
         const piece = this.board[fx][fy]
-        if (!piece) { sender.emit('message', { content: `该处无子可走。` }); break }
+        if (!piece) { this.sayTo(`该处无子可走。`, sender); break }
         const side = this.playerSide(sender)
-        if (this.sideOf(piece) !== side) { sender.emit('message', { content: `不能移动对方棋子。` }); break }
+        if (this.sideOf(piece) !== side) {
+          this.sayTo(`不能移动对方棋子。`, sender);
+          break;
+        }
         const target = this.board[tx][ty]
-        if (target && this.sideOf(target) === side) { sender.emit('message', { content: `不能吃己方子。` }); break }
-
+        if (target && this.sideOf(target) === side) { 
+          this.sayTo(`不能吃己方子。`, sender); 
+          break;
+        }
         // Validate piece-specific rules
         if (!this.isLegalMoveForPiece(this.board, piece, { x: fx, y: fy }, { x: tx, y: ty })) {
-          sender.emit('message', { content: `不符合走法规则。` }); break
+          this.sayTo(`不符合走法规则。`, sender);
+          break;
         }
 
         // Simulate move to ensure own general not in check and generals not facing illegally
         const nb = this.cloneBoard(this.board)
         nb[tx][ty] = piece
         nb[fx][fy] = ''
-        if (this.generalsFace(nb)) { sender.emit('message', { content: `帅/将不能照面。` }); break }
+        if (this.generalsFace(nb)) { 
+          this.sayTo(`帅/将不能照面。`, sender); 
+          break;
+        }
         // Note: allow self-check moves (do not reject when mover remains/gets in check)
 
         // Commit move
         this.board = nb
 
-        this.room.emit('command', { type: 'move', data: { from, to, piece } })
+        this.command('move', { from, to, piece })
         this.broadcastBoard()
 
         // Check general captured
         const gens = this.findGenerals()
         if (!gens.redAlive || !gens.greenAlive) {
           const winner = gens.redAlive ? this.room.validPlayers.find(p => this.playerSide(p) === 'red')! : this.room.validPlayers.find(p => this.playerSide(p) === 'green')!
-          this.room.emit('message', { content: `将/帅被吃。${winner.name} 获胜！` })
+          this.say(`将/帅被吃。${winner.name} 获胜！`)
           this.finishGame(winner)
           break
         }
@@ -125,7 +141,7 @@ class XiangqiGameRoom extends GameRoom {
 
         // Checkmate / dead-chess: opponent is in check and has no escape move.
         if (oppInCheck && !this.hasAnyLegalEscapeMove(this.board, oppSide)) {
-          this.room.emit('message', { content: `${oppSide === 'red' ? '红方' : '绿方'} 死棋（将死），${sender.name} 获胜！` })
+          this.say(`${oppSide === 'red' ? '红方' : '绿方'} 死棋（将死），${sender.name} 获胜！`)
           this.finishGame(sender)
           break
         }
@@ -133,37 +149,36 @@ class XiangqiGameRoom extends GameRoom {
         // Turn change
         const next = this.room.validPlayers.find(p => p.id !== this.currentPlayer?.id)
         if (next) {
-          this.currentPlayer = next
-          this.room.emit('command', { type: 'turn', data: { player: this.currentPlayer } })
+          this.currentPlayer = next;
+          this.command('turn', { player: this.currentPlayer });
           this.startTurnTimer();
         }
-        this.save()
-        break
+        this.save();
+        break;
       }
       case 'request-draw': {
         if (this.room.status !== RoomStatus.playing) break;
-        this.room.emit('message', { content: `${sender.name} 请求和棋。` })
+        this.say(`${sender.name} 请求和棋。`)
         const other = this.room.validPlayers.find(p => p.id !== sender.id)!
-        other.emit('command', { type: 'request-draw', data: { player: sender } })
+        this.commandTo('request-draw', { player: sender }, other)
         break
       }
       case 'draw': {
         if (this.room.status !== RoomStatus.playing) break;
-        if (!message.data?.agree) { this.room.emit('message', { content: `${sender.name} 拒绝和棋。` }); break }
-        this.room.emit('message', { content: `双方同意和棋，游戏结束。` })
-        this.room.validPlayers.forEach(p => {
-          if (!this.achievements[p.name]) this.achievements[p.name] = { win: 0, lost: 0, draw: 0 }
-          this.achievements[p.name].draw += 1
-        })
-        this.room.emit('command', { type: 'achievements', data: this.achievements })
-        this.room.end()
+        if (!message.data?.agree) { 
+          this.say(`${sender.name} 拒绝和棋。`); 
+          break;
+        }
+        this.say(`双方同意和棋，游戏结束。`)
+        this.saveAchievements();
+        this.room.end();
         this.stopTimer();
         this.save()
         break
       }
       case 'request-lose': {
         if (this.room.status !== RoomStatus.playing) break;
-        this.room.emit('message', { content: `${sender.name} 认输。` })
+        this.say(`${sender.name} 认输。`)
         const winner = this.room.validPlayers.find(p => p.id !== sender.id)!
         this.finishGame(winner)
         break
@@ -178,7 +193,7 @@ class XiangqiGameRoom extends GameRoom {
   handleTimeout() {
     if (this.room.status === RoomStatus.playing && this.currentPlayer) {
       const winner = this.room.validPlayers.find(p => p.id !== this.currentPlayer!.id)!;
-      this.room.emit('message', { content: `${this.currentPlayer.name} 超时，${winner.name} 获胜！` });
+      this.say(`${this.currentPlayer.name} 超时，${winner.name} 获胜！`);
       this.finishGame(winner);
     }
   }
@@ -187,11 +202,7 @@ class XiangqiGameRoom extends GameRoom {
     this.lastLosePlayer = this.room.validPlayers.find((p) => p.id !== winner.id)!;
     this.stopTimer();
 
-    this.room.validPlayers.forEach((p) => {
-      if (!this.achievements[p.name]) this.achievements[p.name] = { win: 0, lost: 0, draw: 0 };
-      if (p.id === winner.id) this.achievements[p.name].win += 1; else this.achievements[p.name].lost += 1;
-    });
-    this.room.emit('command', { type: 'achievements', data: this.achievements });
+    this.saveAchievements(winner);
     this.room.end();
     this.save();
   }
@@ -396,7 +407,7 @@ class XiangqiGameRoom extends GameRoom {
   }
 
   broadcastBoard() {
-    this.room.emit('command', { type: 'board', data: this.board })
+    this.command('board', { board: this.board });
   }
 
   findGenerals(): { redAlive: boolean, greenAlive: boolean } {

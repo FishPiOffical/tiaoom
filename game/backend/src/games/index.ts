@@ -131,8 +131,8 @@ export class GameRoom {
    * @returns room 实例
    */
   init() {
-    process.on('beforeExit', () => {
-      this.save();
+    process.on('beforeExit', async () => {
+      await this.save();
     });
     return this.room.on('player-command', (message: any) => {
       // 允许观众使用的指令
@@ -230,10 +230,60 @@ export class GameRoom {
     }
   }
 
-  /** */
+  /** 
+   * 玩家聊天指令处理，继承时可重写
+   */
   onSay(message: IGameCommand) {
     const sender = message.sender as RoomPlayer;
-    this.room.emit('message', { content: message.data, sender });
+    this.say(message.data, sender);
+  }
+
+  /**
+   * 房间消息频道内发送消息
+   * @param message 消息内容
+   * @param sender 发送者，若为空则为系统消息
+   */
+  say(message: string, sender?: IRoomPlayer) {
+    this.room.emit('message', { content: message, sender });
+  }
+
+  /**
+   * 发送消息给指定玩家
+   * @param message 消息内容
+   * @param receiver 接收者
+   */
+  sayTo(message: string, receiver: RoomPlayer) {
+    receiver.emit('message', { content: message });
+  }
+
+  /**
+   * 发送游戏指令到房间内所有玩家
+   * @param type 指令类型
+   * @param data 指令数据
+   * @param sender 发送者，若为空则为系统指令
+   */
+  command(type: string, data?: any, sender?: { id: string }) {
+    this.room.emit('command', { type, data, sender });
+  }
+
+  /**
+   * 发送游戏指令到指定玩家
+   * @param type 指令类型
+   * @param data 指令数据
+   * @param receiver 接收者
+   */
+  commandTo(type: string, data: any, receiver: RoomPlayer) {
+    receiver.emit('command', { type, data });
+  }
+
+  /**
+   * 模拟玩家发出房间指令
+   * @param type 指令类型
+   * @param data 指令数据
+   * @param sender 发送者
+   */
+  virtualCommand(type: string, data: any, sender: RoomPlayer) {
+    this.room.emit('player-command', { type, data, sender } );
   }
 
   /**

@@ -31,15 +31,10 @@ class PackbattleGameRoom extends GameRoom {
       if (!this.isPlayerOnline(player)) return;
       this.room.kickPlayer(player);
       if (this.gameStatus === 'playing' && player.role === PlayerRole.player) {
-        this.room.emit('message', { content: `玩家 ${player.name} 已离线，游戏结束。` });
+        this.say(`玩家 ${player.name} 已离线，游戏结束。`);
         const winner = this.room.validPlayers.find((p) => p.id !== player.id)!;
         this.finishGame(winner);
       }
-    }).on('join', (player) => {
-      this.room.validPlayers.find((p) => p.id === player.id)?.emit('command', {
-        type: 'achievements',
-        data: this.achievements
-      });
     });
   }
 
@@ -64,71 +59,67 @@ class PackbattleGameRoom extends GameRoom {
     // Handle the extra poison info for status command
     if (message.type === 'status') {
        if (this.gameStatus === 'playing' && (this.phase === 'pick' || this.phase === 'swap') && sender.id === this.activePlayer?.id) {
-          sender.emit('command', { type: 'poison', data: { capsule: this.poison } });
+          this.commandTo('poison', { capsule: this.poison }, sender);
        }
     }
 
     switch (message.type) {
         case 'give': {
           if (this.gameStatus !== 'playing' || this.phase !== 'pick') {
-            sender.emit('message', { content: `当前不在选择阶段。` });
+            this.sayTo(`当前不在选择阶段。`, sender);
             break;
           }
           if (sender.id !== this.activePlayer?.id) {
-            sender.emit('message', { content: `不是你的回合。` });
+            this.sayTo(`不是你的回合。`, sender);
             break;
           }
           const cap: Capsule = message.data?.capsule;
           if (!['left', 'right'].includes(cap)) {
-            sender.emit('message', { content: `请选择左或右胶囊。` });
+            this.sayTo(`请选择左或右胶囊。`, sender);
             break;
           }
           this.given = cap;
-          this.room.emit('message', { content: `出租车司机 ${sender.name} 选择将${cap === 'left' ? '左侧' : '右侧'}胶囊交给夏洛克。` });
+          this.say(`出租车司机 ${sender.name} 选择将${cap === 'left' ? '左侧' : '右侧'}胶囊交给夏洛克。`);
           this.beginSwapPhase();
           break;
         }
         case 'swap': {
           if (this.gameStatus !== 'playing' || this.phase !== 'swap') {
-            sender.emit('message', { content: `当前不在交换阶段。` });
+            this.sayTo(`当前不在交换阶段。`, sender);
             break;
           }
           if (sender.id !== this.passivePlayer?.id) {
-            sender.emit('message', { content: `不是你的回合。` });
+            this.sayTo(`不是你的回合。`, sender);
             break;
           }
           this.swapped = !!message.data?.swap;
-          this.room.emit('message', { content: `夏洛克 ${sender.name}${this.swapped ? '选择交换' : '选择不交换'}。` });
+          this.say(`夏洛克 ${sender.name}${this.swapped ? '选择交换' : '选择不交换'}。`);
           this.finishRound();
           break;
         }
         case 'request-draw': {
           if (this.room.status !== RoomStatus.playing) break;
           const other = this.room.validPlayers.find((p) => p.id !== sender.id)!;
-          other.emit('command', { type: 'request-draw', data: { player: sender } });
-          this.room.emit('message', { content: `玩家 ${sender.name} 请求和棋。` });
+          this.commandTo('request-draw', { player: sender }, other);
+          this.say(`玩家 ${sender.name} 请求和棋。`);
           break;
         }
         case 'draw': {
           if (this.room.status !== RoomStatus.playing) break;
           if (!message.data?.agree) {
-            this.room.emit('message', { content: `玩家 ${sender.name} 拒绝和棋，游戏继续。` });
+            this.sayTo(`玩家 ${sender.name} 拒绝和棋，游戏继续。`, sender);
             break;
           }
-          this.room.emit('message', { content: `双方同意和棋，游戏结束。` });
+          this.say(`双方同意和棋，游戏结束。`);
           this.gameStatus = 'waiting';
-          this.room.validPlayers.forEach((p) => {
-            if (!this.achievements[p.name]) this.achievements[p.name] = { win: 0, lost: 0, draw: 0 };
-            this.achievements[p.name].draw += 1;
-          });
-          this.room.emit('command', { type: 'achievements', data: this.achievements });
+          this.saveAchievements();
           this.room.end();
           this.save();
           break;
         }
         case 'request-lose': {
           if (this.room.status !== RoomStatus.playing) break;
-          this.room.emit('message', { content: `玩家 ${sender.name} 认输。` });
+          this.say(`玩家 ${sender.name} 认输。`);
           const winner = this.room.validPlayers.find((p) => p.id !== sender.id)!;
           this.finishGame(winner);
           break;
@@ -138,7 +129,7 @@ class PackbattleGameRoom extends GameRoom {
 
   onStart() {
       if (this.room.validPlayers.length < this.room.minSize) {
-        return this.room.emit('message', { content: `玩家人数不足，无法开始游戏。` });
+        return this.say(`玩家人数不足，无法开始游戏。`);
       }
       this.stopTimer();
       this.messageHistory = [];
@@ -153,8 +144,8 @@ class PackbattleGameRoom extends GameRoom {
       this.activePlayer = players[idx];
       this.passivePlayer = players.find((p) => p.id !== this.activePlayer!.id)!;
 
-      this.room.emit('command', { type: 'achievements', data: this.achievements });
-      this.room.emit('message', { content: `游戏开始。随机选择：出租车司机 ${this.activePlayer.name}，夏洛克 ${this.passivePlayer.name}。出租车司机知晓毒胶囊。` });
+      this.command('achievements', this.achievements);
+      this.say(`游戏开始。随机选择：出租车司机 ${this.activePlayer.name}，夏洛克 ${this.passivePlayer.name}。出租车司机知晓毒胶囊。`);
 
       this.beginPickPhase();
       this.save();
@@ -164,27 +155,27 @@ class PackbattleGameRoom extends GameRoom {
     this.phase = 'pick';
     this.given = null;
     this.swapped = null;
-    this.activePlayer?.emit('command', { type: 'poison', data: { capsule: this.poison } });
-    this.room.emit('message', { content: `出租车司机 ${this.activePlayer?.name} 进行选择（60秒）。` });
-    this.room.emit('command', { type: 'give-turn', data: { player: this.activePlayer } });
+    if (this.activePlayer) this.commandTo('poison', { capsule: this.poison }, this.activePlayer);
+    this.say(`出租车司机 ${this.activePlayer?.name} 进行选择（60秒）。`);
+    this.command('give-turn', { player: this.activePlayer });
     this.startTimer(() => this.handleTimeout(), this.TURN_TIMEOUT, 'turn');
     this.save();
   }
 
   beginSwapPhase() {
     this.phase = 'swap';
-    this.room.emit('message', { content: `夏洛克 ${this.passivePlayer?.name} 决定是否交换（60秒）。` });
-    this.room.emit('command', { type: 'swap-turn', data: { player: this.passivePlayer } });
+    this.say(`夏洛克 ${this.passivePlayer?.name} 决定是否交换（60秒）。`);
+    this.command('swap-turn', { player: this.passivePlayer });
     this.startTimer(() => this.handleTimeout(), this.TURN_TIMEOUT, 'turn');
     this.save();
   }
 
   handleTimeout() {
     if (this.phase === 'pick' && this.activePlayer) {
-      this.room.emit('message', { content: `出租车司机 ${this.activePlayer.name} 超时未选择，判负。` });
+      this.say(`出租车司机 ${this.activePlayer.name} 超时未选择，判负。`);
       this.finishGame(this.room.validPlayers.find(p => p.id !== this.activePlayer!.id)!);
     } else if (this.phase === 'swap' && this.passivePlayer) {
-      this.room.emit('message', { content: `夏洛克 ${this.passivePlayer.name} 超时未决定是否交换，判负。` });
+      this.say(`夏洛克 ${this.passivePlayer.name} 超时未决定是否交换，判负。`);
       this.finishGame(this.room.validPlayers.find(p => p.id !== this.passivePlayer!.id)!);
     }
   }
@@ -202,34 +193,26 @@ class PackbattleGameRoom extends GameRoom {
     const poisonedPlayer = this.poison === activeFinal ? this.activePlayer! : this.poison === passiveFinal ? this.passivePlayer! : undefined;
     const winner = poisonedPlayer?.id === this.activePlayer?.id ? this.passivePlayer! : this.activePlayer!;
 
-    this.room.emit('message', { content: `最终分配：出租车司机持有${activeFinal === 'left' ? '左' : '右'}，夏洛克持有${passiveFinal === 'left' ? '左' : '右'}。` });
-    this.room.emit('command', {
-      type: 'result',
-      data: {
-        poison: this.poison,
-        given: this.given,
-        swapped: this.swapped,
-        activeFinal,
-        passiveFinal,
-        winner,
-        loser: poisonedPlayer,
-      }
+    this.say(`最终分配：出租车司机持有${activeFinal === 'left' ? '左' : '右'}，夏洛克持有${passiveFinal === 'left' ? '左' : '右'}。`);
+    this.command('result', {
+      poison: this.poison,
+      given: this.given,
+      swapped: this.swapped,
+      activeFinal,
+      passiveFinal,
+      winner,
+      loser: poisonedPlayer,
     });
 
     if (poisonedPlayer) {
       const winnerRole = winner.id === this.activePlayer?.id ? '出租车司机' : '夏洛克';
-      this.room.emit('message', { content: `结果：${poisonedPlayer.name} 中毒身亡。${winnerRole} ${winner.name} 获胜！` });
+      this.say(`结果：${poisonedPlayer.name} 中毒身亡。${winnerRole} ${winner.name} 获胜！`);
       this.finishGame(winner);
     } else {
-      this.room.emit('message', { content: `结果：无人中毒（异常）。判定平局。` });
+      this.say(`结果：无人中毒（异常）。判定平局。`);
       this.gameStatus = 'waiting';
-      this.room.validPlayers.forEach((p) => {
-        if (!this.achievements[p.name]) this.achievements[p.name] = { win: 0, lost: 0, draw: 0 };
-        this.achievements[p.name].draw += 1;
-      });
-      this.room.emit('command', { type: 'achievements', data: this.achievements });
+      this.saveAchievements();
       this.room.end();
-      this.save();
     }
   }
 
@@ -237,13 +220,8 @@ class PackbattleGameRoom extends GameRoom {
     this.gameStatus = 'waiting';
     this.lastLosePlayer = this.room.validPlayers.find((p) => p.id !== winner.id)!;
 
-    this.room.validPlayers.forEach((p) => {
-      if (!this.achievements[p.name]) this.achievements[p.name] = { win: 0, lost: 0, draw: 0 };
-      if (p.id === winner.id) this.achievements[p.name].win += 1; else this.achievements[p.name].lost += 1;
-    });
-    this.room.emit('command', { type: 'achievements', data: this.achievements });
+    this.saveAchievements(winner);
     this.room.end();
-    this.save();
   }
 }
 

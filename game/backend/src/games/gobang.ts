@@ -113,17 +113,12 @@ class GobangGameRoom extends GameRoom {
       if (!this.isPlayerOnline(player)) return;
       this.room.kickPlayer(player);
       if (this.room.status === RoomStatus.playing && player.role === PlayerRole.player) {
-        this.room.emit('message', { content: `玩家 ${player.name} 已离线，游戏结束。` });
+        this.say(`玩家 ${player.name} 已离线，游戏结束。`);
         this.lastLosePlayer = this.room.validPlayers.find((p) => p.id != player.id)!;
         this.saveAchievements(this.lastLosePlayer);
         this.room.end();
         return;
       }
-    }).on('join', (player) => {
-      this.room.validPlayers.find((p) => p.id === player.id)?.emit('command', {
-        type: 'achievements',
-        data: this.achievements
-      });
     });
   }
 
@@ -142,32 +137,31 @@ class GobangGameRoom extends GameRoom {
     switch (message.type) {
       case 'place': {
         if (this.room.status !== RoomStatus.playing) {
-          sender.emit('message', { content: `游戏未开始，无法落子。` });
+          this.sayTo(`游戏未开始，无法落子。`, sender);
           break;
         }
         if (sender.id !== this.currentPlayer?.id) {
-          sender.emit('message', { content: `轮到玩家 ${this.currentPlayer?.name} 落子。` });
+          this.sayTo(`轮到玩家 ${this.currentPlayer?.name} 落子。`, sender);
           break;
         }
         const { x, y } = message.data;
         if (this.board[x][y] !== 0) {
-          sender.emit('message', { content: `该位置已有棋子，请重新落子。` });
+          this.sayTo(`该位置已有棋子，请重新落子。`, sender);
           break;
         }
         const color = sender.attributes?.color;
         const result = gomokuJudge(this.board, { x, y }, color);
         if (result === -1) {
-          sender.emit('command', { type: 'board', data: this.board });
-          sender.emit('message', { content: `玩家 ${sender.name} 触发禁手，撤回落子！` });
-          return;
+          this.commandTo('board', this.board, sender);
+          this.sayTo(`玩家 ${sender.name} 触发禁手，撤回落子！`, sender);
+          break;
         }
 
         this.board[x][y] = color;
-        this.room.emit('command', { type: 'board', data: this.board });
-        this.room.emit('command', { type: 'place', data: { x, y } });
-
+        this.command('board', this.board);
+        this.command('place', { x, y });
         if (result === color) {
-          this.room.emit('message', { content: `玩家 ${sender.name} 获胜！` });
+          this.say(`玩家 ${sender.name} 获胜！`);
           this.lastLosePlayer = this.room.validPlayers.find((p) => p.id != sender.id)!;
           this.saveAchievements(sender);
           this.room.end();
@@ -177,22 +171,19 @@ class GobangGameRoom extends GameRoom {
         const current = this.room.validPlayers.find((p) => p.id != this.currentPlayer?.id);
         if (current) {
           this.currentPlayer = current;
-          this.room.emit('command', { type: 'place-turn', data: { player: this.currentPlayer } });
+          this.command('place-turn', { player: this.currentPlayer });
           this.save();
         }
         break;
       }
       case 'request-draw': {
-        this.room.emit('message', { content: `玩家 ${sender.name} 请求和棋。` });
+        this.say(`玩家 ${sender.name} 请求和棋。`);
         const otherPlayer = this.room.validPlayers.find((p) => p.id != sender.id)!;
-        otherPlayer.emit('command', {
-          type: 'request-draw',
-          data: { player: sender }
-        });
+        this.commandTo('request-draw', { player: sender }, otherPlayer);
         break;
       }
       case 'request-lose': {
-        this.room.emit('message', { content: `玩家 ${sender.name} 认输。` });
+        this.say(`玩家 ${sender.name} 认输。`);
         this.lastLosePlayer = sender;
         this.saveAchievements(this.room.validPlayers.find((p) => p.id != sender.id));
         this.room.end();
@@ -200,10 +191,10 @@ class GobangGameRoom extends GameRoom {
       }
       case 'draw': {
         if (!message.data.agree) {
-          this.room.emit('message', { content: `玩家 ${sender.name} 拒绝和棋，游戏继续。` });
+          this.say(`玩家 ${sender.name} 拒绝和棋，游戏继续。`);
           break;
         }
-        this.room.emit('message', { content: `玩家 ${sender.name} 同意和棋，游戏结束。` });
+        this.say(`玩家 ${sender.name} 同意和棋，游戏结束。`);
         this.lastLosePlayer = this.room.validPlayers.find((p) => p.id != sender.id)!;
         this.saveAchievements(null);
         this.room.end();
@@ -214,7 +205,7 @@ class GobangGameRoom extends GameRoom {
 
   onStart() {
     if (this.room.validPlayers.length < this.room.minSize) {
-      return this.room.emit('message', { content: `玩家人数不足，无法开始游戏。` });
+      return this.say(`玩家人数不足，无法开始游戏。`);
     }
     if (!this.room.validPlayers.some((p) => p.id == this.lastLosePlayer?.id)) {
       this.lastLosePlayer = undefined;
@@ -227,21 +218,15 @@ class GobangGameRoom extends GameRoom {
     this.room.validPlayers.forEach((player) => {
       if (player.id !== this.currentPlayer?.id) {
         player.attributes = { color: 2 }; // 白子
-        player.emit('command', {
-          type: 'color',
-          data: { color: 2 }
-        });
+        this.commandTo('color', { color: 2 }, player);
       } else {
-        player.emit('command', {
-          type: 'color',
-          data: { color: 1 }
-        });
+        this.commandTo('color', { color: 1 }, player);
       }
     });
-    this.room.emit('command', { type: 'achievements', data: this.achievements });
-    this.room.emit('message', { content: `游戏开始。玩家 ${this.currentPlayer.name} 执黑先行。` });
-    this.room.emit('command', { type: 'place-turn', data: { player: this.currentPlayer } });
-    this.room.emit('command', { type: 'board', data: this.board });
+    this.command('achievements', this.achievements);
+    this.say(`游戏开始。玩家 ${this.currentPlayer.name} 执黑先行。`);
+    this.command('place-turn', { player: this.currentPlayer });
+    this.command('board', this.board);
   }
 }
 
