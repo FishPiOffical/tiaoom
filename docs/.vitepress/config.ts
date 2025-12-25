@@ -31,8 +31,8 @@ export default defineConfig({
           items: [
             { text: '项目介绍', link: '/game/' },
             { text: '快速开始', link: '/game/getting-started' },
-            { text: '调试部署', link: '/game/deploy' },
             { text: '开发详解', link: '/game/development' },
+            { text: '调试部署', link: '/game/deploy' },
             { text: '游戏嵌入', link: '/game/embed' },
           ]
         },
@@ -40,15 +40,12 @@ export default defineConfig({
           text: '前端公共组件',
           items: [
             { text: '组件概览', link: '/game/components/' },
-            { text: 'CreateRoom', link: '/game/components/CreateRoom' },
-            { text: 'GameChat', link: '/game/components/GameChat' },
-            { text: 'GameChatLite', link: '/game/components/GameChatLite' },
-            { text: 'Icon', link: '/game/components/Icon' },
             { text: 'PlayerList', link: '/game/components/PlayerList' },
-            { text: 'RoomControls', link: '/game/components/RoomControls' },
-            { text: 'RoomControlsLite', link: '/game/components/RoomControlsLite' },
-            { text: 'RulesModal', link: '/game/components/RulesModal' },
-            { text: 'ThemeController', link: '/game/components/ThemeController' },
+            { text: 'AchievementTable', link: '/game/components/AchievementTable' },
+            { text: 'GameChat', link: '/game/components/GameChat' },
+            { text: 'Icon', link: '/game/components/Icon' },
+            { text: 'MessageBox', link: '/game/components/MessageBox' },
+            { text: 'Message', link: '/game/components/Message' },
           ]
         }
       ],
