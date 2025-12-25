@@ -20,6 +20,12 @@ export const minSize = 2
 export const maxSize = 2
 export const description = `中国象棋：随机红/绿方，红方先手。服务器严格校验走法（马别腿/象塞眼/炮隔子/九宫/过河兵）、将帅对脸与自陷将军；吃掉将/帅即胜。`;
 export const description_extra = `规则：服务器严格校验走法与将帅对脸；每回合 60 秒超时判负；吃掉对方将/帅即胜。`;
+export const points = {
+  '我就玩玩': 1,
+  '小博一下': 100,
+  '大赢家': 1000,
+  '梭哈！': 10000,
+}
 
 class XiangqiGameRoom extends GameRoom {
   currentPlayer?: RoomPlayer;
@@ -35,12 +41,12 @@ class XiangqiGameRoom extends GameRoom {
     return super.init().on('player-offline', async (player) => {
       await sleep(4 * 60 * 1000);
       if (!this.isPlayerOnline(player)) return;
-      this.room.kickPlayer(player);
       if (this.room.status === RoomStatus.playing && player.role === PlayerRole.player) {
         this.say(`玩家 ${player.name} 已离线，游戏结束。`);
         const winner = this.room.validPlayers.find((p) => p.id !== player.id)!;
         this.finishGame(winner);
       }
+      this.room.kickPlayer(player);
     });
   }
 
@@ -202,7 +208,7 @@ class XiangqiGameRoom extends GameRoom {
     this.lastLosePlayer = this.room.validPlayers.find((p) => p.id !== winner.id)!;
     this.stopTimer();
 
-    this.saveAchievements(winner);
+    this.saveAchievements([winner]);
     this.room.end();
     this.save();
   }
@@ -239,8 +245,8 @@ class XiangqiGameRoom extends GameRoom {
     const idx = Math.floor(Math.random() * players.length)
     const red = players[idx]
     const green = players.find(p => p.id !== red.id)!
-    red.attributes = { ...(red.attributes || {}), side: 'red' }
-    green.attributes = { ...(green.attributes || {}), side: 'green' }
+    this.setPlayerAttributes(red.id, { side: 'red' });
+    this.setPlayerAttributes(green.id, { side: 'green' });
     this.currentPlayer = red // red moves first
   }
 

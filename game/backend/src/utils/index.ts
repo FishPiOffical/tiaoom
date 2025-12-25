@@ -3,6 +3,9 @@ import path from "path";
 import { isObject } from './is';
 import { IConfig } from '#/index';
 import { Request } from 'express';
+import { Finger, FingerTo, FishPi } from 'fishpi';
+import utils from './index';
+import { LogRepo } from '@/entities';
 
 /**
  * 返回一个对象，剔除指定的键
@@ -95,4 +98,19 @@ export function getIP(req: Request) {
 
 export function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+let pointFinger: Finger | null = null;
+export async function setPoints(value: number, username: string, reason: string) {
+  if (!pointFinger) {
+    pointFinger = FingerTo(utils.config.secret.goldenKey);
+  }
+  pointFinger.editUserPoints(username, value, reason).catch((err) => {
+    console.error('积分操作失败：', err.message, username, '积分', value, '原因', reason);
+    LogRepo.save(LogRepo.create({
+      type: 'PointError',
+      data: { username, value, reason },
+      error: { message: err.message },
+    })).catch(console.error);
+  });
 }

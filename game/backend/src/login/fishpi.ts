@@ -13,7 +13,8 @@ export async function login(req: Request, res: Response) {
         const userDetail = await fishpi.user(userInfo.userName);
         const user = await saveUser(
           { 
-            name: userInfo.userNickname || userInfo.userName, 
+            name: userInfo.userName, 
+            nickname: userInfo.userNickname || userInfo.userName,
             id: userInfo.oId, 
             avatar: userInfo.userAvatarURL, 
             ip: req.header('x-forwarded-for') || req.header('x-real-ip') || req.socket.remoteAddress || req.ip || ''
@@ -37,4 +38,22 @@ export async function login(req: Request, res: Response) {
 export function register(req: Request, res: Response) {
   const domain = new URL(req.headers.referer || `${req.protocol}://${req.headers.host}`).origin;
   res.redirect(`https://fishpi.cn/register?goto=${encodeURIComponent(fishpi.generateAuthURL(`${domain}/api/login/fishpi`))}`);
+}
+
+export function updateUserInfo(userId: string, req?: Request) {
+  return fishpi.userByoId(userId).then(async (userInfo) => {
+    if (userInfo) {
+      const user = await saveUser(
+        { 
+          name: userInfo.userName, 
+          nickname: userInfo.userNickname || userInfo.userName,
+          id: userInfo.oId, 
+          avatar: userInfo.userAvatarURL, 
+          ip: req?.header('x-forwarded-for') || req?.header('x-real-ip') || req?.socket.remoteAddress || req?.ip
+        },
+      );
+      return user;
+    }
+    return undefined;
+  });
 }

@@ -126,8 +126,9 @@
               </div>
               <ul class="space-y-2 pb-4">
                 <li v-for="r in roomList" :key="r.id" class="flex items-center justify-between p-2 rounded bg-base-300/50 hover:bg-base-300 transition-colors">
-                  <div class="flex items-center gap-2 overflow-hidden">
+                  <div class="flex items-center gap-1 overflow-hidden">
                     <Icon icon="solar:lock-linear" v-if="r.attrs.passwd" />
+                    <Icon v-if="r.attrs?.point" icon="ph:coins-duotone" class="text-yellow-400 tooltip tooltip-right" :data-tip="`单局积分: ${r.attrs.point}`" />
                     <span class="truncate text-sm" :class="{'font-bold text-base-content': r.players.some(p => p.id === gameStore.player?.id)}">
                       【{{ gameStore.games[r.attrs.type].name }}】{{ r.name }}
                     </span>

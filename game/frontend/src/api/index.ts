@@ -33,7 +33,9 @@ export class User implements IUser {
       id: this.id,
       name: this.nickname,
       attributes: {
-        avatar: this.avatar || ''
+        avatar: this.avatar || '',
+        username: this.username,
+        id: this.id,
       }
     });
   }

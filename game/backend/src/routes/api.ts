@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { Controller } from "../controller";
-import { login as fishpiLogin, register as fishpiRegister } from "../login/fishpi";
+import { login as fishpiLogin, register as fishpiRegister, updateUserInfo } from "../login/fishpi";
 import { User } from "@/entities";
 
 export interface GameContext {
@@ -26,9 +26,12 @@ const createRoutes = (game: GameContext, gameName: string) => {
     });
   });
 
-  router.get("/info", (req: Request, res: Response) => {
+  router.get("/info", async (req: Request, res: Response) => {
     if (!req.session.player) {
       return res.json({ code: 403, message: "未登录" });
+    }
+    if (req.session.player.from == 'fishpi') {
+      req.session.player = await updateUserInfo(req.session.player.id, req);
     }
     res.json({
       code: 0,

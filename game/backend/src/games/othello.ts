@@ -169,6 +169,12 @@ export const minSize = 2;
 export const maxSize = 2;
 export const description = `两个玩家轮流在8x8的棋盘上放置黑白棋子，通过夹击对方棋子将其翻转为己方颜色。
 游戏结束时，棋盘上棋子数量多的一方获胜。`;
+export const points = {
+  '我就玩玩': 1,
+  '小博一下': 100,
+  '大赢家': 1000,
+  '梭哈！': 10000,
+}
 
 class OthelloGameRoom extends GameRoom {
   currentPlayer?: RoomPlayer;
@@ -179,14 +185,13 @@ class OthelloGameRoom extends GameRoom {
     return super.init().on('player-offline', async (player) => {
       await sleep(4 * 60 * 1000); // 等待 4 分钟，判定为离线
       if (!this.isPlayerOnline(player)) return;
-      this.room.kickPlayer(player);
       if (this.room.status === RoomStatus.playing && player.role === PlayerRole.player) {
         this.say(`玩家 ${player.name} 已离线，游戏结束。`);
         this.lastLosePlayer = this.room.validPlayers.find((p) => p.id != player.id)!;
-        this.saveAchievements(this.lastLosePlayer);
+        this.saveAchievements([this.lastLosePlayer]);
         this.room.end();
-        return;
       }
+      this.room.kickPlayer(player);
     });
   }
 
@@ -267,7 +272,7 @@ class OthelloGameRoom extends GameRoom {
           } else {
             this.say(`游戏以平局结束！`);
           }
-          this.saveAchievements(winner);
+          this.saveAchievements(winner ? [winner] : null);
           this.room.end();
           return;
         }
@@ -299,7 +304,7 @@ class OthelloGameRoom extends GameRoom {
           }
         });
         this.lastLosePlayer = this.room.validPlayers.find((p) => p.id == sender.id);
-        this.saveAchievements(this.room.validPlayers.find((p) => p.id != sender.id));
+        this.saveAchievements([this.room.validPlayers.find((p) => p.id != sender.id)!]);
         this.room.end();
         break;
       }
@@ -341,10 +346,10 @@ class OthelloGameRoom extends GameRoom {
     this.board[size / 2 + 1][size / 2] = 0;
     this.messageHistory = [];
 
-    this.currentPlayer.attributes = { color: 1 }; // 黑子先行
+    this.setPlayerAttributes(this.currentPlayer.id, { color: 1 }); // 黑子先行
     this.room.validPlayers.forEach((player) => {
       if (player.id !== this.currentPlayer?.id) {
-        player.attributes = { color: 2 }; // 白子
+        this.setPlayerAttributes(player.id, { color: 2 }); // 白子
         this.commandTo('color', { color: 2 }, player);
       } else {
         this.commandTo('color', { color: 1 }, player);

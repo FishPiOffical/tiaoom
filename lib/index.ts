@@ -82,7 +82,7 @@ export class Tiaoom extends EventEmitter {
   }
 
   run() {
-    this.messageInstance?.on("message", (message: any, cb?: (err: Error | null, data?: any) => any) => {
+    this.messageInstance?.on("message", async (message: any, cb?: (err: Error | null, data?: any) => any) => {
       message.sender = message.sender ? this.searchPlayer(message.sender) || message.sender : null;
       try {
         switch (message.type) {
@@ -91,33 +91,33 @@ export class Tiaoom extends EventEmitter {
           case RecvMessageTypes.PlayerList:
             return cb?.(null, this.players);
           case RecvMessageTypes.RoomCreate:
-            return this.createRoom(message.sender, message.data);
+            return await this.createRoom(message.sender, message.data);
           case RecvMessageTypes.PlayerJoin:
-            return this.joinPlayer(message.sender, message.data);
+            return await this.joinPlayer(message.sender, message.data);
           case RecvMessageTypes.PlayerLeave:
-            return this.leavePlayer(message.sender, message.data);
+            return await this.leavePlayer(message.sender, message.data);
           case RecvMessageTypes.PlayerStandUp:
-            return this.leaveSeat(message.sender, message.data);
+            return await this.leaveSeat(message.sender, message.data);
           case RecvMessageTypes.RoomGet:
             return cb?.(null, this.searchRoom(message.data));
           case RecvMessageTypes.RoomStart:
-            return this.startRoom(message.sender, message.data);
+            return await this.startRoom(message.sender, message.data);
           case RecvMessageTypes.RoomKick:
-            return this.kickPlayer(message.sender, message.data);
+            return await this.kickPlayer(message.sender, message.data);
           case RecvMessageTypes.RoomTransfer:
-            return this.transferOwner(message.sender, message.data);
+            return await this.transferOwner(message.sender, message.data);
           case RecvMessageTypes.RoomClose:
-            return this.closeRoom(message.sender, message.data);
+            return await this.closeRoom(message.sender, message.data);
           case RecvMessageTypes.PlayerLogin:
-            return this.loginPlayer(message.data);
+            return await this.loginPlayer(message.data);
           case RecvMessageTypes.PlayerLogout:
-            return this.removePlayer(message.data);
+            return await this.removePlayer(message.data);
           case MessageTypes.PlayerOffline:
-            return this.offlinePlayer(message.data);
+            return await this.offlinePlayer(message.data);
           case RecvMessageTypes.PlayerReady:
-            return this.readyPlayer(message.sender, message.data);
+            return await this.readyPlayer(message.sender, message.data);
           case RecvMessageTypes.PlayerUnready:
-            return this.unReadyPlayer(message.sender, message.data);
+            return await this.unReadyPlayer(message.sender, message.data);
           case RecvMessageTypes.RoomPlayerCommand:
             return this.searchRoom(message.data)?.emit("player-command", { ...message.data , sender: message.sender });
           case RecvMessageTypes.GlobalCommand:
@@ -182,7 +182,7 @@ export class Tiaoom extends EventEmitter {
     return this.rooms.find((target) => target.id === roomId);
   }
 
-  createRoom(sender: IPlayer, options: IRoomOptions) {
+  async createRoom(sender: IPlayer, options: IRoomOptions) {
     if (!sender) {
       throw new Error('missing player information.');
     }
@@ -210,7 +210,7 @@ export class Tiaoom extends EventEmitter {
     return room;
   }
 
-  startRoom(sender: IPlayer, room: IRoom) {
+  async startRoom(sender: IPlayer, room: IRoom) {
     const roomInstance = this.searchRoom(room);
     if (!roomInstance) {
       throw new Error('room not found.');
@@ -220,7 +220,7 @@ export class Tiaoom extends EventEmitter {
     return this.emit("room-player", roomInstance);
   }
 
-  closeRoom(sender: IPlayer | null, room: IRoom) {
+  async closeRoom(sender: IPlayer | null, room: IRoom) {
     const roomIndex = this.rooms.findIndex((r) => r.id === room.id);
     const roomInstance = this.rooms[roomIndex];
     if (!roomInstance) {
@@ -241,7 +241,7 @@ export class Tiaoom extends EventEmitter {
     return room;
   }
 
-  kickPlayer(sender: IPlayer, data: { roomId: string, playerId: string }) {
+  async kickPlayer(sender: IPlayer, data: { roomId: string, playerId: string }) {
     const room = this.searchRoom(data.roomId);
     if (!room) {
       throw new Error('room not found.');
@@ -264,7 +264,7 @@ export class Tiaoom extends EventEmitter {
     return roomPlayer;
   }
 
-  transferOwner(sender: IPlayer, data: { roomId: string, playerId: string }) {
+  async transferOwner(sender: IPlayer, data: { roomId: string, playerId: string }) {
     const room = this.searchRoom(data.roomId);
     if (!room) {
       throw new Error('room not found.');
@@ -355,7 +355,7 @@ export class Tiaoom extends EventEmitter {
     return roomPlayer;
   }
 
-  leavePlayer(sender: IPlayer, player: IRoomPlayerOptions) {
+  async leavePlayer(sender: IPlayer, player: IRoomPlayerOptions) {
     if (!player.roomId) {
       throw new Error('missing room id.');
     }
@@ -377,7 +377,7 @@ export class Tiaoom extends EventEmitter {
     return roomPlayer;
   }
   
-  leaveSeat(sender: IPlayer, player: IRoomPlayerOptions) {
+  async leaveSeat(sender: IPlayer, player: IRoomPlayerOptions) {
     if (!player.roomId) {
       throw new Error('missing room id.');
     }
@@ -398,7 +398,7 @@ export class Tiaoom extends EventEmitter {
     return roomPlayer;
   }
 
-  readyPlayer(sender: IPlayer, player: IRoomPlayer) {
+  async readyPlayer(sender: IPlayer, player: IRoomPlayer) {
     const playerInstance = this.searchPlayer(sender);
     if (!playerInstance) {
       throw new Error('player not found.');
@@ -433,7 +433,7 @@ export class Tiaoom extends EventEmitter {
     return this;
   }
     
-  unReadyPlayer(sender: IPlayer, player: IRoomPlayer) {
+  async unReadyPlayer(sender: IPlayer, player: IRoomPlayer) {
     const playerInstance = this.searchPlayer(sender);
     if (!playerInstance) {
       throw new Error('player not found.');
@@ -462,7 +462,7 @@ export class Tiaoom extends EventEmitter {
     return this;
   }
 
-  removePlayer(sender: IPlayer) {
+  async removePlayer(sender: IPlayer) {
     const playerIndex = this.players.findIndex((p) => p.id === sender?.id);
     const player = this.players[playerIndex];
     if (playerIndex > -1) {
@@ -472,7 +472,7 @@ export class Tiaoom extends EventEmitter {
     return player;
   }
 
-  offlinePlayer(sender: IPlayer) {
+  async offlinePlayer(sender: IPlayer) {
     const room = this.rooms.find((room) => room.players.some(p => p.id === sender?.id));
     if (room) {
       setTimeout(() => {
@@ -489,7 +489,7 @@ export class Tiaoom extends EventEmitter {
     return sender;
   }
 
-  send(message: IMessagePackage) {
+  async send(message: IMessagePackage) {
     // send a message to the client
     if (message.type.startsWith('player.') && message.sender) {
       const player = message.sender as Player;

@@ -101,6 +101,12 @@ export const minSize = 2;
 export const maxSize = 2;
 export const description = `两个玩家轮流在19x19的棋盘上放置黑白棋子，率先将五个棋子连成一线（横、竖、斜均可）的一方获胜。
 黑棋需注意禁手规则。`;
+export const points = {
+  '我就玩玩': 1,
+  '小博一下': 100,
+  '大赢家': 1000,
+  '梭哈！': 10000,
+}
 
 class GobangGameRoom extends GameRoom {
   currentPlayer?: RoomPlayer;
@@ -111,14 +117,13 @@ class GobangGameRoom extends GameRoom {
     return super.init().on('player-offline', async (player) => {
       await sleep(4 * 60 * 1000); // 等待 4 分钟，判定为离线
       if (!this.isPlayerOnline(player)) return;
-      this.room.kickPlayer(player);
       if (this.room.status === RoomStatus.playing && player.role === PlayerRole.player) {
         this.say(`玩家 ${player.name} 已离线，游戏结束。`);
         this.lastLosePlayer = this.room.validPlayers.find((p) => p.id != player.id)!;
-        this.saveAchievements(this.lastLosePlayer);
+        this.saveAchievements([this.lastLosePlayer]);
         this.room.end();
-        return;
       }
+      this.room.kickPlayer(player);
     });
   }
 
@@ -163,7 +168,7 @@ class GobangGameRoom extends GameRoom {
         if (result === color) {
           this.say(`玩家 ${sender.name} 获胜！`);
           this.lastLosePlayer = this.room.validPlayers.find((p) => p.id != sender.id)!;
-          this.saveAchievements(sender);
+          this.saveAchievements([sender]);
           this.room.end();
           return;
         }
@@ -185,7 +190,7 @@ class GobangGameRoom extends GameRoom {
       case 'request-lose': {
         this.say(`玩家 ${sender.name} 认输。`);
         this.lastLosePlayer = sender;
-        this.saveAchievements(this.room.validPlayers.find((p) => p.id != sender.id));
+        this.saveAchievements([this.room.validPlayers.find((p) => p.id != sender.id)!]);
         this.room.end();
         break;
       }
@@ -214,10 +219,10 @@ class GobangGameRoom extends GameRoom {
     this.board = Array.from({ length: 19 }, () => Array(19).fill(0));
     this.messageHistory = [];
     
-    this.currentPlayer.attributes = { color: 1 }; // 黑子先行
+    this.setPlayerAttributes(this.currentPlayer.id, { color: 1 }); // 黑子先行
     this.room.validPlayers.forEach((player) => {
       if (player.id !== this.currentPlayer?.id) {
-        player.attributes = { color: 2 }; // 白子
+        this.setPlayerAttributes(player.id, { color: 2 }); // 白子
         this.commandTo('color', { color: 2 }, player);
       } else {
         this.commandTo('color', { color: 1 }, player);

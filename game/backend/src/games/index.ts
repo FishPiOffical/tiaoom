@@ -2,7 +2,7 @@ import { IPlayer, IRoomPlayer, PlayerRole, PlayerStatus, Room, RoomPlayer, RoomS
 import * as glob from 'glob';
 import * as path from "path";
 import { Model } from '@/model';
-import { omit } from '@/utils';
+import { omit, setPoints } from '@/utils';
 const files = glob.sync(path.join(__dirname, '*.*').replace(/\\/g, '/')).filter(f => f.endsWith('.ts') || f.endsWith('.js'));
 
 export interface IGame extends IGameInfo {
@@ -154,6 +154,12 @@ export class GameRoom {
     }).on('start', () => {
       this.onStart();
       this.save();
+      if (this.room.attrs?.point && !isNaN(this.room.attrs.point) && this.room.attrs.point > 0) {
+        this.room.validPlayers.forEach((p) => {
+          if (!p.attributes.username) return;
+          setPoints(-this.room.attrs!.point, p.attributes.username, `参与游戏房间【${this.room.name}】扣除`)
+        });
+      }
     }).on('end', () => {
       this.room.emit('command', { type: 'end' });
       this.save();
@@ -199,6 +205,18 @@ export class GameRoom {
       achievements: this.achievements,
       tickEndTime: this.tickEndTime,
     };
+  }
+
+  /**
+   * 设置玩家属性
+   * @param player 玩家
+   * @param attributes 属性 
+   */
+  setPlayerAttributes(playerId: string, attributes: Record<string, any>) {
+    const player = this.room.players.find((p) => p.id === playerId);
+    if (!player) return;
+    player.attributes = { ...player.attributes, ...attributes };
+    this.save();
   }
 
   /**
@@ -290,17 +308,33 @@ export class GameRoom {
    * 保存成就数据
    * @param winner 当前局胜者，无胜者传 null 或 undefined
    */
-  saveAchievements(winner?: RoomPlayer | null) {
+  saveAchievements(winners?: RoomPlayer[] | null) {
     this.room.validPlayers.forEach((p) => {
       if (!this.achievements[p.name]) {
         this.achievements[p.name] = { win: 0, lost: 0, draw: 0 };
       }
-      if (p.id === winner?.id) {
+      if (winners?.some(w => w.id === p.id)) {
         this.achievements[p.name].win += 1;
       } else {
         this.achievements[p.name].lost += 1;
       }
     });
+    if (winners?.length && this.room.attrs?.point && !isNaN(this.room.attrs.point) && this.room.attrs.point > 0) {
+      const winPoint = Math.floor(((this.room.attrs.rate || 1) * this.room.attrs.point + this.room.attrs.point) * 0.9);
+      winners.forEach((winner) => {
+        if (!winner.attributes.username) return;
+        setPoints(winPoint, winner.attributes.username, `游戏房间【${this.room.name}】获胜奖励`);
+      });
+      const loserPoint = Math.ceil(this.room.attrs.rate * this.room.attrs.point * winners.length - this.room.attrs.point);
+      if (this.room.attrs.rate > 1) {
+        this.room.validPlayers.forEach((p) => {
+          if (!winners.some(w => w.id === p.id)) {
+            if (!p.attributes.username) return;
+            setPoints(-loserPoint, p.attributes.username, `游戏房间【${this.room.name}】失败扣除`);
+          }
+        });
+      }
+    }
     this.room.emit('command', { type: 'achievements', data: this.achievements });
   }
 

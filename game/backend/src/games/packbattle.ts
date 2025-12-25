@@ -9,6 +9,12 @@ export const name = '药丸博弈';
 export const minSize = 2;
 export const maxSize = 2;
 export const description = `出租车司机知晓毒胶囊位置，选择交给夏洛克一个；夏洛克可选择是否交换。60秒倒计时，明牌聊天。`;
+export const points = {
+  '我就玩玩': 1,
+  '小博一下': 100,
+  '大赢家': 1000,
+  '梭哈！': 10000,
+}
 
 class PackbattleGameRoom extends GameRoom {
   activePlayer?: RoomPlayer;
@@ -29,12 +35,12 @@ class PackbattleGameRoom extends GameRoom {
     return super.init().on('player-offline', async (player) => {
       await sleep(2 * 60 * 1000);
       if (!this.isPlayerOnline(player)) return;
-      this.room.kickPlayer(player);
       if (this.gameStatus === 'playing' && player.role === PlayerRole.player) {
         this.say(`玩家 ${player.name} 已离线，游戏结束。`);
         const winner = this.room.validPlayers.find((p) => p.id !== player.id)!;
         this.finishGame(winner);
       }
+      this.room.kickPlayer(player);
     });
   }
 
@@ -220,7 +226,7 @@ class PackbattleGameRoom extends GameRoom {
     this.gameStatus = 'waiting';
     this.lastLosePlayer = this.room.validPlayers.find((p) => p.id !== winner.id)!;
 
-    this.saveAchievements(winner);
+    this.saveAchievements([winner]);
     this.room.end();
   }
 }

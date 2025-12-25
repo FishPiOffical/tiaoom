@@ -7,7 +7,7 @@ export const minSize = 1;
 export const maxSize = 1;
 export const description = "经典俄罗斯方块游戏，单人挑战模式";
 
-export const TETROMINOES = {
+const TETROMINOES = {
   I: { shape: [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]], color: '#00bcd4' },
   J: { shape: [[1, 0, 0], [1, 1, 1], [0, 0, 0]], color: '#2196f3' },
   L: { shape: [[0, 0, 1], [1, 1, 1], [0, 0, 0]], color: '#ff9800' },
