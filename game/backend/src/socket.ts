@@ -1,7 +1,7 @@
 import http from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { EventEmitter } from "events";
-import { Room, Player, IMessage, IMessagePackage, IMessageEmitterEvents, IMessageData, MessageTypes } from "tiaoom";
+import { Room, Player, IMessage, IMessagePackages, IMessageEmitterEvents, IMessageData, MessageTypes } from "tiaoom";
 import { LogRepo } from "./entities";
 
 let wsServer: WebSocketServer;
@@ -27,9 +27,9 @@ export class SocketManager extends EventEmitter<IMessageEmitterEvents> implement
             }
             this.emit("message", message, (err: Error | null, data?: any) => {
               if (err) {
-                if (!message.sender) socket.send(JSON.stringify({ 
-                  type: MessageTypes.PlayerError, 
-                  data: { name: err.name, message: err.message } 
+                if (!message.sender) socket.send(JSON.stringify({
+                  type: MessageTypes.PlayerError,
+                  data: { name: err.name, message: err.message }
                 }));
                 LogRepo.save(LogRepo.create({
                   type: MessageTypes.PlayerError,
@@ -59,7 +59,7 @@ export class SocketManager extends EventEmitter<IMessageEmitterEvents> implement
         if (index > -1) {
           this.sockets.splice(index, 1);
         }
-        if (player && !this.sockets.some(s => s.player.id === player?.id)) 
+        if (player && !this.sockets.some(s => s.player.id === player?.id))
           this.emit("message", { type: MessageTypes.PlayerOffline, data: player, sender: player });
         this.emit("close");
       });
@@ -70,39 +70,17 @@ export class SocketManager extends EventEmitter<IMessageEmitterEvents> implement
     wsServer.close();
   }
 
-  send(message: IMessagePackage) {
+  send(message: IMessagePackages) {
     // send a message to the client
-    if (message.type.startsWith('player.') && message.sender) {
-      const player = message.sender as Player;
-      // Send to all sockets of the player
-      this.sockets.filter(s => s.player.id === player.id)
-        .forEach(({ socket }) => {
-          socket.send(JSON.stringify({ 
-            type: message.type, 
-            data: message.data, 
-            sender: message.sender 
-          }))
+    this.sockets
+      .forEach(({ socket, player }) => {
+        if (socket.readyState !== WebSocket.OPEN) return;
+        if (!message.senderIds.includes(player.id)) return;
+        socket.send(JSON.stringify({
+          type: message.type,
+          data: message.data,
+          sender: player
+        }));
       });
-    }
-    else if (message.type.startsWith('room.') && message.sender) {
-      const room = message.sender as Room;
-      room.players.forEach(p => {
-        this.sockets.filter(s => s.player.id === p.id).forEach(({ socket }) => {
-          if (socket && socket.readyState === WebSocket.OPEN) {
-            // send to each player in the room
-            socket.send(JSON.stringify({ 
-              type: message.type, 
-              data: message.data, 
-              sender: p 
-            }));
-          }
-        })
-      });
-    }
-    else wsServer.clients.forEach((client) => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify(message));
-      }
-    });
   }
 }

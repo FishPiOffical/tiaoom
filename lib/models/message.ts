@@ -212,6 +212,24 @@ export interface IMessagePackage {
 }
 
 /**
+ * 批量消息包
+ */
+export interface IMessagePackages {
+  /**
+   * 消息类型
+   */
+  type: MessageTypes;
+  /**
+   * 消息数据
+   */
+  data?: IPlayerOptions | IRoomOptions | IPlayer | IRoom | IRoomPlayer | any
+  /**
+   * 发送者 Id 数组
+   */
+  senderIds: string[];
+}
+
+/**
  * 消息数据接口，包含发送者信息
  */
 export interface IMessageData extends IMessagePackage {
@@ -242,5 +260,5 @@ export interface IMessage extends EventEmitter<IMessageEmitterEvents> {
    * 发送消息包
    * @param message 消息包
    */
-  send(message: IMessagePackage): void;
+  send(message: IMessagePackages): void;
 }

@@ -1,6 +1,6 @@
 import { EventEmitter } from "events";
 import { TiaoomEvents } from "@lib/events";
-import { IMessage, RecvMessageTypes, MessageTypes } from "@lib/models/message";
+import { IMessage, RecvMessageTypes, MessageTypes, IMessagePackage } from "@lib/models/message";
 import { IRoom, IRoomPlayer, Room, IRoomOptions, IRoomPlayerOptions, RoomStatus, PlayerRole } from "@lib/models/room";
 import { IPlayer, Player, IPlayerOptions, PlayerStatus } from "@lib/models/player";
 
@@ -39,9 +39,18 @@ export class Tiaoom extends EventEmitter {
     this.players = data.players?.map((p) => new Player(p, p.status)) ?? [];
     this.rooms.forEach((room) => {
       room.setSender((type, message, sender) => {
-        this.messageInstance?.send({ type: `room.${type}` as MessageTypes, data: message, sender: room });
+        this.send({ type: `room.${type}` as MessageTypes, data: message, sender: room });
       })
     })
+    setTimeout(() => {
+      this.rooms.forEach((room) => {
+        room.players.forEach((player) => {
+          if (!this.players.some((p) => p.id === player.id)) {
+            this.offlinePlayer(player);
+          }
+        })
+      })
+    }, 60 * 1000);
     return this;
   }
 
@@ -118,7 +127,7 @@ export class Tiaoom extends EventEmitter {
         }
       } catch (error) {
         cb?.(error as Error);
-        if (message.sender) this.messageInstance?.send({
+        if (message.sender) this.send({
           type: MessageTypes.PlayerError,
           data: {
             name: (error as Error).name, 
@@ -131,27 +140,27 @@ export class Tiaoom extends EventEmitter {
     });
 
     this.on('player', (player, online) => {
-      this.messageInstance?.send({ type: online ? MessageTypes.PlayerLogin : MessageTypes.PlayerLogout, data: player });
+      this.send({ type: online ? MessageTypes.PlayerLogin : MessageTypes.PlayerLogout, data: player });
     });
 
     this.on('players', (players) => {
-      this.messageInstance?.send({ type: MessageTypes.PlayerList, data: players });
+      this.send({ type: MessageTypes.PlayerList, data: players });
     });
 
     this.on('room', (room) => {
-      this.messageInstance?.send({ type: MessageTypes.RoomCreate, data: room });
+      this.send({ type: MessageTypes.RoomCreate, data: room });
     });
 
     this.on('room-player', (room) => {
-      this.messageInstance?.send({ type: MessageTypes.RoomUpdate, data: room });
+      this.send({ type: MessageTypes.RoomUpdate, data: room });
     });
 
     this.on('rooms', (rooms) => {
-      this.messageInstance?.send({ type: MessageTypes.RoomList, data: rooms });
+      this.send({ type: MessageTypes.RoomList, data: rooms });
     });
 
     this.on('message', (data, sender) => {
-      this.messageInstance?.send({ type: MessageTypes.GlobalMessage, data, sender });
+      this.send({ type: MessageTypes.GlobalMessage, data, sender });
     });
 
     return this;
@@ -192,7 +201,7 @@ export class Tiaoom extends EventEmitter {
 
     const room = new Room(options);
     room.setSender((type, message, sender) => {
-      this.messageInstance?.send({ type: `room.${type}` as MessageTypes, data: message, sender: room });
+      this.send({ type: `room.${type}` as MessageTypes, data: message, sender: room });
     });
     
     this.rooms.push(room);
@@ -296,7 +305,7 @@ export class Tiaoom extends EventEmitter {
       }
       playerInstance.isAdmin = await this.isAdmin(playerInstance);
       playerInstance.setSender((type, message) => {
-        this.messageInstance?.send({ type: `player.${type}` as MessageTypes, data: message, sender: playerInstance });
+        this.send({ type: `player.${type}` as MessageTypes, data: message, sender: playerInstance });
       });
       this.emit("player", playerInstance, true);
 
@@ -478,6 +487,33 @@ export class Tiaoom extends EventEmitter {
     }
     this.removePlayer(sender);
     return sender;
+  }
+
+  send(message: IMessagePackage) {
+    // send a message to the client
+    if (message.type.startsWith('player.') && message.sender) {
+      const player = message.sender as Player;
+      // Send to all sockets of the player
+      this.messageInstance?.send({ 
+        type: message.type, 
+        data: message.data, 
+        senderIds: [player.id]
+      });
+    }
+    else if (message.type.startsWith('room.') && message.sender) {
+      const room = message.sender as Room;
+      this.messageInstance?.send({ 
+        type: message.type, 
+        data: message.data, 
+        senderIds: room.players.map(p => p.id)
+      });
+    } else {
+      this.messageInstance?.send({ 
+        type: message.type, 
+        data: message.data, 
+        senderIds: this.players.map(p => p.id)
+      });
+    }
   }
 }
 
