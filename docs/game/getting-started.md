@@ -7,35 +7,44 @@
 在 `game/backend/src/games` 目录下创建 `mygame.ts` 文件。
 
 ```typescript
-import { Room, IGameMethod } from 'tiaoom';
+import { GameRoom, IGameCommand } from '.';
 
-export const name = '我的游戏';
-export const minSize = 2;
-export const maxSize = 2;
-export const description = '这是一个示例游戏';
+// 定义游戏基本属性
+export const name = '我的游戏'; // 游戏名称
+export const minSize = 2; // 最小玩家数
+export const maxSize = 2; // 最大玩家数
+export const description = '这是一个示例游戏'; // 游戏描述
 
-export default (room: Room, { save, restore }: IGameMethod) => {
-  // 恢复游戏状态
-  const state = restore();
-  let count = state?.count || 0;
+export default class MyGameRoom extends GameRoom {
+  count = 0;
 
-  // 监听房间事件
-  room.on('join', (player) => {
-    // 发送当前状态给新加入的玩家
-    player.emit('command', { type: 'update', data: { count } });
-  });
+  // 游戏开始时调用
+  onStart() {
+    this.count = 0;
+    // 广播初始状态
+    this.room.emit('command', { type: 'update', data: { count: this.count } });
+  }
 
-  // 监听玩家指令
-  room.on('player-command', (msg) => {
-    if (msg.type === 'click') {
-      count++;
+  // 处理玩家指令
+  onCommand(message: IGameCommand) {
+    super.onCommand(message); // 处理通用指令
+    if (message.type === 'click') {
+      this.count++;
       // 广播新状态
-      room.emit('command', { type: 'update', data: { count } });
+      this.room.emit('command', { type: 'update', data: { count: this.count } });
       // 保存状态
-      save({ count });
+      this.save();
     }
-  });
-};
+  }
+
+  // 获取当前游戏状态（用于断线重连等）
+  getStatus(sender: any) {
+    return {
+      ...super.getStatus(sender),
+      count: this.count,
+    };
+  }
+}
 ```
 
 ## 2. 创建前端组件
@@ -51,11 +60,15 @@ export default (room: Room, { save, restore }: IGameMethod) => {
     <!-- 玩家列表 -->
     <PlayerList :players="roomPlayer.room.players" />
     
-    <!-- 房间控制 -->
-    <RoomControls 
-      :game="game" 
-      :room-player="roomPlayer" 
-    />
+    <!-- 聊天窗口与游戏规则 -->
+    <GameChat>
+      <template #rules>
+        <ul class="space-y-2 text-sm">
+          <li>1. 游戏规则1</li>
+          <li>2. 游戏规则2</li>
+        </ul>
+      </template>
+    </GameChat>
   </div>
 </template>
 
@@ -63,8 +76,6 @@ export default (room: Room, { save, restore }: IGameMethod) => {
 import { ref, onMounted } from 'vue';
 import { RoomPlayer, Room } from 'tiaoom/client';
 import { GameCore } from '@/core/game';
-import PlayerList from '@/components/player-list/PlayerList.vue';
-import RoomControls from '@/components/common/RoomControls.vue';
 
 const props = defineProps<{
   roomPlayer: RoomPlayer & { room: Room }
@@ -96,10 +107,11 @@ onMounted(() => {
 
 ## 4. 运行测试
 
-启动开发服务器：
+在 game 目录启动开发服务器：
 
 ```bash
-npm run dev
+npm run dev:frontend
+npm run dev:backend # 或 VSCode 按下 F5 运行
 ```
 
-访问前端页面，创建一个新房间，选择 "我的游戏"，即可看到效果。
+访问前端页面，在`创建房间`选择 "我的游戏"，创建房间即可看到效果。

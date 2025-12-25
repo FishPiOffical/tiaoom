@@ -95,7 +95,7 @@
               @click="onCellClick(r-1, c-1)"
             >
               <button
-                v-if="board[r-1][c-1]"
+                v-if="board && board[r-1]?.[c-1]"
                 type="button"
                 class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 rounded-full border-2 flex items-center justify-center text-base leading-none font-bold shadow-md transition z-10"
                 :class="[
