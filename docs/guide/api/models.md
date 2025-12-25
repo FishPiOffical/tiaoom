@@ -106,7 +106,7 @@
 
 ## IMessage (消息) {#imessage}
 
-### IMessagePackage
+### IMessagePackages
 
 消息包接口，用于在服务器给客户发送数据。
 
@@ -114,7 +114,7 @@
 | :--- | :--- | :--- |
 | `type` | [`MessageTypes`](#messagetypes-server) \| `string` | 消息类型。 |
 | `data` | `any` (可选) | 消息数据，可以是 `PlayerOptions`, `IRoomOptions`, `IPlayer`, `IRoom`, `IRoomPlayer` 等。 |
-| `sender` | [`IPlayer`](#iplayer) \| [`IRoom`](#iroom) \| [`IRoomPlayer`](#iroomplayer) (可选) | 消息发送者。 |
+| `senderIds` | `string[]` | 消息接收者的玩家 ID 列表。 |
 
 ### IMessageData
 
