@@ -391,11 +391,11 @@ export function useGame(game: GameCore) {
 
 前端可使用如下封装组件实现通用功能：
 
-- [`PlayerList`](PlayerList.md)：玩家列表
-- [`AchievementTable`](AchievementTable.md)：胜负展示
-- [`GameChat`](GameChat.md)：游戏内聊天
-- [`Icon`](Icon.md)：图标组件，支持 Iconify 图标库
-- [`MessageBox`](MessageBox.md)：消息弹窗
-- [`Message`](Message.md)：消息提醒
+- [`PlayerList`](./components/PlayerList.md)：玩家列表
+- [`AchievementTable`](./components/AchievementTable.md)：胜负展示
+- [`GameChat`](./components/GameChat.md)：游戏内聊天
+- [`Icon`](./components/Icon.md)：图标组件，支持 Iconify 图标库
+- [`MessageBox`](./components/MessageBox.md)：消息弹窗
+- [`Message`](./components/Message.md)：消息提醒
 
 > 这些组件无需手动引入，可直接通过组件名使用。
