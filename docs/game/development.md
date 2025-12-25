@@ -21,6 +21,18 @@ export const name = '游戏名称';
 export const minSize = 2; // 最小玩家数
 export const maxSize = 2; // 最大玩家数
 export const description = `游戏描述`;
+export const points = { // 可选，房间开局所需积分
+  '我就玩玩': 1,
+  '小博一下': 100,
+  '大赢家': 1000,
+  '梭哈！': 10000,
+}
+export const rate = { // 可选，房间奖励积分倍率
+  '我就玩玩': 1,
+  '双倍奖励': 2,
+  '玩的就是心跳': 5,
+}
+
 
 export default class MyGameRoom extends GameRoom {
   // ... 实现游戏逻辑
