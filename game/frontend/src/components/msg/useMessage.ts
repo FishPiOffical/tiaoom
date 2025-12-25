@@ -1,5 +1,5 @@
 import { createApp } from 'vue'
-import MessageContainer from './MessageContainer.vue'
+import MessageContainer from './Message.vue'
 
 type MsgType = 'success' | 'info' | 'warning' | 'error'
 type Options = { type?: MsgType; duration?: number }
