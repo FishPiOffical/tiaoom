@@ -74,7 +74,8 @@
     </div>
 
     <div 
-    v-if="roomPlayer.room.status !== 'playing' || showControl" class="fixed z-100 bg-base-300/60 top-0 left-0 w-full h-full flex flex-col items-center justify-center">
+      v-if="isPlaying && showControl" 
+      class="fixed z-100 bg-base-300/60 top-0 left-0 w-full h-full flex flex-col items-center justify-center">
       <div v-if="isPlaying && roomPlayer.role === PlayerRole.player" class="group flex gap-2">
         <button class="btn btn-circle btn-soft btn-warning tooltip" 
           @click="requestDraw"

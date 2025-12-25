@@ -17,7 +17,7 @@
           :disabled="roomPlayer.isReady"
           data-tip="离开座位"
         >
-          <Icon icon="mdi:account-minus" />
+          <Icon icon="mdi:gamepad-off" />
         </button>
         <button class="btn btn-circle btn-accent btn-soft tooltip" 
           @click="game?.ready(roomPlayer.room.id, !roomPlayer.isReady)"
@@ -48,7 +48,7 @@
           @click="game?.joinRoom(roomPlayer.room.id)"
           data-tip="加入游戏"
         >
-          <Icon icon="mdi:login" />
+          <Icon icon="mdi:google-gamepad" />
         </button>
       </div>      
       <!-- Extra Slot -->
@@ -62,7 +62,7 @@
 
 <script setup lang="ts">
 import { GameCore } from '@/core/game';
-import { RoomPlayer, Player, Room, PlayerRole, RoomStatus } from 'tiaoom/client';
+import { RoomPlayer, Room, PlayerRole, RoomStatus } from 'tiaoom/client';
 import { computed, ref } from 'vue';
 import hotkeys from 'hotkeys-js';
 
@@ -70,8 +70,6 @@ const props = defineProps<{
   roomPlayer: RoomPlayer & { room: Room },
   game: GameCore,  
 }>()
-
-defineEmits(['draw', 'lose'])
 
 const isPlaying = computed(() => props.roomPlayer.room.status === RoomStatus.playing)
 const isAllReady = computed(() => {
