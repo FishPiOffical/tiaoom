@@ -2,7 +2,7 @@
   <section class="flex flex-col md:flex-row gap-4 md:h-full">
     <section class="flex-1 md:h-full flex flex-col items-center justify-start md:justify-center overflow-auto p-4">
       <!-- 游戏主区域 -->
-      <div class="relative inline-block bg-base-300 p-3 rounded-lg shadow-2xl m-auto select-none">
+      <div class="relative inline-block bg-base-300 p-3 rounded-lg shadow-2xl m-auto select-none" @click="handleBoardClick">
         <!-- 游戏板 -->
         <div class="game-board bg-neutral rounded border-4 border-base-content/20 overflow-hidden">
           <div
@@ -39,7 +39,8 @@
           <div class="text-center p-4">
             <h2 class="text-xl md:text-2xl font-bold text-error mb-2">游戏结束</h2>
             <p class="text-base-content mb-4">最终分数: {{ gameState.score }}</p>
-            <button @click="restartGame" class="btn btn-primary">重新开始</button>
+            <button v-if="roomPlayer.role === 'player'" @click="restartGame" class="btn btn-primary">重新开始</button>
+            <p v-else class="text-sm text-base-content/60 mt-2">观战模式</p>
           </div>
         </div>
 
@@ -47,7 +48,8 @@
         <div v-else-if="gameState?.isPaused" class="absolute inset-0 bg-black/80 flex items-center justify-center rounded">
           <div class="text-center p-4">
             <h2 class="text-xl md:text-2xl font-bold text-warning mb-4">游戏暂停</h2>
-            <button @click="pause" class="btn btn-primary">继续游戏</button>
+            <button v-if="roomPlayer.role === 'player'" @click="pause" class="btn btn-primary">继续游戏</button>
+            <p v-else class="text-sm text-base-content/60">观战模式</p>
           </div>
         </div>
       </div>
@@ -126,8 +128,8 @@
               </div>
             </div>
 
-            <!-- 控制按钮 -->
-            <div class="flex flex-col gap-2">
+            <!-- 控制按钮（只对玩家显示） -->
+            <div class="flex flex-col gap-2" v-if="roomPlayer.role === 'player'">
               <div class="flex gap-2">
                 <button
                   v-if="!gameState?.gameOver && gameStatus === 'playing'"
@@ -145,6 +147,12 @@
                 </button>
               </div>
             </div>
+            
+            <!-- 观众提示 -->
+            <div v-else class="alert alert-info">
+              <Icon icon="mdi:eye" />
+              <span>你正在观战中</span>
+            </div>
           </div>
 
           <div v-show="activeTab === 'players'">
@@ -156,13 +164,14 @@
       <GameChat>
         <template #rules>
           <ul class="space-y-2 text-sm">
-            <li>1. ← → : 左右移动方块</li>
-            <li>2. ↑ : 旋转方块</li>
-            <li>3. ↓ : 加速下降</li>
-            <li>4. 空格 : 瞬间下落</li>
-            <li>5. P : 暂停/继续</li>
-            <li>6. 消除多行可获得更高分数</li>
-            <li>7. WASD : 方向控制（不区分大小写）</li>
+            <li v-if="roomPlayer.role === 'player'">1. ← → : 左右移动方块</li>
+            <li v-if="roomPlayer.role === 'player'">2. ↑ : 旋转方块</li>
+            <li v-if="roomPlayer.role === 'player'">3. ↓ : 加速下降</li>
+            <li v-if="roomPlayer.role === 'player'">4. 空格 : 瞬间下落</li>
+            <li v-if="roomPlayer.role === 'player'">5. P : 暂停/继续</li>
+            <li v-if="roomPlayer.role === 'player'">6. WASD : 方向控制（不区分大小写）</li>
+            <li>{{ roomPlayer.role === 'player' ? '7' : '1' }}. 消除多行可获得更高分数</li>
+            <li v-if="roomPlayer.role === 'watcher'" class="text-warning">2. 作为观众，你无法控制游戏</li>
           </ul>
         </template>
       </GameChat>
@@ -173,6 +182,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useTetris } from './useTetris'
+import { getColorValue } from './utils'
 import type { RoomPlayer, Room } from 'tiaoom/client'
 import type { GameCore } from '@/core/game'
 
@@ -194,26 +204,12 @@ const {
   clearedLines
 } = useTetris(props.game, props.roomPlayer)
 
-// 获取颜色值的辅助函数
-function getColorValue(colorClass: string) {
-  // 如果已经是十六进制颜色值，直接返回
-  if (colorClass.startsWith('#') || colorClass.startsWith('rgb')) {
-    return colorClass
+// 点击游戏板暂停/继续（只对玩家生效）
+function handleBoardClick() {
+  // 只有玩家且在游戏中且未结束时才能暂停
+  if (props.roomPlayer.role === 'player' && gameStatus.value === 'playing' && !gameState.value?.gameOver) {
+    pause()
   }
-
-  // 如果是CSS类名，映射为实际颜色值
-  const colorMap: Record<string, string> = {
-    'bg-cyan-500': 'oklch(var(--p))',      // 使用 DaisyUI 主题变量
-    'bg-blue-500': 'oklch(var(--s))',      // 使用 DaisyUI 主题变量
-    'bg-orange-500': 'oklch(var(--a))',    // 使用 DaisyUI 主题变量
-    'bg-yellow-500': 'oklch(var(--wa))',   // 使用 DaisyUI 主题变量
-    'bg-green-500': 'oklch(var(--su))',    // 使用 DaisyUI 主题变量
-    'bg-purple-500': 'oklch(var(--er))',   // 使用 DaisyUI 主题变量
-    'bg-red-500': 'oklch(var(--pc))',      // 使用 DaisyUI 主题变量
-    'bg-gray-500': 'oklch(var(--b3))'      // 使用 DaisyUI 主题变量
-  }
-
-  return colorMap[colorClass] || 'oklch(var(--b3))'
 }
 </script>
 

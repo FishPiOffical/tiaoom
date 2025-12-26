@@ -28,6 +28,10 @@ export interface TetrisGameState {
   isPaused: boolean
 }
 
+// 游戏板尺寸常量 - 必须与后端保持一致
+const BOARD_HEIGHT = 20
+const BOARD_WIDTH = 10
+
 export function useTetris(game: GameCore, roomPlayer: RoomPlayer & { room: Room }) {
   const gameStatus = computed(() => roomPlayer.room.status)
   const gameState = ref<TetrisGameState | null>(null)
@@ -50,27 +54,29 @@ export function useTetris(game: GameCore, roomPlayer: RoomPlayer & { room: Room 
         achievements.value = cmd.data.achievements || {}
         break
       case 'game:state':
-        // 检查是否有清除行
+        // 检查是否有消行：在接收到新状态前检测当前满行
         if (cmd.data && gameState.value) {
-          // 检测是否发生了消行
           const prevLines = gameState.value.lines || 0;
           const newLines = cmd.data.lines || 0;
           
+          // 如果消行数增加，检测当前游戏板中的满行（还未被清除的）
           if (newLines > prevLines) {
-            // 触发消行动画
             const linesToClear: number[] = [];
-            for (let y = 0; y < cmd.data.board.length; y++) {
-              if (cmd.data.board[y].every((cell: BoardCell | null) => cell?.filled)) {
+            // 检查当前游戏状态中的满行
+            for (let y = 0; y < gameState.value.board.length; y++) {
+              if (gameState.value.board[y].every((cell: BoardCell | null) => cell?.filled)) {
                 linesToClear.push(y);
               }
             }
             
-            clearedLines.value = linesToClear;
-            
-            // 300ms 后清除动画标记
-            setTimeout(() => {
-              clearedLines.value = [];
-            }, 300);
+            if (linesToClear.length > 0) {
+              clearedLines.value = linesToClear;
+              
+              // 300ms 后清除动画标记
+              setTimeout(() => {
+                clearedLines.value = [];
+              }, 300);
+            }
           }
         }
         gameState.value = cmd.data
@@ -178,8 +184,8 @@ export function useTetris(game: GameCore, roomPlayer: RoomPlayer & { room: Room 
   const renderedBoard = computed(() => {
     if (!gameState.value) return []
 
-    // 深拷贝游戏板
-    const board = JSON.parse(JSON.stringify(gameState.value.board))
+    // 创建游戏板副本
+    const board = gameState.value.board.map(row => [...row])
     const currentPiece = gameState.value.currentPiece
 
     // 添加当前活动方块到游戏板
@@ -205,15 +211,16 @@ export function useTetris(game: GameCore, roomPlayer: RoomPlayer & { room: Room 
   const renderedBoardWithGhost = computed<BoardCell[][]>(() => {
     if (!gameState.value) return []
 
-    // 深拷贝游戏板
-    const board = JSON.parse(JSON.stringify(gameState.value.board))
     const currentPiece = gameState.value.currentPiece
+    
+    // 创建游戏板副本（使用更高效的方式）
+    const board: BoardCell[][] = gameState.value.board.map(row => [...row])
 
     // 添加当前活动方块到游戏板
     if (currentPiece) {
       const { shape, x, y, color } = currentPiece
       
-      // 计算 ghost piece 位置
+      // 计算 ghost piece 位置（幻影方块，显示最终会落在哪里）
       let ghostY = y
       while (ghostY < BOARD_HEIGHT) {
         // 检查是否可以继续下落
@@ -226,6 +233,7 @@ export function useTetris(game: GameCore, roomPlayer: RoomPlayer & { room: Room 
               
               // 检查边界和碰撞
               if (boardY >= BOARD_HEIGHT || 
+                  boardX < 0 || boardX >= BOARD_WIDTH ||
                   (boardY >= 0 && board[boardY][boardX]?.filled)) {
                 canMoveDown = false
                 break
@@ -364,6 +372,3 @@ export function useTetris(game: GameCore, roomPlayer: RoomPlayer & { room: Room 
     clearedLines
   }
 }
-
-// 游戏板尺寸常量
-const BOARD_HEIGHT = 20
