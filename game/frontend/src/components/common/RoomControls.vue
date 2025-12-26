@@ -3,7 +3,7 @@
     <!-- Waiting: Player Actions -->
     <template v-if="!isPlaying && roomPlayer.role === PlayerRole.player">
       <button class="btn btn-circle md:btn-lg btn-soft tooltip tooltip-left" 
-        @click="game?.leaveRoom(roomPlayer.room.id)"
+        @click="game?.leaveRoom(roomPlayer.room.id), $router.push('/')"
         :disabled="roomPlayer.isReady"
         data-tip="离开房间"
       >

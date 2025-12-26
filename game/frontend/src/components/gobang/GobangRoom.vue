@@ -1,6 +1,6 @@
 <template>
   <section class="flex flex-col md:flex-row gap-4 md:h-full">
-    <section class="flex-1 md:h-full flex flex-col items-center justify-start md:justify-center overflow-auto p-4">
+    <section class="flex-1 md:h-full flex flex-col items-center justify-start md:justify-center overflow-auto p-4 select-none">
       <!-- 棋盘 -->
       <div class="inline-block bg-base-300 border border-base-content/20 p-2 rounded shadow-2xl m-auto">
         <!-- 顶部留白 -->

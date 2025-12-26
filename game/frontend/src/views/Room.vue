@@ -3,7 +3,7 @@ import msg from "@/components/msg";
 import { getComponent } from "@/main";
 import { useGameStore } from "@/stores/game";
 import { openSmallWindow } from "@/utils/dom";
-import { computed, onMounted } from "vue";
+import { computed, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 const gameStore = useGameStore();
@@ -42,10 +42,21 @@ function init() {
 }
 const room = computed(() => gameStore.roomPlayer?.room)
 
-onMounted(() => {
+function load() {
   gameStore.game?.getRoomOneTime(roomId.value).then(() => {
     init();
   });
+}
+
+watch(
+  () => route.params.id,
+  () => {
+    load();
+  }
+);
+
+onMounted(() => {
+  load();
 });
 
 const hasLiteComponent = computed(() => {

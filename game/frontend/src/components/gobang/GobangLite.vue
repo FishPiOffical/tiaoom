@@ -1,7 +1,7 @@
 <template>
   <section class="flex flex-col items-center justify-center p-2 py-4" ref="containerRef">
     <!-- 棋盘 -->
-    <div class="inline-block p-2 m-auto border rounded shadow-2xl bg-base-300 border-base-content/20">
+    <div class="inline-block p-2 m-auto border rounded shadow-2xl bg-base-300 border-base-content/20 select-none">
       <!-- 顶部留白 -->
       <div class="flex">
         <div class="w-[4vw] md:w-6 h-[4vw] md:h-6"></div>

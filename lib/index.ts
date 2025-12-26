@@ -206,7 +206,7 @@ export class Tiaoom extends EventEmitter {
     
     this.rooms.push(room);
     this.emit("room", room);
-    this.joinPlayer(sender, { roomId: room.id, ...sender }, true);
+    await this.joinPlayer(sender, { roomId: room.id, ...sender }, true);
     return room;
   }
 

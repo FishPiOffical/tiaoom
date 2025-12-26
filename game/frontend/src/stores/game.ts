@@ -100,7 +100,8 @@ export const useGameStore = defineStore('game', () => {
         rooms.value = [...data]
       })
       .onRoomCreate((room) => {
-        router.replace('/r/' + room.id)
+        if (room.players.find(p => p.id === player.value?.id))
+          router.replace('/r/' + room.id)
       })
       .onPlayerReady(onPlayerReady)
       .onPlayerUnready(onPlayerReady)
