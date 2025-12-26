@@ -91,7 +91,7 @@ export class Tiaoom extends EventEmitter {
           case RecvMessageTypes.PlayerList:
             return cb?.(null, this.players);
           case RecvMessageTypes.RoomCreate:
-            return cb?.(null, await this.createRoom(message.sender, message.data));
+            return this.createRoom(message.sender, message.data);
           case RecvMessageTypes.PlayerJoin:
             return await this.joinPlayer(message.sender, message.data);
           case RecvMessageTypes.PlayerLeave:

@@ -259,8 +259,10 @@ export class Tiaoom {
       this.emit('onRoomList', [...this.rooms]);
     });
     this.on("room.create", (room) => {
-      this.rooms.push(new Room(room));
-      this.emit('onRoomList', this.rooms);
+      if (!this.rooms.some(r => r.id === room.id)) {
+        this.rooms.push(new Room(room));
+        this.emit('onRoomList', this.rooms);
+      }
     });
     this.on("room.update", (room) => {
       const existingRoom = this.rooms.find(r => r.id === room.id);
