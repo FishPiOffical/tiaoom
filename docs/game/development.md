@@ -48,7 +48,7 @@ export default class MyGameRoom extends GameRoom {
 }
 ```
 
-> ![NOTE]
+> [!IMPORTANT]
 > 游戏结束一定要调用 `this.room.end()` 方法，否则房间状态没有变更，由此会导致玩家无法离开房间。
 
 ## 前端开发
