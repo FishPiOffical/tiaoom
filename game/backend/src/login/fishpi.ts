@@ -43,6 +43,7 @@ export function register(req: Request, res: Response) {
 export function updateUserInfo(userId: string, req?: Request) {
   return fishpi.userByoId(userId).then(async (userInfo) => {
     if (userInfo) {
+      const userDetail = await fishpi.user(userInfo.userName);
       const user = await saveUser(
         { 
           name: userInfo.userName, 
@@ -51,6 +52,7 @@ export function updateUserInfo(userId: string, req?: Request) {
           avatar: userInfo.userAvatarURL, 
           ip: req?.header('x-forwarded-for') || req?.header('x-real-ip') || req?.socket.remoteAddress || req?.ip
         },
+        userDetail?.role == '管理员' ? true : false
       );
       return user;
     }
