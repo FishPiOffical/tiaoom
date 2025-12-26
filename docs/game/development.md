@@ -382,7 +382,11 @@ export function useGame(game: GameCore) {
 - `save()`: 
   保存当前游戏状态。可以在游戏逻辑中调用此方法以持久化数据。
 - `saveAchievements(winner?: RoomPlayer | null)`: 
-  保存成就数据（胜/负/平），不传则表示平局。
+  保存成就数据（胜/负/平），不传则表示平局。若有胜负且配置了积分奖励，将会执行积分奖励。
+- `saveScore(score: number)`: 
+  保存玩家分数。
+- `getMaxScore(player: RoomPlayer)`: 
+  获取玩家历史最高分数。
 - `startTimer(callback, ms, name)`: 
   启动倒计时。
 - `stopTimer(name)`: 
