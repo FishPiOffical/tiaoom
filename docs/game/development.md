@@ -8,7 +8,7 @@
 
 - 后端游戏逻辑文件：`<GameName>.ts`
 - 前端游戏组件文件：`<GameName>Room.vue`
-- 前端游戏小窗组件：`<GameName>Lite.ts`
+- 前端游戏小窗组件(可选)：`<GameName>Lite.vue`
 
 ## 后端开发
 
