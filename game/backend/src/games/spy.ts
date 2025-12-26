@@ -49,6 +49,7 @@ class SpyGameRoom extends GameRoom {
   gameStatus: 'waiting' | 'talking' | 'voting' = 'waiting';
   vote: RoomPlayer[] = [];
   votePlayers: RoomPlayer[] = [];
+  history: any[] = [];
 
   readonly TURN_TIMEOUT = 5 * 60 * 1000; // 5 minutes
   readonly VOTE_TIMEOUT = 2 * 60 * 1000; // 2 minutes
@@ -113,6 +114,13 @@ class SpyGameRoom extends GameRoom {
     }
   }
 
+  getData() {
+    return {
+      history: this.history,
+      message: this.messageHistory,
+    };
+  }
+
   onSay(message: IGameCommand) {
     const sender = message.sender as RoomPlayer;
     if (this.gameStatus == 'voting') {
@@ -129,6 +137,12 @@ class SpyGameRoom extends GameRoom {
       });
     }
     this.say(`${message.data}`, sender);
+    this.history.push({
+      type: 'talk',
+      player: sender.name,
+      content: message.data,
+      time: Date.now()
+    });
 
     // 倒计时逻辑
     if (this.gameStatus == 'talking' && sender.id == this.currentTalkPlayer?.id) {
@@ -183,6 +197,20 @@ class SpyGameRoom extends GameRoom {
         this.commandTo('voted', {}, sender);
         if (message.data?.id) {
           this.say(`玩家 ${sender.name} 已投票。`);
+          const target = this.room.validPlayers.find(p => p.id === message.data.id);
+          this.history.push({
+            type: 'vote',
+            player: sender.name,
+            target: target?.name,
+            time: Date.now()
+          });
+        } else {
+          this.history.push({
+            type: 'vote',
+            player: sender.name,
+            target: null,
+            time: Date.now()
+          });
         }
         if (this.votePlayers.length != this.alivePlayers.length) return;
 
@@ -234,6 +262,7 @@ class SpyGameRoom extends GameRoom {
     this.spyPlayer = undefined;
     this.gameStatus = 'waiting';
     this.messageHistory = [];
+    this.history = [];
     this.stopTimer();
 
     const mainWordIndex = Math.floor(Math.random() * 2);
@@ -247,6 +276,15 @@ class SpyGameRoom extends GameRoom {
       this.commandTo('word', { word: this.words[index] }, player);
       this.alivePlayers.push(player);
     })
+    this.history.push({
+      type: 'start',
+      time: Date.now(),
+      players: this.room.validPlayers.map((p, i) => ({
+        name: p.name,
+        word: this.words[i],
+        isSpy: p.id === this.spyPlayer?.id
+      }))
+    });
     this.say(`游戏开始。玩家 ${this.room.validPlayers[0].name} 首先发言。`);
     this.gameStatus = 'talking';
     this.startTurn(this.room.validPlayers[0]);
@@ -255,6 +293,10 @@ class SpyGameRoom extends GameRoom {
   startVote() {
     this.gameStatus = 'voting';
     this.say(`所有玩家都已发言，投票开始。`);
+    this.history.push({
+      type: 'startVote',
+      time: Date.now()
+    });
     this.command('vote');
 
     this.startTimer(() => {
@@ -266,6 +308,11 @@ class SpyGameRoom extends GameRoom {
   startTurn(player: RoomPlayer) {
     this.currentTalkPlayer = player;
     this.command('talk', { player });
+    this.history.push({
+      type: 'turn',
+      player: player.name,
+      time: Date.now()
+    });
 
     this.startTimer(() => {
       this.startTurnTimer();
@@ -275,6 +322,11 @@ class SpyGameRoom extends GameRoom {
 
   handlePlayerDeath(deadPlayer: RoomPlayer) {
     this.stopTimer('turn');
+    this.history.push({
+      type: 'dead',
+      player: deadPlayer.name,
+      time: Date.now()
+    });
 
     this.command('dead', { player: deadPlayer });
     const deadIndex = this.alivePlayers.findIndex((p) => p.id == deadPlayer.id);

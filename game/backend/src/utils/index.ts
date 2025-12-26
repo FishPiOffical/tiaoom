@@ -7,6 +7,8 @@ import { Finger, FingerTo, FishPi } from 'fishpi';
 import utils from './index';
 import { LogRepo } from '@/entities';
 
+export * from './data';
+
 /**
  * 返回一个对象，剔除指定的键
  * @param obj 对象

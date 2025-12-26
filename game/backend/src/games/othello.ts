@@ -180,6 +180,7 @@ class OthelloGameRoom extends GameRoom {
   currentPlayer?: RoomPlayer;
   lastLosePlayer?: RoomPlayer;
   board: number[][] = Array.from({ length: size }, () => Array(size).fill(-1))
+  history: { place: string, time: number }[] = [];
 
   init() {
     return super.init().on('player-offline', async (player) => {
@@ -204,6 +205,18 @@ class OthelloGameRoom extends GameRoom {
     }
   }
 
+  getData() {
+    return {
+      history: this.history,
+      players: this.room.validPlayers.map((p) => ({
+        username: p.attributes?.username,
+        name: p.name,
+        color: p.attributes?.color,
+      })),
+      message: this.messageHistory,
+    };
+  }
+  
   onCommand(message: IGameCommand): void {
     super.onCommand(message);
     const sender = message.sender as RoomPlayer;

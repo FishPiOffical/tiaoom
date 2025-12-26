@@ -2,7 +2,8 @@ import { IPlayer, IRoomPlayer, PlayerRole, PlayerStatus, Room, RoomPlayer, RoomS
 import * as glob from 'glob';
 import * as path from "path";
 import { Model } from '@/model';
-import { omit, setPoints } from '@/utils';
+import { omit, setPoints, updatePlayerStats } from '@/utils';
+import { RecordRepo } from '@/entities';
 const files = glob.sync(path.join(__dirname, '*.*').replace(/\\/g, '/')).filter(f => f.endsWith('.ts') || f.endsWith('.js'));
 
 export interface IGame extends IGameInfo {
@@ -121,6 +122,10 @@ export class GameRoom {
    * 游戏房间实例
    */
   room: Room;
+  /**
+   * 游戏开始时间
+   */
+  beginTime: number = 0;
 
   constructor(room: Room) {
     this.room = room;
@@ -153,6 +158,7 @@ export class GameRoom {
       this.onCommand({ ...message, sender });
     }).on('start', () => {
       this.onStart();
+      this.beginTime = Date.now();
       this.save();
       if (this.room.attrs?.point && !isNaN(this.room.attrs.point) && this.room.attrs.point > 0) {
         this.room.validPlayers.forEach((p) => {
@@ -205,6 +211,14 @@ export class GameRoom {
       achievements: this.achievements,
       tickEndTime: this.tickEndTime,
     };
+  }
+
+  /**
+   * 当前局游戏数据，用于游戏结束保存游戏过程
+   * @returns 游戏数据
+   */
+  getData(): any | Promise<any> {
+    return {};
   }
 
   /**
@@ -308,7 +322,7 @@ export class GameRoom {
    * 保存成就数据
    * @param winner 当前局胜者，无胜者传 null 或 undefined
    */
-  saveAchievements(winners?: RoomPlayer[] | null) {
+  async saveAchievements(winners?: RoomPlayer[] | null) {
     this.room.validPlayers.forEach((p) => {
       if (!this.achievements[p.name]) {
         this.achievements[p.name] = { win: 0, lost: 0, draw: 0 };
@@ -317,6 +331,18 @@ export class GameRoom {
         this.achievements[p.name].win += 1;
       } else {
         this.achievements[p.name].lost += 1;
+      }
+
+      if (p.attributes.username) {
+        let result: 'win' | 'draw' | 'loss' = 'draw';
+        if (winners && winners.length > 0) {
+           if (winners.some(w => w.id === p.id)) {
+             result = 'win';
+           } else {
+             result = 'loss';
+           }
+        }
+        updatePlayerStats(p.attributes.username, this.room.attrs!.type, result).catch(console.error);
       }
     });
     if (winners?.length && this.room.attrs?.point && !isNaN(this.room.attrs.point) && this.room.attrs.point > 0) {
@@ -336,6 +362,14 @@ export class GameRoom {
       }
     }
     this.room.emit('command', { type: 'achievements', data: this.achievements });
+    this.save();
+    RecordRepo.save(RecordRepo.create({
+      type: this.room.attrs!.type,
+      roomName: this.room.name,
+      data: await this.getData(),
+      players: this.room.validPlayers.map(p => p.attributes.username),
+      winners: winners?.map(w => w.attributes.username) || [],
+    })).catch(console.error);
   }
 
   /**

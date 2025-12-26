@@ -104,6 +104,7 @@ class Connect4GameRoom extends GameRoom {
   currentPlayer?: RoomPlayer;
   lastLosePlayer?: RoomPlayer;
   board: number[][] = Array.from({ length: 8 }, () => Array(8).fill(-1));
+  history: { place: string, time: number }[] = [];
 
   init() {
     return super.init().on('player-offline', async (player) => {
@@ -133,6 +134,18 @@ class Connect4GameRoom extends GameRoom {
     }
   }
 
+  getData() {
+    return {
+      history: this.history,
+      players: this.room.validPlayers.map((p) => ({
+        username: p.attributes?.username,
+        name: p.name,
+        color: p.attributes?.color,
+      })),
+      message: this.messageHistory,
+    };
+  }
+
   onCommand(message: IGameCommand): void {
     super.onCommand(message);
     const sender = message.sender as RoomPlayer;
@@ -157,6 +170,8 @@ class Connect4GameRoom extends GameRoom {
           this.sayTo(`无效落子！`, sender);
           return;
         }
+
+        this.history.push({ place: `${String.fromCharCode(65 + y)}${8 - x}`, time: Date.now() - this.beginTime });
 
         if (result == true) {
           this.command('board', this.board);
@@ -218,6 +233,7 @@ class Connect4GameRoom extends GameRoom {
     this.board = Array.from({ length: 8 }, () => Array(8).fill(-1));
     this.board[this.board.length - 1] = this.board[this.board.length - 1].map(() => 0);
     this.messageHistory = [];
+    this.history = [];
     
     // 黑子先行
     this.setPlayerAttributes(this.currentPlayer.id, { color: 1 });

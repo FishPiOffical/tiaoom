@@ -31,6 +31,7 @@ class XiangqiGameRoom extends GameRoom {
   currentPlayer?: RoomPlayer;
   lastLosePlayer?: RoomPlayer;
   board: Piece[][] = [];
+  history: { from: string, to: string, piece: string, time: number }[] = [];
 
   readonly TURN_TIMEOUT = 60 * 1000;
 
@@ -60,12 +61,25 @@ class XiangqiGameRoom extends GameRoom {
     }
   }
 
+  getData() {
+    return {
+      history: this.history,
+      players: this.room.validPlayers.map((p) => ({
+        username: p.attributes?.username,
+        name: p.name,
+        side: p.attributes?.side,
+      })),
+      message: this.messageHistory,
+    };
+  }
+
   onStart() {
     if (this.room.validPlayers.length < this.room.minSize) {
       return this.say(`玩家人数不足，无法开始游戏。`);
     }
     this.stopTimer();
     this.messageHistory = [];
+    this.history = [];
     this.resetForNewGame();
     this.command('achievements', this.achievements);
     this.command('turn', { player: this.currentPlayer });
@@ -129,6 +143,12 @@ class XiangqiGameRoom extends GameRoom {
 
         // Commit move
         this.board = nb
+        this.history.push({ 
+          from: this.toCoord(from.x, from.y), 
+          to: this.toCoord(to.x, to.y), 
+          piece, 
+          time: Date.now() 
+        });
 
         this.command('move', { from, to, piece })
         this.broadcastBoard()
@@ -214,6 +234,10 @@ class XiangqiGameRoom extends GameRoom {
   }
 
   // Helper methods
+  toCoord(x: number, y: number) {
+    return `${String.fromCharCode(65 + y)}${10 - x}`;
+  }
+
   sideOf(piece: Piece): Side | null {
     if (!piece) return null
     return piece[0] === 'r' ? 'red' : 'green'

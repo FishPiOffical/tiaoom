@@ -25,6 +25,7 @@ class PackbattleGameRoom extends GameRoom {
   given: Capsule | null = null;
   swapped: boolean | null = null;
   lastLosePlayer?: RoomPlayer;
+  history: any[] = [];
 
   readonly TURN_TIMEOUT = 60 * 1000;
 
@@ -58,6 +59,13 @@ class PackbattleGameRoom extends GameRoom {
     return status;
   }
 
+  getData() {
+    return {
+      history: this.history,
+      message: this.messageHistory,
+    };
+  }
+
   onCommand(message: IGameCommand): void {
     super.onCommand(message);
     const sender = message.sender as RoomPlayer;
@@ -86,6 +94,12 @@ class PackbattleGameRoom extends GameRoom {
           }
           this.given = cap;
           this.say(`出租车司机 ${sender.name} 选择将${cap === 'left' ? '左侧' : '右侧'}胶囊交给夏洛克。`);
+          this.history.push({
+            type: 'give',
+            player: sender.name,
+            capsule: cap,
+            time: Date.now()
+          });
           this.beginSwapPhase();
           break;
         }
@@ -100,6 +114,12 @@ class PackbattleGameRoom extends GameRoom {
           }
           this.swapped = !!message.data?.swap;
           this.say(`夏洛克 ${sender.name}${this.swapped ? '选择交换' : '选择不交换'}。`);
+          this.history.push({
+            type: 'swap',
+            player: sender.name,
+            swap: this.swapped,
+            time: Date.now()
+          });
           this.finishRound();
           break;
         }
@@ -139,6 +159,7 @@ class PackbattleGameRoom extends GameRoom {
       }
       this.stopTimer();
       this.messageHistory = [];
+      this.history = [];
       this.gameStatus = 'playing';
       this.phase = 'pick';
       this.given = null;
@@ -152,6 +173,13 @@ class PackbattleGameRoom extends GameRoom {
 
       this.command('achievements', this.achievements);
       this.say(`游戏开始。随机选择：出租车司机 ${this.activePlayer.name}，夏洛克 ${this.passivePlayer.name}。出租车司机知晓毒胶囊。`);
+      this.history.push({
+        type: 'start',
+        active: this.activePlayer.name,
+        passive: this.passivePlayer.name,
+        poison: this.poison,
+        time: Date.now()
+      });
 
       this.beginPickPhase();
       this.save();
@@ -200,6 +228,17 @@ class PackbattleGameRoom extends GameRoom {
     const winner = poisonedPlayer?.id === this.activePlayer?.id ? this.passivePlayer! : this.activePlayer!;
 
     this.say(`最终分配：出租车司机持有${activeFinal === 'left' ? '左' : '右'}，夏洛克持有${passiveFinal === 'left' ? '左' : '右'}。`);
+    this.history.push({
+      type: 'result',
+      poison: this.poison,
+      given: this.given,
+      swapped: this.swapped,
+      activeFinal,
+      passiveFinal,
+      winner: winner.name,
+      loser: poisonedPlayer?.name,
+      time: Date.now()
+    });
     this.command('result', {
       poison: this.poison,
       given: this.given,
