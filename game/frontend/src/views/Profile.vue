@@ -1,13 +1,22 @@
 <script lang="ts" setup>
   import { api, User } from '@/api';
-  import { ref, watch } from 'vue';
+  import { ref, watch, computed } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import Icon from '@/components/common/Icon.vue';
+  import { useGameStore } from '@/stores/game';
 
   const user = ref<User>();
   const route = useRoute();
   const router = useRouter();
+  const gameStore = useGameStore();
   const error = ref<string>('正在加载中...');
+
+  const records = ref<any[]>([]);
+  const page = ref(1);
+  const total = ref(0);
+  const pageSize = 10;
+
+  const totalPages = computed(() => Math.ceil(total.value / pageSize));
 
   watch(
     () => route.params.username,
@@ -22,12 +31,49 @@
     error.value = '正在加载中...';
     api.getUser(route.params.username as string).then(u => {
       user.value = u;
+      loadRecords();
     }).catch(() => {
       error.value = '用户不存在';
     });
   }
 
-  load();
+  function loadRecords() {
+    if (!user.value) return;
+    api.getUserRecords(user.value.username, page.value, pageSize).then(res => {
+      records.value = res.records;
+      total.value = res.total;
+    });
+  }
+
+  function prevPage() {
+    if (page.value > 1) {
+      page.value--;
+      loadRecords();
+    }
+  }
+
+  function nextPage() {
+    if (page.value < totalPages.value) {
+      page.value++;
+      loadRecords();
+    }
+  }
+  
+  function formatDate(timestamp: number) {
+    return new Date(timestamp).toLocaleString();
+  }
+  
+  function getResult(record: any) {
+      if (!record.winners || record.winners.length === 0) return '平局';
+      if (record.winners.includes(user.value?.username)) return '胜利';
+      return '失败';
+  }
+  
+  function getResultClass(record: any) {
+      if (!record.winners || record.winners.length === 0) return 'text-warning';
+      if (record.winners.includes(user.value?.username)) return 'text-success';
+      return 'text-error';
+  }
 </script>
 
 <template> 
@@ -75,42 +121,70 @@
         </div>
       </div>
 
-      <!-- Stats Section (Placeholder) -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="card bg-base-100 shadow-xl">
+      <!-- Stats Section -->
+      <div class="card bg-base-100 shadow-xl">
           <div class="card-body">
-            <h3 class="card-title text-lg mb-2">
+            <h3 class="card-title text-lg mb-4">
               <Icon icon="mdi:chart-box" class="text-primary" />
               胜负统计
             </h3>
-            <div class="flex items-center justify-center h-32 bg-base-200 rounded-lg border-2 border-dashed border-base-300">
-              <span class="text-base-content/50">暂无数据 (开发中)</span>
+            
+            <div v-if="user.state && user.state.length > 0" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <div v-for="stat in user.state" :key="stat.type" class="stat bg-base-200 rounded-box p-4">
+                    <div class="stat-title text-sm font-bold mb-1">{{ gameStore.games[stat.type]?.name || stat.type }}</div>
+                    <div class="flex justify-between text-xs">
+                        <span class="text-success">胜: {{ stat.wins }}</span>
+                        <span class="text-warning">平: {{ stat.draws }}</span>
+                        <span class="text-error">负: {{ stat.losses }}</span>
+                    </div>
+                    <div class="w-full bg-base-300 rounded-full h-2 mt-2 overflow-hidden flex">
+                        <div class="bg-success h-full" :style="{ width: (stat.wins / stat.total * 100) + '%' }"></div>
+                        <div class="bg-warning h-full" :style="{ width: (stat.draws / stat.total * 100) + '%' }"></div>
+                        <div class="bg-error h-full" :style="{ width: (stat.losses / stat.total * 100) + '%' }"></div>
+                    </div>
+                    <div class="text-right text-xs mt-1 opacity-60">总计: {{ stat.total }}</div>
+                </div>
+            </div>
+            <div v-else class="flex items-center justify-center h-32 bg-base-200 rounded-lg border-2 border-dashed border-base-300">
+              <span class="text-base-content/50">暂无统计数据</span>
             </div>
           </div>
-        </div>
-
-        <div class="card bg-base-100 shadow-xl">
-          <div class="card-body">
-             <h3 class="card-title text-lg mb-2">
-              <Icon icon="mdi:trophy" class="text-warning" />
-              成就
-            </h3>
-            <div class="flex items-center justify-center h-32 bg-base-200 rounded-lg border-2 border-dashed border-base-300">
-              <span class="text-base-content/50">暂无数据 (开发中)</span>
-            </div>
-          </div>
-        </div>
       </div>
 
-      <!-- Game History Section (Placeholder) -->
+      <!-- Game History Section -->
       <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
-          <h3 class="card-title text-lg mb-4">
-            <Icon icon="mdi:history" class="text-secondary" />
-            游玩记录
-          </h3>
+          <div class="flex justify-between items-center mb-4">
+              <h3 class="card-title text-lg">
+                <Icon icon="mdi:history" class="text-secondary" />
+                游玩记录
+              </h3>
+              <div class="join">
+                  <button class="join-item btn btn-sm" :disabled="page <= 1" @click="prevPage">«</button>
+                  <button class="join-item btn btn-sm">Page {{ page }}</button>
+                  <button class="join-item btn btn-sm" :disabled="page >= totalPages" @click="nextPage">»</button>
+              </div>
+          </div>
           
-          <div class="flex flex-col items-center justify-center py-12 bg-base-200 rounded-lg border-2 border-dashed border-base-300">
+          <div v-if="records.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div v-for="record in records" :key="record.id" class="flex items-center justify-between p-3 bg-base-200 rounded-lg hover:bg-base-300 transition-colors">
+                  <div class="flex items-center gap-3">
+                      <div class="w-10 h-10 rounded-full bg-base-100 flex items-center justify-center text-primary shadow-sm">
+                          <Icon icon="mdi:gamepad-variant" class="text-xl" />
+                      </div>
+                      <div class="flex flex-col">
+                          <span class="font-bold text-sm">{{ gameStore.games[record.type]?.name || record.type }}</span>
+                          <span class="text-xs opacity-60">{{ record.roomName }}</span>
+                      </div>
+                  </div>
+                  <div class="flex flex-col items-end">
+                      <span :class="['font-bold text-sm', getResultClass(record)]">{{ getResult(record) }}</span>
+                      <span class="text-xs opacity-50">{{ formatDate(Number(record.createdAt)) }}</span>
+                  </div>
+              </div>
+          </div>
+          
+          <div v-else class="flex flex-col items-center justify-center py-12 bg-base-200 rounded-lg border-2 border-dashed border-base-300">
             <Icon icon="mdi:gamepad-variant-outline" class="text-4xl text-base-content/30 mb-2" />
             <span class="text-base-content/50">暂无游玩记录</span>
           </div>

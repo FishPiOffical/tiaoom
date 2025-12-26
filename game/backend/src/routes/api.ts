@@ -1,7 +1,9 @@
 import { Router, Request, Response } from "express";
 import { Controller } from "../controller";
 import { login as fishpiLogin, register as fishpiRegister, updateUserInfo } from "../login/fishpi";
-import { User, UserRepo } from "@/entities";
+import { Record, RecordRepo, User, UserRepo } from "@/entities";
+import { getPlayerStats } from "@/utils";
+import { Like } from "typeorm";
 
 export interface GameContext {
   controller?: Controller;
@@ -44,10 +46,23 @@ const createRoutes = (game: GameContext, gameName: string) => {
   router.get("/user/:username", async (req: Request, res: Response) => {
     const user = await UserRepo.findOneBy({ username: req.params.username });
     if (user) {
-      res.json({ code: 0, data: user });
+      const state = await getPlayerStats(user.username);
+      res.json({ code: 0, data: { ...user, state } });
     } else {
       res.json({ code: 1, message: "用户不存在" });
     }
+  });
+
+  router.get("/user/:username/record", async (req: Request, res: Response) => {
+    const { p, count } = req.query;
+    const page = parseInt(p as string) || 1;
+    const pageSize = parseInt(count as string) || 10;
+    const records = await RecordRepo.findAndCount({
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      where: { players: Like(`%"${req.params.username}"%`) },
+    });
+    res.json({ code: 0, data: { records: records[0], total: records[1] } });
   });
 
   router.get("/message", (req: Request, res: Response) => {

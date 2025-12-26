@@ -2,6 +2,14 @@ import { GameConfig } from '@/types'
 import { Player, Room } from 'tiaoom/client'
 import axios from 'axios'
 
+export interface GameStats {
+  type: string;
+  total: number;
+  wins: number;
+  draws: number;
+  losses: number;
+}
+
 export interface IUser {
   id: string;
   username: string;
@@ -9,6 +17,7 @@ export interface IUser {
   avatar?: string;
   from?: string;
   isAdmin?: boolean;
+  state?: GameStats[];
 }
 
 export class User implements IUser {
@@ -18,6 +27,7 @@ export class User implements IUser {
   avatar: string;
   from: string;
   isAdmin: boolean;
+  state: GameStats[];
 
   constructor(user: Partial<IUser>) {
     this.id = user.id || '';
@@ -26,6 +36,7 @@ export class User implements IUser {
     this.avatar = user.avatar || '';
     this.from = user.from || '';
     this.isAdmin = user.isAdmin || false;
+    this.state = user.state || [];
   }
 
   get player(): Player {
@@ -69,6 +80,11 @@ export const api = {
   },
   getUser(username: string): Promise<User> {
     return instance.get(`/user/${username}`).then((data: any) => new User(data))
+  },
+  getUserRecords(username: string, page: number = 1, count: number = 10): Promise<{ records: any[], total: number }> {
+    return instance.get(`/user/${username}/record`, {
+      params: { p: page, count }
+    });
   },
   getMessages(): Promise<{ messages: { data: string, sender: Player, createdAt: number }[] }> {
     return instance.get('/message')
