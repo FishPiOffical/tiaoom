@@ -1,6 +1,6 @@
 <template>
   <div 
-    v-if="roomPlayer && (roomPlayer.room.status !== 'playing' || showControl)" class="fixed z-100 bg-base-300/60 top-0 left-0 w-full h-full flex flex-col items-center justify-center">
+    v-if="roomPlayer.room.status !== 'playing' || showControl" class="fixed z-100 bg-base-300/60 top-0 left-0 w-full h-full flex flex-col items-center justify-center">
 
     <div class="flex flex-col gap-2">
       <!-- Waiting: Player Actions -->
@@ -67,24 +67,22 @@ import { computed, ref } from 'vue';
 import hotkeys from 'hotkeys-js';
 
 const props = defineProps<{
-  roomPlayer: (RoomPlayer & { room: Room }) | null,
+  roomPlayer: RoomPlayer & { room: Room },
   game: GameCore,  
 }>()
 
-const isPlaying = computed(() => props.roomPlayer?.room.status === RoomStatus.playing)
+const isPlaying = computed(() => props.roomPlayer.room.status === RoomStatus.playing)
 const isAllReady = computed(() => {
-  if (!props.roomPlayer) return false
   return props.roomPlayer.room.players.filter((p: any) => p.role === 'player').length >= props.roomPlayer.room.minSize &&
     props.roomPlayer.room.players.every((p: any) => p.isReady || p.role === 'watcher')
 })
 const isRoomFull = computed(() => {
-  if (!props.roomPlayer) return true
   return props.roomPlayer.room.players.filter((p: any) => p.role === 'player').length >= props.roomPlayer.room.size
 })
 
 const showControl = ref(false);
 hotkeys('esc', () => {
-  if (!props.roomPlayer || props.roomPlayer.role !== PlayerRole.watcher) return;
+  if (props.roomPlayer?.role !== PlayerRole.watcher) return;
   showControl.value = !showControl.value;
 });
 
