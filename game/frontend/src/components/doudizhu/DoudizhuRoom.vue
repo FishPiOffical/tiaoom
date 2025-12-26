@@ -21,9 +21,10 @@
     </header>
 
     <!-- 游戏主区域 -->
-    <main class="flex flex-col flex-1 gap-2 p-2 overflow-hidden md:flex-row md:p-4 md:gap-4">
+    <!-- 小窗模式允许垂直滚动，大窗模式保持原布局 -->
+    <main class="flex flex-col flex-1 gap-2 p-2 overflow-y-auto md:overflow-hidden md:flex-row md:p-4 md:gap-4">
       <!-- 左侧主视图 -->
-      <div class="flex flex-col flex-1 md:h-full">
+      <div class="flex flex-col flex-1 min-h-0 md:h-full">
         <!-- 等待状态 -->
         <div v-if="gameStatus === 'waiting'" class="flex items-center justify-center flex-1">
           <div class="text-center">
@@ -48,24 +49,24 @@
         </div>
 
         <!-- 游戏进行中 -->
-        <div v-else-if="(gameStatus === 'playing' || gameStatus === 'calling' || gameStatus === 'grabbing' || gameStatus === 'counter-grabbing') && gameState" class="flex flex-col flex-1">
+        <div v-else-if="(gameStatus === 'playing' || gameStatus === 'calling' || gameStatus === 'grabbing' || gameStatus === 'counter-grabbing') && gameState" class="flex flex-col flex-1 min-h-0">
           <!-- 游戏桌面 -->
-          <div class="relative flex-1 p-4 rounded-lg bg-base-100">
+          <div class="relative p-2 md:p-4 rounded-lg bg-base-100 md:flex-1 max-h-[50vh] md:max-h-none overflow-y-auto md:overflow-visible">
             <!-- 其他玩家区域 -->
-            <div class="flex justify-between mb-4">
-              <div v-for="(playerId, index) in otherPlayers" :key="playerId"
-                   class="flex flex-col items-center p-3 rounded-lg bg-base-200"
+            <div class="flex justify-between mb-2 md:mb-4 gap-2">
+              <div v-for="playerId in otherPlayers" :key="playerId"
+                   class="flex flex-col items-center p-1 md:p-3 rounded-lg bg-base-200 flex-1 min-w-0"
                    :class="{ 'ring-2 ring-primary': isPlayerCurrentTurn(playerId) }">
-                <div class="flex items-center gap-2 mb-2">
-                  <div class="w-10 h-10 flex items-center justify-center rounded-full bg-base-300 font-bold">
+                <div class="flex items-center gap-1 md:gap-2 mb-1 md:mb-2">
+                  <div class="w-6 h-6 md:w-10 md:h-10 flex items-center justify-center rounded-full bg-base-300 font-bold text-xs md:text-base">
                     {{ getPlayerName(playerId).substring(0, 1).toUpperCase() }}
                   </div>
                   <div>
-                    <div class="font-medium">{{ getPlayerName(playerId) }}</div>
-                    <div class="flex items-center gap-1">
+                    <div class="font-medium text-xs md:text-base truncate max-w-[60px] md:max-w-none">{{ getPlayerName(playerId) }}</div>
+                    <div class="flex items-center gap-1 flex-wrap">
                       <span v-if="gameState.landlord === playerId" class="badge badge-warning badge-xs">地主</span>
                       <span v-else-if="gameState.landlord" class="badge badge-info badge-xs">农民</span>
-                      <span class="badge badge-sm">{{ gameState.players[playerId]?.length || 0 }} 张</span>
+                      <span class="badge badge-xs md:badge-sm">{{ gameState.players[playerId]?.length || 0 }} 张</span>
                     </div>
                   </div>
                 </div>
@@ -122,9 +123,9 @@
               </div>
             </div>
 
-            <!-- 当前玩家信息（底部） -->
+            <!-- 当前玩家信息（底部）- 小窗模式使用普通布局，大窗模式使用绝对定位 -->
             <div v-if="gameStore.roomPlayer?.role === 'player'"
-                 class="absolute bottom-4 left-1/2 transform -translate-x-1/2 p-4 rounded-lg bg-base-200 shadow-lg"
+                 class="mt-2 mx-auto p-2 md:p-4 rounded-lg bg-base-200 shadow-lg md:absolute md:bottom-4 md:left-1/2 md:transform md:-translate-x-1/2 md:mt-0"
                  :class="{ 'ring-2 ring-primary': isCurrentPlayer }">
               <div class="flex items-center gap-3 mb-2">
                 <div class="w-10 h-10 flex items-center justify-center rounded-full bg-base-300 font-bold">
@@ -148,7 +149,7 @@
           </div>
 
           <!-- 自己的手牌区域 -->
-          <div v-if="gameStore.roomPlayer?.role === 'player'" class="p-4 rounded-lg bg-base-100 mt-2">
+          <div v-if="gameStore.roomPlayer?.role === 'player'" class="p-2 md:p-4 rounded-lg bg-base-100 mt-2 shrink-0">
             <!-- 叫地主阶段 -->
             <div v-if="gameState.phase === 'calling' && gameState.currentBidder === gameStore.player?.id" class="mb-4">
               <div class="flex gap-2 justify-center">
@@ -199,13 +200,15 @@
             </div>
 
             <!-- 手牌显示 -->
-            <div class="flex flex-wrap gap-1 justify-center min-h-24 max-h-48 overflow-y-auto">
+            <!-- 小窗模式水平滚动，大窗模式换行显示 -->
+            <div class="flex gap-1 pb-2 overflow-x-auto md:flex-wrap md:justify-center md:overflow-x-visible md:overflow-y-auto min-h-24 md:max-h-48 scrollbar-thin">
               <DoudizhuCard
                 v-for="card in myHand"
                 :key="card.id"
                 :card="card"
                 :selected="selectedCards.includes(card.id)"
                 :selectable="gameState.phase === 'playing' && isCurrentPlayer"
+                class="shrink-0"
                 @click="toggleCardSelection(card.id)"
               />
             </div>
@@ -215,62 +218,42 @@
 
       <!-- 右侧栏 -->
       <aside class="flex flex-col flex-none w-full overflow-y-auto border-t md:pl-4 md:border-t-0 md:border-l border-base-content/20 md:w-80">
-        <!-- 计分板 -->
         <section class="mb-4">
-          <h3 class="mb-2 text-lg font-bold">📊 计分板</h3>
-          <div v-if="Object.keys(achievements).length" class="overflow-x-auto border rounded-box border-base-content/5 bg-base-100 max-h-48">
-            <table class="table text-sm text-center table-pin-rows">
-              <thead>
-                <tr>
-                  <th class="bg-base-300">玩家</th>
-                  <th class="bg-base-300">胜</th>
-                  <th class="bg-base-300">负</th>
-                  <th class="bg-base-300">胜率</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(achievement, playerName) in achievements" :key="playerName">
-                  <td class="font-medium truncate max-w-[80px]">{{ playerName }}</td>
-                  <td class="text-green-600">{{ achievement.win }}</td>
-                  <td class="text-red-600">{{ achievement.lost }}</td>
-                  <td>{{ ((achievement.win / (achievement.win + achievement.lost)) * 100 || 0).toFixed(1) }}%</td>
-                </tr>
-              </tbody>
-            </table>
+          <div role="tablist" class="tabs tabs-lift">
+            <a role="tab" class="tab tooltip tooltip-bottom" :class="{ 'tab-active': activeTab === 'players' }" @click="activeTab = 'players'">
+              <Icon icon="fluent:people-16-filled" />
+              <span class="ml-2">玩家列表</span>
+            </a>
+            <a v-if="Object.keys(achievements).length > 0" role="tab" class="tab tooltip tooltip-bottom" :class="{ 'tab-active': activeTab === 'achievements' }" @click="activeTab = 'achievements'">
+              <Icon icon="ri:sword-fill" />
+              <span class="ml-2">战绩</span>
+            </a>
           </div>
-          <div v-else class="py-4 text-center text-gray-500">暂无战绩</div>
-        </section>
 
-        <!-- 玩家列表 -->
-        <section class="mb-4">
-          <h3 class="mb-2 text-lg font-bold">玩家列表</h3>
-          <PlayerList :players="gameStore.roomPlayer?.room?.players || []">
-            <template #default="{ player: p }">
-              <div class="flex items-center justify-between w-full">
-                <div class="flex items-center gap-2 truncate">
-                  <span v-if="p.role === 'player'">[{{ getPlayerStatus(p) }}]</span>
-                  <span v-else class="text-base-content/60">[围观中]</span>
-                  <!-- 只在游戏进行中显示身份标签 -->
-                  <template v-if="gameStatus === 'playing' || gameStatus === 'calling' || gameStatus === 'grabbing' || gameStatus === 'counter-grabbing'">
-                    <span v-if="gameState?.landlord === p.id" class="badge badge-warning badge-xs">地主</span>
-                    <span v-else-if="gameState?.landlord && gameState?.players?.[p.id]" class="badge badge-info badge-xs">农民</span>
-                  </template>
-                  <span class="truncate max-w-[100px]">{{ p.name }}</span>
+          <!-- 计分板 -->
+          <div v-show="activeTab === 'achievements'">
+            <AchievementTable :achievements="achievements" />
+          </div>
+
+          <!-- 玩家列表 -->
+          <div v-show="activeTab === 'players'">
+            <PlayerList :players="gameStore.roomPlayer?.room?.players || []">
+              <template #default="{ player: p }">
+                <div class="flex items-center justify-between w-full">
+                  <div class="flex items-center gap-2 truncate">
+                    <span v-if="p.role === 'player'">[{{ getPlayerStatus(p) }}]</span>
+                    <span v-else class="text-base-content/60">[围观中]</span>
+                    <!-- 只在游戏进行中显示身份标签 -->
+                    <template v-if="gameStatus === 'playing' || gameStatus === 'calling' || gameStatus === 'grabbing' || gameStatus === 'counter-grabbing'">
+                      <span v-if="gameState?.landlord === p.id" class="badge badge-warning badge-xs">地主</span>
+                      <span v-else-if="gameState?.landlord && gameState?.players?.[p.id]" class="badge badge-info badge-xs">农民</span>
+                    </template>
+                    <span class="truncate max-w-[100px]">{{ p.name }}</span>
+                  </div>
+                  <span class="badge badge-sm" v-if="gameStatus === 'playing' || gameStatus === 'calling' || gameStatus === 'grabbing' || gameStatus === 'counter-grabbing'">{{ gameState?.players?.[p.id]?.length || 0 }} 张</span>
                 </div>
-                <span class="badge badge-sm" v-if="gameStatus === 'playing' || gameStatus === 'calling' || gameStatus === 'grabbing' || gameStatus === 'counter-grabbing'">{{ gameState?.players?.[p.id]?.length || 0 }} 张</span>
-              </div>
-            </template>
-          </PlayerList>
-
-          <div v-if="gameStore.roomPlayer && gameStore.game" class="mt-4">
-            <RoomControls
-              :game="gameStore.game as any"
-              :room-player="gameStore.roomPlayer"
-              :game-status="gameStatus"
-              :is-all-ready="isAllReady"
-              :is-room-full="isRoomFull"
-              :enable-draw-resign="false"
-            />
+              </template>
+            </PlayerList>
           </div>
         </section>
 
@@ -308,6 +291,12 @@ import DoudizhuCard from './DoudizhuCard.vue'
 import { useGameEvents } from '@/hook/useGameEvents'
 import { RoomStatus } from 'tiaoom/client'
 import type { DoudizhuGameState, DoudizhuCard as DoudizhuCardType } from '$/backend/src/games/doudizhu'
+import AchievementTable from '@/components/common/AchievementTable.vue'
+import PlayerList from '@/components/common/PlayerList.vue'
+import GameChat from '@/components/common/GameChat.vue'
+import Icon from '@/components/common/Icon.vue'
+
+const activeTab = ref<'players' | 'achievements'>('players')
 
 const props = defineProps<{ game?: any; roomPlayer?: any }>()
 
@@ -359,18 +348,6 @@ const isWinner = computed(() => {
   const isLandlord = gameStore.player.id === gameState.value.landlord
   const landlordWon = gameState.value.winnerRole === 'landlord'
   return isLandlord === landlordWon
-})
-
-const isAllReady = computed(() => {
-  if (!gameStore.roomPlayer?.room) return false
-  const players = gameStore.roomPlayer.room.players.filter((p: any) => p.role === 'player')
-  return players.length >= 3 && players.every((p: any) => p.isReady)
-})
-
-const isRoomFull = computed(() => {
-  if (!gameStore.roomPlayer?.room) return false
-  const playerCount = gameStore.roomPlayer.room.players.filter((p: any) => p.role === 'player').length
-  return playerCount >= 3
 })
 
 // 方法
@@ -605,4 +582,27 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* 自定义滚动条样式 */
+.scrollbar-thin::-webkit-scrollbar {
+  height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* Firefox 滚动条 */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
 </style>

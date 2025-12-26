@@ -1,6 +1,8 @@
-import { Room } from 'tiaoom';
+import { IPlayer, IRoomPlayer, PlayerRole, PlayerStatus, Room, RoomPlayer, RoomStatus } from 'tiaoom';
 import * as glob from 'glob';
 import * as path from "path";
+import { Model } from '@/model';
+import { omit, setPoints } from '@/utils';
 const files = glob.sync(path.join(__dirname, '*.*').replace(/\\/g, '/')).filter(f => f.endsWith('.ts') || f.endsWith('.js'));
 
 export interface IGame extends IGameInfo {
@@ -8,9 +10,21 @@ export interface IGame extends IGameInfo {
 }
 
 export interface IGameInfo {
+  /**
+   * 游戏名称
+   */
   name: string;
+  /**
+   * 游戏最小人数
+   */
   minSize: number;
+  /**
+   * 游戏最大人数
+   */
   maxSize: number;
+  /**
+   * 游戏描述
+   */
   description: string;
 }
 
@@ -19,7 +33,7 @@ export interface IGameMethod {
   restore: () => Promise<Record<string, any> | null>;
 }
 
-export type GameMap = { [key: string]: IGame };
+export type GameMap = { [key: string]: (IGame | ({ default: typeof GameRoom })) };
 
 const games :GameMap = {};
 files.forEach(async (file) => {
@@ -32,3 +46,348 @@ files.forEach(async (file) => {
 });
 
 export default games;
+
+export interface IRoomMessage {
+  /**
+   * 消息内容
+   */
+  content: string;
+  /**
+   * 消息发送者
+   */
+  sender?: IRoomPlayer;
+  /**
+   * 消息创建时间
+   */
+  createdAt: number;
+}
+
+export interface IRoomAchievement {
+  /**
+   * 胜利次数
+   */
+  win: number;
+  /**
+   * 失败次数
+   */
+  lost: number;
+  /**
+   * 平局次数
+   */
+  draw: number;
+}
+
+export interface IGameCommand {
+  /**
+   * 指令类型
+   */
+  type: string;
+  /**
+   * 指令数据
+   */
+  data?: any;
+  /**
+   * 指令发送者
+   */
+  sender: IRoomPlayer;
+}
+
+export class GameRoom {
+  /**
+   * 房间消息历史
+   */
+  messageHistory: IRoomMessage[] = [];
+  /**
+   * 房间成就数据
+   */
+  achievements: Record<string, IRoomAchievement> = {};
+  /**
+   * 允许观众使用的指令
+   */
+  publicCommands: string[] = ['say', 'status'];
+  /**
+   * 忽略保存的属性列表
+   */
+  saveIgnoreProps: string[] = [];
+  /**
+   * 计时器ID记录
+   */
+  tickTimeout: Record<string, NodeJS.Timeout> = {};
+  /**
+   * 计时器结束时间记录
+   */
+  tickEndTime: Record<string, number> = {};
+  /**
+   * 游戏房间实例
+   */
+  room: Room;
+
+  constructor(room: Room) {
+    this.room = room;
+  }
+
+  /**
+   * 初始化游戏房间
+   * @returns room 实例
+   */
+  init() {
+    process.on('beforeExit', async () => {
+      await this.save();
+    });
+    return this.room.on('player-command', (message: any) => {
+      // 允许观众使用的指令
+      const players = this.publicCommands.includes(message.type)
+        ? this.room.players
+        : this.room.validPlayers;
+      const sender = players.find((p) => p.id == message.sender?.id)!;
+      if (!sender) return;
+      if (sender.role != PlayerRole.player && message.type == 'say') {
+        // 游玩时间观众发言仅广播给其他观众
+        if (this.room.status == RoomStatus.playing) {
+          this.room.watchers.forEach((watcher) => {
+            watcher.emit('message', { content: `${message.data}`, sender });
+          });
+          return;
+        }
+      }
+      this.onCommand({ ...message, sender });
+    }).on('start', () => {
+      this.onStart();
+      this.save();
+      if (this.room.attrs?.point && !isNaN(this.room.attrs.point) && this.room.attrs.point > 0) {
+        this.room.validPlayers.forEach((p) => {
+          if (!p.attributes.username) return;
+          setPoints(-this.room.attrs!.point, p.attributes.username, `参与游戏房间【${this.room.name}】扣除`)
+        });
+      }
+    }).on('end', () => {
+      this.room.emit('command', { type: 'end' });
+      this.save();
+    }).on('message', (message: { content: string; sender?: IRoomPlayer }) => {
+      this.messageHistory.unshift({ ...message, createdAt: Date.now() });
+      if (this.messageHistory.length > 100) this.messageHistory.splice(this.messageHistory.length - 100);
+      this.save();
+    }).on('player-ready', () => {
+      this.save();
+    }).on('player-unready', () => {
+      this.save();
+    }).on('join', () => {
+      this.save();
+    }).on('leave', () => {
+      this.save();
+    });
+  }
+
+  /**
+   * 检查玩家是否在线
+   * @param player 玩家
+   * @returns 是否在线
+   */
+  isPlayerOnline(player: IPlayer): boolean {
+    return !this.room.players.find((p) => p.id === player.id && p.status === PlayerStatus.offline);
+  }
+
+  /**
+   * 保存游戏数据
+   */
+  save() {
+    Model.saveGameData(this.room.id, omit(this, ['room', 'tickTimeout', ...this.saveIgnoreProps]));
+  }
+
+  /**
+   * 获取游戏状态
+   * @param sender 请求状态的玩家
+   * @returns 游戏状态
+   */
+  getStatus(sender: IRoomPlayer): any {
+    return {
+      messageHistory: this.messageHistory,
+      achievements: this.achievements,
+      tickEndTime: this.tickEndTime,
+    };
+  }
+
+  /**
+   * 设置玩家属性
+   * @param player 玩家
+   * @param attributes 属性 
+   */
+  setPlayerAttributes(playerId: string, attributes: Record<string, any>) {
+    const player = this.room.players.find((p) => p.id === playerId);
+    if (!player) return;
+    player.attributes = { ...player.attributes, ...attributes };
+    this.save();
+  }
+
+  /**
+   * 游戏开始时调用，继承时重写
+   */
+  onStart() {
+    throw new Error("Method not implemented.");
+  }
+
+  /**
+   * 游戏指令处理，继承时扩展，重写时需调用 super.onCommand(message)
+   * @param message 游戏指令
+   */
+  onCommand(message: IGameCommand) {
+    const sender = message.sender as RoomPlayer;
+    switch (message.type) {
+      case 'say':
+        this.onSay(message);
+        break;
+      case 'status': {
+        const player = this.room.players.find((p) => p.id == message.data.id);
+        if (!player) break;
+        player.emit('command', {
+          type: 'status',
+          data: this.getStatus(player),
+        });
+        break;
+      }
+    }
+  }
+
+  /** 
+   * 玩家聊天指令处理，继承时可重写
+   */
+  onSay(message: IGameCommand) {
+    const sender = message.sender as RoomPlayer;
+    this.say(message.data, sender);
+  }
+
+  /**
+   * 房间消息频道内发送消息
+   * @param message 消息内容
+   * @param sender 发送者，若为空则为系统消息
+   */
+  say(message: string, sender?: IRoomPlayer) {
+    this.room.emit('message', { content: message, sender });
+  }
+
+  /**
+   * 发送消息给指定玩家
+   * @param message 消息内容
+   * @param receiver 接收者
+   */
+  sayTo(message: string, receiver: RoomPlayer) {
+    receiver.emit('message', { content: message });
+  }
+
+  /**
+   * 发送游戏指令到房间内所有玩家
+   * @param type 指令类型
+   * @param data 指令数据
+   * @param sender 发送者，若为空则为系统指令
+   */
+  command(type: string, data?: any, sender?: { id: string }) {
+    this.room.emit('command', { type, data, sender });
+  }
+
+  /**
+   * 发送游戏指令到指定玩家
+   * @param type 指令类型
+   * @param data 指令数据
+   * @param receiver 接收者
+   */
+  commandTo(type: string, data: any, receiver: RoomPlayer) {
+    receiver.emit('command', { type, data });
+  }
+
+  /**
+   * 模拟玩家发出房间指令
+   * @param type 指令类型
+   * @param data 指令数据
+   * @param sender 发送者
+   */
+  virtualCommand(type: string, data: any, sender: RoomPlayer) {
+    this.room.emit('player-command', { type, data, sender } );
+  }
+
+  /**
+   * 保存成就数据
+   * @param winner 当前局胜者，无胜者传 null 或 undefined
+   */
+  saveAchievements(winners?: RoomPlayer[] | null) {
+    this.room.validPlayers.forEach((p) => {
+      if (!this.achievements[p.name]) {
+        this.achievements[p.name] = { win: 0, lost: 0, draw: 0 };
+      }
+      if (winners?.some(w => w.id === p.id)) {
+        this.achievements[p.name].win += 1;
+      } else {
+        this.achievements[p.name].lost += 1;
+      }
+    });
+    if (winners?.length && this.room.attrs?.point && !isNaN(this.room.attrs.point) && this.room.attrs.point > 0) {
+      const winPoint = Math.floor(((this.room.attrs.rate || 1) * this.room.attrs.point + this.room.attrs.point) * 0.9);
+      winners.forEach((winner) => {
+        if (!winner.attributes.username) return;
+        setPoints(winPoint, winner.attributes.username, `游戏房间【${this.room.name}】获胜奖励`);
+      });
+      const loserPoint = Math.ceil(this.room.attrs.rate * this.room.attrs.point * winners.length - this.room.attrs.point);
+      if (this.room.attrs.rate > 1) {
+        this.room.validPlayers.forEach((p) => {
+          if (!winners.some(w => w.id === p.id)) {
+            if (!p.attributes.username) return;
+            setPoints(-loserPoint, p.attributes.username, `游戏房间【${this.room.name}】失败扣除`);
+          }
+        });
+      }
+    }
+    this.room.emit('command', { type: 'achievements', data: this.achievements });
+  }
+
+  /**
+   * 启动计时器
+   * @param callback 计时器结束回调
+   * @param ms 计时器时间，单位毫秒
+   * @param name 计时器名称
+   */
+  startTimer(callback: () => void, ms: number, name = '') {
+    this.stopTimer();
+    this.tickEndTime[name] = Date.now() + ms;
+    this.tickTimeout[name] = setTimeout(() => {
+      delete this.tickTimeout[name];
+      delete this.tickEndTime[name];
+      callback();
+    }, ms);
+    this.room.emit('command', { type: 'countdown', data: { seconds: ms / 1000, name } });
+  }
+
+  /**
+   * 停止计时器
+   * @param name 计时器名称，未指定则停止所有计时器
+   */
+  stopTimer(name='') {
+    if (name &&this.tickTimeout[name]) {
+      clearTimeout(this.tickTimeout[name]);
+      delete this.tickTimeout[name];
+      delete this.tickEndTime[name];
+    } else if (!name) {
+      Object.keys(this.tickTimeout).forEach((key) => {
+        clearTimeout(this.tickTimeout[key]);
+        delete this.tickTimeout[key];
+        delete this.tickEndTime[key];
+      });
+    }
+  }
+
+  /**
+   * 恢复计时器，在恢复游戏时调用，可重写 init 方法时调用
+   * @param timer 计时器回调集合
+   */
+  restoreTimer(timer: Record<string, () => void>) {
+    Object.keys(this.tickEndTime).forEach((name) => {
+      const endTime = this.tickEndTime[name];
+      const now = Date.now();
+      if (endTime > now) {
+        this.startTimer(timer[name], endTime - now, name);
+      } else {
+        delete this.tickEndTime[name];
+        delete this.tickTimeout[name];
+        timer[name]();
+      }
+    });
+  }
+}

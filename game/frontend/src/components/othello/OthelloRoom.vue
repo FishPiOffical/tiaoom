@@ -64,7 +64,7 @@
       </div>
       
       <!-- 当前回合 -->
-      <div v-if="gameStatus === 'playing'" class="flex items-center justify-center gap-3 mt-4 text-lg p-1">
+      <div v-if="isPlaying" class="flex items-center justify-center gap-3 mt-4 text-lg p-1">
         <div class="w-6 h-6 flex items-center justify-center bg-base-300 rounded-full border border-base-content/20">
           <span 
             class="w-full h-full rounded-full"
@@ -78,58 +78,59 @@
     <!-- 侧边栏 -->
     <aside class="w-full md:w-96 flex-none border-t md:border-t-0 md:border-l border-base-content/20 pt-4 md:pt-0 md:pl-4 space-y-4 md:h-full flex flex-col">
       <section class="inline-flex flex-col gap-2 max-h-1/2">
+        <div role="tablist" class="tabs tabs-lift">
+          <a role="tab" class="tab tooltip tooltip-bottom" :class="{ 'tab-active': activeTab === 'players' }" @click="activeTab = 'players'">
+            <Icon icon="fluent:people-16-filled" />
+            <span class="ml-2">玩家列表</span>
+          </a>
+          <a v-if="Object.keys(achievements).length > 0" role="tab" class="tab tooltip tooltip-bottom" :class="{ 'tab-active': activeTab === 'achievements' }" @click="activeTab = 'achievements'">
+            <Icon icon="ri:sword-fill" />
+            <span class="ml-2">战绩</span>
+          </a>
+        </div>
+
         <!-- 成就表 -->
-        <section v-if="Object.keys(achivents).length" class="overflow-auto rounded-box border border-base-content/5 bg-base-100 max-h-50 min-h-30">
-          <table class="table table-pin-rows table-pin-cols text-center">
-            <thead>
-              <tr>
-                <th class="bg-base-300">玩家</th>
-                <th class="bg-base-300">胜</th>
-                <th class="bg-base-300">负</th>
-                <th class="bg-base-300">和</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(achivement, playerName) in achivents" :key="playerName">
-                <td class="">{{ playerName }}</td>
-                <td class="">{{ achivement.win }}</td>
-                <td class="">{{ achivement.lost }}</td>
-                <td class="">{{ achivement.draw }}</td>
-              </tr>
-            </tbody>
-          </table>
-          <hr class="border-base-content/20" />
-        </section>       
+        <div v-show="activeTab === 'achievements'">
+          <AchievementTable :achievements="achievements" show-draw />
+        </div>
         
         <!-- 玩家列表 -->
-        <PlayerList :players="roomPlayer.room.players">
-          <template #default="{ player: p }">
-            <span v-if="p.role === 'player'" class="inline-flex gap-2 items-center">
-              <span>[{{ getPlayerStatus(p) }}]</span>
-              <template v-if="p.attributes.color ?? false">
-                <div class="w-4 h-4 flex items-center justify-center bg-base-300 rounded-full border border-base-content/20">
-                  <span 
-                    class="w-full h-full rounded-full"
-                    :class="p.attributes.color === 1 ? 'bg-black border border-white/20 shadow-md' : 'bg-white border border-black/20 shadow-md'"
-                  />
-                </div>
-                <span>{{ board.flat().filter(b => b == p.attributes.color).length }}</span>
-              </template>
-            </span>
-            <span v-else>[围观中]</span>
-            <span>{{ p.name }}</span>
-          </template>
-        </PlayerList>
+        <div v-show="activeTab === 'players'">
+          <PlayerList :players="roomPlayer.room.players">
+            <template #default="{ player: p }">
+              <span v-if="p.role === 'player'" class="inline-flex gap-2 items-center">
+                <span>[{{ getPlayerStatus(p) }}]</span>
+                <template v-if="p.attributes.color ?? false">
+                  <div class="w-4 h-4 flex items-center justify-center bg-base-300 rounded-full border border-base-content/20">
+                    <span 
+                      class="w-full h-full rounded-full"
+                      :class="p.attributes.color === 1 ? 'bg-black border border-white/20 shadow-md' : 'bg-white border border-black/20 shadow-md'"
+                    />
+                  </div>
+                  <span>{{ board.flat().filter(b => b == p.attributes.color).length }}</span>
+                </template>
+              </span>
+              <span v-else>[围观中]</span>
+              <span>{{ p.name }}</span>
+            </template>
+          </PlayerList>
+        </div>
         
         <!-- 操作按钮 -->
-        <RoomControls
-          :game="game"
-          :room-player="roomPlayer"
-          :current-player="currentPlayer"
-          :enable-draw-resign="true"
-          @draw="requestDraw"
-          @lose="requestLose"
-        />
+        <div v-if="isPlaying && roomPlayer.role === PlayerRole.player" class="group flex gap-2">
+          <button class="btn" 
+            @click="requestDraw"
+            :disabled="currentPlayer?.id !== roomPlayer.id"
+          >
+            请求和棋
+          </button>
+          <button class="btn" 
+            @click="requestLose"
+            :disabled="currentPlayer?.id !== roomPlayer.id"
+          >
+            认输
+          </button>
+        </div>
         
         <hr class="border-base-content/20" />
       </section>
@@ -148,31 +149,36 @@
 </template>
 
 <script setup lang="ts">
-import { Room, RoomPlayer } from 'tiaoom/client'
+import { PlayerRole, Room, RoomPlayer } from 'tiaoom/client'
 import { GameCore } from '@/core/game';
 import { useOthello } from './useOthello';
+import AchievementTable from '@/components/common/AchievementTable.vue';
+import Icon from '@/components/common/Icon.vue';
+import { ref } from 'vue';
 
 const props = defineProps<{
   roomPlayer: RoomPlayer & { room: Room }
   game: GameCore
 }>()
 
+const activeTab = ref<'players' | 'achievements'>('players')
+
 const {
-  gameStatus,
   currentPlayer,
   board,
   currentPlace,
-  achivents,
+  achievements,
   placePiece,
   requestDraw,
   requestLose,
+  isPlaying,
 } = useOthello(props.game, props.roomPlayer)
 
 function getPlayerStatus(p: any) {
   if (!p.isReady) return '未准备'
-  if (props.roomPlayer.room.status === 'waiting') return '准备好了'
+  if (!isPlaying.value) return '准备好了'
   if (p.id === currentPlayer.value?.id) return '思考中'
-  if (props.roomPlayer.room.status === 'playing') return '等待中'
+  if (isPlaying.value) return '等待中'
   return '准备好了'
 }
 

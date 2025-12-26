@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { Room, RoomPlayer } from 'tiaoom/client'
 import { GameCore } from '@/core/game'
 import { useGameEvents } from '@/hook/useGameEvents'
@@ -8,7 +8,7 @@ export type Phase = 'pick' | 'swap' | 'end'
 export type Capsule = 'left' | 'right'
 
 export function usePackbattle(game: GameCore, roomPlayer: RoomPlayer & { room: Room }) {
-  const gameStatus = ref<'waiting' | 'playing'>('waiting')
+  const gameStatus = computed(() => roomPlayer.room.status)
   const phase = ref<Phase>('pick')
   const active = ref<any>()
   const passive = ref<any>()
@@ -21,7 +21,6 @@ export function usePackbattle(game: GameCore, roomPlayer: RoomPlayer & { room: R
   const result = ref<{ poison: Capsule; given: Capsule | null; swapped: boolean | null; winner?: any; loser?: any } | null>(null)
 
   function onRoomStart() {
-    gameStatus.value = 'playing'
     result.value = null
     poisonHint.value = null
     if (countdownTimer) clearInterval(countdownTimer)
@@ -29,7 +28,6 @@ export function usePackbattle(game: GameCore, roomPlayer: RoomPlayer & { room: R
   }
 
   function onRoomEnd() {
-    gameStatus.value = 'waiting'
     if (countdownTimer) clearInterval(countdownTimer)
     countdown.value = 0
   }
@@ -39,7 +37,6 @@ export function usePackbattle(game: GameCore, roomPlayer: RoomPlayer & { room: R
 
     switch (cmd.type) {
       case 'status':
-        gameStatus.value = cmd.data.status
         phase.value = cmd.data.phase
         active.value = cmd.data.active
         passive.value = cmd.data.passive
@@ -82,7 +79,6 @@ export function usePackbattle(game: GameCore, roomPlayer: RoomPlayer & { room: R
       case 'result':
         result.value = cmd.data
         phase.value = 'end'
-        gameStatus.value = 'waiting'
         if (countdownTimer) clearInterval(countdownTimer)
         countdown.value = 0
         break
@@ -121,7 +117,20 @@ export function usePackbattle(game: GameCore, roomPlayer: RoomPlayer & { room: R
     game?.command(roomPlayer.room.id, { type: 'swap', data: { swap } })
   }
 
+  function requestDraw() {
+    if (roomPlayer.room.status !== 'playing') return
+    game?.command(roomPlayer.room.id, { type: 'request-draw' })
+  }
+
+  function requestLose() {
+    if (roomPlayer.room.status !== 'playing') return
+    game?.command(roomPlayer.room.id, { type: 'request-lose' })
+  }
+
+  const isPlaying = computed(() => roomPlayer.room.status === 'playing')
+
   return {
+    isPlaying,
     gameStatus,
     phase,
     active,
@@ -133,5 +142,7 @@ export function usePackbattle(game: GameCore, roomPlayer: RoomPlayer & { room: R
     result,
     give,
     decideSwap,
+    requestDraw,
+    requestLose,
   }
 }

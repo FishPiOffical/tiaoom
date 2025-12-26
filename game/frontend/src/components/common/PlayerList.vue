@@ -4,6 +4,7 @@
       v-for="p in players.filter(p => p.role === 'player')" 
       :key="p.id" 
       class="flex items-center gap-2 text-sm p-1 rounded hover:bg-base-200/50"
+      :class="{ 'opacity-50': p.status == PlayerStatus.offline }"
     >
       <slot :player="p">
         <span>[{{ p.isReady ? '已准备' : '未准备' }}]</span>
@@ -24,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import { RoomPlayer } from 'tiaoom/client'
+import { PlayerStatus, RoomPlayer } from 'tiaoom/client'
 
 defineProps<{
   players: RoomPlayer[]

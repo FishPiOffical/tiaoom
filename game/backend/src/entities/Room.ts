@@ -42,6 +42,10 @@ export class Room {
    * 房间ID
    */
   roomId: string;
+  /**
+   * 房间属性
+   */
+  attrs: Record<string, any> = {};
 
   toRoom(): IRoom {
     return {
@@ -50,6 +54,7 @@ export class Room {
       size: this.size,
       minSize: this.minSize,
       attrs: {
+        ...this.attrs,
         type: this.type,
         passwd: this.passwd,
       },
@@ -58,12 +63,14 @@ export class Room {
   }
 
   constructor(room?: IRoom) {
+    this.roomId = room?.id || '';
     this.type = room?.attrs?.type || '';
     this.name = room?.name || '';
     this.minSize = room?.minSize || 2;
     this.size = room?.size || 2;
     this.passwd = room?.attrs?.passwd || '';
     this.players = room?.players || [];
+    this.attrs = room?.attrs || {};
   }
 }
 
@@ -82,6 +89,9 @@ export abstract class RoomBase extends Room {
 
   @Column({ comment: "房间密码", default: '' })
   passwd: string = '';
+
+  @Column({ comment: "房间属性", type: 'simple-json', nullable: true })
+  attrs: Record<string, any> = {};
   
   @Column('simple-json', { comment: "玩家列表" })
   players: RoomPlayer[] = [];
@@ -105,6 +115,7 @@ export abstract class RoomBase extends Room {
     this.size = room?.size || 2;
     this.passwd = room?.attrs?.passwd || '';
     this.players = room?.players || [];
+    this.attrs = room?.attrs || {};
   }
 }
 

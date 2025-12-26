@@ -92,12 +92,6 @@
         结束发言 {{ countdown > 0 ? `(${countdown}s)` : '' }}
       </button>
     </div>
-
-    <RoomControlsLite
-      :game="game"
-      :room-player="roomPlayer"
-      :enable-draw-resign="false"
-    />
   </section>
 </template>
 

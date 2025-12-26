@@ -38,7 +38,7 @@
       <!-- 侧边栏 -->
       <aside 
         class="
-          flex-none border-r border-base-content/20 overflow-auto p-4 space-y-4 bg-base-200/95 backdrop-blur md:bg-base-200/50
+          flex-none border-r border-base-content/20 overflow-auto pt-4 bg-base-200/95 backdrop-blur md:bg-base-200/50
           fixed inset-y-0 left-0 z-50 w-72 transition-all duration-300 ease-in-out
           md:relative md:translate-x-0 md:z-auto flex flex-col content-start
         "
@@ -47,7 +47,7 @@
           isDesktopSidebarCollapsed ? 'md:w-0 md:p-0 md:border-none md:overflow-hidden' : 'md:w-80'
         ]"
       >
-        <div class="flex justify-between items-center pb-2 border-b border-base-content/20">
+        <div class="flex justify-between items-center pb-2 border-b border-base-content/20 px-4">
           <!-- PC端折叠按钮 -->
           <button @click="isDesktopSidebarCollapsed = true" class="icon-btn-hidden hidden md:flex">
             <Icon icon="ep:fold" />
@@ -87,67 +87,88 @@
           </div>
         </div>
 
-        <div ref="panelsEl" class="flex flex-col flex-1 min-h-0">
-          <div
-            ref="roomsEl"
-            class="pb-5 overflow-auto flex-none"
-            :style="roomsPanelHeightPx !== null ? { height: roomsPanelHeightPx + 'px' } : undefined"
-          >
-            <section class="flex justify-between mb-2">
-              <h2 class="text-sm font-bold text-base-content/60 uppercase tracking-wider mb-2 flex items-center gap-1">
-                <Icon icon="fluent:chess-16-filled" size="1.5em"/>
-                <span>在线房间 ({{ gameStore.rooms.length }})</span>
-              </h2>
-              <select v-model="gameType" class="text-xs select w-[10em]">
-                <option value="">全部游戏</option>
-                <option v-for="(game, key) in gameStore.games" :key="key" :value="key">
-                  {{ game.name }}
-                </option>
-              </select>
-            </section>
-            <ul class="space-y-2">
-              <li v-for="r in roomList" :key="r.id" class="flex items-center justify-between p-2 rounded bg-base-300/50 hover:bg-base-300 transition-colors">
-                <div class="flex items-center gap-2 overflow-hidden">
-                  <Icon icon="solar:lock-linear" v-if="r.attrs.passwd" />
-                  <span class="truncate text-sm" :class="{'font-bold text-base-content': r.players.some(p => p.id === gameStore.player?.id)}">
-                    【{{ gameStore.games[r.attrs.type].name }}】{{ r.name }}
-                  </span>
-                  <span class="text-xs text-base-content/60 whitespace-nowrap">
-                    ({{ r.players.filter(p => p.role === 'player').length }}/{{ r.size }})
-                  </span>
-                </div>
-                <button
-                  v-if="!gameStore.roomPlayer"
-                  @click="joinRoom(r)"
-                  class="px-2 py-1 btn-xs whitespace-nowrap btn"
-                >
-                  {{ r.players.filter(p => p.role === 'player').length < r.size ? '进入' : '围观' }}
-                </button>
-              </li>
-            </ul>
-            <span v-if="roomList.length === 0" class="text-sm text-base-content/60">暂无房间</span>
+        <div class="flex flex-col flex-1 min-h-0">
+          <!-- Tabs -->
+          <div class="tabs tabs-lift p-1 flex-none grid grid-cols-2">
+            <a 
+              class="tab h-auto py-2 transition-all duration-200 gap-2" 
+              :class="{ 'tab-active': activeTab === 'rooms' }"
+              @click="activeTab = 'rooms'"
+            >
+              <Icon icon="fluent:chess-16-filled" class="text-lg" />
+              <span class="hidden md:inline">在线房间 ({{ gameStore.rooms.length }})</span>
+              <span class="md:hidden text-xs">{{ gameStore.rooms.length }}</span>
+            </a>
+            <a 
+              class="tab h-auto py-2 transition-all duration-200 gap-2"
+              :class="{ 'tab-active': activeTab === 'players' }"
+              @click="activeTab = 'players'"
+            >
+              <Icon icon="fluent:people-16-filled" class="text-lg" />
+              <span class="hidden md:inline">在线玩家 ({{ gameStore.players.length }})</span>
+              <span class="md:hidden text-xs">{{ gameStore.players.length }}</span>
+            </a>
           </div>
 
-          <!-- Draggable splitter -->
-          <div
-            class="sidebar-splitter bg-base-content/20 cursor-row-resize select-none touch-none"
-            title="拖拽调整面板高度"
-            @pointerdown="onSplitterPointerDown"
-          />
+          <!-- Content -->
+          <div class="flex-1 overflow-auto min-h-0 relative bg-base-100">
+            <!-- Rooms Panel -->
+            <div v-show="activeTab === 'rooms'" class="h-full flex flex-col p-2">
+              <div class="sticky top-0 z-10 backdrop-blur pb-2">
+                <section class="flex justify-end">
+                  <select v-model="gameType" class="text-xs select select-bordered select-sm w-full max-w-[10em]">
+                    <option value="">全部游戏</option>
+                    <option v-for="(game, key) in gameStore.games" :key="key" :value="key">
+                      {{ game.name }}
+                    </option>
+                  </select>
+                </section>
+              </div>
+              <ul class="space-y-2 pb-4">
+                <li v-for="r in roomList" :key="r.id" class="flex items-center justify-between p-2 rounded bg-base-300/50 hover:bg-base-300 transition-colors">
+                  <div class="flex items-center gap-1 overflow-hidden">
+                    <Icon icon="solar:lock-linear" v-if="r.attrs.passwd" />
+                    <Icon v-if="r.attrs?.point" icon="ph:coins-duotone" class="text-yellow-400 tooltip tooltip-right" :data-tip="`单局积分: ${r.attrs.point}`" />
+                    <span class="truncate text-sm" :class="{'font-bold text-base-content': r.players.some(p => p.id === gameStore.player?.id)}">
+                      【{{ gameStore.games[r.attrs.type].name }}】{{ r.name }}
+                    </span>
+                    <span class="text-xs text-base-content/60 whitespace-nowrap">
+                      ({{ r.players.filter(p => p.role === 'player').length }}/{{ r.size }})
+                    </span>
+                  </div>
+                  <button
+                    v-if="!gameStore.roomPlayer"
+                    @click="joinRoom(r)"
+                    class="px-2 py-1 btn-xs whitespace-nowrap btn"
+                  >
+                    {{ r.players.filter(p => p.role === 'player').length < r.size ? '进入' : '围观' }}
+                  </button>
+                </li>
+              </ul>
+              <span v-if="roomList.length === 0" class="text-sm text-base-content/60 text-center mt-4">暂无房间</span>
+            </div>
 
-          <div class="overflow-auto flex-1 min-h-0 pt-3">
-            <h2 class="text-sm font-bold text-base-content/60 uppercase tracking-wider mb-2 flex items-center gap-1">
-              <Icon icon="fluent:people-16-filled" size="1.5em"/>
-              <span>在线玩家 ({{ gameStore.players.length }})</span>
-            </h2>
-            <ul class="space-y-1">
-              <li v-for="p in gameStore.players" :key="p.id" class="text-sm text-base-content/80">
-                - {{ p.name }}
-              </li>
-            </ul>
+            <!-- Players Panel -->
+            <div v-show="activeTab === 'players'" class="h-full overflow-auto p-2">
+              <ul class="space-y-1 pb-4">
+                <li
+                  v-for="p in gameStore.players"
+                  :key="p.id"
+                  class="text-sm text-base-content/80 flex items-center gap-2 p-2 hover:bg-base-300 rounded transition-colors"
+                >
+                  <div 
+                    class="w-6 h-6 rounded-full bg-base-300 flex items-center justify-center text-xs overflow-hidden border border-base-content/10"
+                  >
+                    <img v-if="p.attributes.avatar" :src="p.attributes.avatar" class="w-full h-full object-cover" />
+                    <span v-else>{{ p.name[0] }}</span>
+                  </div>
+                  <span>{{ p.name }}</span>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
-        <footer class="text-base-content/50 mt-auto text-center font-serif text-sm">
+        <footer class="text-base-content/50 text-center font-serif text-sm bg-base-100 py-2">
           <p>
             Power By <a href="https://tiaoom.com" target="_blank" rel="noopener noreferrer">Tiaoom</a>
             &copy; {{ new Date().getFullYear() }}
@@ -173,7 +194,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGameStore } from '@/stores/game'
 import { IRoomOptions } from 'tiaoom/client'
@@ -183,10 +204,7 @@ const gameStore = useGameStore()
 
 const isSidebarOpen = ref(false)
 const isDesktopSidebarCollapsed = ref(false)
-
-const panelsEl = ref<HTMLElement | null>(null)
-const roomsEl = ref<HTMLElement | null>(null)
-const roomsPanelHeightPx = ref<number | null>(null)
+const activeTab = ref<'rooms' | 'players'>('rooms')
 
 function joinRoom(r: IRoomOptions) {
   let passwd: string | undefined;
@@ -212,68 +230,9 @@ const roomList = computed(() => {
 
 onMounted(() => {
   gameStore.initGame()
-
-  // Preserve current default sizing by measuring after first render.
-  nextTick(() => {
-    if (!roomsEl.value) return
-    if (roomsPanelHeightPx.value !== null) return
-    const measured = Math.round(roomsEl.value.getBoundingClientRect().height)
-    if (measured > 0) roomsPanelHeightPx.value = measured
-  })
 })
-
-function onSplitterPointerDown(e: PointerEvent) {
-  if (!panelsEl.value || !roomsEl.value) return
-  if (roomsPanelHeightPx.value === null) {
-    const measured = Math.round(roomsEl.value.getBoundingClientRect().height)
-    roomsPanelHeightPx.value = measured > 0 ? measured : 0
-  }
-
-  const pointerId = e.pointerId
-  ;(e.currentTarget as HTMLElement | null)?.setPointerCapture?.(pointerId)
-
-  const startY = e.clientY
-  const startHeight = roomsPanelHeightPx.value ?? 0
-  const minRooms = 120
-  const minPlayers = 120
-  const splitterHeight = Math.max(1, Math.round((e.currentTarget as HTMLElement).getBoundingClientRect().height))
-
-  const containerHeight = Math.round(panelsEl.value.getBoundingClientRect().height)
-  const maxRooms = Math.max(minRooms, containerHeight - splitterHeight - minPlayers)
-
-  const prevUserSelect = document.body.style.userSelect
-  document.body.style.userSelect = 'none'
-
-  function onMove(ev: PointerEvent) {
-    const dy = ev.clientY - startY
-    const next = Math.min(maxRooms, Math.max(minRooms, startHeight + dy))
-    roomsPanelHeightPx.value = Math.round(next)
-  }
-
-  function onUp() {
-    window.removeEventListener('pointermove', onMove)
-    window.removeEventListener('pointerup', onUp)
-    document.body.style.userSelect = prevUserSelect
-  }
-
-  window.addEventListener('pointermove', onMove)
-  window.addEventListener('pointerup', onUp)
-}
 </script>
 
 <style scoped>
-.sidebar-splitter {
-  position: relative;
-  height: 1px;
-}
-
-/* Expand hit area without changing visuals */
-.sidebar-splitter::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: -8px;
-  bottom: -8px;
-}
+/* No scoped styles needed for tabs as we use utility classes */
 </style>

@@ -29,17 +29,15 @@ export interface TetrisGameState {
 }
 
 export function useTetris(game: GameCore, roomPlayer: RoomPlayer & { room: Room }) {
-  const gameStatus = ref<'waiting' | 'playing'>('waiting')
+  const gameStatus = computed(() => roomPlayer.room.status)
   const gameState = ref<TetrisGameState | null>(null)
   const achievements = ref<Record<string, { win: number; lost: number; draw: number }>>({})
   const clearedLines = ref<number[]>([])
 
   function onRoomStart() {
-    gameStatus.value = 'playing'
   }
 
   function onRoomEnd() {
-    gameStatus.value = 'waiting'
     gameState.value = null
   }
 
@@ -48,7 +46,6 @@ export function useTetris(game: GameCore, roomPlayer: RoomPlayer & { room: Room 
 
     switch (cmd.type) {
       case 'status':
-        gameStatus.value = cmd.data.status
         gameState.value = cmd.data.gameState
         achievements.value = cmd.data.achievements || {}
         break
@@ -205,7 +202,7 @@ export function useTetris(game: GameCore, roomPlayer: RoomPlayer & { room: Room 
   })
 
   // 计算带阴影预览的游戏板
-  const renderedBoardWithGhost = computed(() => {
+  const renderedBoardWithGhost = computed<BoardCell[][]>(() => {
     if (!gameState.value) return []
 
     // 深拷贝游戏板

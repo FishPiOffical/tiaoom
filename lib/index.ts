@@ -1,7 +1,7 @@
 import { EventEmitter } from "events";
 import { TiaoomEvents } from "@lib/events";
-import { IMessage, RecvMessageTypes, MessageTypes } from "@lib/models/message";
-import { IRoom, IRoomPlayer, Room, IRoomOptions, IRoomPlayerOptions } from "@lib/models/room";
+import { IMessage, RecvMessageTypes, MessageTypes, IMessagePackage } from "@lib/models/message";
+import { IRoom, IRoomPlayer, Room, IRoomOptions, IRoomPlayerOptions, RoomStatus, PlayerRole } from "@lib/models/room";
 import { IPlayer, Player, IPlayerOptions, PlayerStatus } from "@lib/models/player";
 
 export interface ITiaoomOptions {
@@ -39,9 +39,18 @@ export class Tiaoom extends EventEmitter {
     this.players = data.players?.map((p) => new Player(p, p.status)) ?? [];
     this.rooms.forEach((room) => {
       room.setSender((type, message, sender) => {
-        this.messageInstance?.send({ type: `room.${type}` as MessageTypes, data: message, sender: room });
+        this.send({ type: `room.${type}` as MessageTypes, data: message, sender: room });
       })
     })
+    setTimeout(() => {
+      this.rooms.forEach((room) => {
+        room.players.forEach((player) => {
+          if (!this.players.some((p) => p.id === player.id)) {
+            this.offlinePlayer(player);
+          }
+        })
+      })
+    }, 60 * 1000);
     return this;
   }
 
@@ -73,7 +82,7 @@ export class Tiaoom extends EventEmitter {
   }
 
   run() {
-    this.messageInstance?.on("message", (message: any, cb?: (err: Error | null, data?: any) => any) => {
+    this.messageInstance?.on("message", async (message: any, cb?: (err: Error | null, data?: any) => any) => {
       message.sender = message.sender ? this.searchPlayer(message.sender) || message.sender : null;
       try {
         switch (message.type) {
@@ -82,33 +91,33 @@ export class Tiaoom extends EventEmitter {
           case RecvMessageTypes.PlayerList:
             return cb?.(null, this.players);
           case RecvMessageTypes.RoomCreate:
-            return this.createRoom(message.sender, message.data);
+            return await this.createRoom(message.sender, message.data);
           case RecvMessageTypes.PlayerJoin:
-            return this.joinPlayer(message.sender, message.data);
+            return await this.joinPlayer(message.sender, message.data);
           case RecvMessageTypes.PlayerLeave:
-            return this.leavePlayer(message.sender, message.data);
+            return await this.leavePlayer(message.sender, message.data);
           case RecvMessageTypes.PlayerStandUp:
-            return this.leaveSeat(message.sender, message.data);
+            return await this.leaveSeat(message.sender, message.data);
           case RecvMessageTypes.RoomGet:
             return cb?.(null, this.searchRoom(message.data));
           case RecvMessageTypes.RoomStart:
-            return this.startRoom(message.sender, message.data);
+            return await this.startRoom(message.sender, message.data);
           case RecvMessageTypes.RoomKick:
-            return this.kickPlayer(message.sender, message.data);
+            return await this.kickPlayer(message.sender, message.data);
           case RecvMessageTypes.RoomTransfer:
-            return this.transferOwner(message.sender, message.data);
+            return await this.transferOwner(message.sender, message.data);
           case RecvMessageTypes.RoomClose:
-            return this.closeRoom(message.sender, message.data);
+            return await this.closeRoom(message.sender, message.data);
           case RecvMessageTypes.PlayerLogin:
-            return this.loginPlayer(message.data);
+            return await this.loginPlayer(message.data);
           case RecvMessageTypes.PlayerLogout:
-            return this.removePlayer(message.data);
+            return await this.removePlayer(message.data);
           case MessageTypes.PlayerOffline:
-            return this.offlinePlayer(message.data);
+            return await this.offlinePlayer(message.data);
           case RecvMessageTypes.PlayerReady:
-            return this.readyPlayer(message.sender, message.data);
+            return await this.readyPlayer(message.sender, message.data);
           case RecvMessageTypes.PlayerUnready:
-            return this.unReadyPlayer(message.sender, message.data);
+            return await this.unReadyPlayer(message.sender, message.data);
           case RecvMessageTypes.RoomPlayerCommand:
             return this.searchRoom(message.data)?.emit("player-command", { ...message.data , sender: message.sender });
           case RecvMessageTypes.GlobalCommand:
@@ -118,7 +127,7 @@ export class Tiaoom extends EventEmitter {
         }
       } catch (error) {
         cb?.(error as Error);
-        if (message.sender) this.messageInstance?.send({
+        if (message.sender) this.send({
           type: MessageTypes.PlayerError,
           data: {
             name: (error as Error).name, 
@@ -131,27 +140,27 @@ export class Tiaoom extends EventEmitter {
     });
 
     this.on('player', (player, online) => {
-      this.messageInstance?.send({ type: online ? MessageTypes.PlayerLogin : MessageTypes.PlayerLogout, data: player });
+      this.send({ type: online ? MessageTypes.PlayerLogin : MessageTypes.PlayerLogout, data: player });
     });
 
     this.on('players', (players) => {
-      this.messageInstance?.send({ type: MessageTypes.PlayerList, data: players });
+      this.send({ type: MessageTypes.PlayerList, data: players });
     });
 
     this.on('room', (room) => {
-      this.messageInstance?.send({ type: MessageTypes.RoomCreate, data: room });
+      this.send({ type: MessageTypes.RoomCreate, data: room });
     });
 
     this.on('room-player', (room) => {
-      this.messageInstance?.send({ type: MessageTypes.RoomUpdate, data: room });
+      this.send({ type: MessageTypes.RoomUpdate, data: room });
     });
 
     this.on('rooms', (rooms) => {
-      this.messageInstance?.send({ type: MessageTypes.RoomList, data: rooms });
+      this.send({ type: MessageTypes.RoomList, data: rooms });
     });
 
     this.on('message', (data, sender) => {
-      this.messageInstance?.send({ type: MessageTypes.GlobalMessage, data, sender });
+      this.send({ type: MessageTypes.GlobalMessage, data, sender });
     });
 
     return this;
@@ -173,7 +182,7 @@ export class Tiaoom extends EventEmitter {
     return this.rooms.find((target) => target.id === roomId);
   }
 
-  createRoom(sender: IPlayer, options: IRoomOptions) {
+  async createRoom(sender: IPlayer, options: IRoomOptions) {
     if (!sender) {
       throw new Error('missing player information.');
     }
@@ -192,7 +201,7 @@ export class Tiaoom extends EventEmitter {
 
     const room = new Room(options);
     room.setSender((type, message, sender) => {
-      this.messageInstance?.send({ type: `room.${type}` as MessageTypes, data: message, sender: room });
+      this.send({ type: `room.${type}` as MessageTypes, data: message, sender: room });
     });
     
     this.rooms.push(room);
@@ -201,7 +210,7 @@ export class Tiaoom extends EventEmitter {
     return room;
   }
 
-  startRoom(sender: IPlayer, room: IRoom) {
+  async startRoom(sender: IPlayer, room: IRoom) {
     const roomInstance = this.searchRoom(room);
     if (!roomInstance) {
       throw new Error('room not found.');
@@ -211,7 +220,7 @@ export class Tiaoom extends EventEmitter {
     return this.emit("room-player", roomInstance);
   }
 
-  closeRoom(sender: IPlayer | null, room: IRoom) {
+  async closeRoom(sender: IPlayer | null, room: IRoom) {
     const roomIndex = this.rooms.findIndex((r) => r.id === room.id);
     const roomInstance = this.rooms[roomIndex];
     if (!roomInstance) {
@@ -232,7 +241,7 @@ export class Tiaoom extends EventEmitter {
     return room;
   }
 
-  kickPlayer(sender: IPlayer, data: { roomId: string, playerId: string }) {
+  async kickPlayer(sender: IPlayer, data: { roomId: string, playerId: string }) {
     const room = this.searchRoom(data.roomId);
     if (!room) {
       throw new Error('room not found.');
@@ -255,7 +264,7 @@ export class Tiaoom extends EventEmitter {
     return roomPlayer;
   }
 
-  transferOwner(sender: IPlayer, data: { roomId: string, playerId: string }) {
+  async transferOwner(sender: IPlayer, data: { roomId: string, playerId: string }) {
     const room = this.searchRoom(data.roomId);
     if (!room) {
       throw new Error('room not found.');
@@ -296,12 +305,25 @@ export class Tiaoom extends EventEmitter {
       }
       playerInstance.isAdmin = await this.isAdmin(playerInstance);
       playerInstance.setSender((type, message) => {
-        this.messageInstance?.send({ type: `player.${type}` as MessageTypes, data: message, sender: playerInstance });
+        this.send({ type: `player.${type}` as MessageTypes, data: message, sender: playerInstance });
       });
       this.emit("player", playerInstance, true);
+
+      const room = this.rooms.find(r => r.players.some(p => p.id === playerInstance!.id));
+      if (room) {
+        const playerIndex = room.players.findIndex(p => p.id === playerInstance!.id);
+        if (playerIndex >= 0) {
+          const status = room?.status == RoomStatus.playing ? PlayerStatus.playing : PlayerStatus.online;
+          playerInstance.status = status;
+          playerInstance.attributes = Object.assign({}, room.players[playerIndex].attributes, playerInstance.attributes);
+          Object.assign(room.players[playerIndex], playerInstance);
+          room.emit('update', room);
+        }
+      }
     }
-    
+
     playerInstance.emit("status", playerInstance.status);
+
     cb?.({ player: playerInstance });
     return playerInstance;
   }
@@ -333,7 +355,7 @@ export class Tiaoom extends EventEmitter {
     return roomPlayer;
   }
 
-  leavePlayer(sender: IPlayer, player: IRoomPlayerOptions) {
+  async leavePlayer(sender: IPlayer, player: IRoomPlayerOptions) {
     if (!player.roomId) {
       throw new Error('missing room id.');
     }
@@ -355,7 +377,7 @@ export class Tiaoom extends EventEmitter {
     return roomPlayer;
   }
   
-  leaveSeat(sender: IPlayer, player: IRoomPlayerOptions) {
+  async leaveSeat(sender: IPlayer, player: IRoomPlayerOptions) {
     if (!player.roomId) {
       throw new Error('missing room id.');
     }
@@ -376,7 +398,7 @@ export class Tiaoom extends EventEmitter {
     return roomPlayer;
   }
 
-  readyPlayer(sender: IPlayer, player: IRoomPlayer) {
+  async readyPlayer(sender: IPlayer, player: IRoomPlayer) {
     const playerInstance = this.searchPlayer(sender);
     if (!playerInstance) {
       throw new Error('player not found.');
@@ -403,7 +425,7 @@ export class Tiaoom extends EventEmitter {
       room.emit("all-ready", room.players);
     }
 
-    playerInstance.emit("status", PlayerStatus.ready);
+    playerInstance.status = PlayerStatus.ready;
 
     room.emit("player-ready", { ...player, ...roomPlayer });
     room.emit('update', room);
@@ -411,7 +433,7 @@ export class Tiaoom extends EventEmitter {
     return this;
   }
     
-  unReadyPlayer(sender: IPlayer, player: IRoomPlayer) {
+  async unReadyPlayer(sender: IPlayer, player: IRoomPlayer) {
     const playerInstance = this.searchPlayer(sender);
     if (!playerInstance) {
       throw new Error('player not found.');
@@ -433,14 +455,14 @@ export class Tiaoom extends EventEmitter {
     }
 
     roomPlayer.isReady = false;
-    playerInstance.emit("status", PlayerStatus.unready);
+    playerInstance.status = PlayerStatus.unready;
     room.emit("player-unready", { ...player, ...roomPlayer });
     room.emit('update', room);
 
     return this;
   }
 
-  removePlayer(sender: IPlayer) {
+  async removePlayer(sender: IPlayer) {
     const playerIndex = this.players.findIndex((p) => p.id === sender?.id);
     const player = this.players[playerIndex];
     if (playerIndex > -1) {
@@ -450,16 +472,48 @@ export class Tiaoom extends EventEmitter {
     return player;
   }
 
-  offlinePlayer(sender: IPlayer) {
+  async offlinePlayer(sender: IPlayer) {
     const room = this.rooms.find((room) => room.players.some(p => p.id === sender?.id));
     if (room) {
       setTimeout(() => {
-        if (this.players.some(p => p.id === sender.id)) return; // player is online
-        room.emit("player-offline", room.players.find(p => p.id === sender.id)!);
+        const playerInstance = room.players.find(p => p.id === sender.id && p.role === PlayerRole.player);
+        if (this.players.some(p => p.id === sender.id) || !playerInstance) 
+          return; // player is online
+        playerInstance.status = PlayerStatus.offline;
+        room.emit("player-offline", playerInstance);
+        playerInstance.status = PlayerStatus.offline;
+        room.emit('update', room);
       }, 60 * 1000); // 1 minute later
     }
     this.removePlayer(sender);
     return sender;
+  }
+
+  async send(message: IMessagePackage) {
+    // send a message to the client
+    if (message.type.startsWith('player.') && message.sender) {
+      const player = message.sender as Player;
+      // Send to all sockets of the player
+      this.messageInstance?.send({ 
+        type: message.type, 
+        data: message.data, 
+        senderIds: [player.id]
+      });
+    }
+    else if (message.type.startsWith('room.') && message.sender) {
+      const room = message.sender as Room;
+      this.messageInstance?.send({ 
+        type: message.type, 
+        data: message.data, 
+        senderIds: room.players.map(p => p.id)
+      });
+    } else {
+      this.messageInstance?.send({ 
+        type: message.type, 
+        data: message.data, 
+        senderIds: this.players.map(p => p.id)
+      });
+    }
   }
 }
 

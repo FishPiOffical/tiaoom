@@ -1,68 +1,53 @@
 <template>
-  <div class="flex flex-col gap-2">
+  <div class="flex flex-row items-center gap-2 py-2">
     <!-- Waiting: Player Actions -->
     <div v-if="!isPlaying && roomPlayer.role === PlayerRole.player" class="group flex gap-2">
-      <button class="btn" 
+      <button class="btn btn-circle btn-soft tooltip tooltip-left" 
         @click="game?.leaveRoom(roomPlayer.room.id)"
         :disabled="roomPlayer.isReady"
+        data-tip="离开房间"
       >
-        离开房间
+        <Icon icon="mdi:logout" />
       </button>
-      <button class="btn" 
+      <button class="btn btn-circle btn-soft tooltip tooltip-left" 
         @click="game?.leaveSeat(roomPlayer.room.id)"
         :disabled="roomPlayer.isReady"
+        data-tip="离开座位"
       >
-        离开座位
+        <Icon icon="mdi:gamepad-off" />
       </button>
-      <button class="btn btn-accent" 
+      <button class="btn btn-accent btn-circle tooltip tooltip-left" 
         @click="game?.ready(roomPlayer.room.id, !roomPlayer.isReady)"
+        :data-tip="roomPlayer.isReady ? '取消' : '准备'"
       >
-        {{ roomPlayer.isReady ? '取消' : '准备' }}
+        <Icon :icon="roomPlayer.isReady ? 'mdi:close' : 'mdi:check'" />
       </button>
-      <button class="btn btn-primary" 
+      <button class="btn btn-primary btn-circle tooltip tooltip-left" 
         @click="game?.startGame(roomPlayer.room.id)" 
         :disabled="!isAllReady"
+        data-tip="开始游戏"
       >
-        开始游戏
+        <Icon icon="mdi:play" />
       </button>
     </div>
 
     <!-- Watcher Actions -->
     <div v-if="roomPlayer.role === PlayerRole.watcher" class="group flex gap-2">
-      <button class="btn" 
+      <button class="btn btn-circle btn-soft tooltip tooltip-left" 
         @click="game?.leaveRoom(roomPlayer.room.id)"
         :disabled="roomPlayer.isReady"
+        data-tip="离开房间"
       >
-        离开房间
+        <Icon icon="mdi:logout" />
       </button>
-      <button class="btn" 
+      <button class="btn btn-circle btn-soft tooltip tooltip-left" 
         v-if="!isRoomFull && !isPlaying" 
         @click="game?.joinRoom(roomPlayer.room.id)"
+        data-tip="加入游戏"
       >
-        加入游戏
+        <Icon icon="mdi:google-gamepad" />
       </button>
     </div>
-
-    <!-- Playing: Player Actions (Draw/Resign) -->
-    <div v-if="isPlaying && roomPlayer.role === PlayerRole.player" class="group flex gap-2">
-       <slot name="playing-actions">
-          <button class="btn" 
-            v-if="enableDrawResign"
-            @click="$emit('draw')"
-            :disabled="currentPlayer?.id !== roomPlayer.id"
-          >
-            请求和棋
-          </button>
-          <button class="btn" 
-            v-if="enableDrawResign"
-            @click="$emit('lose')"
-            :disabled="currentPlayer?.id !== roomPlayer.id"
-          >
-            认输
-          </button>
-       </slot>
-    </div>
-    
     <!-- Extra Slot -->
     <slot />
   </div>
@@ -70,17 +55,13 @@
 
 <script setup lang="ts">
 import { GameCore } from '@/core/game';
-import { RoomPlayer, Player, Room, PlayerRole, RoomStatus } from 'tiaoom/client';
+import { RoomPlayer, Room, PlayerRole, RoomStatus } from 'tiaoom/client';
 import { computed } from 'vue';
 
 const props = defineProps<{
   roomPlayer: RoomPlayer & { room: Room },
   game: GameCore,  
-  currentPlayer?: Player | null,
-  enableDrawResign?: boolean
 }>()
-
-defineEmits(['draw', 'lose'])
 
 const isPlaying = computed(() => props.roomPlayer.room.status === RoomStatus.playing)
 const isAllReady = computed(() => {

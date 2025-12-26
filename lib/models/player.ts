@@ -1,5 +1,6 @@
 import { PlayerEvents } from "@lib/events/player";
 import EventEmitter from "events";
+import { P } from "tsdown/index-BQZ2CZuJ";
 
 /**
  * 玩家选项接口
@@ -47,6 +48,10 @@ export enum PlayerStatus {
    * 游戏中
    */
   playing = 'playing',
+  /**
+   * 离线
+   */
+  offline = 'offline',
 }
 
 /**
@@ -86,23 +91,32 @@ export class Player extends EventEmitter implements IPlayer {
   id: string = "";
   name: string = "";
   attributes?: any;
-  status: PlayerStatus = PlayerStatus.online;
   sender?: (type: string, ...message: any) => void;
   isAdmin: boolean = false;
 
+  private _status: PlayerStatus = PlayerStatus.online;
+  status: PlayerStatus = PlayerStatus.online;
+
   constructor(player: Partial<IPlayerOptions> | Player, status: PlayerStatus = PlayerStatus.online) {
     super();
+    Object.defineProperty(this, 'status', {
+      enumerable: true,
+      configurable: true,
+      get: () => this._status,
+      set: (value: PlayerStatus) => {
+        this._status = value;
+        this.emit('status', value);
+      }
+    });
     this.id = player.id || new Date().getTime().toString();
     this.name = player.name || "";
     this.attributes = player.attributes || {};
     this.sender = player.sender;
 
-    if (player instanceof Player) this.status = player.status;
-
-    this.status = status;
-
+    this._status = status;
+    if (player instanceof Player) this._status = player.status;
     this.on('status', (status: PlayerStatus) => {
-      this.status = status;
+      this._status = status;
     });
     
     const events: Array<keyof PlayerEvents> = ['command', 'message', 'status'];

@@ -3,9 +3,10 @@ import http from "http";
 import { IPlayer, IRoomOptions, IRoomPlayer, IRoomPlayerOptions, Player, PlayerRole, PlayerStatus, RoomPlayer, } from "tiaoom";
 import { Room, Tiaoom } from "tiaoom";
 import { SocketManager } from "./socket";
-import Games, { IGameInfo } from "./games";
+import Games, { GameRoom, IGame, IGameInfo } from "./games";
 import { Model } from "./model";
 import { UserRepo } from "./entities";
+import FishPi from "fishpi";
 
 export class Controller extends Tiaoom {
   messages: { data: string, sender: Player, createdAt: number }[] = [];
@@ -33,24 +34,35 @@ export class Controller extends Tiaoom {
 
   get games() {
     return Object.keys(Games).reduce((obj, key) => {
-      obj[key] = { ...Games[key] };
+      obj[key] = { ...Games[key] } as IGameInfo;
       return obj;
     }, {} as Record<string, IGameInfo>);
   }
 
+  
+
   run() {
-    return super.run().on("room", (room: Room) => {
+    return super.run().on("room", async (room: Room) => {
       const gameType = room.attrs?.type;
       Model.createRoom(room);
       if (gameType && Games[gameType]) {
-        Games[gameType].default(room, {
-          save: (data: Record<string, any>) => {
-            return Model.saveGameData(room.id, data);
-          },
-          restore: () => {
-            return Model.getGameData(room.id);
-          }
-        });
+        const defaultExport = Games[gameType].default;
+        if (defaultExport.prototype instanceof GameRoom) {
+          const GameClass = defaultExport as new (room: Room) => GameRoom;
+          const gameRoomInstance = new GameClass(room);
+          const data = await Model.getGameData(room.id);
+          Object.assign(gameRoomInstance, data || {});
+          gameRoomInstance.init();
+        } else {
+          (defaultExport as IGame['default'])(room, {
+            save: (data: Record<string, any>) => {
+              return Model.saveGameData(room.id, data);
+            },
+            restore: () => {
+              return Model.getGameData(room.id);
+            }
+          });
+        }
       }
       else console.error("game not found:", room);
       function updatePlayerList() {
@@ -62,6 +74,7 @@ export class Controller extends Tiaoom {
         .on('end', () => {
           room.players.forEach(p => {
             p.isReady = false;
+            p.status = PlayerStatus.unready;
             p.emit('status', PlayerStatus.unready);
           });
           this.emit('room-player', room);
@@ -104,23 +117,49 @@ export class Controller extends Tiaoom {
     });
   }
 
-  createRoom(sender: IPlayer, options: IRoomOptions) {
+  async createRoom(sender: IPlayer, options: IRoomOptions) {
     if (options.attrs?.passwd) {
       options.attrs.passwd = crypto.createHash('md5').update(options.attrs.passwd).digest('hex');
+    }
+    if (options.attrs?.point && !isNaN(options.attrs.point)) {
+      const username = sender.attributes?.username;
+      if (!username) throw new Error("用户信息不完整，无法创建房间。");
+      // 检查用户积分是否足够
+      await new FishPi().userPoints(username).then(points => {
+        if (points < options.attrs!.point!) {
+          throw new Error("积分不足，无法创建房间。");
+        }
+      }).catch(err => {
+        throw err;
+      });
     }
     return super.createRoom(sender, options);
   }
 
-  joinPlayer(sender: IPlayer, player: IRoomPlayerOptions & { params?: { passwd: string } }, isCreator: boolean = false) {
-    if (player.params?.passwd) {
-      const room = this.rooms.find(r => r.id === player.roomId);
-      if (room) {
-        const passwdHash = crypto.createHash('md5').update(player.params.passwd).digest('hex');
+  async joinPlayer(sender: IPlayer, player: IRoomPlayerOptions & { params?: { passwd: string } }, isCreator: boolean = false) {
+    const room = this.rooms.find(r => r.id === player.roomId);
+    if (room) {
+      if (player.params?.passwd) {
+      const passwdHash = crypto.createHash('md5').update(player.params.passwd).digest('hex');
         if (room.attrs?.passwd !== passwdHash) {
           throw new Error("密码错误，无法加入房间。");
         }
       }
+      if (room.attrs?.point && !isNaN(room.attrs.point) && room.attrs.point > 0) {
+        const username = sender.attributes?.username;
+        if (!username) throw new Error("用户信息不完整，无法加入房间。");
+        // 检查用户积分是否足够
+        await new FishPi().userPoints(username).then(points => {
+          if (points < room.attrs!.point!) {
+            throw new Error("积分不足，无法加入房间。");
+          }
+          return super.joinPlayer(sender, player, isCreator);
+        }).catch(err => {
+          throw err;
+        });
+      }
     }
+    
     return super.joinPlayer(sender, player, isCreator);
   }
 

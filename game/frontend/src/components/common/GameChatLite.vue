@@ -74,7 +74,6 @@ const emit = defineEmits<{
   (e: 'send', text: string): void
 }>()
 
-
 const gameStore = useGameStore();
 const roomPlayer = computed(() => gameStore.roomPlayer);
 const player = computed(() => gameStore.player);

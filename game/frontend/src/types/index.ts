@@ -3,6 +3,8 @@ export interface GameConfig {
   minSize: number
   maxSize: number
   description: string
+  rates?: Record<string, number>
+  points?: Record<string, number>
 }
 
 export interface Message {

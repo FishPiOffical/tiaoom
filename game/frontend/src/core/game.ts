@@ -3,9 +3,9 @@ import { Tiaoom, TiaoomEvents, MessageTypes, Player } from 'tiaoom/client'
 import type { Message } from '@/types'
 
 export class GameCore extends Tiaoom {
-  private address: string
-  private socket?: ReconnectingWebSocket
-
+  address: string;
+  private socket?: ReconnectingWebSocket;
+  
   constructor(address: string) {
     super()
     this.address = address

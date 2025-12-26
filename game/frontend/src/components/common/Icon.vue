@@ -41,7 +41,6 @@
     align-items: center;
     position: relative;
     fill: currentColor;
-    color: var(--color);
     font-size: inherit;
 
     svg {

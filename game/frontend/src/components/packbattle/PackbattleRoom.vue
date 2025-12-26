@@ -6,7 +6,7 @@
           <img :src="packImg" alt="药丸博弈" class="w-full h-full object-cover" />
         </div>
         <h3 class="text-lg font-medium">药丸博弈 · 夏洛克与出租车司机</h3>
-        <p class="text-sm text-base-content/70 space-y-1">
+        <p class="text-sm text-base-content/70 space-y-1 leading-7">
           <span>场上有两颗外观完全相同的胶囊。<b>出租车司机</b>提前知道哪一颗含毒，并将其中一颗递给<b>夏洛克</b>；随后，夏洛克在“交换/不交换”之间做出抉择。无论选择如何，双方都会同时吞下各自的胶囊，谁中毒谁失败。</span>
           <br />
           <span>这是一场信息不对称的心理博弈：出租车司机需要“诱导/反诱导”，夏洛克则要“识破/反识破”。每个决策阶段有 <b>60 秒</b> 思考时间，<b>超时直接判负</b>。请<b>深思熟虑</b>后再点击按钮，最好不要乱点；你也可以在右侧聊天栏公开表达你的想法与策略。</span>
@@ -50,14 +50,21 @@
     </section>
 
     <aside class="w-full md:w-96 flex-none border-t md:border-t-0 md:border-l border-base-content/20 pt-4 md:pt-0 md:pl-4 space-y-4 md:h-full flex flex-col">
-      <RoomControls
-        :game="game"
-        :room-player="roomPlayer"
-        :current-player="phase === 'pick' ? active : (phase === 'swap' ? passive : null)"
-        :enable-draw-resign="true"
-        @draw="requestDraw"
-        @lose="requestLose"
-      />
+      <!-- 操作按钮 -->
+      <div v-if="isPlaying && roomPlayer.role === PlayerRole.player" class="group flex gap-2">
+        <button class="btn" 
+          @click="requestDraw"
+          :disabled="(phase === 'pick' ? active?.id : passive?.id) !== roomPlayer.id"
+        >
+          求和
+        </button>
+        <button class="btn" 
+          @click="requestLose"
+          :disabled="(phase === 'pick' ? active?.id : passive?.id) !== roomPlayer.id"
+        >
+          认输
+        </button>
+      </div>
 
       <PlayerList :players="roomPlayer.room.players">
         <template #default="{ player: p }">
@@ -87,11 +94,9 @@
 </template>
 
 <script setup lang="ts">
-import type { RoomPlayer, Room } from 'tiaoom/client'
-import { RoomStatus } from 'tiaoom/client'
+import { PlayerRole, type RoomPlayer, type Room } from 'tiaoom/client'
 import type { GameCore } from '@/core/game'
 import GameChat from '@/components/common/GameChat.vue'
-import RoomControls from '@/components/common/RoomControls.vue'
 import { usePackbattle } from './usePackbattle'
 import { computed } from 'vue'
 
@@ -100,6 +105,7 @@ const props = defineProps<{ roomPlayer: RoomPlayer & { room: Room }, game: GameC
 const packImg = new URL('@/assets/images/pack.png', import.meta.url).href
 
 const {
+  isPlaying,
   gameStatus,
   phase,
   active,
@@ -109,6 +115,8 @@ const {
   result,
   give,
   decideSwap,
+  requestDraw,
+  requestLose,
 } = usePackbattle(props.game, props.roomPlayer)
 
 const winnerRole = computed(() => {
@@ -131,15 +139,5 @@ function getPlayerStatus(p: any) {
   if (phase.value === 'swap' && passive?.value?.id === p.id) return '思考中'
   if (gameStatus.value === 'playing') return '等待中'
   return '准备好了'
-}
-
-function requestDraw() {
-  if (props.roomPlayer.room.status !== RoomStatus.playing) return
-  props.game?.command(props.roomPlayer.room.id, { type: 'request-draw' })
-}
-
-function requestLose() {
-  if (props.roomPlayer.room.status !== RoomStatus.playing) return
-  props.game?.command(props.roomPlayer.room.id, { type: 'request-lose' })
 }
 </script>

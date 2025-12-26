@@ -49,11 +49,38 @@
         />
         <Icon class="cursor-pointer" :icon="showPasswd ? 'carbon:view' : 'carbon:view-off'" @click="showPasswd = !showPasswd" />
       </label>
-      <button type="submit" :disabled="!!gameStore.roomPlayer" class="btn btn-primary whitespace-nowrap">
+      <select v-model.number="room.attrs.point" class="select w-32" required placeholder="积分" 
+        v-if="currentGame.points && Object.keys(currentGame.points).length">
+        <option disabled selected hidden value="">积分</option>
+        <option v-for="(point, key) in currentGame.points" :key="key" :value="point">
+          {{ key }}
+        </option>
+      </select>
+      <select v-model.number="room.attrs.rate" class="select w-32" required 
+        v-if="currentGame.rates && Object.keys(currentGame.rates).length">
+        <option disabled selected hidden value="">倍率</option>
+        <option v-for="(rate, key) in currentGame.rates" :key="key" :value="rate">
+          {{ key }}
+        </option>
+      </select>
+      <button type="submit" :disabled="!!gameStore.roomPlayer" class="btn btn-primary whitespace-nowrap mr-0 ml-auto">
         创建
       </button>
     </div>
     <p class="text-sm text-base-content/60">{{ currentGame?.description }}</p>
+    <div role="alert" class="alert alert-warning alert-soft" v-if="room.attrs.point || room.attrs.rate">
+      <Icon icon="ic:round-warning" />
+      <span>
+        <span v-if="room.attrs.point">注意：当前房间每局游戏需扣除 {{ room.attrs.point }} 积分。</span>
+        <span v-if="Math.floor(((room.attrs.rate || 1) * room.attrs.point + room.attrs.point) * 0.9) > 1">
+          胜利将获得 {{ Math.floor(((room.attrs.rate || 1) * room.attrs.point + room.attrs.point) * 0.9) }} 积分（税额 10%）。
+        </span>
+        <span v-if="room.attrs.rate > 1">失败将扣除 {{ Math.ceil(room.attrs.rate * room.attrs.point) - room.attrs.point }}。</span>
+        <span v-if="room.size > 2">
+          失败将扣除 {{ Math.ceil((room.attrs.rate || 1) * room.attrs.point)}} × 胜利人数 - {{ room.attrs.point }}。
+        </span>
+      </span>
+    </div>
   </form>
 </template>
 
@@ -69,7 +96,7 @@ const room = ref({
   name: '',
   size: 4,
   minSize: 4,
-  attrs: { type: 'othello', passwd: '' }
+  attrs: { type: 'othello', passwd: '', rate: 0, point: 0 } as Record<string, any>,
 })
 
 const currentGame = computed(() => {
@@ -87,6 +114,8 @@ function onTypeChange() {
   if (room.value.minSize < game.minSize) {
     room.value.minSize = game.minSize
   }
+  room.value.attrs.rate = '';
+  room.value.attrs.point = '';
 }
 
 async function createRoom() {

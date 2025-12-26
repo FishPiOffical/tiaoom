@@ -11,7 +11,7 @@ hero:
       link: /guide/getting-started
     - theme: alt
       text: API 参考
-      link: /api/server
+      link: /guide/api/server
   image:
       src: /logo.svg
       alt: tiaoom

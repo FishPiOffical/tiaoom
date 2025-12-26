@@ -17,7 +17,7 @@
           :disabled="roomPlayer.isReady"
           data-tip="离开座位"
         >
-          <Icon icon="mdi:account-minus" />
+          <Icon icon="mdi:gamepad-off" />
         </button>
         <button class="btn btn-circle btn-accent btn-soft tooltip" 
           @click="game?.ready(roomPlayer.room.id, !roomPlayer.isReady)"
@@ -48,53 +48,28 @@
           @click="game?.joinRoom(roomPlayer.room.id)"
           data-tip="加入游戏"
         >
-          <Icon icon="mdi:login" />
+          <Icon icon="mdi:google-gamepad" />
         </button>
-      </div>
-
-      <!-- Playing: Player Actions (Draw/Resign) -->
-      <div v-if="isPlaying && roomPlayer.role === PlayerRole.player" class="group flex gap-2">
-        <slot name="playing-actions">
-            <button class="btn btn-circle btn-soft btn-warning tooltip" 
-              v-if="enableDrawResign"
-              @click="$emit('draw')"
-              :disabled="currentPlayer?.id !== roomPlayer.id"
-              data-tip="请求和棋"
-            >
-              <Icon icon="mdi:handshake" />
-            </button>
-            <button class="btn btn-circle btn-soft btn-success tooltip" 
-              v-if="enableDrawResign"
-              @click="$emit('lose')"
-              :disabled="currentPlayer?.id !== roomPlayer.id"
-              data-tip="认输"
-            >
-              <Icon icon="mdi:flag" />
-            </button>
-        </slot>
-      </div>
-      
+      </div>      
       <!-- Extra Slot -->
-      <slot />
+      <slot></slot>
     </div>
-    <p class="opacity-30 text-xs mt-3 content-end">游戏中可按下 <kbd class="kbd kbd-xs">Esc</kbd> 键显示/隐藏控制面板</p>
+    <p class="opacity-30 text-xs m-3 content-end" v-if="roomPlayer.role === PlayerRole.watcher">
+      游戏中可按下 <kbd class="kbd kbd-xs">Esc</kbd> 键显示/隐藏控制面板
+    </p>
   </div>
 </template>
 
 <script setup lang="ts">
 import { GameCore } from '@/core/game';
-import { RoomPlayer, Player, Room, PlayerRole, RoomStatus } from 'tiaoom/client';
+import { RoomPlayer, Room, PlayerRole, RoomStatus } from 'tiaoom/client';
 import { computed, ref } from 'vue';
 import hotkeys from 'hotkeys-js';
 
 const props = defineProps<{
   roomPlayer: RoomPlayer & { room: Room },
   game: GameCore,  
-  currentPlayer?: Player | null,
-  enableDrawResign?: boolean
 }>()
-
-defineEmits(['draw', 'lose'])
 
 const isPlaying = computed(() => props.roomPlayer.room.status === RoomStatus.playing)
 const isAllReady = computed(() => {
@@ -109,6 +84,7 @@ const isRoomFull = computed(() => {
 
 const showControl = ref(false);
 hotkeys('esc', () => {
+  if (props.roomPlayer.role !== PlayerRole.watcher) return;
   showControl.value = !showControl.value;
 });
 

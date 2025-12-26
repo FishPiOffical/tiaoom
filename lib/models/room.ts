@@ -128,6 +128,7 @@ export class RoomPlayer extends Player implements IRoomPlayer {
   toJSON() {
     return {
       ...super.toJSON(),
+      status: this.status,
       role: this.role,
       isReady: this.isReady,
       isCreator: this.isCreator,
@@ -307,7 +308,7 @@ export class Room extends EventEmitter implements IRoom {
     roomPlayer.isCreator = isCreator;
     roomPlayer.roomId = this.id;
     this.players.push(roomPlayer);
-    this.emit("join", { ...roomPlayer, roomId: this.id });
+    this.emit("join", { ...roomPlayer.toJSON(), roomId: this.id });
     
     return roomPlayer;
   }
@@ -344,6 +345,7 @@ export class Room extends EventEmitter implements IRoom {
     const index = this.players.findIndex((p) => p.id == playerId);
     const roomPlayer = this.players[index];
     if (index > -1) {
+      roomPlayer.status = PlayerStatus.online;
       this.emit("leave",  { ...roomPlayer, roomId: this.id });
       this.players.splice(index, 1);
       if (roomPlayer.isCreator && this.players.length > 0) {
@@ -377,6 +379,7 @@ export class Room extends EventEmitter implements IRoom {
     }
     this.players.forEach((player) => {
       if (player.role != PlayerRole.player) return;
+      player.status = PlayerStatus.playing;
       player.emit('status', PlayerStatus.playing);
     });
     this.emit("update", this);
@@ -389,6 +392,7 @@ export class Room extends EventEmitter implements IRoom {
   end() {
     this.players.forEach((player) => {
       if (player.role != PlayerRole.player) return;
+      player.status = PlayerStatus.unready;
       player.emit('status', PlayerStatus.unready);
     });
     this.emit("update", this);

@@ -9,7 +9,7 @@ Tiaoom 不绑定具体的网络协议，你需要实现 `Message` 接口来适�
 ```typescript
 import { WebSocketServer, WebSocket } from "ws";
 import { EventEmitter } from "events";
-import { IMessage, MessageTypes, IMessagePackage, MessageEvents, Player, Room } from "tiaoom";
+import { IMessage, MessageTypes, IMessagePackages, MessageEvents, Player, Room } from "tiaoom";
 
 export class SocketManager extends EventEmitter implements IMessage {
   sockets: Array<{ socket: WebSocket; player: Player }> = [];
@@ -59,34 +59,19 @@ export class SocketManager extends EventEmitter implements IMessage {
     });
   }
 
-  // 实现 send 方法，将消息路由到正确的客户端
-  // 消息类型有三种情况：
-  // 1. 发送给特定玩家（player. 开头），message.sender 是 Player
-  // 2. 发送给房间内所有玩家（room. 开头），message.sender 是 Room
-  // 3. 广播给所有连接（其他情况）
-  send(message: IMessagePackage) {
-    const payload = JSON.stringify({ 
-      type: message.type, 
-      data: message.data, 
-      sender: message.sender 
-    });
-
-    if (message.type.startsWith('player.') && message.sender) {
-      // 发送给特定玩家
-      const player = message.sender as Player;
-      this.sockets.filter(s => s.player.id === player.id)
-        .forEach(({ socket }) => socket.send(payload));
-    } else if (message.type.startsWith('room.') && message.sender) {
-      // 发送给房间内的所有玩家
-      const room = message.sender as Room;
-      room.players.forEach(p => {
-        this.sockets.filter(s => s.player.id === p.id)
-          .forEach(({ socket }) => socket.send(payload));
+  // 实现 send 方法，将消息路由到正确的客户端，message 的 senderIds 指定接收者
+  send(message: IMessagePackages) {
+    // send a message to the client
+    this.sockets
+      .forEach(({ socket, player }) => {
+        if (socket.readyState !== WebSocket.OPEN) return;
+        if (!message.senderIds.includes(player.id)) return;
+        socket.send(JSON.stringify({
+          type: message.type,
+          data: message.data,
+          sender: player
+        }));
       });
-    } else {
-      // 广播消息
-      this.sockets.forEach(({ socket }) => socket.send(payload));
-    }
   }
   
   close() { 
@@ -275,9 +260,9 @@ client.on('room.command', (cmd) => {
 
 Tiaoom 处理了房间管理的繁重工作：
 
-- **创建**: [`createRoom(options)`](../api/client.md#createroom)
-- **加入**: [`joinRoom(roomId)`](../api/client.md#joinroom)
-- **离开**: [`leaveRoom(roomId)`](../api/client.md#leaveroom)
-- **准备状态**: [`ready(roomId, isReady)`](../api/client.md#ready)
-- **踢人**: [`kickPlayer(roomId, playerId)`](../api/client.md#kickplayer)
-- **转让房主**: [`transferRoom(roomId, playerId)`](../api/client.md#transferroom)
+- **创建**: [`createRoom(options)`](./api/client.md#createroom)
+- **加入**: [`joinRoom(roomId)`](./api/client.md#joinroom)
+- **离开**: [`leaveRoom(roomId)`](./api/client.md#leaveroom)
+- **准备状态**: [`ready(roomId, isReady)`](./api/client.md#ready)
+- **踢人**: [`kickPlayer(roomId, playerId)`](./api/client.md#kickplayer)
+- **转让房主**: [`transferRoom(roomId, playerId)`](./api/client.md#transferroom)

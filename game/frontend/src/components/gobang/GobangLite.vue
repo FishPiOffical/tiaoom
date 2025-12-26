@@ -1,5 +1,5 @@
 <template>
-  <section class="flex flex-col items-center justify-center p-2 py-4 max-w-[99vw] max-h-[95vh] overflow-hidden" ref="containerRef">
+  <section class="flex flex-col items-center justify-center p-2 py-4" ref="containerRef">
     <!-- 棋盘 -->
     <div class="inline-block p-2 m-auto border rounded shadow-2xl bg-base-300 border-base-content/20">
       <!-- 顶部留白 -->
@@ -63,7 +63,7 @@
     </div>
     
     <!-- 当前回合 -->
-    <div v-if="gameStatus === 'playing'" class="flex items-center justify-center gap-3 mt-2 -mb-2 text-sm">
+    <div v-if="isPlaying" class="flex items-center justify-center gap-3 mt-2 -mb-2 text-sm">
       <div class="w-[1.4em] h-[1.4em] flex items-center justify-center bg-base-300 rounded-full border border-base-content/20">
         <span 
           class="w-full h-full rounded-full"
@@ -73,20 +73,35 @@
       <b class="text-base-content">{{ currentPlayer?.name }}</b>
     </div>
 
-    <RoomControlsLite
-      :game="game"
-      :room-player="roomPlayer"
-      :current-player="currentPlayer"
-      :enable-draw-resign="true"
-    />
+    <div 
+      v-if="isPlaying && showControl" 
+      class="fixed z-100 bg-base-300/60 top-0 left-0 w-full h-full flex flex-col items-center justify-center">
+      <div v-if="isPlaying && roomPlayer.role === PlayerRole.player" class="group flex gap-2">
+        <button class="btn btn-circle btn-soft btn-warning tooltip" 
+          @click="requestDraw"
+          :disabled="currentPlayer?.id !== roomPlayer.id"
+          data-tip="请求和棋"
+        >
+          <Icon icon="mdi:handshake" />
+        </button>
+        <button class="btn btn-circle btn-soft btn-success tooltip" 
+          @click="requestLose"
+          :disabled="currentPlayer?.id !== roomPlayer.id"
+          data-tip="认输"
+        >
+          <Icon icon="mdi:flag" />
+        </button>
+      </div>
+    </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { Room, RoomPlayer } from 'tiaoom/client'
+import { PlayerRole, Room, RoomPlayer } from 'tiaoom/client'
 import { GameCore } from '@/core/game';
 import { useGobang } from './useGobang';
 import { onMounted, ref } from 'vue';
+import hotkeys from 'hotkeys-js';
 
 const props = defineProps<{
   roomPlayer: RoomPlayer & { room: Room }
@@ -94,11 +109,13 @@ const props = defineProps<{
 }>()
 
 const {
-  gameStatus,
+  isPlaying,
   currentPlayer,
   board,
   currentPlace,
-  placePiece
+  placePiece,
+  requestDraw,
+  requestLose,
 } = useGobang(props.game, props.roomPlayer)
 
 const containerRef = ref<HTMLElement>();
@@ -109,5 +126,11 @@ onMounted(() => {
     window.resizeTo(window.innerWidth, rect.height);
   }
 })
+
+const showControl = ref(false);
+hotkeys('esc', () => {
+  if (props.roomPlayer.role == PlayerRole.watcher) return;
+  showControl.value = !showControl.value;
+});
 
 </script>

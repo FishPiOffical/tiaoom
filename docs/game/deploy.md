@@ -21,9 +21,9 @@ npm run dev:backend    # 仅启动后端
 npm run dev:frontend   # 仅启动前端
 ```
 
-- 后端 API: http://127.0.0.1:27015
-- 前端应用: http://localhost:5174
-- WebSocket: ws://127.0.0.1:27015
+- 后端 API: `http://127.0.0.1:27015`
+- 前端应用: `http://localhost:5174`
+- WebSocket: `ws://127.0.0.1:27015`
 
 VSCode 按下 F5 可直接启动调试后端。
 

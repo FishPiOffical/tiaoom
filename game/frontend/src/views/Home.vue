@@ -1,10 +1,10 @@
 <template>
-  <main class="flex-1 p-4 md:p-6 overflow-auto bg-base-100 w-full">
+  <main class="flex-1 overflow-auto bg-base-100 w-full">
     <!-- 创建房间 -->
-    <CreateRoom v-if="!gameStore.roomPlayer" />
+    <CreateRoom v-if="!gameStore.roomPlayer" class="p-4" />
     
     <!-- 全局聊天 -->
-    <section v-if="!gameStore.roomPlayer" class="mt-8 space-y-4 max-w-2xl mx-auto flex flex-col">
+    <section v-if="!gameStore.roomPlayer" class="mt-8 px-4 space-y-4 max-w-2xl mx-auto flex flex-col">
       <div class="border-t border-base-content/20 pt-4"></div>
       <div class="join w-full">
         <input 
@@ -53,22 +53,44 @@
     </section>
     
     <!-- 房间内容 -->
-    <section v-if="gameStore.roomPlayer" class="space-y-4 h-full flex flex-col">
-      <header class="border-b border-base-content/20 flex justify-between">
-        <h3 class="text-xl font-light text-base-content pb-2">
-          我的房间: {{ gameStore.roomPlayer.room.name }} 
-          <span class="text-sm text-base-content/60 ml-2">
-            ({{ gameStore.roomPlayer.room.players.filter(p => p.role === 'player').length }}/{{ gameStore.roomPlayer.room.size }})
-          </span>
-        </h3>
-        <span>
-          <button v-if="hasLiteComponent" class="btn btn-text hidden md:inline tooltip tooltip-left" data-tip="弹出" @click="openSmallWindow('/#/lite')"><Icon icon="majesticons:open-line" /></button>
-          {{ getComponent(gameStore.roomPlayer.room.attrs.type + '-lite') }}
-        </span>
+    <section v-if="gameStore.roomPlayer" class="h-full flex flex-col">
+      <header class="border-b border-base-content/20 flex justify-between items-center px-4 py-2 pb-2">
+        <section>
+          <h3 class="text-xl font-light text-base-content">
+            我的房间: {{ gameStore.roomPlayer.room.name }} 
+            <span class="text-sm text-base-content/60 ml-2">
+              ({{ gameStore.roomPlayer.room.players.filter(p => p.role === 'player').length }}/{{ gameStore.roomPlayer.room.size }})
+            </span>
+          </h3>
+          <div role="alert" class="alert alert-soft py-1 pl-0 gap-1" v-if="room && (room.attrs.point || room.attrs.rate)">
+            <span class="text-xs">
+              ⚠️
+              <span v-if="room.attrs.point">注意：当前房间每局游戏需扣除 {{ room.attrs.point }} 积分。</span>
+              <span v-if="Math.floor(((room.attrs.rate || 1) * room.attrs.point + room.attrs.point) * 0.9) > 1">
+                胜利将获得 {{ Math.floor(((room.attrs.rate || 1) * room.attrs.point + room.attrs.point) * 0.9) }} 积分（税额 10%）。
+              </span>
+              <span v-if="room.attrs.rate > 1">失败将扣除 {{ Math.ceil(room.attrs.rate * room.attrs.point) - room.attrs.point }}。</span>
+              <span v-if="room.size > 2">
+                失败将扣除 {{ Math.ceil((room.attrs.rate || 1) * room.attrs.point)}} × 胜利人数 - {{ room.attrs.point }}。
+              </span>
+            </span>
+          </div>
+        </section>
+        <section>
+          <RoomControls
+            v-if="gameStore.game"
+            :game="gameStore.game" 
+            :room-player="gameStore.roomPlayer"
+          >
+            <button v-if="hasLiteComponent" class="btn btn-sm btn-circle btn-soft hidden md:flex tooltip tooltip-left" data-tip="弹出" @click="openSmallWindow('/#/lite')">
+              <Icon icon="majesticons:open-line" />
+            </button>
+          </RoomControls>
+        </section>
       </header>
       
       <!-- 动态游戏组件 -->
-      <div class="flex-1 overflow-auto">
+      <div class="flex-1 overflow-auto md:p-4">
         <component 
           v-if="gameStore.roomPlayer.room.attrs?.type" 
           :is="gameStore.roomPlayer.room.attrs.type + '-room'" 
@@ -81,10 +103,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useGameStore } from '@/stores/game'
 import { openSmallWindow } from '@/utils/dom'
 import { getComponent } from '@/main';
+import RoomControls from '@/components/common/RoomControls.vue';
 
 const gameStore = useGameStore()
 
@@ -97,12 +120,15 @@ function sendMessage(e:any) {
   msg.value = ''
 }
 
-const hasLiteComponent = (type: string) => {
+const hasLiteComponent = computed(() => {
   try {
-    getComponent(type.slice(0, 1).toUpperCase() + type.slice(1) + 'Lite')
-    return true
+    const type = gameStore.roomPlayer?.room.attrs?.type;
+    if (!type) return false
+    return !!getComponent(type.slice(0, 1).toUpperCase() + type.slice(1) + 'Lite')
   } catch {
     return false
   }
-}
+})
+
+const room = computed(() => gameStore.roomPlayer?.room)
 </script>

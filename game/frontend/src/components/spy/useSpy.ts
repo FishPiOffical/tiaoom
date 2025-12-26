@@ -43,20 +43,8 @@ export function useSpy(game: GameCore, roomPlayer: SpyRoomPlayer & { room: SpyRo
       case 'talk':
         currentTalkPlayer.value = cmd.data.player
         gameStatus.value = 'talking'
-        if (countdownTimer) clearInterval(countdownTimer)
-        countdown.value = 0
-        if (currentTalkPlayer.value?.id === currentPlayer.value) {
-          // 如果是自己发言，开始倒计时
-          countdown.value = 300
-          countdownTimer = setInterval(() => {
-            countdown.value--
-            if (countdown.value <= 0) {
-              clearInterval(countdownTimer)
-            }
-          }, 1000)
-        }
         break;
-      case 'talk-countdown':
+      case 'countdown':
         countdown.value = cmd.data.seconds
         if (countdownTimer) clearInterval(countdownTimer)
         countdownTimer = setInterval(() => {
@@ -69,8 +57,6 @@ export function useSpy(game: GameCore, roomPlayer: SpyRoomPlayer & { room: SpyRo
       case 'vote':
         gameStatus.value = 'voting'
         voted.value = false
-        if (countdownTimer) clearInterval(countdownTimer)
-        countdown.value = 0
         if (cmd.data) {
           canVotePlayer.value = cmd.data.map((p: any) => p.id)
         } else {

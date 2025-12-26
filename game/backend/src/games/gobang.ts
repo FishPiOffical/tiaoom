@@ -1,5 +1,5 @@
-import { IRoomPlayer, PlayerRole, Room, RoomPlayer, RoomStatus } from "tiaoom";
-import { IGameMethod } from ".";
+import { PlayerRole, PlayerStatus, RoomPlayer, RoomStatus } from "tiaoom";
+import { GameRoom, IGameCommand } from ".";
 import { sleep } from "@/utils";
 
 /**
@@ -96,243 +96,143 @@ function gomokuJudge(board: number[][], { x, y }: { x: number, y: number }, colo
   return 0;
 }
 
-export default async function onRoom(room: Room, { save, restore }: IGameMethod) {
-  const gameData = await restore();
-  let messageHistory: { content: string, sender?: IRoomPlayer }[] = gameData?.messageHistory || [];
-  let currentPlayer: RoomPlayer | undefined = room.players.find((p) => p.id === gameData?.currentPlayerId);
-  let lastLosePlayer: RoomPlayer | undefined = room.players.find((p) => p.id === gameData?.lastLosePlayerId);
-  let gameStatus: 'waiting' | 'playing' = gameData?.gameStatus ?? 'waiting';
-  let board: number[][] = gameData?.board ?? Array.from({ length: 19 }, () => Array(19).fill(0));
-  let achivents: Record<string, { win: number; lost: number; draw: number }> = {};
-
-  function saveGameData() {
-    save({
-      messageHistory,
-      currentPlayerId: currentPlayer?.id,
-      lastLosePlayerId: lastLosePlayer?.id,
-      gameStatus,
-      board,
-      achivents
-    });
-  }
-
-  room.on('join', (player) => {
-    room.validPlayers.find((p) => p.id === player.id)?.emit('command', {
-      type: 'achivents',
-      data: achivents
-    });
-  }).on('player-offline', async (player) => {
-    await sleep(4 * 60 * 1000); // 等待 4 分钟，判定为离线
-    room.kickPlayer(player);
-    if (gameStatus === 'playing' && player.role === 'player') {
-      room.emit('message', { content: `玩家 ${player.name} 已离线，游戏结束。` });
-      lastLosePlayer = room.validPlayers.find((p) => p.id != player.id)!;
-      gameStatus = 'waiting';
-      room.validPlayers.forEach((p) => {
-        if (!achivents[p.name]) {
-          achivents[p.name] = { win: 0, lost: 0, draw: 0 };
-        }
-        if (p.id == lastLosePlayer?.id) {
-          achivents[p.name].win += 1;
-        } else {
-          achivents[p.name].lost += 1;
-        }
-      });
-      room.emit('command', { type: 'achivements', data: achivents });
-      room.end();
-      saveGameData();
-    }
-  }).on('player-command', (message: any) => {
-    // 允许观众使用的指令
-    const publicCommands = ['say', 'status'];
-    const players = publicCommands.includes(message.type)
-      ? room.players
-      : room.validPlayers;
-    const sender = players.find((p) => p.id == message.sender?.id)!;
-    if (!sender) return;
-    /**
-     * # room command
-     * - say: player say something
-     * - status: game status update
-     * - place: place piece
-     * - request-draw: request draw
-     * - request-lose: request lose
-     * - draw: game draw
-     * 
-     * # player command
-     * - color: send color to player
-     * - request-draw: player request draw
-     */
-    switch (message.type) {
-      case 'say':
-        // 游玩时间观众发言仅广播给其他观众
-        if (sender.role != PlayerRole.player && room.status == RoomStatus.playing) {
-          room.watchers.forEach((watcher) => {
-            watcher.emit('message', { content: `${message.data}`, sender });
-          });
-          return;
-        }
-        room.emit('message', { content: `${message.data}`, sender });
-        break;
-      case 'status': {
-        const player = room.players.find((p) => p.id == message.data.id);
-        if (!player) break;
-        player.emit('command', {
-          type: 'status',
-          data: {
-            status: gameStatus,
-            current: currentPlayer,
-            messageHistory,
-            board,
-            color: player.attributes?.color,
-            achivents: achivents
-          }
-        });
-        break;
-      }
-      case 'place': {
-        if (gameStatus !== 'playing') {
-          sender.emit('message', { content: `游戏未开始，无法落子。` });
-          break;
-        }
-        if (sender.id !== currentPlayer?.id) {
-          sender.emit('message', { content: `轮到玩家 ${currentPlayer?.name} 落子。` });
-          break;
-        }
-        const { x, y } = message.data;
-        if (board[x][y] !== 0) {
-          sender.emit('message', { content: `该位置已有棋子，请重新落子。` });
-          break;
-        }
-        const color = sender.attributes?.color;
-        const result = gomokuJudge(board, { x, y }, color);
-        if (result === -1) {
-          sender.emit('command', { type: 'board', data: board });
-          sender.emit('message', { content: `玩家 ${sender.name} 触发禁手，撤回落子！` });
-          return;
-        }
-
-        board[x][y] = color;
-        room.emit('command', { type: 'board', data: board });
-        room.emit('command', { type: 'place', data: { x, y } });
-
-        if (result === color) {
-          room.emit('message', { content: `玩家 ${sender.name} 获胜！` });
-          lastLosePlayer = room.validPlayers.find((p) => p.id != sender.id)!;
-          gameStatus = 'waiting';
-          room.validPlayers.forEach((player) => {
-            if (!achivents[player.name]) {
-              achivents[player.name] = { win: 0, lost: 0, draw: 0 };
-            }
-            if (player.id == sender.id) {
-              achivents[player.name].win += 1;
-            } else {
-              achivents[player.name].lost += 1;
-            }
-          });
-          room.emit('command', { type: 'achivements', data: achivents });
-          room.end();
-          saveGameData();
-          return;
-        }
-        // 切换当前玩家
-        const current = room.validPlayers.find((p) => p.id != currentPlayer?.id);
-        if (current) {
-          currentPlayer = current;
-          room.emit('command', { type: 'place-turn', data: { player: currentPlayer } });
-        }
-        saveGameData();
-        break;
-      }
-      case 'request-draw': {
-        room.emit('message', { content: `玩家 ${sender.name} 请求和棋。` });
-        const otherPlayer = room.validPlayers.find((p) => p.id != sender.id)!;
-        otherPlayer.emit('command', {
-          type: 'request-draw',
-          data: { player: sender }
-        });
-        break;
-      }
-      case 'request-lose': {
-        room.emit('message', { content: `玩家 ${sender.name} 认输。` });
-        gameStatus = 'waiting';
-        room.validPlayers.forEach((player) => {
-          if (!achivents[player.name]) {
-            achivents[player.name] = { win: 0, lost: 0, draw: 0 };
-          }
-          if (player.id == sender.id) {
-            achivents[player.name].lost += 1;
-          } else {
-            achivents[player.name].win += 1;
-          }
-        });
-        room.emit('command', { type: 'achivements', data: achivents });
-        room.end();
-        saveGameData();
-        break;
-      }
-      case 'draw': {
-        if (!message.data.agree) {
-          room.emit('message', { content: `玩家 ${sender.name} 拒绝和棋，游戏继续。` });
-          break;
-        }
-        room.emit('message', { content: `玩家 ${sender.name} 同意和棋，游戏结束。` });
-        lastLosePlayer = room.validPlayers.find((p) => p.id != sender.id)!;
-        gameStatus = 'waiting';
-        room.validPlayers.forEach((player) => {
-          if (!achivents[player.name]) {
-            achivents[player.name] = { win: 0, lost: 0, draw: 0 };
-          }
-          achivents[player.name].draw += 1;
-        });
-        room.end();
-        saveGameData();
-        break;
-      }
-      default:
-        break;
-    }
-  }).on('start', () => {
-    if (room.validPlayers.length < room.minSize) {
-      return room.emit('message', { content: `玩家人数不足，无法开始游戏。` });
-    }
-    if (!room.validPlayers.some((p) => p.id == lastLosePlayer?.id)) {
-      lastLosePlayer = undefined;
-    }
-    currentPlayer = lastLosePlayer || room.validPlayers[0];
-    board = Array.from({ length: 19 }, () => Array(19).fill(0));
-    gameStatus = 'playing';
-    messageHistory = [];
-    currentPlayer.attributes = { color: 1 }; // 黑子先行
-    room.validPlayers.forEach((player) => {
-      if (player.id !== currentPlayer?.id) {
-        player.attributes = { color: 2 }; // 白子
-        player.emit('command', {
-          type: 'color',
-          data: { color: 2 }
-        });
-      } else {
-        player.emit('command', {
-          type: 'color',
-          data: { color: 1 }
-        });
-      }
-    });
-    room.emit('command', { type: 'achivements', data: achivents });
-    room.emit('message', { content: `游戏开始。玩家 ${currentPlayer.name} 执黑先行。` });
-    room.emit('command', { type: 'place-turn', data: { player: currentPlayer } });
-    room.emit('command', { type: 'board', data: board });
-    saveGameData();
-  }).on('end', () => {
-    room.emit('command', { type: 'end' });
-  }).on('message', (message) => {
-    messageHistory.unshift(message);
-    if (messageHistory.length > 100) messageHistory.splice(messageHistory.length - 100);
-  });
-}
-
 export const name = '五子棋';
 export const minSize = 2;
 export const maxSize = 2;
 export const description = `两个玩家轮流在19x19的棋盘上放置黑白棋子，率先将五个棋子连成一线（横、竖、斜均可）的一方获胜。
 黑棋需注意禁手规则。`;
+export const points = {
+  '我就玩玩': 1,
+  '小博一下': 100,
+  '大赢家': 1000,
+  '梭哈！': 10000,
+}
+
+class GobangGameRoom extends GameRoom {
+  currentPlayer?: RoomPlayer;
+  lastLosePlayer?: RoomPlayer;
+  board: number[][] = Array.from({ length: 19 }, () => Array(19).fill(0));
+
+  init() {
+    return super.init().on('player-offline', async (player) => {
+      await sleep(4 * 60 * 1000); // 等待 4 分钟，判定为离线
+      if (!this.isPlayerOnline(player)) return;
+      if (this.room.status === RoomStatus.playing && player.role === PlayerRole.player) {
+        this.say(`玩家 ${player.name} 已离线，游戏结束。`);
+        this.lastLosePlayer = this.room.validPlayers.find((p) => p.id != player.id)!;
+        this.saveAchievements([this.lastLosePlayer]);
+        this.room.end();
+      }
+      this.room.kickPlayer(player);
+    });
+  }
+
+  getStatus(sender: RoomPlayer) {
+    return {
+      ...super.getStatus(sender),
+      current: this.currentPlayer,
+      board: this.board,
+      color: sender.attributes?.color,
+    }
+  }
+
+  onCommand(message: IGameCommand): void {
+    super.onCommand(message);
+    const sender = message.sender as RoomPlayer;
+    switch (message.type) {
+      case 'place': {
+        if (this.room.status !== RoomStatus.playing) {
+          this.sayTo(`游戏未开始，无法落子。`, sender);
+          break;
+        }
+        if (sender.id !== this.currentPlayer?.id) {
+          this.sayTo(`轮到玩家 ${this.currentPlayer?.name} 落子。`, sender);
+          break;
+        }
+        const { x, y } = message.data;
+        if (this.board[x][y] !== 0) {
+          this.sayTo(`该位置已有棋子，请重新落子。`, sender);
+          break;
+        }
+        const color = sender.attributes?.color;
+        const result = gomokuJudge(this.board, { x, y }, color);
+        if (result === -1) {
+          this.commandTo('board', this.board, sender);
+          this.sayTo(`玩家 ${sender.name} 触发禁手，撤回落子！`, sender);
+          break;
+        }
+
+        this.board[x][y] = color;
+        this.command('board', this.board);
+        this.command('place', { x, y });
+        if (result === color) {
+          this.say(`玩家 ${sender.name} 获胜！`);
+          this.lastLosePlayer = this.room.validPlayers.find((p) => p.id != sender.id)!;
+          this.saveAchievements([sender]);
+          this.room.end();
+          return;
+        }
+        // 切换当前玩家
+        const current = this.room.validPlayers.find((p) => p.id != this.currentPlayer?.id);
+        if (current) {
+          this.currentPlayer = current;
+          this.command('place-turn', { player: this.currentPlayer });
+          this.save();
+        }
+        break;
+      }
+      case 'request-draw': {
+        this.say(`玩家 ${sender.name} 请求和棋。`);
+        const otherPlayer = this.room.validPlayers.find((p) => p.id != sender.id)!;
+        this.commandTo('request-draw', { player: sender }, otherPlayer);
+        break;
+      }
+      case 'request-lose': {
+        this.say(`玩家 ${sender.name} 认输。`);
+        this.lastLosePlayer = sender;
+        this.saveAchievements([this.room.validPlayers.find((p) => p.id != sender.id)!]);
+        this.room.end();
+        break;
+      }
+      case 'draw': {
+        if (!message.data.agree) {
+          this.say(`玩家 ${sender.name} 拒绝和棋，游戏继续。`);
+          break;
+        }
+        this.say(`玩家 ${sender.name} 同意和棋，游戏结束。`);
+        this.lastLosePlayer = this.room.validPlayers.find((p) => p.id != sender.id)!;
+        this.saveAchievements(null);
+        this.room.end();
+        break;
+      }
+    }
+  }
+
+  onStart() {
+    if (this.room.validPlayers.length < this.room.minSize) {
+      return this.say(`玩家人数不足，无法开始游戏。`);
+    }
+    if (!this.room.validPlayers.some((p) => p.id == this.lastLosePlayer?.id)) {
+      this.lastLosePlayer = undefined;
+    }
+    this.currentPlayer = this.lastLosePlayer || this.room.validPlayers[0];
+    this.board = Array.from({ length: 19 }, () => Array(19).fill(0));
+    this.messageHistory = [];
+    
+    this.setPlayerAttributes(this.currentPlayer.id, { color: 1 }); // 黑子先行
+    this.room.validPlayers.forEach((player) => {
+      if (player.id !== this.currentPlayer?.id) {
+        this.setPlayerAttributes(player.id, { color: 2 }); // 白子
+        this.commandTo('color', { color: 2 }, player);
+      } else {
+        this.commandTo('color', { color: 1 }, player);
+      }
+    });
+    this.command('achievements', this.achievements);
+    this.say(`游戏开始。玩家 ${this.currentPlayer.name} 执黑先行。`);
+    this.command('place-turn', { player: this.currentPlayer });
+    this.command('board', this.board);
+  }
+}
+
+export default GobangGameRoom;

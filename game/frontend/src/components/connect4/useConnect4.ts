@@ -5,10 +5,10 @@ import { useGameEvents } from '@/hook/useGameEvents';
 import { confirm } from '@/components/msgbox';
 
 export function useConnect4(game: GameCore, roomPlayer: RoomPlayer & { room: Room }) {
-  const gameStatus = ref<'waiting' | 'playing'>('waiting')
+  const gameStatus = computed(() => roomPlayer.room.status)
   const currentPlayer = ref<any>()
   const board = ref(Array(8).fill(0).map(() => Array(8).fill(-1)))
-  const achivents = ref<Record<string, any>>({})
+  const achievements = ref<Record<string, any>>({})
   const currentPlace = ref<{ x: number; y: number } | null>(null)
   const hoverCol = ref<number>(-1)
 
@@ -21,12 +21,10 @@ export function useConnect4(game: GameCore, roomPlayer: RoomPlayer & { room: Roo
   board.value[board.value.length - 1] = board.value[board.value.length - 1].map(() => 0)
 
   function onRoomStart() {
-    gameStatus.value = 'playing'
     currentPlace.value = null
   }
 
   function onRoomEnd() {
-    gameStatus.value = 'waiting'
     currentPlayer.value = null
   }
 
@@ -35,10 +33,9 @@ export function useConnect4(game: GameCore, roomPlayer: RoomPlayer & { room: Roo
     
     switch (cmd.type) {
       case 'status':
-        gameStatus.value = cmd.data.status
         currentPlayer.value = cmd.data.current
         board.value = cmd.data.board
-        achivents.value = cmd.data.achivents || {}
+        achievements.value = cmd.data.achievements || {}
         break
       case 'board':
         board.value = cmd.data
@@ -47,16 +44,16 @@ export function useConnect4(game: GameCore, roomPlayer: RoomPlayer & { room: Roo
         confirm(`玩家 ${cmd.data.player.name} 请求和棋。是否同意？`, '和棋', {
           confirmText: '同意',
           cancelText: '拒绝',
-        }).then((ok) => {          if (ok) game?.command(roomPlayer.room.id, { type: 'draw', data: { agree: true } })
+        }).then((ok) => {          
+          if (ok) game?.command(roomPlayer.room.id, { type: 'draw', data: { agree: true } })
           else game?.command(roomPlayer.room.id, { type: 'draw', data: { agree: false } })
         })
         break
       case 'place-turn':
         currentPlayer.value = cmd.data.player
-        gameStatus.value = 'playing'
         break
-      case 'achivements':
-        achivents.value = cmd.data
+      case 'achievements':
+        achievements.value = cmd.data
         break
       case 'place':
         const { x, y } = cmd.data
@@ -98,11 +95,14 @@ export function useConnect4(game: GameCore, roomPlayer: RoomPlayer & { room: Roo
     game?.command(roomPlayer.room.id, { type: 'request-lose' })
   }
 
+  const isPlaying = computed(() => roomPlayer.room.status === 'playing')
+
   return {
+    isPlaying,
     gameStatus,
     currentPlayer,
     board,
-    achivents,
+    achievements,
     currentPlace,
     hoverCol,
     isMyTurn,

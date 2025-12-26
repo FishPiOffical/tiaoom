@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { Room, RoomPlayer } from 'tiaoom/client'
 import { GameCore } from '@/core/game'
 import { useGameEvents } from '@/hook/useGameEvents'
@@ -17,16 +17,51 @@ export function useXiangqi(game: GameCore, roomPlayer: RoomPlayer & { room: Room
   let ticker: any = null
 
   const selected = ref<{ x: number; y: number } | null>(null)
+  const lastMove = ref<{ from: { x: number; y: number }; to: { x: number; y: number } } | null>(null)
+
+  function inferLastMoveFromBoards(prev: Piece[][], next: Piece[][]) {
+    const changed: Array<{ x: number; y: number; prev: Piece; next: Piece }> = []
+    for (let x = 0; x < 10; x++) {
+      for (let y = 0; y < 9; y++) {
+        const p = prev?.[x]?.[y] ?? ''
+        const n = next?.[x]?.[y] ?? ''
+        if (p !== n) changed.push({ x, y, prev: p, next: n })
+      }
+    }
+
+    // Normal move/capture should change exactly two squares: from becomes empty, to becomes piece.
+    if (changed.length === 2) {
+      const from = changed.find(c => c.next === '' && c.prev !== '')
+      const to = changed.find(c => c.next !== '')
+      if (from && to) return { from: { x: from.x, y: from.y }, to: { x: to.x, y: to.y } }
+    }
+
+    // Fallback: if only one square changed (rare), treat it as destination.
+    if (changed.length === 1 && changed[0].next !== '') {
+      return { from: { x: changed[0].x, y: changed[0].y }, to: { x: changed[0].x, y: changed[0].y } }
+    }
+
+    return null
+  }
+
+  function applyBoard(nextBoard: Piece[][]) {
+    const prev = board.value
+    board.value = nextBoard
+    const inferred = inferLastMoveFromBoards(prev, nextBoard)
+    if (inferred) lastMove.value = inferred
+  }
 
   function onRoomStart() {
     gameStatus.value = 'playing'
     selected.value = null
+    lastMove.value = null
   }
 
   function onRoomEnd() {
     gameStatus.value = 'waiting'
     currentPlayer.value = null
     selected.value = null
+    lastMove.value = null
     countdown.value = 0
     if (ticker) { clearInterval(ticker); ticker = null }
   }
@@ -38,12 +73,12 @@ export function useXiangqi(game: GameCore, roomPlayer: RoomPlayer & { room: Room
       case 'status':
         gameStatus.value = cmd.data.status
         currentPlayer.value = cmd.data.current
-        board.value = cmd.data.board
+        applyBoard(cmd.data.board)
         achivents.value = cmd.data.achivents || {}
         if (cmd.data.countdown) startCountdown(cmd.data.countdown)
         break
       case 'board':
-        board.value = cmd.data
+        applyBoard(cmd.data)
         break
       case 'turn':
         currentPlayer.value = cmd.data.player
@@ -55,6 +90,9 @@ export function useXiangqi(game: GameCore, roomPlayer: RoomPlayer & { room: Room
         break
       case 'move':
         selected.value = null
+        if (cmd.data?.from && cmd.data?.to) {
+          lastMove.value = { from: cmd.data.from, to: cmd.data.to }
+        }
         break
       case 'achivements':
         achivents.value = cmd.data
@@ -131,13 +169,29 @@ export function useXiangqi(game: GameCore, roomPlayer: RoomPlayer & { room: Room
     game?.command(roomPlayer.room.id, { type: 'move', data: { from, to: { x, y } } })
   }
 
+  function requestDraw() {
+    if (roomPlayer.room.status !== 'playing') return
+    game?.command(roomPlayer.room.id, { type: 'request-draw' })
+  }
+
+  function requestLose() {
+    if (roomPlayer.room.status !== 'playing') return
+    game?.command(roomPlayer.room.id, { type: 'request-lose' })
+  }
+
+  const isPlaying = computed(() => roomPlayer.room.status === 'playing')
+
   return {
+    isPlaying,
     gameStatus,
     currentPlayer,
     board,
     achivents,
     selected,
+    lastMove,
     countdown,
     trySelectOrMove,
+    requestDraw,
+    requestLose,
   }
 }
