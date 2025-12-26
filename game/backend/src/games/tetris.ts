@@ -48,18 +48,22 @@ class TetrisGameRoom extends GameRoom {
   saveIgnoreProps = ['gameLoop'];
 
   init() {
+    // 如果房间已经在游戏中，恢复游戏循环
     if (this.room.status === RoomStatus.playing) {
         this.startGameLoop();
     }
     return super.init().on('player-offline', async (player) => {
-      await sleep(4 * 60 * 1000);
-      if (!this.isPlayerOnline(player)) return;
+      // 等待30秒，给玩家重连的机会
+      await sleep(30 * 1000);
+      // 修复：如果玩家仍然离线，则踢出玩家并结束游戏
+      if (this.isPlayerOnline(player)) return;
       this.room.kickPlayer(player);
       if (this.room.status === RoomStatus.playing && player.role === PlayerRole.player) {
         this.say(`玩家 ${player.name} 已离线，游戏结束。`);
         this.finishGame();
       }
     }).on('join', (player) => {
+      // 玩家重新加入时，同步当前游戏状态
       if (this.gameState) {
         const p = this.room.validPlayers.find((p) => p.id === player.id);
         if (p?.role === PlayerRole.player) {
@@ -88,6 +92,11 @@ class TetrisGameRoom extends GameRoom {
     super.onCommand(message);
     const sender = message.sender as RoomPlayer;
     const commandType = message.type;
+
+    // 验证玩家权限：只有真正的玩家才能操作游戏
+    if (sender.role !== PlayerRole.player) {
+      return;
+    }
 
     if (commandType === 'tetris:restart') {
         this.restartGame();
@@ -124,7 +133,7 @@ class TetrisGameRoom extends GameRoom {
 
       case 'tetris:drop':
         this.dropPiece();
-        this.command('game:state', this.gameState, sender);
+        this.command('game:state', this.gameState);
         break;
 
       case 'tetris:pause':
@@ -135,7 +144,10 @@ class TetrisGameRoom extends GameRoom {
   }
 
   startGame() {
+    // 生成第一个方块和下一个方块
+    const firstPiece = this.getRandomTetromino();
     const nextPiece = this.getRandomTetromino();
+    
     this.gameState = {
       board: this.createEmptyBoard(),
       currentPiece: null,
@@ -147,8 +159,10 @@ class TetrisGameRoom extends GameRoom {
       isPaused: false
     };
 
-    this.spawnNewPiece(this.getRandomTetromino());
+    // 使用第一个方块作为当前方块
+    this.spawnNewPiece(firstPiece);
 
+    // 设置所有玩家状态为游戏中
     this.room.players.forEach(player => {
       if (player.role === PlayerRole.player) {
         player.status = PlayerStatus.playing;
@@ -161,14 +175,19 @@ class TetrisGameRoom extends GameRoom {
   }
 
   startGameLoop() {
+    // 清除旧的游戏循环
     if (this.gameLoop) clearInterval(this.gameLoop);
+
+    // 根据当前等级设置下落速度，等级越高速度越快
+    const currentLevel = this.gameState?.level || 1;
+    const dropInterval = DROP_INTERVAL_BASE / currentLevel;
 
     this.gameLoop = setInterval(() => {
       if (this.gameState && !this.gameState.gameOver && !this.gameState.isPaused) {
         this.movePiece(0, 1);
         this.command('game:state', this.gameState);
       }
-    }, DROP_INTERVAL_BASE / (this.gameState?.level || 1));
+    }, dropInterval);
   }
 
   stopGameLoop() {
@@ -179,23 +198,35 @@ class TetrisGameRoom extends GameRoom {
   }
 
   restartGame() {
+    // 停止当前游戏循环
     this.stopGameLoop();
     this.gameState = null;
+    
+    // 直接开始新游戏，startGame 会处理房间状态
     this.startGame();
   }
 
   finishGame() {
     this.stopGameLoop();
-    this.gameState = null;
+    
+    // 记录玩家成绩：单人游戏，根据分数判断是否算作胜利
+    // 这里简单以分数大于0作为完成游戏的标志
+    const finalScore = this.gameState?.score || 0;
     
     this.room.validPlayers.forEach(player => {
       if (!this.achievements[player.name]) {
         this.achievements[player.name] = {win: 0, lost: 0, draw: 0};
       }
-      this.achievements[player.name].lost += 1;
+      // 如果有分数说明至少玩了一会儿，算作完成
+      if (finalScore > 0) {
+        this.achievements[player.name].win += 1;
+      } else {
+        this.achievements[player.name].lost += 1;
+      }
     });
     this.command('achievements', this.achievements);
     
+    this.gameState = null;
     this.say(`游戏已结束`);
     this.room.end();
     this.save();
@@ -203,8 +234,11 @@ class TetrisGameRoom extends GameRoom {
 
   pauseGame() {
     if (!this.gameState) return;
+    // 切换暂停状态
     this.gameState.isPaused = !this.gameState.isPaused;
-    this.room.emit('command', {type: 'game:state', data: this.gameState});
+    // 使用command方法广播给所有玩家，确保状态同步
+    this.command('game:state', this.gameState);
+    this.save();
   }
 
   createEmptyBoard(): BoardCell[][] {
@@ -311,10 +345,20 @@ class TetrisGameRoom extends GameRoom {
   updateScore(lines: number) {
     if (!this.gameState) return;
 
+    // 根据消除行数计算分数：1行40分，2行100分，3行300分，4行1200分
     const linePoints = [0, 40, 100, 300, 1200];
     this.gameState.score += linePoints[lines] * this.gameState.level;
     this.gameState.lines += lines;
+    
+    // 记录旧等级
+    const oldLevel = this.gameState.level;
+    // 每消除10行升一级
     this.gameState.level = Math.floor(this.gameState.lines / 10) + 1;
+    
+    // 如果等级提升，需要更新游戏循环速度
+    if (this.gameState.level > oldLevel) {
+      this.startGameLoop();
+    }
   }
 
   movePiece(dx: number, dy: number) {
@@ -344,11 +388,31 @@ class TetrisGameRoom extends GameRoom {
 
     const rotatedShape = this.rotatePiece(this.gameState.currentPiece.shape);
 
-    if (!this.checkCollision(0, 0, rotatedShape)) {
-      if (this.gameState.currentPiece) {
-        this.gameState.currentPiece.shape = rotatedShape;
+    // Wall Kick 系统：尝试多个位置偏移来完成旋转
+    // 按优先级尝试：原位 -> 右移1格 -> 左移1格 -> 右移2格 -> 左移2格 -> 上移1格
+    const kickOffsets = [
+      { x: 0, y: 0 },   // 原位置
+      { x: 1, y: 0 },   // 右移1格
+      { x: -1, y: 0 },  // 左移1格
+      { x: 2, y: 0 },   // 右移2格（用于I方块）
+      { x: -2, y: 0 },  // 左移2格（用于I方块）
+      { x: 0, y: -1 }   // 上移1格（用于贴底情况）
+    ];
+
+    // 尝试每个偏移位置
+    for (const offset of kickOffsets) {
+      if (!this.checkCollision(offset.x, offset.y, rotatedShape)) {
+        // 找到可行位置，应用旋转和位置调整
+        if (this.gameState.currentPiece) {
+          this.gameState.currentPiece.shape = rotatedShape;
+          this.gameState.currentPiece.x += offset.x;
+          this.gameState.currentPiece.y += offset.y;
+        }
+        return; // 成功旋转，退出
       }
     }
+    
+    // 所有位置都无法旋转，保持原样（静默失败）
   }
 
   rotatePiece(shape: number[][]): number[][] {
