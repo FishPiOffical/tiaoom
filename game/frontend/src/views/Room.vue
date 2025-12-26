@@ -1,40 +1,156 @@
 <script lang="ts" setup>
-  import msg from '@/components/msg';
-  import { useGameStore } from '@/stores/game';
-import { onMounted } from 'vue';
-  import { useRoute, useRouter } from 'vue-router';
+import msg from "@/components/msg";
+import { getComponent } from "@/main";
+import { useGameStore } from "@/stores/game";
+import { openSmallWindow } from "@/utils/dom";
+import { computed, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
 
-  const gameStore = useGameStore();
-  const route = useRoute();
-  const router = useRouter();
+const gameStore = useGameStore();
+const route = useRoute();
+const router = useRouter();
 
-  function init() {
-    if (route.params.id) {
-      if (gameStore.roomPlayer && gameStore.roomPlayer.room.id !== route.params.id) {
-        if (gameStore.roomPlayer.role !== 'player') {
-          gameStore.game?.leaveRoom(gameStore.roomPlayer.room.id);
-        } else {
-          msg.warning('您正在游戏中，无法切换房间！');
-          return;
-        }
+const roomId = computed(() => (route.params.id as string));
+
+function init() {
+  if (roomId.value) {
+    if (
+      gameStore.roomPlayer &&
+      gameStore.roomPlayer.room.id !== roomId.value
+    ) {
+      if (gameStore.roomPlayer.role !== "player") {
+        gameStore.game?.leaveRoom(gameStore.roomPlayer.room.id);
+      } else {
+        msg.warning("您正在游戏中，无法切换房间！");
+        router.replace("/");
+        return;
       }
-      gameStore.game?.joinRoom(route.params.id as string);
     }
+    const room = gameStore.rooms.find((r) => r.id === roomId.value);
+    if (!room) {
+      msg.error("房间不存在或已被解散！");
+      router.replace("/");
+      return;
+    }
+    let passwd: string | undefined;
+    if (room.attrs?.passwd) {
+      passwd = prompt("请输入房间密码：") || "";
+      if (!passwd) return;
+    }
+    gameStore.game?.joinRoom(room.id, { passwd });
   }
+}
+const room = computed(() => gameStore.roomPlayer?.room)
 
-  gameStore.game?.onReady(() => {
+onMounted(() => {
+  gameStore.game?.getRoomOneTime(roomId.value).then(() => {
     init();
-  })
+  });
+});
 
-  onMounted(async () => {
-    init();
-    router.replace('/');
-  })
-
+const hasLiteComponent = computed(() => {
+  try {
+    const type = gameStore.roomPlayer?.room.attrs?.type;
+    if (!type) return false
+    return !!getComponent(type.slice(0, 1).toUpperCase() + type.slice(1) + 'Lite')
+  } catch {
+    return false
+  }
+})
 </script>
 
 <template>
-  <main class="flex-1 p-4 md:p-6 overflow-auto bg-base-100 w-full flex items-center justify-center">
+  <main
+    v-if="!gameStore.roomPlayer"
+    class="flex-1 overflow-auto bg-base-100 w-full flex items-center justify-center"
+  >
     <span>正在加载房间...</span>
   </main>
+  <section v-else class="h-full flex flex-col w-full">
+    <header
+      class="border-b border-base-content/20 flex justify-between items-center px-4 py-2 pb-2"
+    >
+      <section>
+        <h3 class="text-xl font-light text-base-content mb-1">
+          <span>我的房间: {{ gameStore.roomPlayer.room.name }} </span>
+          <span class="text-sm text-base-content/60 ml-1">
+            ({{
+              gameStore.roomPlayer.room.players.filter(
+                (p) => p.role === "player"
+              ).length
+            }}/{{ gameStore.roomPlayer.room.size }})
+          </span>
+        </h3>
+        <div
+          role="alert"
+          class="alert alert-soft py-1 pl-1 gap-1"
+          v-if="room && (room.attrs.point || room.attrs.rate)"
+        >
+          <span class="text-xs">
+            ⚠️
+            <span v-if="room.attrs.point"
+              >注意：当前房间每局游戏需扣除 {{ room.attrs.point }} 积分。</span
+            >
+            <span
+              v-if="
+                Math.floor(
+                  ((room.attrs.rate || 1) * room.attrs.point +
+                    room.attrs.point) *
+                    0.9
+                ) > 1
+              "
+            >
+              胜利将获得
+              {{
+                Math.floor(
+                  ((room.attrs.rate || 1) * room.attrs.point +
+                    room.attrs.point) *
+                    0.9
+                )
+              }}
+              积分（税额 10%）。
+            </span>
+            <span v-if="room.attrs.rate > 1"
+              >失败将扣除
+              {{
+                Math.ceil(room.attrs.rate * room.attrs.point) -
+                room.attrs.point
+              }}。</span
+            >
+            <span v-if="room.size > 2">
+              失败将扣除
+              {{ Math.ceil((room.attrs.rate || 1) * room.attrs.point) }} ×
+              胜利人数 - {{ room.attrs.point }}。
+            </span>
+          </span>
+        </div>
+      </section>
+      <section>
+        <RoomControls
+          v-if="gameStore.game"
+          :game="gameStore.game"
+          :room-player="gameStore.roomPlayer"
+        >
+          <button
+            v-if="hasLiteComponent"
+            class="btn btn-circle btn-soft hidden md:flex tooltip tooltip-left"
+            data-tip="弹出"
+            @click="openSmallWindow('/#/lite')"
+          >
+            <Icon icon="majesticons:open-line" />
+          </button>
+        </RoomControls>
+      </section>
+    </header>
+      
+    <!-- 动态游戏组件 -->
+    <div class="flex-1 overflow-auto md:p-4">
+      <component 
+        v-if="gameStore.roomPlayer.room.attrs?.type" 
+        :is="gameStore.roomPlayer.room.attrs.type + '-room'" 
+        :game="gameStore.game" 
+        :room-player="gameStore.roomPlayer"
+      />
+    </div>
+  </section>
 </template>

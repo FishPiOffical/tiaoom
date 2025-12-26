@@ -91,7 +91,7 @@ export class Tiaoom extends EventEmitter {
           case RecvMessageTypes.PlayerList:
             return cb?.(null, this.players);
           case RecvMessageTypes.RoomCreate:
-            return await this.createRoom(message.sender, message.data);
+            return cb?.(null, await this.createRoom(message.sender, message.data));
           case RecvMessageTypes.PlayerJoin:
             return await this.joinPlayer(message.sender, message.data);
           case RecvMessageTypes.PlayerLeave:
@@ -343,11 +343,16 @@ export class Tiaoom extends EventEmitter {
       throw new Error('room not found.');
     }
 
+    let role = PlayerRole.player;
+    if (this.rooms.some(r => r.id != room.id && r.players.some(p => p.id === playerInstance!.id && p.role === PlayerRole.player))) {
+      throw new Error('you are already playing in another room.');
+    }
+
     if (!isCreator && !room.players.some(p => p.isCreator)) {
       isCreator = true;
     }
 
-    const roomPlayer = room.addPlayer(playerInstance, isCreator);
+    const roomPlayer = room.addPlayer(playerInstance, isCreator, role);
     if (roomPlayer) {
       this.emit("room-player", room);
     }

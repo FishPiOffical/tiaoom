@@ -1,5 +1,5 @@
 import ReconnectingWebSocket from 'reconnecting-websocket'
-import { Tiaoom, TiaoomEvents, MessageTypes, Player } from 'tiaoom/client'
+import { Tiaoom, TiaoomEvents, MessageTypes, Player, Room } from 'tiaoom/client'
 import type { Message } from '@/types'
 
 export class GameCore extends Tiaoom {
@@ -102,5 +102,21 @@ export class GameCore extends Tiaoom {
     this.onPlayerMessage(cb, on);
     this.onRoomMessage(cb, on);
     return this;
+  }
+
+  getRoomOneTime(roomId: string) {
+    return new Promise<any>((resolve) => {
+      if (this.rooms.find(r => r.id === roomId)) {
+        resolve(this.rooms.find(r => r.id === roomId));
+      } else {
+        const onRoomList = (data: Room[]) => {
+          if (data.find((r: any) => r.id === roomId)) {
+            this.onRoomList(onRoomList, false);
+            resolve(data.find((r: any) => r.id === roomId));
+          }
+        };
+        this.onRoomList(onRoomList);
+      }
+    });
   }
 }

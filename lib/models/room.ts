@@ -288,10 +288,10 @@ export class Room extends EventEmitter implements IRoom {
    * @param {boolean} isCreator 是否房主
    * @returns 玩家实例 
    */
-  addPlayer(player: Player, isCreator: boolean = false) {
+  addPlayer(player: Player, isCreator: boolean = false, role: PlayerRole = PlayerRole.player) {
     let roomPlayer = this.searchPlayer(player);
     if (roomPlayer) {
-      if (roomPlayer.role === PlayerRole.watcher && !this.isFull && !this.isPlaying) {
+      if (role == PlayerRole.player && roomPlayer.role === PlayerRole.watcher && !this.isFull && !this.isPlaying) {
         roomPlayer.role = PlayerRole.player;
         roomPlayer.isCreator = isCreator;
         this.emit("update", this);
@@ -304,7 +304,7 @@ export class Room extends EventEmitter implements IRoom {
         p.isCreator = false;
       });
     }
-    roomPlayer = new RoomPlayer(player, this.isFull || this.isPlaying ? PlayerRole.watcher : PlayerRole.player);
+    roomPlayer = new RoomPlayer(player, this.isFull || this.isPlaying ? PlayerRole.watcher : role);
     roomPlayer.isCreator = isCreator;
     roomPlayer.roomId = this.id;
     this.players.push(roomPlayer);

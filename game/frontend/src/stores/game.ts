@@ -5,6 +5,7 @@ import { Player, Room } from 'tiaoom/client'
 import { GameCore } from '@/core/game'
 import { api, User } from '@/api'
 import msg from '@/components/msg';
+import router from '@/router'
 
 export const useGameStore = defineStore('game', () => {
   const game = ref<GameCore | null>(null)
@@ -74,6 +75,9 @@ export const useGameStore = defineStore('game', () => {
           game.value?.init(roomPlayer.roomId, player.value!.player)
         }
       })
+      .on('room.leave', () => {
+        router.replace('/')
+      })
       .onReady(() => {
         if (player.value) {
           game.value!.login(player.value.player)
@@ -98,11 +102,14 @@ export const useGameStore = defineStore('game', () => {
         console.log('Room List:', data)
         rooms.value = [...data]
       })
+      .onRoomCreate((room) => {
+        router.replace('/r/' + room.id)
+      })
       .onPlayerReady(onPlayerReady)
       .onPlayerUnready(onPlayerReady)
       .on('global.message', (message, sender) => {
-      globalMessages.value.unshift({ data: message, sender, createdAt: Date.now() })
-    })
+        globalMessages.value.unshift({ data: message, sender, createdAt: Date.now() })
+      })
   }
 
   function onPlayerReady(data: any) {

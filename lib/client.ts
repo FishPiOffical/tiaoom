@@ -230,6 +230,7 @@ export class Tiaoom {
 
   /**
    * 启动游戏
+   * @returns this
    */
   run() {
     this.connect();
@@ -294,6 +295,7 @@ export class Tiaoom {
 
   /**
    * 发送消息实现
+   * @param message 消息内容
    */
   send(_: { type: MessageTypes, data?: any }) {
     throw new Error('Must be implement send method');
@@ -302,6 +304,7 @@ export class Tiaoom {
   /**
    * 登录
    * @param {Player} player 玩家信息
+   * @returns this
    */
   login(player: Player) {
     this.currentPlayer = new Player(player);
@@ -315,6 +318,7 @@ export class Tiaoom {
    * @param {number} size 房间人数上限
    * @param {number} minSize 房间人数下限
    * @param {object} attrs 房间属性
+   * @returns {Promise<void>} 创建完成的 Promise
    */
   createRoom({ name, size, minSize, attrs }: Omit<IRoomOptions, 'id'>) {
     return new Promise<void>((resolve) => {
@@ -329,6 +333,7 @@ export class Tiaoom {
    * 加入房间
    * @param {string} roomId 房间ID
    * @param {object} params 加入参数
+   * @returns this
    */
   joinRoom(roomId: string, params?: any) {
     this.send({ type: MessageTypes.PlayerJoin, data: { roomId, params } });
@@ -339,6 +344,7 @@ export class Tiaoom {
    * 离开房间
    * @param {string} roomId 房间ID
    * @param {object} params 离开参数
+   * @returns this
    */
   leaveRoom(roomId: string, params?: any) {
     this.send({ type: MessageTypes.PlayerLeave, data: { roomId, params } });
@@ -349,6 +355,7 @@ export class Tiaoom {
    * 离开座位
    * @param {string} roomId 房间ID
    * @param {object} params 离开参数
+   * @returns this
    */
   leaveSeat(roomId: string, params?: any) {
     this.send({ type: MessageTypes.PlayerStandUp, data: { roomId, params } });
@@ -360,6 +367,7 @@ export class Tiaoom {
    * @param {string} roomId 房间ID
    * @param {string} playerId 玩家ID
    * @param {object} params 额外参数
+   * @returns this
    */
   kickPlayer(roomId: string, playerId: string, params?: any) {
     this.send({ type: MessageTypes.RoomKick, data: { roomId, playerId, params } });
@@ -371,6 +379,7 @@ export class Tiaoom {
    * @param {string} roomId 房间ID
    * @param {string} playerId 目标玩家ID
    * @param {object} params 额外参数
+   * @returns this
    */
   transferRoom(roomId: string, playerId: string, params?: any) {
     this.send({ type: MessageTypes.RoomTransfer, data: { roomId, playerId, params } });
@@ -381,7 +390,7 @@ export class Tiaoom {
    * 关闭房间
    * @param {string} roomId 房间ID
    * @param {object} params 额外参数
-   * @returns 
+   * @returns this
    */
   closeRoom(roomId: string, params?: any) {
     this.send({ type: MessageTypes.RoomClose, data: { id: roomId, params } });
@@ -391,6 +400,8 @@ export class Tiaoom {
   /**
    * 开始游戏
    * @param {string} id 房间ID
+   * @param {object} params 额外参数
+   * @returns this
    */
   startGame(id: string, params?: any) {
     this.send({ type: MessageTypes.RoomStart, data: { id, params } });
@@ -401,6 +412,8 @@ export class Tiaoom {
    * 准备/取消准备
    * @param {string} roomId 房间ID
    * @param {boolean} isReady 是否准备
+   * @param {object} params 额外参数
+   * @returns this
    */
   ready(roomId: string, isReady=true, params?: any) {
     this.send({ type: isReady ? MessageTypes.PlayerReady : MessageTypes.PlayerUnready, data: { roomId, params } });
@@ -408,9 +421,10 @@ export class Tiaoom {
   }
 
   /**
-   * 发送房间指令
+   * 发送全局/房间指令
    * @param {string} roomId 房间ID
    * @param {any} command 指令内容
+   * @returns this
    */
   command(command: any): this;
   command(roomId: string, command: any): this;
@@ -427,6 +441,7 @@ export class Tiaoom {
   /**
    * 连接准备监听
    * @param {function} cb 监听函数
+   * @returns this
    */
   onReady(cb: () => void) {
     return this.on("sys.ready", cb);
@@ -435,6 +450,7 @@ export class Tiaoom {
   /**
    * 全局错误监听
    * @param {function} cb 监听函数
+   * @returns this
    */
   onError(cb: (error: Error) => void) {
     this.on("global.error", cb);
@@ -444,6 +460,8 @@ export class Tiaoom {
   /**
    * 全局消息监听
    * @param {function} cb 监听函数
+   * @param {boolean} on 开启/关闭监听
+   * @returns this
    */
   onMessage(cb: (message: string, sender?: Player) => void, on=true) {
     if (on) this.on("global.message", cb);
@@ -454,6 +472,7 @@ export class Tiaoom {
   /**
    * 玩家列表变更监听
    * @param {function} cb 监听函数
+   * @returns this
    */
   onPlayerList(cb: (players: Player[]) => void) {
     this.on("onPlayerList", cb);
@@ -464,7 +483,7 @@ export class Tiaoom {
    * 房间列表变更监听
    * @param {function} cb 监听函数
    * @param {boolean} on 开启/关闭监听
-   * @returns 
+   * @returns this
    */
   onRoomList(cb: (rooms: Room[]) => void, on=true) {
     if (on) this.on("onRoomList", cb);
@@ -476,7 +495,7 @@ export class Tiaoom {
    * 玩家加入监听
    * @param {function} cb 监听函数
    * @param {boolean} on 开启/关闭监听
-   * @returns 
+   * @returns this
    */
   onPlayerJoin(cb: (player: RoomPlayer) => void, on=true) {
     if (on) this.on("room.join", cb);
@@ -488,7 +507,7 @@ export class Tiaoom {
    * 玩家离开监听
    * @param {function} cb 监听函数
    * @param {boolean} on 开启/关闭监听
-   * @returns 
+   * @returns this
    */
   onPlayerLeave(cb: (player: RoomPlayer) => void, on=true) {
     if (on) this.on("room.leave", cb);
@@ -500,7 +519,7 @@ export class Tiaoom {
    * 玩家准备监听
    * @param {function} cb 监听函数
    * @param {boolean} on 开启/关闭监听
-   * @returns 
+   * @returns this
    */
   onPlayerReady(cb: (player: RoomPlayer) => void, on=true) {
     if (on) this.on("room.player-ready", cb);
@@ -512,7 +531,7 @@ export class Tiaoom {
    * 玩家取消准备监听
    * @param {function} cb 监听函数
    * @param {boolean} on 开启/关闭监听
-   * @returns 
+   * @returns this
    */
   onPlayerUnready(cb: (player: RoomPlayer) => void, on=true) {
     if (on) this.on("room.player-unready", cb);
@@ -524,7 +543,7 @@ export class Tiaoom {
    * 玩家状态更新监听
    * @param {function} cb 监听函数
    * @param {boolean} on 开启/关闭监听
-   * @returns 
+   * @returns this
    */
   onPlayerStatus(cb: (status: PlayerStatus) => void, on=true) {
     if (on) this.on("player.status", cb);
@@ -533,10 +552,22 @@ export class Tiaoom {
   }
 
   /**
+   * 房间创建监听
+   * @param {function} cb 监听函数
+   * @param {boolean} on 开启/关闭监听
+   * @returns this
+   */
+  onRoomCreate(cb: (room: Room) => void, on=true) {
+    if (on) this.on("room.create", cb);
+    else this.off("room.create", cb);
+    return this;
+  }
+
+  /**
    * 房间开始游戏监听
    * @param {function} cb 监听函数
    * @param {boolean} on 开启/关闭监听
-   * @returns 
+   * @returns this
    */
   onRoomStart(cb: (room: Room) => void, on=true) {
     if (!this.listeners["room.start"]) {
@@ -551,7 +582,7 @@ export class Tiaoom {
    * 房间结束游戏监听
    * @param {function} cb 监听函数
    * @param {boolean} on 开启/关闭监听
-   * @returns
+   * @returns this
    */
   onRoomEnd(cb: (room: Room) => void, on=true) {
     if (!this.listeners["room.end"]) {
@@ -566,7 +597,7 @@ export class Tiaoom {
    * 房间全部准备监听
    * @param {function} cb 监听函数
    * @param {boolean} on 开启/关闭监听
-   * @returns 
+   * @returns this
    */
   onRoomAllReady(cb: (room: Room) => void, on=true) {
     if (!this.listeners["room.all-ready"]) {
@@ -581,7 +612,7 @@ export class Tiaoom {
    * 房间消息监听
    * @param {function} cb 监听函数
    * @param {boolean} on 开启/关闭监听
-   * @returns 
+   * @returns this
    */
   onRoomMessage(cb: (message: { content: string, sender?: RoomPlayer }) => void, on=true) {
     if (on) this.on("room.message", cb);
@@ -593,7 +624,7 @@ export class Tiaoom {
    * 玩家消息监听
    * @param {function} cb 监听函数
    * @param {boolean} on 开启/关闭监听
-   * @returns 
+   * @returns this
    */
   onPlayerMessage(cb: (message: { content: string, sender?: Player }) => void, on=true) {
     if (on) this.on("player.message", cb);
@@ -605,7 +636,7 @@ export class Tiaoom {
    * 房间指令监听
    * @param {function} cb 监听函数
    * @param {boolean} on 开启/关闭监听
-   * @returns 
+   * @returns this
    */
   onRoomCommand(cb: (command: any & { sender?: Player }) => void, on=true) {
     if (on) this.on("room.command", cb);
@@ -617,7 +648,7 @@ export class Tiaoom {
    * 玩家指令监听
    * @param {function} cb 监听函数
    * @param {boolean} on 开启/关闭监听
-   * @returns 
+   * @returns this
    */
   onPlayerCommand(cb: (command: any & { sender?: Player }) => void, on=true) {
     if (on) this.on("player.command", cb);
@@ -629,7 +660,7 @@ export class Tiaoom {
    * 事件监听
    * @param {string} event 事件名称
    * @param {TiaoomEvents[K]} listener 监听函数
-   * @returns 
+   * @returns this
    */
   on<K extends keyof TiaoomEvents>(event: K, listener: TiaoomEvents[K]): this {
     this.listeners[event] = this.listeners[event] || [];
@@ -641,7 +672,7 @@ export class Tiaoom {
    * 事件取消监听
    * @param {string} event 事件名称
    * @param {TiaoomEvents[K]} listener 监听函数
-   * @returns 
+   * @returns this
    */
   off<K extends keyof TiaoomEvents>(event: K, listener: TiaoomEvents[K]): this {
     const listeners = this.listeners[event] || [];
@@ -656,7 +687,7 @@ export class Tiaoom {
    * 事件触发
    * @param {string} event 事件名称
    * @param  {Parameters<TiaoomEvents[K]>} args 参数
-   * @returns 
+   * @returns this
    */
   emit<K extends keyof TiaoomEvents>(event: K, ...args: Parameters<TiaoomEvents[K]>): this {
     const listeners = this.listeners[event] || [];

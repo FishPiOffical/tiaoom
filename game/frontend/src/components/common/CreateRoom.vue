@@ -96,7 +96,7 @@ const room = ref({
   name: '',
   size: 4,
   minSize: 4,
-  attrs: { type: 'othello', passwd: '', rate: 0, point: 0 } as Record<string, any>,
+  attrs: { type: 'othello', passwd: '', rate: '', point: '' } as Record<string, any>,
 })
 
 const currentGame = computed(() => {

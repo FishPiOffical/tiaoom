@@ -137,7 +137,7 @@
                     </span>
                   </div>
                   <button
-                    v-if="!gameStore.roomPlayer"
+                    v-if="!gameStore.roomPlayer || gameStore.roomPlayer.role === 'watcher' && gameStore.roomPlayer.room.id !== r.id"
                     @click="joinRoom(r)"
                     class="px-2 py-1 btn-xs whitespace-nowrap btn"
                   >
@@ -188,7 +188,7 @@
       </div>
 
       <!-- 主内容区 -->
-      <router-view />
+      <router-view v-if="isReady" />
     </section>
   </div>
 </template>
@@ -207,12 +207,7 @@ const isDesktopSidebarCollapsed = ref(false)
 const activeTab = ref<'rooms' | 'players'>('rooms')
 
 function joinRoom(r: IRoomOptions) {
-  let passwd: string | undefined;
-  if (r.attrs?.passwd) {
-    passwd = prompt('请输入房间密码：') || '';
-    if (!passwd) return
-  }
-  gameStore.game?.joinRoom(r.id, { passwd }); 
+  router.replace(`/r/${r.id}`)
   isSidebarOpen.value = false
 }
 
@@ -228,8 +223,11 @@ const roomList = computed(() => {
   return gameStore.rooms.filter(r => r.attrs.type === gameType.value);
 });
 
+const isReady = ref(false);
 onMounted(() => {
-  gameStore.initGame()
+  gameStore.initGame().onReady(() => {
+    isReady.value = true;
+  });
 })
 </script>
 

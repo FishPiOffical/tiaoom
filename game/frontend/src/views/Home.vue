@@ -53,61 +53,15 @@
     </section>
     
     <!-- 房间内容 -->
-    <section v-if="gameStore.roomPlayer" class="h-full flex flex-col">
-      <header class="border-b border-base-content/20 flex justify-between items-center px-4 py-2 pb-2">
-        <section>
-          <h3 class="text-xl font-light text-base-content">
-            我的房间: {{ gameStore.roomPlayer.room.name }} 
-            <span class="text-sm text-base-content/60 ml-2">
-              ({{ gameStore.roomPlayer.room.players.filter(p => p.role === 'player').length }}/{{ gameStore.roomPlayer.room.size }})
-            </span>
-          </h3>
-          <div role="alert" class="alert alert-soft py-1 pl-0 gap-1" v-if="room && (room.attrs.point || room.attrs.rate)">
-            <span class="text-xs">
-              ⚠️
-              <span v-if="room.attrs.point">注意：当前房间每局游戏需扣除 {{ room.attrs.point }} 积分。</span>
-              <span v-if="Math.floor(((room.attrs.rate || 1) * room.attrs.point + room.attrs.point) * 0.9) > 1">
-                胜利将获得 {{ Math.floor(((room.attrs.rate || 1) * room.attrs.point + room.attrs.point) * 0.9) }} 积分（税额 10%）。
-              </span>
-              <span v-if="room.attrs.rate > 1">失败将扣除 {{ Math.ceil(room.attrs.rate * room.attrs.point) - room.attrs.point }}。</span>
-              <span v-if="room.size > 2">
-                失败将扣除 {{ Math.ceil((room.attrs.rate || 1) * room.attrs.point)}} × 胜利人数 - {{ room.attrs.point }}。
-              </span>
-            </span>
-          </div>
-        </section>
-        <section>
-          <RoomControls
-            v-if="gameStore.game"
-            :game="gameStore.game" 
-            :room-player="gameStore.roomPlayer"
-          >
-            <button v-if="hasLiteComponent" class="btn btn-sm btn-circle btn-soft hidden md:flex tooltip tooltip-left" data-tip="弹出" @click="openSmallWindow('/#/lite')">
-              <Icon icon="majesticons:open-line" />
-            </button>
-          </RoomControls>
-        </section>
-      </header>
-      
-      <!-- 动态游戏组件 -->
-      <div class="flex-1 overflow-auto md:p-4">
-        <component 
-          v-if="gameStore.roomPlayer.room.attrs?.type" 
-          :is="gameStore.roomPlayer.room.attrs.type + '-room'" 
-          :game="gameStore.game" 
-          :room-player="gameStore.roomPlayer"
-        />
-      </div>
-    </section>
+    <Room v-else />
   </main>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { useGameStore } from '@/stores/game'
 import { openSmallWindow } from '@/utils/dom'
-import { getComponent } from '@/main';
-import RoomControls from '@/components/common/RoomControls.vue';
+import Room from '@/views/Room.vue';
 
 const gameStore = useGameStore()
 
@@ -119,16 +73,4 @@ function sendMessage(e:any) {
   gameStore.game?.command({ type: 'say', data: msg.value })
   msg.value = ''
 }
-
-const hasLiteComponent = computed(() => {
-  try {
-    const type = gameStore.roomPlayer?.room.attrs?.type;
-    if (!type) return false
-    return !!getComponent(type.slice(0, 1).toUpperCase() + type.slice(1) + 'Lite')
-  } catch {
-    return false
-  }
-})
-
-const room = computed(() => gameStore.roomPlayer?.room)
 </script>
