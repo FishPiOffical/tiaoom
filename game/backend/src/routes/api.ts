@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { Controller } from "../controller";
 import { login as fishpiLogin, register as fishpiRegister, updateUserInfo } from "../login/fishpi";
-import { User } from "@/entities";
+import { User, UserRepo } from "@/entities";
 
 export interface GameContext {
   controller?: Controller;
@@ -39,6 +39,15 @@ const createRoutes = (game: GameContext, gameName: string) => {
         player: req.session.player
       }
     });
+  });
+
+  router.get("/user/:username", async (req: Request, res: Response) => {
+    const user = await UserRepo.findOneBy({ username: req.params.username });
+    if (user) {
+      res.json({ code: 0, data: user });
+    } else {
+      res.json({ code: 1, message: "用户不存在" });
+    }
   });
 
   router.get("/message", (req: Request, res: Response) => {

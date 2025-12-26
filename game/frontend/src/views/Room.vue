@@ -133,7 +133,7 @@ const hasLiteComponent = computed(() => {
         >
           <button
             v-if="hasLiteComponent"
-            class="btn btn-circle btn-soft hidden md:flex tooltip tooltip-left"
+            class="btn btn-circle md:btn-lg btn-soft hidden md:flex tooltip tooltip-left"
             data-tip="弹出"
             @click="openSmallWindow('/#/lite')"
           >

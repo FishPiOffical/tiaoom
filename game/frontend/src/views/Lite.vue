@@ -5,7 +5,7 @@
       <!-- 创建房间 -->
       <CreateRoom v-if="!gameStore.roomPlayer" />
       <RoomControlsLite
-        v-if="gameStore.game"
+        v-if="gameStore.game && gameStore.roomPlayer"
         :game="gameStore.game" 
         :room-player="gameStore.roomPlayer"
       />

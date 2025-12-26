@@ -3,8 +3,9 @@
     <li 
       v-for="p in players.filter(p => p.role === 'player')" 
       :key="p.id" 
-      class="flex items-center gap-2 text-sm p-1 rounded hover:bg-base-200/50"
+      class="flex items-center gap-2 text-sm p-1 rounded hover:bg-base-200/50 cursor-pointer"
       :class="{ 'opacity-50': p.status == PlayerStatus.offline }"
+      @click="$router.push(`/u/${p.attributes.username}`)"
     >
       <slot :player="p">
         <span>[{{ p.isReady ? '已准备' : '未准备' }}]</span>

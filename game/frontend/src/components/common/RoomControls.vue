@@ -1,53 +1,53 @@
 <template>
-  <div class="flex flex-row items-center gap-2 py-2">
+  <div class="md:flex flex-row items-center gap-2 pl-2 md:text-[20px] text-[10px] grid grid-cols-2 md:w-auto w-[7em]">
     <!-- Waiting: Player Actions -->
-    <div v-if="!isPlaying && roomPlayer.role === PlayerRole.player" class="group flex gap-2">
-      <button class="btn btn-circle btn-soft tooltip tooltip-left" 
+    <template v-if="!isPlaying && roomPlayer.role === PlayerRole.player">
+      <button class="btn btn-circle md:btn-lg btn-soft tooltip tooltip-left" 
         @click="game?.leaveRoom(roomPlayer.room.id)"
         :disabled="roomPlayer.isReady"
         data-tip="离开房间"
       >
         <Icon icon="mdi:logout" />
       </button>
-      <button class="btn btn-circle btn-soft tooltip tooltip-left" 
+      <button class="btn btn-circle md:btn-lg btn-soft tooltip tooltip-left" 
         @click="game?.leaveSeat(roomPlayer.room.id)"
         :disabled="roomPlayer.isReady"
         data-tip="离开座位"
       >
         <Icon icon="mdi:gamepad-off" />
       </button>
-      <button class="btn btn-accent btn-circle tooltip tooltip-left" 
+      <button class="btn btn-accent md:btn-lg btn-circle tooltip tooltip-left" 
         @click="game?.ready(roomPlayer.room.id, !roomPlayer.isReady)"
         :data-tip="roomPlayer.isReady ? '取消' : '准备'"
       >
         <Icon :icon="roomPlayer.isReady ? 'mdi:close' : 'mdi:check'" />
       </button>
-      <button class="btn btn-primary btn-circle tooltip tooltip-left" 
+      <button class="btn btn-primary md:btn-lg btn-circle tooltip tooltip-left" 
         @click="game?.startGame(roomPlayer.room.id)" 
         :disabled="!isAllReady"
         data-tip="开始游戏"
       >
         <Icon icon="mdi:play" />
       </button>
-    </div>
+    </template>
 
     <!-- Watcher Actions -->
-    <div v-if="roomPlayer.role === PlayerRole.watcher" class="group flex gap-2">
-      <button class="btn btn-circle btn-soft tooltip tooltip-left" 
+    <template v-if="roomPlayer.role === PlayerRole.watcher">
+      <button class="btn btn-circle md:btn-lg btn-soft tooltip tooltip-left" 
         @click="game?.leaveRoom(roomPlayer.room.id)"
         :disabled="roomPlayer.isReady"
         data-tip="离开房间"
       >
         <Icon icon="mdi:logout" />
       </button>
-      <button class="btn btn-circle btn-soft tooltip tooltip-left" 
+      <button class="btn btn-circle md:btn-lg btn-soft tooltip tooltip-left" 
         v-if="!isRoomFull && !isPlaying" 
         @click="game?.joinRoom(roomPlayer.room.id)"
         data-tip="加入游戏"
       >
         <Icon icon="mdi:google-gamepad" />
       </button>
-    </div>
+    </template>
     <!-- Extra Slot -->
     <slot />
   </div>
@@ -74,3 +74,11 @@ const isRoomFull = computed(() => {
   return props.roomPlayer.room.players.filter((p: any) => p.role === 'player').length >= props.roomPlayer.room.size
 })
 </script>
+<style lang="less" scoped>
+  .btn {
+    --size: 2em;
+  }
+  :deep(.btn) {
+    --size: 2em;
+  }
+</style>

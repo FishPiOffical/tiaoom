@@ -67,6 +67,9 @@ export const api = {
   getUserInfo(): Promise<User> {
     return instance.get('/info').then((data: any) => new User(data.player))
   },
+  getUser(username: string): Promise<User> {
+    return instance.get(`/user/${username}`).then((data: any) => new User(data))
+  },
   getMessages(): Promise<{ messages: { data: string, sender: Player, createdAt: number }[] }> {
     return instance.get('/message')
   },

@@ -154,7 +154,8 @@
                 <li
                   v-for="p in gameStore.players"
                   :key="p.id"
-                  class="text-sm text-base-content/80 flex items-center gap-2 p-2 hover:bg-base-300 rounded transition-colors"
+                  class="text-sm text-base-content/80 flex items-center gap-2 p-2 hover:bg-base-300 rounded transition-colors cursor-pointer"
+                  @click="$router.push(`/u/${p.attributes.username}`)"
                 >
                   <div 
                     class="w-6 h-6 rounded-full bg-base-300 flex items-center justify-center text-xs overflow-hidden border border-base-content/10"
