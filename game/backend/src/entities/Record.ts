@@ -20,6 +20,12 @@ export class Record {
   @Column('simple-json', { comment: "赢家", nullable: true })
   winners: string[];
 
+  @Column({ comment: "得分", nullable: true })
+  score?: number;
+
+  @Column('bigint', { comment: "游戏开始时间" })
+  beginTime: number;
+
   @Column('bigint', { comment: "创建时间" })
   createdAt: number = Date.now();
 }

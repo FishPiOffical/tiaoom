@@ -7,6 +7,7 @@ export interface GameStats {
   wins: number;
   draws: number;
   losses: number;
+  score?: number;
 }
 
 export async function getPlayerStats(username: string): Promise<GameStats[]> {
@@ -20,18 +21,40 @@ export async function getPlayerStats(username: string): Promise<GameStats[]> {
     total: s.total,
     wins: s.wins,
     draws: s.draws,
-    losses: s.losses
+    losses: s.losses,
+    score: s.score
   }));
 }
 
-export async function updatePlayerStats(username: string, type: string, result: 'win' | 'draw' | 'loss') {
+export async function getPlayerStat(username: string, type: string): Promise<GameStats | null> {
+  const statsRepo = AppDataSource.getRepository(PlayerStats);
+  const stat = await statsRepo.findOne({
+    where: { player: username, type }
+  });
+
+  if (stat) {
+    return {
+      type: stat.type,
+      total: stat.total,
+      wins: stat.wins,
+      draws: stat.draws,
+      losses: stat.losses,
+      score: stat.score
+    };
+  } else {
+    return null;
+  }
+}
+
+export async function updatePlayerStats(username: string, type: string, result: 'win' | 'draw' | 'loss', score?: number) {
   const statsRepo = AppDataSource.getRepository(PlayerStats);
   
   const incrementData = {
     total: 1,
     wins: result === 'win' ? 1 : 0,
     draws: result === 'draw' ? 1 : 0,
-    losses: result === 'loss' ? 1 : 0
+    losses: result === 'loss' ? 1 : 0,
+    score,
   };
 
   const update = async (id: number) => {
@@ -41,7 +64,8 @@ export async function updatePlayerStats(username: string, type: string, result: 
         total: () => "total + 1",
         wins: () => `wins + ${incrementData.wins}`,
         draws: () => `draws + ${incrementData.draws}`,
-        losses: () => `losses + ${incrementData.losses}`
+        losses: () => `losses + ${incrementData.losses}`,
+        score: score !== undefined ? () => `GREATEST(COALESCE(score, 0), ${score})` : undefined,
       })
       .where("id = :id", { id })
       .execute();

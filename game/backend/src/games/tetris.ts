@@ -6,6 +6,10 @@ export const name = "俄罗斯方块";
 export const minSize = 1;
 export const maxSize = 1;
 export const description = "经典俄罗斯方块游戏，单人挑战模式";
+export const points = {
+  '我就玩玩': 1,
+  '小博一下': 100,
+};
 
 const TETROMINOES = {
   I: { shape: [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]], color: '#00bcd4' },
@@ -82,10 +86,10 @@ class TetrisGameRoom extends GameRoom {
   }
 
   onStart() {
-      if (this.room.validPlayers.length < this.room.minSize) {
-        return this.say(`玩家人数不足，无法开始游戏。`);
-      }
-      this.startGame();
+    if (this.room.validPlayers.length < this.room.minSize) {
+      return this.say(`玩家人数不足，无法开始游戏。`);
+    }
+    this.startGame();
   }
 
   onCommand(message: IGameCommand) {
@@ -206,25 +210,29 @@ class TetrisGameRoom extends GameRoom {
     this.startGame();
   }
 
-  finishGame() {
+  async saveScore(finalScore: number) {
+    if (finalScore > 0) {
+      super.saveScore(finalScore);
+
+      const maxScore = await this.getMaxScore(this.room.validPlayers[0]);
+      if (finalScore > maxScore) {
+        this.say(`游戏已结束，得分：${finalScore}（新纪录！）`);
+        this.saveAchievements(this.room.validPlayers);
+      } else {
+        this.say(`游戏已结束，得分：${finalScore}（最高分：${maxScore}）`);
+        this.saveAchievements(finalScore == maxScore ? null : []);
+      }
+    }
+  }
+
+  async finishGame() {
     this.stopGameLoop();
     
     // 记录玩家成绩：单人游戏，根据分数判断是否算作胜利
     // 这里简单以分数大于0作为完成游戏的标志
     const finalScore = this.gameState?.score || 0;
     
-    this.room.validPlayers.forEach(player => {
-      if (!this.achievements[player.name]) {
-        this.achievements[player.name] = {win: 0, lost: 0, draw: 0};
-      }
-      // 如果有分数说明至少玩了一会儿，算作完成
-      if (finalScore > 0) {
-        this.achievements[player.name].win += 1;
-      } else {
-        this.achievements[player.name].lost += 1;
-      }
-    });
-    this.command('achievements', this.achievements);
+    this.saveScore(finalScore);
     
     // 设置游戏结束状态并广播
     if (this.gameState) {
@@ -279,13 +287,7 @@ class TetrisGameRoom extends GameRoom {
       this.stopGameLoop();
 
       // 记录成绩
-      this.room.validPlayers.forEach(player => {
-        if (!this.achievements[player.name]) {
-          this.achievements[player.name] = {win: 0, lost: 0, draw: 0};
-        }
-        this.achievements[player.name].lost += 1;
-      });
-      this.command('achievements', this.achievements);
+      this.saveScore(this.gameState.score);
       
       // 广播游戏结束状态
       this.command('game:state', this.gameState);

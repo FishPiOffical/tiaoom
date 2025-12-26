@@ -24,6 +24,9 @@ export class PlayerStats {
   @Column({ comment: "负场数", default: 0 })
   losses: number;
 
+  @Column({ comment: "最高得分", nullable: true })
+  score?: number;
+
   @UpdateDateColumn({ comment: "更新时间" })
   updatedAt: Date;
 }

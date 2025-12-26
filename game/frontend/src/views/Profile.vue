@@ -64,15 +64,17 @@
   }
   
   function getResult(record: any) {
-      if (!record.winners || record.winners.length === 0) return '平局';
-      if (record.winners.includes(user.value?.username)) return '胜利';
-      return '失败';
+    if (record.score) return `得分: ${record.score}`;
+    if (!record.winners || record.winners.length === 0) return '平局';
+    if (record.winners.includes(user.value?.username)) return '胜利';
+    return '失败';
   }
   
   function getResultClass(record: any) {
-      if (!record.winners || record.winners.length === 0) return 'text-warning';
-      if (record.winners.includes(user.value?.username)) return 'text-success';
-      return 'text-error';
+    if (record.score) return 'text-info';
+    if (!record.winners || record.winners.length === 0) return 'text-warning';
+    if (record.winners.includes(user.value?.username)) return 'text-success';
+    return 'text-error';
   }
 </script>
 
@@ -131,18 +133,28 @@
             
             <div v-if="user.state && user.state.length > 0" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 <div v-for="stat in user.state" :key="stat.type" class="stat bg-base-200 rounded-box p-4">
-                    <div class="stat-title text-sm font-bold mb-1">{{ gameStore.games[stat.type]?.name || stat.type }}</div>
-                    <div class="flex justify-between text-xs">
-                        <span class="text-success">胜: {{ stat.wins }}</span>
-                        <span class="text-warning">平: {{ stat.draws }}</span>
-                        <span class="text-error">负: {{ stat.losses }}</span>
-                    </div>
-                    <div class="w-full bg-base-300 rounded-full h-2 mt-2 overflow-hidden flex">
-                        <div class="bg-success h-full" :style="{ width: (stat.wins / stat.total * 100) + '%' }"></div>
-                        <div class="bg-warning h-full" :style="{ width: (stat.draws / stat.total * 100) + '%' }"></div>
-                        <div class="bg-error h-full" :style="{ width: (stat.losses / stat.total * 100) + '%' }"></div>
-                    </div>
-                    <div class="text-right text-xs mt-1 opacity-60">总计: {{ stat.total }}</div>
+                    <header class="flex justify-between items-baseline">
+                      <div class="stat-title text-sm font-bold mb-1">{{ gameStore.games[stat.type]?.name || stat.type }}</div>
+                      <div class="text-xs opacity-60" v-if="stat.score">最高得分</div>
+                    </header>
+                    <template v-if="!stat.score">
+                      <div class="flex justify-between text-xs">
+                          <span class="text-success">胜: {{ stat.wins }}</span>
+                          <span class="text-warning">平: {{ stat.draws }}</span>
+                          <span class="text-error">负: {{ stat.losses }}</span>
+                      </div>
+                      <div class="w-full bg-base-300 rounded-full h-2 mt-2 overflow-hidden flex">
+                          <div class="bg-success h-full" :style="{ width: (stat.wins / stat.total * 100) + '%' }"></div>
+                          <div class="bg-warning h-full" :style="{ width: (stat.draws / stat.total * 100) + '%' }"></div>
+                          <div class="bg-error h-full" :style="{ width: (stat.losses / stat.total * 100) + '%' }"></div>
+                      </div>
+                    </template>
+                    <template v-else>
+                      <div class="flex flex-col items-center justify-center py-2">
+                        <div class="text-3xl font-black text-info">{{ stat.score }}</div>
+                      </div>
+                    </template>
+                    <div class="text-right text-xs mt-1 opacity-60">游玩次数：{{ stat.total }}</div>
                 </div>
             </div>
             <div v-else class="flex items-center justify-center h-32 bg-base-200 rounded-lg border-2 border-dashed border-base-300">

@@ -8,6 +8,7 @@ export interface GameStats {
   wins: number;
   draws: number;
   losses: number;
+  score?: number;
 }
 
 export interface IUser {

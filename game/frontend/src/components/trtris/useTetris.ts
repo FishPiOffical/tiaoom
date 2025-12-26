@@ -12,7 +12,7 @@ interface BoardCell {
 }
 
 export interface TetrisGameState {
-  board: (BoardCell | null)[][]
+  board: BoardCell[][]
   currentPiece: {
     type: TetrominoType
     shape: number[][]
@@ -125,7 +125,9 @@ export function useTetris(game: GameCore, roomPlayer: RoomPlayer & { room: Room 
   function restartGame() {
     // 发送特殊命令处理重新开始
     if (roomPlayer.role !== 'player') return
-    game?.command(roomPlayer.room.id, { type: 'tetris:restart' })
+    //game?.command(roomPlayer.room.id, { type: 'tetris:restart' })
+    game?.ready(roomPlayer.room.id);
+    setTimeout(() => game?.startGame(roomPlayer.room.id), 100);
   }
   
   function endGame() {

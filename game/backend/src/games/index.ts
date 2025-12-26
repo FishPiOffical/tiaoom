@@ -2,7 +2,7 @@ import { IPlayer, IRoomPlayer, PlayerRole, PlayerStatus, Room, RoomPlayer, RoomS
 import * as glob from 'glob';
 import * as path from "path";
 import { Model } from '@/model';
-import { omit, setPoints, updatePlayerStats } from '@/utils';
+import { getPlayerStat, omit, setPoints, updatePlayerStats } from '@/utils';
 import { RecordRepo } from '@/entities';
 const files = glob.sync(path.join(__dirname, '*.*').replace(/\\/g, '/')).filter(f => f.endsWith('.ts') || f.endsWith('.js'));
 
@@ -76,6 +76,10 @@ export interface IRoomAchievement {
    * 平局次数
    */
   draw: number;
+  /**
+   * 最高得分
+   */
+  score?: number;
 }
 
 export interface IGameCommand {
@@ -369,7 +373,37 @@ export class GameRoom {
       data: await this.getData(),
       players: this.room.validPlayers.map(p => p.attributes.username),
       winners: winners?.map(w => w.attributes.username) || [],
+      beginTime: this.beginTime,
     })).catch(console.error);
+  }
+
+  /**
+   * 保存分数记录
+   * @param score 分数 
+   */
+  async saveScore(score: number) {
+    this.room.validPlayers.forEach((p) => {
+      if (!p.attributes.username) return;
+      updatePlayerStats(p.attributes.username, this.room.attrs!.type, 'draw', score).catch(console.error);
+      if (!this.achievements[p.name]) this.achievements[p.name] = { win: 0, lost: 0, draw: 0, score: 0 };
+      this.achievements[p.name].score = Math.max(this.achievements[p.name].score || 0, score);
+    });
+    this.room.emit('command', { type: 'achievements', data: this.achievements });
+    this.save();
+    RecordRepo.save(RecordRepo.create({
+      type: this.room.attrs!.type,
+      roomName: this.room.name,
+      data: await this.getData(),
+      players: this.room.validPlayers.map(p => p.attributes.username),
+      winners: [],
+      score,
+      beginTime: this.beginTime,
+    })).catch(console.error);
+  }
+
+  async getMaxScore(player: RoomPlayer): Promise<number> {
+    const state = await getPlayerStat(player.attributes.username, this.room.attrs!.type);
+    return state?.score || 0;
   }
 
   /**
