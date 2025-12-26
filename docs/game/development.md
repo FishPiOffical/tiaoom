@@ -8,7 +8,7 @@
 
 - 后端游戏逻辑文件：`<GameName>.ts`
 - 前端游戏组件文件：`<GameName>Room.vue`
-- 前端游戏小窗组件：`<GameName>Lite.ts`
+- 前端游戏小窗组件(可选)：`<GameName>Lite.vue`
 
 ## 后端开发
 
@@ -47,6 +47,9 @@ export default class MyGameRoom extends GameRoom {
   }
 }
 ```
+
+> [!IMPORTANT]
+> 游戏结束一定要调用 `this.room.end()` 方法，否则房间状态没有变更，由此会导致玩家无法离开房间。
 
 ## 前端开发
 
