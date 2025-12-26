@@ -5,37 +5,37 @@
       <div class="inline-block bg-base-300 border border-base-content/20 p-2 rounded shadow-2xl m-auto">
         <!-- 顶部横坐标 (A-H) -->
         <div class="flex">
-          <div class="w-[10vw] md:w-8 h-[8] md:h-8 flex items-center justify-center text-xs font-bold text-base-content/60"></div>
+          <div class="w-[8vw] md:w-8 h-8 md:h-8 flex items-center justify-center text-xs font-bold text-base-content/60"></div>
           <div v-for="colIndex in 8" :key="'col-top-' + colIndex" 
-               class="w-[10vw] md:w-8 h-[8] md:h-8 flex items-center justify-center text-xs font-bold text-base-content/60">
+               class="w-[8vw] md:w-8 h-8 md:h-8 flex items-center justify-center text-xs font-bold text-base-content/60">
             {{ String.fromCharCode(64 + colIndex) }}
           </div>
-          <div class="w-[10vw] md:w-8 h-[8] md:h-8 flex items-center justify-center text-xs font-bold text-base-content/60"></div>
+          <div class="w-[8vw] md:w-8 h-8 md:h-8 flex items-center justify-center text-xs font-bold text-base-content/60"></div>
         </div>
         
         <!-- 棋盘行 -->
         <div v-for="(row, rowIndex) in board" :key="rowIndex" class="flex">
           <!-- 左侧纵坐标 (8-1) -->
-          <div class="w-[10vw] md:w-8 h-[10vw] md:h-8 flex items-center justify-center text-xs font-bold text-base-content/60">
+          <div class="w-[8vw] md:w-8 h-[8vw] md:h-8 flex items-center justify-center text-xs font-bold text-base-content/60">
             {{ 8 - rowIndex }}
           </div>
           <div 
             v-for="(cell, colIndex) in row" 
             :key="colIndex" 
             @click="placePiece(rowIndex, colIndex)" 
-            class="relative w-[10vw] h-[10vw] md:w-8 md:h-8 flex items-center justify-center border border-base-content/10"
+            class="relative w-[8vw] h-[8vw] md:w-8 md:h-8 flex items-center justify-center border border-base-content/10"
             :class="{ 
               'cursor-pointer group': currentPlayer?.id === roomPlayer.id && cell === 0,
               'cursor-not-allowed': currentPlayer?.id === roomPlayer.id && cell !== 0
             }"
           >
             <span 
-              class="group-hover:inline hidden opacity-80 w-[9vw] h-[9vw] md:w-7 md:h-7 rounded-full transition-all duration-500 z-10" 
+              class="group-hover:inline hidden opacity-80 w-[7vw] h-[7vw] md:w-7 md:h-7 rounded-full transition-all duration-500 z-10" 
               :class="[currentPlayer?.attributes?.color === 1 ? 'black-piece border border-base-content/20 shadow-lg' : 'white-piece shadow-lg']">
             </span>
             <span 
               v-if="cell > 0"
-              class="w-[9vw] h-[9vw] md:w-7 md:h-7 rounded-full transition-all duration-500 z-10"
+              class="w-[7vw] h-[7vw] md:w-7 md:h-7 rounded-full transition-all duration-500 z-10"
               :class="[
                 cell === 1 ? 'black-piece border border-base-content/20 shadow-lg' : 'white-piece shadow-lg',
                 currentPlace?.x === rowIndex && currentPlace?.y === colIndex ? 'ring-2 ring-error scale-105' : ''
@@ -47,19 +47,19 @@
             ></div>
           </div>
           <!-- 右侧纵坐标 (8-1) -->
-          <div class="w-[10vw] md:w-8 h-[10vw] md:h-8 flex items-center justify-center text-xs font-bold text-base-content/60">
+          <div class="w-[8vw] md:w-8 h-[8vw] md:h-8 flex items-center justify-center text-xs font-bold text-base-content/60">
             {{ 8 - rowIndex }}
           </div>
         </div>
         
         <!-- 底部横坐标 (A-H) -->
         <div class="flex">
-          <div class="w-[10vw] md:w-8 h-[8] md:h-8 flex items-center justify-center text-xs font-bold text-base-content/60"></div>
+          <div class="w-[8vw] md:w-8 h-8 md:h-8 flex items-center justify-center text-xs font-bold text-base-content/60"></div>
           <div v-for="colIndex in 8" :key="'col-bottom-' + colIndex" 
-               class="w-[10vw] md:w-8 h-[8] md:h-8 flex items-center justify-center text-xs font-bold text-base-content/60">
+               class="w-[8vw] md:w-8 h-8 md:h-8 flex items-center justify-center text-xs font-bold text-base-content/60">
             {{ String.fromCharCode(64 + colIndex) }}
           </div>
-          <div class="w-[10vw] md:w-8 h-[8] md:h-8 flex items-center justify-center text-xs font-bold text-base-content/60"></div>
+          <div class="w-[8vw] md:w-8 h-8 md:h-8 flex items-center justify-center text-xs font-bold text-base-content/60"></div>
         </div>
       </div>
       

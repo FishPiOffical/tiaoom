@@ -10,7 +10,7 @@
             @click="handleColumnClick(colIndex)"
             @mouseenter="hoverCol = colIndex"
             @mouseleave="hoverCol = -1"
-            class="relative w-[11vw] h-[11vw] md:w-16 md:h-16 flex items-center justify-center border border-base-content/10"
+            class="relative w-[10vw] h-[10vw] md:w-16 md:h-16 flex items-center justify-center border border-base-content/10"
             :class="{ 
               'cursor-pointer': isMyTurn && cell !== -1,
               'bg-base-content/5': hoverCol === colIndex && isMyTurn
