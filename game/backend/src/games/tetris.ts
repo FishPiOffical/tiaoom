@@ -226,6 +226,12 @@ class TetrisGameRoom extends GameRoom {
     });
     this.command('achievements', this.achievements);
     
+    // 设置游戏结束状态并广播
+    if (this.gameState) {
+      this.gameState.gameOver = true;
+      this.command('game:state', this.gameState);
+    }
+    
     this.gameState = null;
     this.say(`游戏已结束`);
     this.room.end();
@@ -267,10 +273,12 @@ class TetrisGameRoom extends GameRoom {
       color: piece.color
     };
 
+    // 检查是否发生碰撞（游戏结束条件）
     if (this.checkCollision()) {
       this.gameState.gameOver = true;
       this.stopGameLoop();
 
+      // 记录成绩
       this.room.validPlayers.forEach(player => {
         if (!this.achievements[player.name]) {
           this.achievements[player.name] = {win: 0, lost: 0, draw: 0};
@@ -278,7 +286,14 @@ class TetrisGameRoom extends GameRoom {
         this.achievements[player.name].lost += 1;
       });
       this.command('achievements', this.achievements);
+      
+      // 广播游戏结束状态
+      this.command('game:state', this.gameState);
       this.say(`游戏结束！最终得分：${this.gameState.score}`);
+      
+      // 结束游戏并返回等待状态
+      this.room.end();
+      this.save();
     }
   }
 

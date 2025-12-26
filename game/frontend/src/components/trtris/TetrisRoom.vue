@@ -35,7 +35,7 @@
         </div>
 
         <!-- 游戏结束提示 -->
-        <div v-if="gameState?.gameOver" class="absolute inset-0 bg-black/80 flex items-center justify-center rounded">
+        <div v-if="gameState?.gameOver" class="absolute inset-0 bg-black/80 flex items-center justify-center rounded" @click.stop>
           <div class="text-center p-4">
             <h2 class="text-xl md:text-2xl font-bold text-error mb-2">游戏结束</h2>
             <p class="text-base-content mb-4">最终分数: {{ gameState.score }}</p>
@@ -45,7 +45,7 @@
         </div>
 
         <!-- 暂停提示 -->
-        <div v-else-if="gameState?.isPaused" class="absolute inset-0 bg-black/80 flex items-center justify-center rounded">
+        <div v-else-if="gameState?.isPaused" class="absolute inset-0 bg-black/80 flex items-center justify-center rounded" @click.stop>
           <div class="text-center p-4">
             <h2 class="text-xl md:text-2xl font-bold text-warning mb-4">游戏暂停</h2>
             <button v-if="roomPlayer.role === 'player'" @click="pause" class="btn btn-primary">继续游戏</button>
