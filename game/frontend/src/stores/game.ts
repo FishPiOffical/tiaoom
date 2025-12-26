@@ -75,9 +75,6 @@ export const useGameStore = defineStore('game', () => {
           game.value?.init(roomPlayer.roomId, player.value!.player)
         }
       })
-      .on('room.leave', () => {
-        router.replace('/')
-      })
       .onReady(() => {
         if (player.value) {
           game.value!.login(player.value.player)
