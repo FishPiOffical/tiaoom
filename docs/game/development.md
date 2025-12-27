@@ -32,7 +32,7 @@ export const rates = { // 可选，房间奖励积分倍率
   '双倍奖励': 2,
   '玩的就是心跳': 5,
 }
-// export const rewardDistribution = '' // 可选，房间积分奖励说明，若自行实现积分奖励，需填写此字段
+// export const rewardDescription = '' // 可选，房间积分奖励说明，若自行实现积分奖励，需填写此字段
 
 export default class MyGameRoom extends GameRoom {
   // ... 实现游戏逻辑
