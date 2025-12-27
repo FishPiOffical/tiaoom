@@ -32,7 +32,7 @@ export const rates = { // 可选，房间奖励积分倍率
   '双倍奖励': 2,
   '玩的就是心跳': 5,
 }
-
+// export const rewardDistribution = '' // 可选，房间积分奖励说明，若自行实现积分奖励，需填写此字段
 
 export default class MyGameRoom extends GameRoom {
   // ... 实现游戏逻辑
@@ -120,6 +120,8 @@ export default class MyGame extends GameRoom {
 - 收到消息后
 - 服务重启前
 
+## 积分奖励
+
 ## 前端状态管理
 
 `useGameStore` 提供游戏状态管理，方便在组件间共享游戏状态。
@@ -203,7 +205,7 @@ useGameEvents(game, {
 });
 ```
 
-## 倒计时
+## 游戏倒计时
 
 `GameRoom` 内置了倒计时功能，可用于限制玩家操作时间。
 

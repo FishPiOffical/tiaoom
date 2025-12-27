@@ -5,6 +5,7 @@ export interface GameConfig {
   description: string
   rates?: Record<string, number>
   points?: Record<string, number>
+  rewardDescription?: string
 }
 
 export interface Message {

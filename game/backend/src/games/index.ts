@@ -27,6 +27,18 @@ export interface IGameInfo {
    * 游戏描述
    */
   description: string;
+  /**
+   * 房间积分奖励
+   */
+  points?: Record<string, number>;
+  /**
+   * 房间积分倍率
+   */
+  rates?: Record<string, number>;
+  /**
+   * 房间积分奖励说明，若自行实现积分奖励，需填写此字段
+   */
+  rewardDescription?: string;
 }
 
 export interface IGameMethod {
