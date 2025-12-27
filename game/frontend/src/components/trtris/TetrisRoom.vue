@@ -197,7 +197,7 @@
         <!-- 动作控制 -->
         <div class="flex gap-3">
           <button class="btn btn-circle btn-lg btn-secondary shadow-lg active:scale-90 transition-transform" @click="drop">
-            <Icon icon="mdi:arrow-down-bold" class="text-3xl" />
+            <Icon icon="mdi:elevator-down" class="text-3xl" />
           </button>
           <button class="btn btn-circle btn-lg btn-primary shadow-lg active:scale-90 transition-transform" @click="rotate">
             <Icon icon="mdi:rotate-right-variant" class="text-3xl" />
