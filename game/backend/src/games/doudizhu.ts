@@ -12,6 +12,19 @@ export const points = {
   '小赌怡情': 100,
   '大赢家': 1000,
 }
+export const rewardDescription = `
+**积分规则：**
+- 底分：创建房间时选择的积分档位
+- 倍率计算：基础倍率 × 2^炸弹数
+  - 叫地主：基础倍率 1 倍
+  - 抢地主：基础倍率 2 倍
+  - 反抢地主：基础倍率 4 倍
+  - 每出一个炸弹/王炸，倍率翻倍
+
+**结算方式：**
+- 地主获胜：地主 +2×底分×倍率，农民各 -底分×倍率
+- 农民获胜：地主 -2×底分×倍率，农民各 +底分×倍率
+`
 
 // 牌的花色
 export type CardSuit = 'spade' | 'heart' | 'diamond' | 'club' | 'joker';
@@ -337,6 +350,17 @@ class DoudizhuGameRoom extends GameRoom {
    * 初始化游戏房间
    */
   init() {
+    // 注册倒计时恢复回调（用于服务器重启后恢复）
+    this.restoreTimer({
+      turn: () => {
+        if (this.gameState?.phase === 'playing') {
+          this.handlePlayTimeout();
+        } else if (['calling', 'grabbing', 'counter-grabbing'].includes(this.gameState?.phase || '')) {
+          this.handleBidTimeout();
+        }
+      },
+    });
+
     return super.init()
       .on('player-offline', async (player) => {
         // 玩家离线，启动托管
@@ -1141,6 +1165,9 @@ class DoudizhuGameRoom extends GameRoom {
 
     // 通知客户端房间状态变为等待
     this.command('status', { status: 'waiting' });
+
+    // 结束房间状态
+    this.room.end();
   }
 
   /**

@@ -235,6 +235,26 @@
             <li>5. 先出完牌的一方获胜</li>
             <li>6. 炸弹和王炸可以压任何牌</li>
           </ul>
+
+          <div class="divider my-2">积分规则</div>
+          <div class="text-sm space-y-2">
+            <div>
+              <p class="font-semibold">倍率计算：</p>
+              <ul class="list-disc list-inside ml-2 space-y-1">
+                <li>叫地主：基础倍率 1 倍</li>
+                <li>抢地主：基础倍率 2 倍</li>
+                <li>反抢地主：基础倍率 4 倍</li>
+                <li>每出一个炸弹/王炸，倍率翻倍</li>
+              </ul>
+            </div>
+            <div>
+              <p class="font-semibold">结算方式：</p>
+              <ul class="list-disc list-inside ml-2 space-y-1">
+                <li>地主获胜：地主 +2×底分×倍率，农民各 -底分×倍率</li>
+                <li>农民获胜：地主 -2×底分×倍率，农民各 +底分×倍率</li>
+              </ul>
+            </div>
+          </div>
         </template>
       </GameChat>
     </aside>
