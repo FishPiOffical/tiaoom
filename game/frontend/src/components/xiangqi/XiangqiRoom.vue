@@ -87,7 +87,8 @@
           <div class="relative" style="width: 360px; height: 405px;">
             <div v-for="r in 10" :key="'row'+r" class="absolute" :style="{ top: ((r-1) <= 4 ? (r-1)*45 : 225 + ((r-1)-5)*45) + 'px', left: 0, right: 0 }">
               <div v-for="c in 9" :key="'cell'+c" 
-                   class="absolute" 
+                   class="absolute"
+                   :data-r="r" :data-c="c"
                    :style="{ left: ((c-1)*45) + 'px', transform: 'translate(-50%, -50%)', width: '45px', height: '45px' }"
                    @click="onCellClick(r-1, c-1)">
                 <!-- Intersection marks (corner ticks at non-edge points) -->

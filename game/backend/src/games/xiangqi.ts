@@ -57,7 +57,7 @@ class XiangqiGameRoom extends GameRoom {
       status: this.room.status,
       current: this.currentPlayer,
       board: this.board,
-      countdown: Math.max(0, Math.ceil((this.tickEndTime['turn'] - Date.now()) / 1000)),
+      countdown: this.tickEndTime['turn'],
     }
   }
 
@@ -437,7 +437,7 @@ class XiangqiGameRoom extends GameRoom {
   }
 
   broadcastBoard() {
-    this.command('board', { board: this.board });
+    this.command('board', this.board);
   }
 
   findGenerals(): { redAlive: boolean, greenAlive: boolean } {

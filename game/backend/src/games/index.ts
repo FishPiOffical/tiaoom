@@ -338,7 +338,7 @@ export class GameRoom {
    * 保存成就数据
    * @param winner 当前局胜者，无胜者传 null 或 undefined
    */
-  async saveAchievements(winners?: RoomPlayer[] | null) {
+  async saveAchievements(winners?: RoomPlayer[] | null, saveRecord: boolean = true) {
     this.room.validPlayers.forEach((p) => {
       if (!this.achievements[p.name]) {
         this.achievements[p.name] = { win: 0, lost: 0, draw: 0 };
@@ -349,7 +349,7 @@ export class GameRoom {
         this.achievements[p.name].lost += 1;
       }
 
-      if (p.attributes.username) {
+      if (p.attributes.username && saveRecord) {
         let result: 'win' | 'draw' | 'loss' = 'draw';
         if (winners && winners.length > 0) {
            if (winners.some(w => w.id === p.id)) {
@@ -379,6 +379,7 @@ export class GameRoom {
     }
     this.room.emit('command', { type: 'achievements', data: this.achievements });
     this.save();
+    if (!saveRecord) return;
     RecordRepo.save(RecordRepo.create({
       type: this.room.attrs!.type,
       roomName: this.room.name,
@@ -432,7 +433,7 @@ export class GameRoom {
       delete this.tickEndTime[name];
       callback();
     }, ms);
-    this.room.emit('command', { type: 'countdown', data: { seconds: ms / 1000, name } });
+    this.room.emit('command', { type: 'countdown', data: { seconds: ms / 1000, name, end: this.tickEndTime[name] } });
   }
 
   /**
