@@ -4,6 +4,7 @@
   import { useRoute, useRouter } from 'vue-router';
   import Icon from '@/components/common/Icon.vue';
   import { useGameStore } from '@/stores/game';
+import { getComponent } from '@/main';
 
   const user = ref<User>();
   const route = useRoute();
@@ -75,6 +76,15 @@
     if (!record.winners || record.winners.length === 0) return 'text-warning';
     if (record.winners.includes(user.value?.username)) return 'text-success';
     return 'text-error';
+  }
+
+  const hasReplayComponent = (type: string) => {
+    try {
+      if (!type) return false
+      return !!getComponent(type.slice(0, 1).toUpperCase() + type.slice(1) + 'Replay')
+    } catch {
+      return false
+    }
   }
 </script>
 
@@ -185,7 +195,17 @@
                           <Icon icon="mdi:gamepad-variant" class="text-xl" />
                       </div>
                       <div class="flex flex-col">
-                          <span class="font-bold text-sm">{{ gameStore.games[record.type]?.name || record.type }}</span>
+                          <span class="font-bold text-sm space-x-1 inline-flex items-center">
+                            <span>{{ gameStore.games[record.type]?.name || record.type }}</span>
+                            <button  
+                              v-if="hasReplayComponent(record.type)"
+                              class="btn btn-text btn-outline tooltip"
+                              @click="$router.push(`/p/${record.id}`)"
+                              data-tip="查看回放"
+                            >
+                              <Icon icon="mdi:play-circle-outline" />
+                            </button>
+                          </span>
                           <span class="text-xs opacity-60">{{ record.roomName }}</span>
                       </div>
                   </div>

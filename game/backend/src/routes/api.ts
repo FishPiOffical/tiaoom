@@ -61,8 +61,18 @@ const createRoutes = (game: GameContext, gameName: string) => {
       skip: (page - 1) * pageSize,
       take: pageSize,
       where: { players: Like(`%"${req.params.username}"%`) },
+      order: { createdAt: "DESC" },
     });
     res.json({ code: 0, data: { records: records[0], total: records[1] } });
+  });
+
+  router.get("/record/:id", async (req: Request, res: Response) => {
+    const record = await RecordRepo.findOneBy({ id: Number(req.params.id) });
+    if (record) {
+      res.json({ code: 0, data: record });
+    } else {
+      res.json({ code: 1, message: "记录不存在" });
+    }
   });
 
   router.get("/message", (req: Request, res: Response) => {

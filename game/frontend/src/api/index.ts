@@ -1,6 +1,21 @@
 import { GameConfig } from '@/types'
-import { Player, Room } from 'tiaoom/client'
+import { Player, Room, RoomPlayer } from 'tiaoom/client'
 import axios from 'axios'
+
+export interface IRoomMessage {
+  /**
+   * 消息内容
+   */
+  content: string;
+  /**
+   * 消息发送者
+   */
+  sender?: RoomPlayer;
+  /**
+   * 消息创建时间
+   */
+  createdAt: number;
+}
 
 export interface GameStats {
   type: string;
@@ -78,6 +93,9 @@ export const api = {
   },
   getUserInfo(): Promise<User> {
     return instance.get('/info').then((data: any) => new User(data.player))
+  },
+  getRecord(id: number): Promise<any> {
+    return instance.get(`/record/${id}`);
   },
   getUser(username: string): Promise<User> {
     return instance.get(`/user/${username}`).then((data: any) => new User(data))
