@@ -220,10 +220,10 @@ class TetrisGameRoom extends GameRoom {
       const maxScore = await this.getMaxScore(this.room.validPlayers[0]);
       if (finalScore > maxScore) {
         this.say(`游戏已结束，得分：${finalScore}（新纪录！）`);
-        this.saveAchievements(this.room.validPlayers);
+        this.saveAchievements(this.room.validPlayers, false);
       } else {
         this.say(`游戏已结束，得分：${finalScore}（最高分：${maxScore}）`);
-        this.saveAchievements(finalScore == maxScore ? null : []);
+        this.saveAchievements(finalScore == maxScore ? null : [], false);
       }
     }
   }
