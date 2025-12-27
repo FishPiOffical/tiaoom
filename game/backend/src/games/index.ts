@@ -433,7 +433,7 @@ export class GameRoom {
       delete this.tickEndTime[name];
       callback();
     }, ms);
-    this.room.emit('command', { type: 'countdown', data: { seconds: ms / 1000, name } });
+    this.room.emit('command', { type: 'countdown', data: { seconds: ms / 1000, name, end: this.tickEndTime[name] } });
   }
 
   /**
