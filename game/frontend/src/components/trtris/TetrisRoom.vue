@@ -179,7 +179,7 @@
     </aside>
 
     <!-- 移动端控制按钮 -->
-    <div v-if="roomPlayer.role === 'player'" class="fixed bottom-0 left-0 right-0 p-4 pb-8 bg-base-200/90 backdrop-blur md:hidden z-50 flex flex-col gap-4 select-none touch-manipulation border-t border-base-content/10">
+    <div v-if="roomPlayer.role === 'player'" class="sticky bottom-0 left-0 right-0 p-4 pb-4 bg-base-200/90 backdrop-blur md:hidden z-50 flex flex-col gap-4 select-none touch-manipulation border-t border-base-content/10">
       <div class="flex justify-between items-end px-2 max-w-md mx-auto w-full">
         <!-- 方向控制 -->
         <div class="grid grid-cols-3 gap-2">
