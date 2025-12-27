@@ -175,6 +175,8 @@ class GobangGameRoom extends GameRoom {
           break;
         }
 
+        this.history.push({ place: `${String.fromCharCode(65 + y)}${19 - x}`, time: Date.now() - this.beginTime });
+
         this.board[x][y] = color;
         this.command('board', this.board);
         this.command('place', { x, y });

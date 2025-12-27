@@ -256,6 +256,8 @@ class OthelloGameRoom extends GameRoom {
           return;
         }
 
+        this.history.push({ place: `${String.fromCharCode(65 + y)}${8 - x}`, time: Date.now() - this.beginTime });
+
         if (!result.flat().some(cell => cell === 0) && result.flat().filter(cell => cell <= 0).length) {
           result = markValidPlaces(result, color);
           if (!result.flat().some(cell => cell === 0)) {
