@@ -165,13 +165,13 @@ export class Controller extends Tiaoom {
 
   async startRoom(sender: IPlayer, room: IRoom) {
     const roomInstance = this.searchRoom(room);
-    if (roomInstance && roomInstance.attrs?.point && !isNaN(roomInstance.attrs.point)) {
+    if (roomInstance && roomInstance.attrs?.point && !isNaN(roomInstance.attrs?.point)) {
       for (const player of roomInstance.validPlayers) {
         const username = player.attributes?.username;
         if (!username) throw new Error("用户信息不完整，无法开始游戏。");
         // 检查用户积分是否足够
         await new FishPi().userPoints(username).then(points => {
-          if (points < room.attrs!.point!) {
+          if (points < roomInstance.attrs!.point) {
             throw new Error(`玩家 ${player.name} 积分不足，无法开始游戏。`);
           }
         }).catch(err => {
