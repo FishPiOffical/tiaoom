@@ -9,10 +9,14 @@ const id = route.params.id as string;
 
 const type = ref<string>('');
 const replayData = ref<any>({});
+const beginTime = ref<number>(0);
+const roomName = ref<string>('');
 function load() {
   api.getRecord(Number(id)).then((res) => {
     replayData.value = res.data;
     type.value = res.type;
+    beginTime.value = Number(res.beginTime);
+    roomName.value = res.roomName;
   });
 }
 
@@ -47,6 +51,8 @@ const hasReplayComponent = computed(() => {
       v-if="type && hasReplayComponent"
       :is="type + '-replay'" 
       v-bind="replayData"
+      :beginTime="beginTime"
+      :roomName="roomName"
     />
     <section v-else-if="type" class="flex flex-col items-center justify-center h-full p-4">
       <Icon icon="mdi:history" class="text-6xl text-base-content/30 mb-4" />
