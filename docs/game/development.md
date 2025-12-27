@@ -27,7 +27,7 @@ export const points = { // 可选，房间开局所需积分
   '大赢家': 1000,
   '梭哈！': 10000,
 }
-export const rate = { // 可选，房间奖励积分倍率
+export const rates = { // 可选，房间奖励积分倍率
   '我就玩玩': 1,
   '双倍奖励': 2,
   '玩的就是心跳': 5,
@@ -384,7 +384,7 @@ export function useGame(game: GameCore) {
 - `saveAchievements(winner?: RoomPlayer | null)`: 
   保存成就数据（胜/负/平），不传则表示平局。若有胜负且配置了积分奖励，将会执行积分奖励。
 - `saveScore(score: number)`: 
-  保存玩家分数。
+  保存玩家分数，若保存分数，则个人页面将不会显示胜负数据，而只会显示历史最高得分。
 - `getMaxScore(player: RoomPlayer)`: 
   获取玩家历史最高分数。
 - `startTimer(callback, ms, name)`: 

@@ -1,6 +1,6 @@
 <template>
   <section class="flex flex-col md:flex-row gap-4 md:h-full">
-    <section class="flex-1 md:h-full flex flex-col items-center justify-start md:justify-center overflow-auto p-4">
+    <section class="flex-1 md:h-full flex flex-col items-center justify-start md:justify-center overflow-auto p-4 pb-40 md:pb-4">
       <!-- 游戏主区域 -->
       <div class="relative inline-block bg-base-300 p-3 rounded-lg shadow-2xl m-auto select-none" @click="handleBoardClick">
         <!-- 游戏板 -->
@@ -171,11 +171,40 @@
             <li v-if="roomPlayer.role === 'player'">5. P : 暂停/继续</li>
             <li v-if="roomPlayer.role === 'player'">6. WASD : 方向控制（不区分大小写）</li>
             <li>{{ roomPlayer.role === 'player' ? '7' : '1' }}. 消除多行可获得更高分数</li>
+            <li class="text-error font-bold" v-if="roomPlayer.role === 'player'">8. 翻倍奖励：获得高于历史分数时，奖励入场积分，若未超过则将再次扣除入场积分。</li>
             <li v-if="roomPlayer.role === 'watcher'" class="text-warning">2. 作为观众，你无法控制游戏</li>
           </ul>
         </template>
       </GameChat>
     </aside>
+
+    <!-- 移动端控制按钮 -->
+    <div v-if="roomPlayer.role === 'player'" class="fixed bottom-0 left-0 right-0 p-4 pb-8 bg-base-200/90 backdrop-blur md:hidden z-50 flex flex-col gap-4 select-none touch-manipulation border-t border-base-content/10">
+      <div class="flex justify-between items-end px-2 max-w-md mx-auto w-full">
+        <!-- 方向控制 -->
+        <div class="grid grid-cols-3 gap-2">
+          <button class="btn btn-circle btn-lg btn-neutral shadow-lg active:scale-90 transition-transform" @click="moveLeft">
+            <Icon icon="mdi:arrow-left-bold" class="text-3xl" />
+          </button>
+          <button class="btn btn-circle btn-lg btn-neutral shadow-lg active:scale-90 transition-transform" @click="moveDown">
+            <Icon icon="mdi:arrow-down-bold" class="text-3xl" />
+          </button>
+          <button class="btn btn-circle btn-lg btn-neutral shadow-lg active:scale-90 transition-transform" @click="moveRight">
+            <Icon icon="mdi:arrow-right-bold" class="text-3xl" />
+          </button>
+        </div>
+
+        <!-- 动作控制 -->
+        <div class="flex gap-3">
+          <button class="btn btn-circle btn-lg btn-secondary shadow-lg active:scale-90 transition-transform" @click="drop">
+            <Icon icon="mdi:arrow-down-bold" class="text-3xl" />
+          </button>
+          <button class="btn btn-circle btn-lg btn-primary shadow-lg active:scale-90 transition-transform" @click="rotate">
+            <Icon icon="mdi:rotate-right-variant" class="text-3xl" />
+          </button>
+        </div>
+      </div>
+    </div>
   </section>
 </template>
 
@@ -201,7 +230,12 @@ const {
   pause,
   restartGame,
   endGame,
-  clearedLines
+  clearedLines,
+  moveLeft,
+  moveRight,
+  moveDown,
+  rotate,
+  drop
 } = useTetris(props.game, props.roomPlayer)
 
 // 点击游戏板暂停/继续（只对玩家生效）
