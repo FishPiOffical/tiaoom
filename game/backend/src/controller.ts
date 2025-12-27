@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import http from "http";
-import { IPlayer, IRoomOptions, IRoomPlayer, IRoomPlayerOptions, Player, PlayerRole, PlayerStatus, RoomPlayer, } from "tiaoom";
+import { IPlayer, IRoom, IRoomOptions, IRoomPlayer, IRoomPlayerOptions, Player, PlayerRole, PlayerStatus, RoomPlayer, } from "tiaoom";
 import { Room, Tiaoom } from "tiaoom";
 import { SocketManager } from "./socket";
 import Games, { GameRoom, IGame, IGameInfo } from "./games";
@@ -122,7 +122,7 @@ export class Controller extends Tiaoom {
       options.attrs.passwd = crypto.createHash('md5').update(options.attrs.passwd).digest('hex');
     }
     if (options.attrs?.point && !isNaN(options.attrs.point)) {
-      const username = sender.attributes?.username;
+      const username = sender?.attributes?.username;
       if (!username) throw new Error("用户信息不完整，无法创建房间。");
       // 检查用户积分是否足够
       await new FishPi().userPoints(username).then(points => {
@@ -146,7 +146,7 @@ export class Controller extends Tiaoom {
         }
       }
       if (room.attrs?.point && !isNaN(room.attrs.point) && room.attrs.point > 0) {
-        const username = sender.attributes?.username;
+        const username = sender?.attributes?.username;
         if (!username) throw new Error("用户信息不完整，无法加入房间。");
         // 检查用户积分是否足够
         await new FishPi().userPoints(username).then(points => {
@@ -161,6 +161,25 @@ export class Controller extends Tiaoom {
     }
     
     return super.joinPlayer(sender, player, isCreator);
+  }
+
+  async startRoom(sender: IPlayer, room: IRoom) {
+    const roomInstance = this.searchRoom(room);
+    if (roomInstance && roomInstance.attrs?.point && !isNaN(roomInstance.attrs.point)) {
+      for (const player of roomInstance.validPlayers) {
+        const username = player.attributes?.username;
+        if (!username) throw new Error("用户信息不完整，无法开始游戏。");
+        // 检查用户积分是否足够
+        await new FishPi().userPoints(username).then(points => {
+          if (points < room.attrs!.point!) {
+            throw new Error(`玩家 ${player.name} 积分不足，无法开始游戏。`);
+          }
+        }).catch(err => {
+          throw err;
+        });
+      }
+    }
+    return super.startRoom(sender, room);
   }
 
   isAdmin(player: IPlayer): Promise<boolean> {

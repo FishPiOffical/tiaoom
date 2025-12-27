@@ -27,12 +27,12 @@ export const points = { // 可选，房间开局所需积分
   '大赢家': 1000,
   '梭哈！': 10000,
 }
-export const rate = { // 可选，房间奖励积分倍率
+export const rates = { // 可选，房间奖励积分倍率
   '我就玩玩': 1,
   '双倍奖励': 2,
   '玩的就是心跳': 5,
 }
-
+// export const rewardDescription = '' // 可选，房间积分奖励说明，若自行实现积分奖励，需填写此字段
 
 export default class MyGameRoom extends GameRoom {
   // ... 实现游戏逻辑
@@ -120,6 +120,39 @@ export default class MyGame extends GameRoom {
 - 收到消息后
 - 服务重启前
 
+## 积分奖励与成就保存
+
+`GameRoom` 提供了积分奖励功能，可在游戏结束时调用 `this.saveAchievements(winner)` 方法保存成就数据并执行积分奖励。
+
+- `winner`：获胜玩家对象，传入 `null` 则表示平局。
+
+保存后会在玩家个人页面显示胜负记录。
+
+也可以调用 `this.saveScore(score)` 方法保存玩家分数，个人页面将显示历史最高分数。此方法不会进行积分奖励，若需要奖励积分，需调用 `this.saveAchievements` 或自行实现积分奖励。
+
+积分奖励规则：
+
+- 若房间配置了 `points`，则在游戏开始时扣除相应积分。
+- 若房间配置了 `rates`，则在游戏结束时根据获胜玩家的 `points` 乘以相应倍率奖励积分。
+- 若未配置 `rates`，则默认倍率为 1。
+- 若游戏平局，则不进行积分奖励。
+
+### 自定义积分奖励
+
+如果需要自定义积分奖励逻辑，重载 `saveAchievements` 方法。另外需要配置 `rewardDescription` 字段，说明自定义积分奖励的规则。
+
+```typescript
+export const rewardDescription = '自定义积分奖励规则说明';
+export default class MyGame extends GameRoom {
+  // ...
+
+  saveAchievements(winner: RoomPlayer | null = null): Promise<void> {
+    // 自定义积分奖励逻辑
+    // ...
+  }
+}
+```
+
 ## 前端状态管理
 
 `useGameStore` 提供游戏状态管理，方便在组件间共享游戏状态。
@@ -203,7 +236,7 @@ useGameEvents(game, {
 });
 ```
 
-## 倒计时
+## 游戏倒计时
 
 `GameRoom` 内置了倒计时功能，可用于限制玩家操作时间。
 
@@ -384,7 +417,7 @@ export function useGame(game: GameCore) {
 - `saveAchievements(winner?: RoomPlayer | null)`: 
   保存成就数据（胜/负/平），不传则表示平局。若有胜负且配置了积分奖励，将会执行积分奖励。
 - `saveScore(score: number)`: 
-  保存玩家分数。
+  保存玩家分数，若保存分数，则个人页面将不会显示胜负数据，而只会显示历史最高得分。
 - `getMaxScore(player: RoomPlayer)`: 
   获取玩家历史最高分数。
 - `startTimer(callback, ms, name)`: 

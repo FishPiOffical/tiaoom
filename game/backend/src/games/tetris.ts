@@ -10,6 +10,9 @@ export const points = {
   '我就玩玩': 1,
   '小博一下': 100,
 };
+export const rates = {
+  '翻倍奖励': 2,
+}
 
 const TETROMINOES = {
   I: { shape: [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]], color: '#00bcd4' },

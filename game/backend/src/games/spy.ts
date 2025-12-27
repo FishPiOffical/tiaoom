@@ -66,10 +66,16 @@ class SpyGameRoom extends GameRoom {
         this.startTurnTimer();
       },
     })
-    return super.init().on('player-offline', async (player) => {
-      await sleep(4 * 60 * 1000 + 10000); // 等待 4 分 10 秒，判定为离线
-      if (!this.isPlayerOnline(player)) return;
-      this.room.kickPlayer(player);
+    return super.init().on('end', () => {
+      const players = [...this.room.validPlayers];
+      players.forEach((player) => {
+        if (this.isPlayerOnline(player)) return;
+        setTimeout(() => {
+          if (this.isPlayerOnline(player)) return;
+          this.room.kickPlayer(player.id);
+          this.say(`玩家 ${player.name} 已离线，已被移出房间。`);
+        }, 5000);
+      });
     });
   }
 

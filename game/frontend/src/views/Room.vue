@@ -3,7 +3,7 @@ import msg from "@/components/msg";
 import { getComponent } from "@/main";
 import { useGameStore } from "@/stores/game";
 import { openSmallWindow } from "@/utils/dom";
-import { computed, onMounted, watch } from "vue";
+import { computed, onMounted, watch, ref, nextTick, onUnmounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 const gameStore = useGameStore();
@@ -59,6 +59,33 @@ onMounted(() => {
   load();
 });
 
+const isAlertExpanded = ref(false);
+const showExpandBtn = ref(false);
+const alertContentRef = ref<HTMLElement | null>(null);
+
+const checkAlertOverflow = () => {
+  const el = alertContentRef.value;
+  if (el) {
+    if (isAlertExpanded.value) {
+       showExpandBtn.value = el.clientHeight > 20;
+    } else {
+       showExpandBtn.value = el.scrollHeight > el.clientHeight;
+    }
+  }
+};
+
+watch(() => gameStore.roomPlayer?.room, () => {
+  nextTick(checkAlertOverflow);
+}, { deep: true });
+
+onMounted(() => {
+  window.addEventListener('resize', checkAlertOverflow);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkAlertOverflow);
+});
+
 const hasLiteComponent = computed(() => {
   try {
     const type = gameStore.roomPlayer?.room.attrs?.type;
@@ -94,46 +121,35 @@ const hasLiteComponent = computed(() => {
         </h3>
         <div
           role="alert"
-          class="alert alert-soft py-1 pl-1 gap-1"
+          class="alert alert-soft py-1 pl-1 gap-1 relative"
+          :class="{ 'pr-8': showExpandBtn }"
           v-if="room && (room.attrs.point || room.attrs.rate)"
         >
-          <span class="text-xs">
+          <div class="text-xs w-full" :class="{ 'line-clamp-1': !isAlertExpanded }" ref="alertContentRef">
             ⚠️
             <span v-if="room.attrs.point"
               >注意：当前房间每局游戏需扣除 {{ room.attrs.point }} 积分。</span
             >
-            <span
-              v-if="
-                Math.floor(
-                  ((room.attrs.rate || 1) * room.attrs.point +
-                    room.attrs.point) *
-                    0.9
-                ) > 1
-              "
-            >
-              胜利将获得
-              {{
-                Math.floor(
-                  ((room.attrs.rate || 1) * room.attrs.point +
-                    room.attrs.point) *
-                    0.9
-                )
-              }}
-              积分（税额 10%）。
+            <template v-if="!gameStore.games[room.attrs.type]?.rewardDescription">
+              <span v-if="Math.floor(((room.attrs.rate || 1) * room.attrs.point + room.attrs.point) * 0.9) > 1">
+                胜利将获得 {{ Math.floor(((room.attrs.rate || 1) * room.attrs.point + room.attrs.point) * 0.9) }} 积分（税额 10%）。
+              </span>
+              <span v-if="room.attrs.rate > 1">失败将扣除 {{ Math.ceil(room.attrs.rate * room.attrs.point) - room.attrs.point }}。</span>
+              <span v-if="room.size > 2">
+                失败将扣除 {{ Math.ceil((room.attrs.rate || 1) * room.attrs.point)}} × 胜利人数 - {{ room.attrs.point }}。
+              </span>
+            </template>
+            <span v-else>
+              {{ gameStore.games[room.attrs.type]?.rewardDescription }}
             </span>
-            <span v-if="room.attrs.rate > 1"
-              >失败将扣除
-              {{
-                Math.ceil(room.attrs.rate * room.attrs.point) -
-                room.attrs.point
-              }}。</span
-            >
-            <span v-if="room.size > 2">
-              失败将扣除
-              {{ Math.ceil((room.attrs.rate || 1) * room.attrs.point) }} ×
-              胜利人数 - {{ room.attrs.point }}。
-            </span>
-          </span>
+          </div>
+          <button 
+            v-show="showExpandBtn"
+            class="btn btn-xs btn-ghost btn-circle absolute right-1 top-0"
+            @click="isAlertExpanded = !isAlertExpanded"
+          >
+            <Icon :icon="isAlertExpanded ? 'ion:caret-up' : 'ion:caret-down'" />
+          </button>
         </div>
       </section>
       <section>
