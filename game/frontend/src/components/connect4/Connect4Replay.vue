@@ -260,7 +260,7 @@ function getPlayerName(color: number) {
               </button>
               <div class="dropdown dropdown-top dropdown-end">
                 <div tabindex="0" role="button" class="btn btn-xs btn-ghost">{{ playbackSpeed }}x</div>
-                <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-20">
+                <ul tabindex="0" class="dropdown-content z-1 menu p-2 shadow bg-base-100 rounded-box w-20">
                   <li v-for="speed in [0.5, 1, 2, 4]" :key="speed" @click="setSpeed(speed)">
                     <a :class="{ 'active': playbackSpeed === speed }">{{ speed }}x</a>
                   </li>
