@@ -317,7 +317,7 @@ function getPlayerName(color: number) {
 </script>
 
 <template>
-  <section class="flex flex-col md:flex-row gap-4 md:h-full overflow-hidden">
+  <section v-if="history.length" class="flex flex-col md:flex-row gap-4 md:h-full overflow-hidden">
     <!-- Board Area -->
     <section class="flex-1 md:h-full flex flex-col items-center justify-start md:justify-center overflow-auto p-4 select-none">
       <div class="inline-block bg-base-300 border border-base-content/20 p-2 rounded shadow-2xl m-auto">
@@ -443,7 +443,7 @@ function getPlayerName(color: number) {
               </button>
               <div class="dropdown dropdown-top dropdown-end">
                 <div tabindex="0" role="button" class="btn btn-xs btn-ghost">{{ playbackSpeed }}x</div>
-                <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-20">
+                <ul tabindex="0" class="dropdown-content z-1 menu p-2 shadow bg-base-100 rounded-box w-20">
                   <li v-for="speed in [0.5, 1, 2, 4]" :key="speed" @click="setSpeed(speed)">
                     <a :class="{ 'active': playbackSpeed === speed }">{{ speed }}x</a>
                   </li>
@@ -458,6 +458,10 @@ function getPlayerName(color: number) {
         </div>
       </div>
     </aside>
+  </section>
+  <section v-else class="flex flex-col items-center justify-center h-full p-4">
+    <Icon icon="mdi:history" class="text-6xl text-base-content/30 mb-4" />
+    <span class="text-base-content/50 text-lg">无回放数据</span>
   </section>
 </template>
 
