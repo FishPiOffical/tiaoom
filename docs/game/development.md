@@ -120,7 +120,38 @@ export default class MyGame extends GameRoom {
 - 收到消息后
 - 服务重启前
 
-## 积分奖励
+## 积分奖励与成就保存
+
+`GameRoom` 提供了积分奖励功能，可在游戏结束时调用 `this.saveAchievements(winner)` 方法保存成就数据并执行积分奖励。
+
+- `winner`：获胜玩家对象，传入 `null` 则表示平局。
+
+保存后会在玩家个人页面显示胜负记录。
+
+也可以调用 `this.saveScore(score)` 方法保存玩家分数，个人页面将显示历史最高分数。此方法不会进行积分奖励，若需要奖励积分，需调用 `this.saveAchievements` 或自行实现积分奖励。
+
+积分奖励规则：
+
+- 若房间配置了 `points`，则在游戏开始时扣除相应积分。
+- 若房间配置了 `rates`，则在游戏结束时根据获胜玩家的 `points` 乘以相应倍率奖励积分。
+- 若未配置 `rates`，则默认倍率为 1。
+- 若游戏平局，则不进行积分奖励。
+
+### 自定义积分奖励
+
+如果需要自定义积分奖励逻辑，重载 `saveAchievements` 方法。另外需要配置 `rewardDescription` 字段，说明自定义积分奖励的规则。
+
+```typescript
+export const rewardDescription = '自定义积分奖励规则说明';
+export default class MyGame extends GameRoom {
+  // ...
+
+  saveAchievements(winner: RoomPlayer | null = null): Promise<void> {
+    // 自定义积分奖励逻辑
+    // ...
+  }
+}
+```
 
 ## 前端状态管理
 
