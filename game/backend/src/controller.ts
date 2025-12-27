@@ -91,6 +91,15 @@ export class Controller extends Tiaoom {
                 break;
             }
           }
+        }).on('leave', () => {
+          if (room.validPlayers.length == 0) {
+            // 房间无玩家则等待10分钟后关闭房间
+            setTimeout(() => {
+              if (room.validPlayers.length == 0) {
+                this.closeRoom(null, room);
+              }
+            }, 10 * 60 * 1000);
+          }
         });
     }).on('player', (player: Player) => {
       const miss = this.missSenderPlayers.find(p => p.id === player.id);
