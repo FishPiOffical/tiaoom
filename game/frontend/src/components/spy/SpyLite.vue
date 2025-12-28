@@ -56,7 +56,7 @@
 
         <!-- 投票按钮 -->
         <button
-          v-if="!roomPlayer.isDead && roomPlayer.role === 'player' && p.role === 'player' && voting && !voted && canVotePlayer.includes(p.id)" 
+          v-if="isPlaying && !roomPlayer.isDead && roomPlayer.role === 'player' && p.role === 'player' && voting && !voted && canVotePlayer.includes(p.id)" 
           @click="votePlayer(p.id)"
           class="btn btn-xs btn-accent w-full mt-1"
         >
@@ -85,7 +85,10 @@
         </div>
       </div>
     </div>
-
+    <div v-if="gameStatus === 'voting' && isPlaying" class="fixed bottom-20 z-50 text-center p-2 bg-base-200 rounded-lg">
+        <div class="text-sm opacity-70">投票倒计时</div>
+        <div class="text-xl font-bold" :class="{'text-error': countdown < 30}">{{ countdown }}s</div>
+    </div>
     <!-- 发言控制 (悬浮或底部) -->
     <div v-if="roomPlayer.role === 'player' && canSpeak && gameStatus === 'talking'" class="fixed bottom-20 z-50">
       <button @click="sendTalked" class="btn btn-accent shadow-lg">
@@ -98,7 +101,7 @@
 <script setup lang="ts">
 import { GameCore } from '@/core/game';
 import { useSpy, SpyRoomPlayer, SpyRoom } from './useSpy';
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 
 const props = defineProps<{
   roomPlayer: SpyRoomPlayer & { room: SpyRoom }
@@ -128,4 +131,5 @@ onMounted(() => {
     window.resizeTo(window.innerWidth, rect.height);
   }
 })
+const isPlaying = computed(() => props.roomPlayer.room.status == 'playing')
 </script>

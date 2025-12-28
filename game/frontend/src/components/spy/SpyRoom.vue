@@ -92,10 +92,10 @@
         </div>
 
         <!-- 投票倒计时 -->
-          <div v-if="gameStatus === 'voting'" class="text-center p-2 bg-base-200 rounded-lg">
-             <div class="text-sm opacity-70">投票倒计时</div>
-             <div class="text-xl font-bold" :class="{'text-error': countdown < 30}">{{ countdown }}s</div>
-          </div>
+        <div v-if="gameStatus === 'voting' && isPlaying" class="text-center p-2 bg-base-200 rounded-lg">
+            <div class="text-sm opacity-70">投票倒计时</div>
+            <div class="text-xl font-bold" :class="{'text-error': countdown < 30}">{{ countdown }}s</div>
+        </div>
         <!-- 玩家列表 -->
         <PlayerList :players="roomPlayer.room.players.filter(p => p.role != 'player')" />
       </section>
@@ -170,5 +170,5 @@ function getPlayerStatus(p: any) {
   return '准备好了'
 }
 
-const isPlaying = computed(() => gameStatus.value !== 'waiting')
+const isPlaying = computed(() => props.roomPlayer.room.status == 'playing')
 </script>
