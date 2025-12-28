@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import http from "http";
-import { IPlayer, IPlayerOptions, IRoom, IRoomOptions, IRoomPlayer, IRoomPlayerOptions, Player, PlayerRole, PlayerStatus, RoomPlayer, } from "tiaoom";
+import { IPlayer, IPlayerOptions, IRoom, IRoomOptions, IRoomPlayer, IRoomPlayerOptions, MessageTypes, Player, PlayerRole, PlayerStatus, RoomPlayer, } from "tiaoom";
 import { Room, Tiaoom } from "tiaoom";
 import { SocketManager } from "./socket";
 import Games, { GameRoom, IGame, IGameInfo } from "./games";
@@ -122,8 +122,13 @@ export class Controller extends Tiaoom {
         this.messages = this.messages.slice(0, 500); // keep last 500 messages
         this.emit('message', command.data, command.sender);
       } else if (command.type === 'boardcast') {
+        if (!command.sender?.isAdmin) return;
         this.boardcastMessage = command.data;
-        this.emit('command', { type: 'boardcast', data: this.boardcastMessage } );
+        this.messageInstance?.send({ 
+          type: MessageTypes.GlobalCommand, 
+          data: command, 
+          senderIds: this.players.map(p => p.id)
+        });
       }
     }).on("error", (error: any) => {
       console.log("error:", error);
@@ -151,7 +156,12 @@ export class Controller extends Tiaoom {
 
   async loginPlayer(player: IPlayerOptions, cb?: (data: { player: Player; }) => void): Promise<Player> {
     const playerInstance = await super.loginPlayer(player, cb);
-    if (this.boardcastMessage) playerInstance.sender?.('command', { type: 'boardcast', data: this.boardcastMessage } );
+    if (this.boardcastMessage) 
+      this.messageInstance?.send({ 
+        type: MessageTypes.GlobalCommand, 
+        data: { type: 'boardcast', data: this.boardcastMessage },
+        senderIds: [playerInstance.id]
+      });
     return playerInstance;
   }
 
