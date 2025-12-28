@@ -45,7 +45,7 @@ export default class ClickRoom extends GameRoom {
         this.saveAchievements(this.room.validPlayers.filter(p => p.id === message.sender.id));
         this.say(`${message.sender.name} 计数达到 ${this.count}，获胜！`);
       } else if (this.count > this.target) {
-        // 先大于目标分算输
+        // 大于目标分算平，无胜者
         this.saveAchievements();
         this.say(`${message.sender.name} 计数达到 ${this.count}，超过目标分，打平！`);
       } else {
@@ -106,9 +106,9 @@ export default class ClickRoom extends GameRoom {
       <GameChat>
         <template #rules>
           <ul class="space-y-2 text-sm">
-            <li>1. 双方轮流点击按钮</li>
-            <li>2. 当计数达到 7 的倍数时，当前玩家获胜</li>
-            <li>3. 当计数大于 50 时，非当前玩家获胜</li>
+            <li>1. 双方轮流点击按钮加1~4。</li>
+            <li>2. 当计数达到目标数字时，当前玩家获胜。</li>
+            <li>3. 当计数大于目标数字时，则打成平手。</li>
           </ul>
         </template>
       </GameChat>
