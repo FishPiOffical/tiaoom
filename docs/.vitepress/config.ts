@@ -21,13 +21,13 @@ export default defineConfig({
     nav: [
       { text: '首页', link: '/' },
       { text: '指南', link: '/guide/getting-started' },
-      { text: '棋牌室', link: '/game/' },
+      { text: '竞技大厅', link: '/game/' },
     ],
 
     sidebar: { 
       '/game/': [
         {
-          text: '摸鱼棋牌室',
+          text: '摸鱼竞技大厅',
           items: [
             { text: '项目介绍', link: '/game/' },
             { text: '快速开始', link: '/game/getting-started' },
