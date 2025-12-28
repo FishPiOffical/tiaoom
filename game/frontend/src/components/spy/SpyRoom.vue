@@ -48,7 +48,7 @@
 
           <!-- 投票按钮 -->
           <button
-            v-if="!roomPlayer.isDead && roomPlayer.role === 'player' && p.role === 'player' && voting && !voted && canVotePlayer.includes(p.id)" 
+            v-if="isPlaying &&!roomPlayer.isDead && roomPlayer.role === 'player' && p.role === 'player' && voting && !voted && canVotePlayer.includes(p.id)" 
             @click="votePlayer(p.id)"
             class="btn block btn-accent transition-colors"
           >
@@ -130,6 +130,7 @@ import type { GameCore } from '@/core/game'
 import type { RoomPlayer, Room } from 'tiaoom/client';
 import GameChat from '@/components/common/GameChat.vue'
 import { useSpy } from './useSpy';
+import { computed } from 'vue';
 
 type SpyRoomPlayer = RoomPlayer & { isDead?: boolean }
 
@@ -169,5 +170,5 @@ function getPlayerStatus(p: any) {
   return '准备好了'
 }
 
-
+const isPlaying = computed(() => gameStatus.value !== 'waiting')
 </script>

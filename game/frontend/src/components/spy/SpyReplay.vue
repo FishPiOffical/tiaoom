@@ -4,7 +4,7 @@ import Icon from '@/components/common/Icon.vue'
 
 const props = defineProps<{
   history: any[]
-  players: { username: string, name: string }[]
+  players: ReplayPlayer[]
   beginTime: number
 }>()
 
@@ -89,8 +89,10 @@ const gameState = computed(() => {
   // Initialize players
   // Find start event to get words and roles
   const startEvent = history.value.find(h => h.type === 'start')
+  let status = 'waiting'
   
   let currentPlayers: ReplayPlayer[] = props.players.map(p => ({
+    avatar: p.avatar,
     name: p.name,
     word: '?',
     isSpy: false,
@@ -100,6 +102,7 @@ const gameState = computed(() => {
 
   if (startEvent && startEvent.players) {
     currentPlayers = startEvent.players.map((p: any) => ({
+      avatar: p.avatar,
       name: p.name,
       word: p.word,
       isSpy: p.isSpy,

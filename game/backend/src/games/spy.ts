@@ -295,7 +295,8 @@ class SpyGameRoom extends GameRoom {
       players: this.room.validPlayers.map((p, i) => ({
         name: p.name,
         word: this.words[i],
-        isSpy: p.id === this.spyPlayer?.id
+        isSpy: p.id === this.spyPlayer?.id,
+        avatar: p.attributes?.avatar,
       }))
     });
     this.say(`游戏开始。玩家 ${this.room.validPlayers[0].name} 首先发言。`);
