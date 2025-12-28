@@ -1,4 +1,4 @@
-# 摸鱼派竞技大厅
+# 摸鱼竞技大厅
 
 这是基于 [tiaoom](https://tiaoom.com) 开发的游戏项目。访问地址: [https://room.adventext.fun](https://room.adventext.fun)。你可以通过本文档了解如何运行和开发新的游戏。
 
