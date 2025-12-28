@@ -417,6 +417,7 @@ export function useGame(game: GameCore) {
 - `achievements`: 玩家成就数据。
 - `publicCommands`: 允许观众使用的指令列表，默认为 `['say', 'status']`。
 - `saveIgnoreProps`: 保存状态时忽略的属性名列表。
+- `beginTime`: 游戏开始时间戳（毫秒）。
 
 ### 核心方法
 
