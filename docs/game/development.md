@@ -9,6 +9,7 @@
 - 后端游戏逻辑文件：`<GameName>.ts`
 - 前端游戏组件文件：`<GameName>Room.vue`
 - 前端游戏小窗组件(可选)：`<GameName>Lite.vue`
+- 前端游戏回放组件(可选)：`<GameName>Replay.vue`
 
 ## 后端开发
 
@@ -152,6 +153,33 @@ export default class MyGame extends GameRoom {
   }
 }
 ```
+
+## 游戏回放
+
+`GameRoom` 提供了游戏回放功能。可以通过重载 `getData` 方法，返回需要保存的游戏回放数据。每局结束后，调用 `this.saveAchievements` 或 `this.saveScore` 时会自动保存回放数据。也可以调用 `this.saveRecord` 方法手动保存回放数据。**三个方法仅可选择其一调用！**
+
+若要实现游戏回放，还需实现前端回放组件 `<GameName>Replay.vue`，并在组件 `Prop` 中接收 `getData` 返回的数据，属性名称与返回值的 Key 相同。
+
+若要实时回放，可以在每个游戏行为记录中增加 `time` 字段，值取 `new Date().getTime() - this.beginTime` 获取当前行为距离游戏开始毫秒数。
+
+```typescript
+export default class MyGame extends GameRoom {
+  // ...
+  getData() {
+    return {
+      moves: this.moves, // 假设 moves 是记录游戏行为的数组
+    }
+  }
+
+  // ...
+  this.moves.push({
+    // ...行为数据
+    time: new Date().getTime() - this.beginTime, // 行为时间
+  })
+}
+```
+
+也可以直接记录当前时间戳，前端回放组件的 Prop 可以通过 `props.beginTime` 获取游戏开始时间戳。
 
 ## 前端状态管理
 
@@ -402,6 +430,8 @@ export function useGame(game: GameCore) {
   处理玩家聊天消息。
 - `getStatus(sender: IRoomPlayer)`: 
   获取当前游戏状态。用于玩家重连或获取最新状态。需调用 `super.getStatus(sender)` 并合并自定义状态。在玩家登录或进入房间时前端会通过 `status` 指令获取到此状态。
+- `getData()`: 
+  获取游戏回放数据。需返回可序列化的对象，系统会在游戏结束时保存此数据。  
 - `say(content: string, sender?: IRoomPlayer)`: 
   广播聊天消息。
 - `sayTo(content: string, receiver: RoomPlayer)`: 
@@ -414,10 +444,12 @@ export function useGame(game: GameCore) {
   模拟玩家发出房间指令，用于模拟触发玩家行为。
 - `save()`: 
   保存当前游戏状态。可以在游戏逻辑中调用此方法以持久化数据。
-- `saveAchievements(winner?: RoomPlayer | null)`: 
-  保存成就数据（胜/负/平），不传则表示平局。若有胜负且配置了积分奖励，将会执行积分奖励。
+- `saveAchievements(winner?: RoomPlayer | null, saveRecord: boolean = true)`: 
+  保存成就数据（胜/负/平），不传则表示平局。若有胜负且配置了积分奖励，将会执行积分奖励。若只需执行积分奖励，无需保存游戏记录，可将 `saveRecord` 设为 `false`。
 - `saveScore(score: number)`: 
   保存玩家分数，若保存分数，则个人页面将不会显示胜负数据，而只会显示历史最高得分。
+- `saveRecord(winners?: RoomPlayer[] | null | undefined, score?: number)`: 
+  保存游戏记录，包括回放数据、玩家列表、胜者列表、分数等。
 - `getMaxScore(player: RoomPlayer)`: 
   获取玩家历史最高分数。
 - `startTimer(callback, ms, name)`: 

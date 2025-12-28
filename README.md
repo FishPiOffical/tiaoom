@@ -67,7 +67,7 @@ class YourGameClient extends Tiaoom {
 3. 执行 `npm run dev:frontend` 启动前端开发服务器，访问 `http://localhost:5173`。
 4. 首次访问会跳转到 `/config` 页面，配置好 MySQL (>=7.0) 数据库与持久化选项（可选）后保存，回到首页即可开始开发。
 
-> 更多开发细节见 [摸鱼派棋牌室开发指南](./game/#readme)
+> 更多开发细节见 [摸鱼派竞技大厅开发指南](./game/#readme)
 
 ## 📁 目录与文件
 - .vscode - VSCode 调试配置

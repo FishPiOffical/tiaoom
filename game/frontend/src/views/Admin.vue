@@ -3,10 +3,16 @@
     <input id="room-drawer" type="checkbox" class="drawer-toggle" v-model="isDrawerOpen" />
     
     <div class="drawer-content p-4">
-      <h1 class="text-2xl font-bold mb-4 flex items-center gap-2">
-        <Icon icon="mingcute:settings-3-line" />
-        房间管理
-      </h1>
+      <div class="flex justify-between items-center mb-4">
+        <h1 class="text-2xl font-bold flex items-center gap-2">
+          <Icon icon="mingcute:settings-3-line" />
+          房间管理
+        </h1>
+        <button class="btn btn-primary btn-sm" @click="openBroadcastModal">
+          <Icon icon="bi:broadcast" />
+          发布公告
+        </button>
+      </div>
       
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div v-for="room in gameStore.rooms" :key="room.id" 
@@ -131,18 +137,61 @@
         </div>
       </div>
     </div>
+
+    <!-- Broadcast Modal -->
+    <dialog ref="broadcastModal" class="modal">
+      <div class="modal-box w-11/12 max-w-5xl h-[80vh] flex flex-col">
+        <h3 class="font-bold text-lg mb-4">发布公告</h3>
+        <div class="flex-1 flex gap-4 min-h-0">
+          <div class="flex-1 flex flex-col gap-2">
+            <label class="text-sm font-bold opacity-70">编辑 (Markdown)</label>
+            <textarea 
+              v-model="broadcastInput" 
+              class="textarea flex-1 resize-none font-mono"
+              placeholder="请输入公告内容..."
+            ></textarea>
+          </div>
+          <div class="flex-1 flex flex-col gap-2">
+            <label class="text-sm font-bold opacity-70">预览</label>
+            <div class="flex-1 border border-base-content/20 rounded-lg p-4 overflow-y-auto bg-base-100">
+              <div class="prose max-w-none" v-html="broadcastPreview"></div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-action">
+          <form method="dialog">
+            <button class="btn btn-ghost mr-2">取消</button>
+          </form>
+          <button class="btn btn-primary" @click="sendBroadcast">发送</button>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+      </form>
+    </dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useGameStore } from '@/stores/game'
 import { Icon } from '@iconify/vue'
 import { Room, RoomPlayer } from 'tiaoom/client'
+import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 
 const gameStore = useGameStore()
 const isDrawerOpen = ref(false)
 const selectedRoom = ref<Room | null>(null)
+
+const broadcastModal = ref<HTMLDialogElement | null>(null)
+const broadcastInput = ref('')
+const broadcastPreview = ref('')
+
+watch(broadcastInput, async (newVal) => {
+  const parsed = await marked.parse(newVal)
+  broadcastPreview.value = DOMPurify.sanitize(parsed)
+})
 
 const players = computed(() => selectedRoom.value?.players.filter(p => p.role === 'player') || [])
 const watchers = computed(() => selectedRoom.value?.players.filter(p => p.role === 'watcher') || [])
@@ -159,6 +208,17 @@ function openRoomDetail(room: Room) {
 function closeRoom(room: Room) {
   if (!confirm(`确定要强制关闭房间 "${room.name}" 吗？`)) return
   gameStore.game?.closeRoom(room.id)
+}
+
+function openBroadcastModal() {
+  broadcastInput.value = gameStore.globalBoardcastMessage || ''
+  broadcastModal.value?.showModal()
+}
+
+function sendBroadcast() {
+  if (!broadcastInput.value) return
+  gameStore.game?.command({ type: 'boardcast', data: broadcastInput.value })
+  broadcastModal.value?.close()
 }
 
 function broadcastToRoom(room: Room) {

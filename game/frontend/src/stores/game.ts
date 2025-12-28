@@ -14,6 +14,7 @@ export const useGameStore = defineStore('game', () => {
   const rooms = ref<Room[]>([])
   const games = ref<Record<string, GameConfig>>({})
   const globalMessages = ref<{ data: string, sender?: Player, createdAt: number }[]>([])
+  const globalBoardcastMessage = ref<string>('');
 
   const roomPlayer = computed(() => {
     if (!player.value) return null
@@ -107,7 +108,11 @@ export const useGameStore = defineStore('game', () => {
       .onPlayerUnready(onPlayerReady)
       .on('global.message', (message, sender) => {
         globalMessages.value.unshift({ data: message, sender, createdAt: Date.now() })
-      })
+      }).on('global.command', (command) => {
+        if (command.type === 'boardcast' && command.data) {
+          globalBoardcastMessage.value = command.data;
+        }
+      });
   }
 
   function onPlayerReady(data: any) {
@@ -151,6 +156,7 @@ export const useGameStore = defineStore('game', () => {
     rooms,
     games,
     globalMessages,
+    globalBoardcastMessage,
     roomPlayer,
     playerStatus,
     initConfig,

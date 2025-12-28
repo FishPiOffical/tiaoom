@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import http from "http";
-import { IPlayer, IRoom, IRoomOptions, IRoomPlayer, IRoomPlayerOptions, Player, PlayerRole, PlayerStatus, RoomPlayer, } from "tiaoom";
+import { IPlayer, IPlayerOptions, IRoom, IRoomOptions, IRoomPlayer, IRoomPlayerOptions, MessageTypes, Player, PlayerRole, PlayerStatus, RoomPlayer, } from "tiaoom";
 import { Room, Tiaoom } from "tiaoom";
 import { SocketManager } from "./socket";
 import Games, { GameRoom, IGame, IGameInfo } from "./games";
@@ -11,6 +11,7 @@ import FishPi from "fishpi";
 export class Controller extends Tiaoom {
   messages: { data: string, sender: Player, createdAt: number }[] = [];
   missSenderPlayers: RoomPlayer[] = [];
+  boardcastMessage: string = '';
 
   constructor(server: http.Server) {
     super({ socket: new SocketManager(server) });
@@ -120,6 +121,14 @@ export class Controller extends Tiaoom {
         this.messages.unshift({ data: command.data, sender: command.sender, createdAt: Date.now() });
         this.messages = this.messages.slice(0, 500); // keep last 500 messages
         this.emit('message', command.data, command.sender);
+      } else if (command.type === 'boardcast') {
+        if (!command.sender?.isAdmin) return;
+        this.boardcastMessage = command.data;
+        this.messageInstance?.send({ 
+          type: MessageTypes.GlobalCommand, 
+          data: command, 
+          senderIds: this.players.map(p => p.id)
+        });
       }
     }).on("error", (error: any) => {
       console.log("error:", error);
@@ -143,6 +152,17 @@ export class Controller extends Tiaoom {
       });
     }
     return super.createRoom(sender, options);
+  }
+
+  async loginPlayer(player: IPlayerOptions, cb?: (data: { player: Player; }) => void): Promise<Player> {
+    const playerInstance = await super.loginPlayer(player, cb);
+    if (this.boardcastMessage) 
+      this.messageInstance?.send({ 
+        type: MessageTypes.GlobalCommand, 
+        data: { type: 'boardcast', data: this.boardcastMessage },
+        senderIds: [playerInstance.id]
+      });
+    return playerInstance;
   }
 
   async joinPlayer(sender: IPlayer, player: IRoomPlayerOptions & { params?: { passwd: string } }, isCreator: boolean = false) {

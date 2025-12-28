@@ -182,9 +182,13 @@ import { getComponent } from '@/main';
                 游玩记录
               </h3>
               <div class="join">
-                  <button class="join-item btn btn-sm" :disabled="page <= 1" @click="prevPage">«</button>
+                  <button class="join-item btn btn-sm" :disabled="page <= 1" @click="prevPage">
+                    <Icon icon="flowbite:caret-left-solid" />
+                  </button>
                   <button class="join-item btn btn-sm">Page {{ page }}</button>
-                  <button class="join-item btn btn-sm" :disabled="page >= totalPages" @click="nextPage">»</button>
+                  <button class="join-item btn btn-sm" :disabled="page >= totalPages" @click="nextPage">
+                    <Icon icon="flowbite:caret-right-solid" />
+                  </button>
               </div>
           </div>
           

@@ -24,7 +24,7 @@ export function useSpy(game: GameCore, roomPlayer: SpyRoomPlayer & { room: SpyRo
 
   const canSpeak = computed(() => {
     return (gameStatus.value === 'talking' && currentTalkPlayer.value?.id === currentPlayer.value) || 
-           gameStatus.value === 'waiting'
+           gameStatus.value === 'waiting' || roomPlayer.room.status !== 'playing'
   })
 
   function onRoomStart() {

@@ -8,7 +8,7 @@
           <div class="inline-block p-4 rounded-full bg-base-200/50 mb-2">
             <img src="/logo.png" alt="Logo" class="w-24 h-24 object-contain" />
           </div>
-          <h1 class="text-4xl font-bold tracking-widest text-base-content">摸鱼棋牌室</h1>
+          <h1 class="text-4xl font-bold tracking-widest text-base-content">摸鱼竞技大厅</h1>
           <p class="text-base-content/60">Tiaoom Game Room</p>
         </div>
 

@@ -48,7 +48,7 @@
 
           <!-- 投票按钮 -->
           <button
-            v-if="!roomPlayer.isDead && roomPlayer.role === 'player' && p.role === 'player' && voting && !voted && canVotePlayer.includes(p.id)" 
+            v-if="isPlaying &&!roomPlayer.isDead && roomPlayer.role === 'player' && p.role === 'player' && voting && !voted && canVotePlayer.includes(p.id)" 
             @click="votePlayer(p.id)"
             class="btn block btn-accent transition-colors"
           >
@@ -92,10 +92,10 @@
         </div>
 
         <!-- 投票倒计时 -->
-          <div v-if="gameStatus === 'voting'" class="text-center p-2 bg-base-200 rounded-lg">
-             <div class="text-sm opacity-70">投票倒计时</div>
-             <div class="text-xl font-bold" :class="{'text-error': countdown < 30}">{{ countdown }}s</div>
-          </div>
+        <div v-if="gameStatus === 'voting' && isPlaying" class="text-center p-2 bg-base-200 rounded-lg">
+            <div class="text-sm opacity-70">投票倒计时</div>
+            <div class="text-xl font-bold" :class="{'text-error': countdown < 30}">{{ countdown }}s</div>
+        </div>
         <!-- 玩家列表 -->
         <PlayerList :players="roomPlayer.room.players.filter(p => p.role != 'player')" />
       </section>
@@ -130,6 +130,7 @@ import type { GameCore } from '@/core/game'
 import type { RoomPlayer, Room } from 'tiaoom/client';
 import GameChat from '@/components/common/GameChat.vue'
 import { useSpy } from './useSpy';
+import { computed } from 'vue';
 
 type SpyRoomPlayer = RoomPlayer & { isDead?: boolean }
 
@@ -169,5 +170,5 @@ function getPlayerStatus(p: any) {
   return '准备好了'
 }
 
-
+const isPlaying = computed(() => props.roomPlayer.room.status == 'playing')
 </script>

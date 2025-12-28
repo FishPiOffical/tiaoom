@@ -124,6 +124,13 @@ class SpyGameRoom extends GameRoom {
     return {
       history: this.history,
       message: this.messageHistory,
+      players: this.room.validPlayers.map((p, i) => ({
+        name: p.name,
+        word: this.words[i],
+        isSpy: p.id === this.spyPlayer?.id,
+        status: this.alivePlayers.some(a => p.id == a.id) ? 'alive' : 'dead',
+        avatar: p.attributes?.avatar,
+      })),
     };
   }
 
@@ -288,7 +295,8 @@ class SpyGameRoom extends GameRoom {
       players: this.room.validPlayers.map((p, i) => ({
         name: p.name,
         word: this.words[i],
-        isSpy: p.id === this.spyPlayer?.id
+        isSpy: p.id === this.spyPlayer?.id,
+        avatar: p.attributes?.avatar,
       }))
     });
     this.say(`游戏开始。玩家 ${this.room.validPlayers[0].name} 首先发言。`);
@@ -340,12 +348,14 @@ class SpyGameRoom extends GameRoom {
 
     if (deadPlayer.name == this.spyPlayer?.name) {
       this.say(`玩家 ${deadPlayer.name} 死亡。间谍死亡。玩家胜利。`);
+      this.saveAchievements(this.room.validPlayers.filter(p => p.id !== this.spyPlayer!.id))
       this.room.validPlayers.forEach((player) => {
         if (!this.alivePlayers.some(p => p.id === player.id)) this.alivePlayers.push(player);
       });
       this.room.end();
     } else if (this.alivePlayers.length == 2) {
       this.say(`玩家 ${deadPlayer.name} 死亡。间谍 ${this.spyPlayer?.name} 胜利。`);
+      this.saveAchievements([this.spyPlayer!])
       this.room.validPlayers.forEach((player) => {
         if (!this.alivePlayers.some(p => p.id === player.id)) this.alivePlayers.push(player);
       });

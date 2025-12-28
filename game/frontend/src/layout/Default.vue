@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col h-screen bg-base-100 text-base-content">
+  <div class="flex flex-col h-screen w-full bg-base-100 text-base-content">
     <!-- 移动端顶部栏 -->
     <header class="md:hidden flex justify-between items-center p-4 border-b border-base-content/20 bg-base-200/50 flex-none">
       <div class="flex items-center gap-3 truncate">
@@ -191,17 +191,49 @@
       <!-- 主内容区 -->
       <router-view v-if="isReady" />
     </section>
+
+    <!-- Broadcast Modal -->
+    <dialog ref="broadcastModal" class="modal">
+      <div class="modal-box">
+        <h3 class="font-bold text-lg mb-4">公告</h3>
+        <div class="prose max-w-none" v-html="broadcastContent"></div>
+        <div class="modal-action">
+          <form method="dialog">
+            <button class="btn">关闭</button>
+          </form>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+      </form>
+    </dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGameStore } from '@/stores/game'
 import { IRoomOptions } from 'tiaoom/client'
+import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 
 const router = useRouter()
 const gameStore = useGameStore()
+const globalBoardcastMessage = computed(() => gameStore.globalBoardcastMessage);
+
+const broadcastModal = ref<HTMLDialogElement | null>(null)
+const broadcastContent = ref('')
+
+watch(globalBoardcastMessage, async (newVal) => {
+  if (newVal) {
+    const parsed = await marked.parse(newVal)
+    broadcastContent.value = DOMPurify.sanitize(parsed)
+    nextTick(() => {
+      broadcastModal.value?.showModal()
+    })
+  }
+}, { immediate: true })
 
 const isSidebarOpen = ref(false)
 const isDesktopSidebarCollapsed = ref(false)
