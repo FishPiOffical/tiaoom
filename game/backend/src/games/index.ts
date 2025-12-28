@@ -381,14 +381,7 @@ export class GameRoom {
     this.room.emit('command', { type: 'achievements', data: this.achievements });
     this.save();
     if (!saveRecord) return;
-    RecordRepo.save(RecordRepo.create({
-      type: this.room.attrs!.type,
-      roomName: this.room.name,
-      data: await this.getData(),
-      players: this.room.validPlayers.map(p => p.attributes.username),
-      winners: winners?.map(w => w.attributes.username) || [],
-      beginTime: this.beginTime,
-    })).catch(console.error);
+    this.saveRecord(winners);
   }
 
   /**
@@ -404,14 +397,23 @@ export class GameRoom {
     });
     this.room.emit('command', { type: 'achievements', data: this.achievements });
     this.save();
+    this.saveRecord(null, score);
+  }
+
+  /**
+   * 保存游戏记录
+   * @param winners 当前局胜者，无胜者传 null 或 undefined
+   * @param score 分数
+   */
+  async saveRecord(winners: RoomPlayer[] | null | undefined, score?: number) {
     RecordRepo.save(RecordRepo.create({
       type: this.room.attrs!.type,
       roomName: this.room.name,
       data: await this.getData(),
       players: this.room.validPlayers.map(p => p.attributes.username),
-      winners: [],
-      score,
+      winners: winners?.map(w => w.attributes.username) || [],
       beginTime: this.beginTime,
+      score,
     })).catch(console.error);
   }
 
