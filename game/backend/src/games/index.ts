@@ -185,6 +185,7 @@ export class GameRoom {
     }).on('end', () => {
       this.room.emit('command', { type: 'end' });
       this.save();
+      this.stopTimer();
     }).on('message', (message: { content: string; sender?: IRoomPlayer }) => {
       this.messageHistory.unshift({ ...message, createdAt: Date.now() });
       if (this.messageHistory.length > 100) this.messageHistory.splice(this.messageHistory.length - 100);
