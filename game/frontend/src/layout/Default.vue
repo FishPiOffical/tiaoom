@@ -226,11 +226,12 @@ const broadcastModal = ref<HTMLDialogElement | null>(null)
 const broadcastContent = ref('')
 
 watch(globalBoardcastMessage, async (newVal) => {
-  if (newVal) {
+  if (newVal && newVal !== localStorage.getItem('lastBroadcastMessage')) {
     const parsed = await marked.parse(newVal)
     broadcastContent.value = DOMPurify.sanitize(parsed)
     nextTick(() => {
       broadcastModal.value?.showModal()
+      localStorage.setItem('lastBroadcastMessage', newVal)
     })
   }
 }, { immediate: true })

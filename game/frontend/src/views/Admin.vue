@@ -4,10 +4,15 @@
     
     <div class="drawer-content p-4">
       <div class="flex justify-between items-center mb-4">
-        <h1 class="text-2xl font-bold flex items-center gap-2">
-          <Icon icon="mingcute:settings-3-line" />
-          房间管理
-        </h1>
+        <div class="flex items-center">
+          <button class="btn btn-ghost" @click="$router.back()">
+            <Icon icon="meteor-icons:arrow-left" />
+          </button>
+          <h1 class="text-2xl font-bold flex items-center gap-2">
+            <Icon icon="mingcute:settings-3-line" />
+            房间管理
+          </h1>
+        </div>
         <button class="btn btn-primary btn-sm" @click="openBroadcastModal">
           <Icon icon="bi:broadcast" />
           发布公告
