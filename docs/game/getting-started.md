@@ -11,21 +11,23 @@ import { GameRoom, IGameCommand } from '.';
 import { RoomPlayer, PlayerRole } from 'tiaoom';
 
 // 定义游戏基本属性
-export const name = '7 的倍数'; // 游戏名称
+export const name = '抢数字'; // 游戏名称
 export const minSize = 2; // 最小玩家数
 export const maxSize = 2; // 最大玩家数
-export const description = '玩家轮流点击按钮增加计数，谁让计数变成 7 的倍数谁就获胜，计数超过 50 则失败。'; // 游戏描述
+export const description = '玩家轮流点击按钮增加计数，谁让计数变成指定数字谁就获胜。'; // 游戏描述
 
 export default class ClickRoom extends GameRoom {
   count = 0;
   currentPlayer: RoomPlayer | undefined;
+  target = 0;
 
   // 游戏开始时调用
   onStart() {
     this.count = 0;
     // 广播初始状态
-    this.currentPlayer = this.room.validPlayers[0];
-    this.room.emit('command', { type: 'update', data: { count: this.count } });
+    this.currentPlayer = this.room.validPlayers.find(p => p.id !== this.currentPlayer?.id);
+    this.target = Math.floor(Math.random() * 40) + 20; // 随机目标数字在 20-60 之间
+    this.room.emit('command', { type: 'update', data: { count: this.count, target: this.target } });
     this.room.emit('command', { type: 'click', data: { player: this.currentPlayer } });
     this.save(); // 保存初始状态
   }
@@ -34,20 +36,20 @@ export default class ClickRoom extends GameRoom {
   onCommand(message: IGameCommand) {
     super.onCommand(message); // 处理通用指令
     if (message.type === 'click') {
-      this.count+= Number(message.data - 1) % 5 + 1; // 增加计数，确保增加量在 1-5 之间
+      this.count+= Number(message.data - 1) % 4 + 1; // 增加计数，确保增加量在 1-4 之间
       // 广播新状态
       this.room.emit('command', { type: 'update', data: { count: this.count } });
       // 保存状态
       this.save();
       if (this.count % 7 === 0) {
         this.saveAchievements(this.room.validPlayers.filter(p => p.id === message.sender.id));
-        this.say(`${message.sender.name} 计数达到 ${this.count}，是 7 的倍数，获胜！`);
-      } else if (this.count > 50) {
-        // 先大于 50 分算输
-        this.saveAchievements(this.room.validPlayers.filter(p => p.id !== message.sender.id));
-        this.say(`${message.sender.name} 计数达到 ${this.count}，超过 50 分，惜败！`);
+        this.say(`${message.sender.name} 计数达到 ${this.count}，获胜！`);
+      } else if (this.count > this.target) {
+        // 先大于目标分算输
+        this.saveAchievements();
+        this.say(`${message.sender.name} 计数达到 ${this.count}，超过目标分，打平！`);
       } else {
-        // 未大于 50 且不是 7 的倍数继续游戏
+        // 未达到目标数字继续游戏
         this.currentPlayer = this.room.validPlayers.find(p => p.id !== message.sender.id);
         this.room.emit('command', { type: 'click', data: { player: this.currentPlayer } });
         return;
@@ -61,6 +63,7 @@ export default class ClickRoom extends GameRoom {
     return {
       ...super.getStatus(sender),
       count: this.count,
+      target: this.target,
       currentPlayer: this.currentPlayer,
     };
   }
@@ -79,19 +82,14 @@ export default class ClickRoom extends GameRoom {
       <h1 class="text-[50px] font-bold p-4">{{ count }}</h1>
       <!-- 操作 -->
       <div class="join">
-        <input
-          type="number"
-          v-model.number="clickNumber"
-          class="input input-bordered w-24 text-center join-item"
-          min="1"
-          max="5"
-        />
         <button
+          v-for="n in 4"
+          :key="n"
           class="btn btn-primary join-item"
-          @click="handleClick"
+          @click="handleClick(n)"
           :disabled="!isPlaying"
         >
-          点击 +{{ clickNumber }}
+          +{{ n }}
         </button>
       </div>
     </div>
@@ -130,10 +128,10 @@ const props = defineProps<{
 }>();
 
 const count = ref(0);
-const clickNumber = ref(1);
+const target = ref(0);
 
-function handleClick() {
-  props.game.command(props.roomPlayer.room.id, { type: "click", data: clickNumber.value });
+function handleClick(n: number) {
+  props.game.command(props.roomPlayer.room.id, { type: "click", data: n });
 }
 
 const currentPlayer = ref<RoomPlayer | null>(null);
@@ -151,10 +149,19 @@ function onCommand(msg: any) {
       break;
     case "update":
       count.value = msg.data.count;
+      if (msg.data.target) {
+        target.value = msg.data.target;
+      }
       break;
     case "status":
       if (msg.data.currentPlayer) {
         currentPlayer.value = msg.data.currentPlayer;
+      }
+      if (msg.data.target) {
+        target.value = msg.data.target;
+      }
+      if (msg.data.count !== undefined) {
+        count.value = msg.data.count;
       }
       break;
   }
