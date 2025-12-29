@@ -8,7 +8,7 @@
       @click="$router.push(`/u/${p.attributes.username}`)"
     >
       <slot :player="p">
-        <span>[{{ p.isReady ? '已准备' : '未准备' }}]</span>
+        <span>[{{ getStatus(p) }}]</span>
         <span>{{ p.name }}</span>
       </slot>
     </li>
@@ -31,4 +31,11 @@ import { PlayerStatus, RoomPlayer } from 'tiaoom/client'
 defineProps<{
   players: RoomPlayer[]
 }>()
+
+function getStatus(p: RoomPlayer): string {
+  if (p.role !== 'player') return '围观中';
+  if (p.status === PlayerStatus.offline) return '已离线';
+  if (p.status === PlayerStatus.playing) return '游戏中';
+  return p.isReady ? '已准备' : '未准备'
+}
 </script>
