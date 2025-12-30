@@ -182,7 +182,7 @@ onUnmounted(() => {
       </div>
 
       <h1 class="text-[50px] font-bold p-4 transition-all duration-300" :class="{ 'scale-110 text-primary': gameState.lastMove }">
-        {{ gameState.count }} {{ gameState.count == target ? "=" : "!" }}= {{ target }}
+        {{ gameState.count }} {{ gameState.count == target ? "=" : "≠" }} {{ target }}
       </h1>
 
       <!-- Visual Buttons (Disabled) -->
