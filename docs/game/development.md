@@ -66,28 +66,26 @@ const props = defineProps<{
 }>()
 ```
 
-建议采用布局：
+可以使用 `GameView` 组件搭建游戏界面：
 
 ```vue
 <template>
-  <section class="flex flex-col md:flex-row gap-4 md:h-full">
+    <GameView :room-player="roomPlayer" :game="game" @command="onCommand">
     <!-- 左侧：游戏区域 -->
-    <div class="flex-1 flex items-center justify-center">
-      <!-- 游戏内容 -->
+    <div class="flex-1 flex flex-col items-center justify-center">
+      
     </div>
 
-    <!-- 右侧：侧边栏 -->
-    <aside class="w-full md:w-96 flex-none border-t md:border-t-0 md:border-l border-base-content/20 pt-4 md:pt-0 md:pl-4 space-y-4 md:h-full flex flex-col">
-      <!-- 聊天与游戏规则 -->
-      <GameChat>
-        <template #rules>
-          <ul class="space-y-2 text-sm">
-            <li>1. 游戏规则。</li>
-          </ul>
-        </template>
-      </GameChat>
-    </aside>
-  </section>
+    <!-- 右侧：操作区域 -->
+    <template #actions>
+      <p>操作区域内容</p>
+    </template>
+
+    <!-- 游戏规则 -->
+    <template #rules>
+      <p>游戏规则描述</p>
+    </template>
+  </GameView>
 </template>
 ```
 
