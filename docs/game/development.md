@@ -462,6 +462,7 @@ export function useGame(game: GameCore) {
 
 前端可使用如下封装组件实现通用功能：
 
+- [`GameView`](./components/GameView.md)：游戏视图布局
 - [`PlayerList`](./components/PlayerList.md)：玩家列表
 - [`AchievementTable`](./components/AchievementTable.md)：胜负展示
 - [`GameChat`](./components/GameChat.md)：游戏内聊天
