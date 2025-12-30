@@ -40,6 +40,7 @@ export default defineConfig({
           text: '前端公共组件',
           items: [
             { text: '组件概览', link: '/game/components/' },
+            { text: 'GameView', link: '/game/components/GameView' },
             { text: 'PlayerList', link: '/game/components/PlayerList' },
             { text: 'AchievementTable', link: '/game/components/AchievementTable' },
             { text: 'GameChat', link: '/game/components/GameChat' },
