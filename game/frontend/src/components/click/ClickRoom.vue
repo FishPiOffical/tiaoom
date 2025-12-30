@@ -3,7 +3,7 @@
     <!-- 左侧：游戏区域 -->
     <div class="flex-1 flex flex-col items-center justify-center">
       <h1 class="text-[50px] font-bold p-4">
-        {{ count }} {{ count == target ? "=" : "!" }}= {{ target }}
+        {{ count }} {{ count == target ? "=" : "≠" }} {{ target }}
       </h1>
       <!-- 操作 -->
       <div class="join">
