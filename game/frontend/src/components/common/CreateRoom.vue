@@ -1,5 +1,5 @@
 <template>
-  <form @submit.prevent="createRoom" class="space-y-4 max-w-2xl mx-auto">
+  <form @submit.prevent="createRoom" class="space-y-4 max-w-2xl mx-auto p-2">
     <h3 class="text-xl font-light text-base-content">创建房间</h3>
     <div class="flex flex-wrap items-center gap-2">
       <input
