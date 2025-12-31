@@ -174,19 +174,6 @@ export class Controller extends Tiaoom {
           throw new Error("密码错误，无法加入房间。");
         }
       }
-      if (room.attrs?.point && !isNaN(room.attrs.point) && room.attrs.point > 0) {
-        const username = sender?.attributes?.username;
-        if (!username) throw new Error("用户信息不完整，无法加入房间。");
-        // 检查用户积分是否足够
-        await new FishPi().userPoints(username).then(points => {
-          if (points < room.attrs!.point!) {
-            throw new Error("积分不足，无法加入房间。");
-          }
-          return super.joinPlayer(sender, player, isCreator);
-        }).catch(err => {
-          throw err;
-        });
-      }
     }
     
     return super.joinPlayer(sender, player, isCreator);
