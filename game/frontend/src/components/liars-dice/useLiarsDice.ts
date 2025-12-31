@@ -1,6 +1,8 @@
 import { GameCore } from "@/core/game";
 import { Room, RoomPlayer } from "tiaoom/client";
 import { computed, ref } from "vue";
+import msgbox from "../msgbox";
+import { useGameEvents } from "@/hook/useGameEvents";
 
 export function useLiarsDice(game: GameCore, roomPlayer: RoomPlayer & { room: Room }) {
   const myDice = ref<number[]>([]);
@@ -15,7 +17,9 @@ export function useLiarsDice(game: GameCore, roomPlayer: RoomPlayer & { room: Ro
   }
 
   function open() {
-    game.command(roomPlayer.room.id, { type: "open" });
+    msgbox.confirm('确定要开骰子吗？').then((value) => {
+      if(value) game.command(roomPlayer.room.id, { type: "open" });
+    });
   }
 
   function onCommand(msg: any) {
@@ -42,6 +46,12 @@ export function useLiarsDice(game: GameCore, roomPlayer: RoomPlayer & { room: Ro
         break;
     }
   }
+
+  useGameEvents(game, {
+    'room.start': () => {
+      revealedDice.value = null;
+    },
+  });
 
   const isMyTurn = computed(() => {
     return (

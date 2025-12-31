@@ -65,8 +65,8 @@
             </div>
           </div>
           <div class="inline-flex gap-4 w-full">
-            <button class="btn btn-success flex-1" @click="handleBid" :disabled="!isValidBid">叫号</button>
             <button class="btn btn-error flex-1" @click="open" :disabled="!lastBid">开！</button>
+            <button class="btn btn-success flex-1" @click="handleBid" :disabled="!isValidBid">叫号</button>
           </div>
         </div>
         <div v-else class="text-base-content/60">

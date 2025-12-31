@@ -4,7 +4,7 @@
     <slot></slot>
 
     <!-- 右侧：侧边栏 -->
-    <aside v-if="!lite" class="w-full md:w-96 flex-none border-t md:border-t-0 md:border-l border-border pt-4 md:pt-0 md:pl-4 space-y-4 md:h-full flex flex-col">
+    <aside v-if="!lite" class="w-full md:w-96 md:flex-none flex-1 max-h-1/2 md:max-h-none border-t md:border-t-0 md:border-l border-border pt-4 md:pt-0 md:pl-4 space-y-4 md:h-full flex flex-col">
       <section class="inline-flex flex-col gap-2 max-h-1/2">
         <div role="tablist" class="tabs tabs-lift">
           <a 

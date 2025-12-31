@@ -23,7 +23,7 @@
         </div>
 
         <!-- My Dice -->
-        <div class="flex flex-col items-center gap-2 bg-base-200 p-4 card">
+        <div v-if="roomPlayer.role == PlayerRole.player" class="flex flex-col items-center gap-2 bg-base-200 p-4 card">
           <h3 class="font-bold">我的骰子</h3>
           <div class="flex gap-2">
             <div v-for="(d, i) in myDice" :key="i" class="text-4xl text-secondary">
@@ -91,7 +91,7 @@
 </template>
 
 <script setup lang="ts">
-import { RoomPlayer, Room } from "tiaoom/client";
+import { RoomPlayer, Room, PlayerRole } from "tiaoom/client";
 import { GameCore } from "@/core/game";
 import { useLiarsDice } from "./useLiarsDice";
 import { ref, computed, watch } from "vue";
