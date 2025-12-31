@@ -23,7 +23,7 @@ interface Move {
 
 const props = defineProps<{
   history: Move[]
-  players: { id: string; name: string }[]
+  players: { id: string; name: string, color: number }[]
   beginTime: number
   winner?: number
 }>()
@@ -229,8 +229,7 @@ function loop(timestamp: number) {
 // --- UI Helpers ---
 
 function getPlayerName(index: number) {
-  const id = props.players[index]?.id;
-  return props.players.find(p => p.id === id)?.name || (index === 0 ? '蓝方' : '红方');
+  return props.players.find(p => p.color === index)?.name;
 }
 
 onUnmounted(() => {

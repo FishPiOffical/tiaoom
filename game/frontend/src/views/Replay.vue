@@ -28,7 +28,7 @@ const hasReplayComponent = computed(() => {
   try {
     const typeValue = type.value
     if (!typeValue) return false
-    return !!getComponent(typeValue.slice(0, 1).toUpperCase() + typeValue.slice(1) + 'Replay')
+    return !!getComponent(typeValue.split('-').map(t => t.slice(0, 1).toUpperCase() + t.slice(1)).join('') + 'Replay')
   } catch {
     return false
   }

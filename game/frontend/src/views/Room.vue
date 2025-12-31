@@ -88,9 +88,9 @@ onUnmounted(() => {
 
 const hasLiteComponent = computed(() => {
   try {
-    const type = gameStore.roomPlayer?.room.attrs?.type;
+    const type = gameStore.roomPlayer?.room.attrs?.type as string;
     if (!type) return false
-    return !!getComponent(type.slice(0, 1).toUpperCase() + type.slice(1) + 'Lite')
+    return !!getComponent(type.split('-').map(t => t.slice(0, 1).toUpperCase() + t.slice(1)).join('') + 'Lite')
   } catch {
     return false
   }

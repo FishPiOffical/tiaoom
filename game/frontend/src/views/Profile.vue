@@ -81,7 +81,7 @@ import { getComponent } from '@/main';
   const hasReplayComponent = (type: string) => {
     try {
       if (!type) return false
-      return !!getComponent(type.slice(0, 1).toUpperCase() + type.slice(1) + 'Replay')
+      return !!getComponent(type.split('-').map(t => t.slice(0, 1).toUpperCase() + t.slice(1)).join('') + 'Replay')
     } catch {
       return false
     }

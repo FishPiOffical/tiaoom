@@ -321,7 +321,7 @@ export default class DoushouqiRoom extends GameRoom {
       board: this.board,
       turn: this.turn,
       winner: this.winner,
-      players: this.players,
+      players: this.room.validPlayers.map(p => ({ id: p.id, name: p.name, color: p.attributes.color })),
       history: this.history,
     };
   }
