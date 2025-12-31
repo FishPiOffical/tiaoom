@@ -67,6 +67,7 @@ export default class LiarsDiceRoom extends GameRoom {
     if (message.sender.id !== this.currentPlayer?.id) return;
 
     if (message.type === 'bid') {
+      if (!this.lastBid || this.room.status !== 'playing') return;
       const { count, face, zhai } = message.data;
       // Validation
       if (!Number.isInteger(count) || !Number.isInteger(face) || face < 1 || face > 6) return;
@@ -94,13 +95,10 @@ export default class LiarsDiceRoom extends GameRoom {
       this.nextTurn();
       this.save();
     } else if (message.type === 'open') {
-      if (!this.lastBid) return;
+      if (!this.lastBid || this.room.status !== 'playing') return;
       
       this.history.push({ type: 'open', playerId: message.sender.id, time: Date.now() - this.beginTime });
       this.say(`${message.sender.name} 开！`);
-      
-      // Reveal all dice
-      this.room.emit('command', { type: 'reveal', data: { dice: this.dice } });
       
       // Calculate result
       const face = this.lastBid.face;
@@ -133,7 +131,11 @@ export default class LiarsDiceRoom extends GameRoom {
         winner = this.room.validPlayers.find(p => p.id === message.sender.id);
         loser = this.room.validPlayers.find(p => p.id === this.lastBid!.playerId);
       }
-      
+
+            
+      // Reveal all dice
+      this.room.emit('command', { type: 'reveal', data: { dice: this.dice, winner } });
+
       if (winner) {
           this.saveAchievements([winner]);
           this.say(`${winner.name} 获胜！`);
@@ -170,14 +172,14 @@ export default class LiarsDiceRoom extends GameRoom {
   }
   
   getData() {
-      return {
-          ...super.getData(),
-          dice: this.dice,
-          lastBid: this.lastBid,
-          currentPlayer: this.currentPlayer,
-          isZhai: this.isZhai,
-          history: this.history,
-          players: this.room.validPlayers.map(p => ({ id: p.id, name: p.name })),
-      };
+    return {
+      ...super.getData(),
+      dice: this.dice,
+      lastBid: this.lastBid,
+      currentPlayer: this.currentPlayer,
+      isZhai: this.isZhai,
+      history: this.history,
+      players: this.room.validPlayers.map(p => ({ id: p.id, name: p.name })),
+    };
   }
 }

@@ -84,6 +84,9 @@
               </div>
             </div>
           </div>
+          <div v-if="winner" class="text-center mt-4 text-lg font-bold">
+            <span class="text-success">胜者：{{ winner.name }}！</span>
+          </div>
         </div>
       </template>
     </div>
@@ -111,7 +114,7 @@ const props = defineProps<{
   game: GameCore;
 }>();
 
-const { onCommand, bid, open, isMyTurn, myDice, currentPlayer, lastBid, revealedDice, isZhai } = useLiarsDice(props.game, props.roomPlayer);
+const { onCommand, bid, open, isMyTurn, myDice, currentPlayer, lastBid, revealedDice, isZhai, winner } = useLiarsDice(props.game, props.roomPlayer);
 
 const bidCount = ref(1);
 const bidFace = ref(2);

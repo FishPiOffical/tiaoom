@@ -11,6 +11,7 @@ export function useLiarsDice(game: GameCore, roomPlayer: RoomPlayer & { room: Ro
   const lastBid = ref<{ playerId: string; count: number; face: number; zhai: boolean } | null>(null);
   const revealedDice = ref<Record<string, number[]> | null>(null);
   const isZhai = ref(false);
+  const winner = ref<RoomPlayer | null>(null);
 
   function bid(count: number, face: number, zhai: boolean) {
     game.command(roomPlayer.room.id, { type: "bid", data: { count, face, zhai } });
@@ -27,6 +28,7 @@ export function useLiarsDice(game: GameCore, roomPlayer: RoomPlayer & { room: Ro
       case "dice":
         myDice.value = msg.data.dice;
         revealedDice.value = null;
+        winner.value = null;
         break;
       case "update":
         if (msg.data.currentPlayer) currentPlayer.value = msg.data.currentPlayer;
@@ -36,6 +38,7 @@ export function useLiarsDice(game: GameCore, roomPlayer: RoomPlayer & { room: Ro
         break;
       case "reveal":
         revealedDice.value = msg.data.dice;
+        winner.value = msg.data.winner || null;
         break;
       case "status":
         if (msg.data.currentPlayer) currentPlayer.value = msg.data.currentPlayer;
@@ -50,6 +53,7 @@ export function useLiarsDice(game: GameCore, roomPlayer: RoomPlayer & { room: Ro
   useGameEvents(game, {
     'room.start': () => {
       revealedDice.value = null;
+      winner.value = null;
     },
   });
 
@@ -62,6 +66,7 @@ export function useLiarsDice(game: GameCore, roomPlayer: RoomPlayer & { room: Ro
   });
 
   return {
+    winner,
     myDice,
     diceCounts,
     currentPlayer,
