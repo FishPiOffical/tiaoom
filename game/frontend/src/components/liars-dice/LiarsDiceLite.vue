@@ -1,7 +1,7 @@
 <template>
   <GameView :room-player="roomPlayer" :game="game" @command="onCommand" lite>
     <div class="flex-1 flex flex-col items-center justify-center gap-4 p-4 overflow-y-auto">
-      <div v-if="roomPlayer.room.status === 'waiting'" class="text-xl opacity-60">
+      <div v-if="roomPlayer.room.status === 'waiting' && !revealedDice" class="text-xl opacity-60">
         等待游戏开始...
       </div>
       <template v-else>
@@ -9,6 +9,9 @@
         <div v-if="lastBid" class="text-xl font-bold flex items-center gap-2">
           上家叫号: {{ lastBid.count }} 个 <Icon :icon="getDiceIcon(lastBid.face)" class="text-2xl" />
           <span v-if="isZhai" class="badge badge-error">斋</span>
+        </div>
+        <div v-else-if="roomPlayer.room.status === 'waiting'" class="text-xl font-bold">
+          等待游戏开始
         </div>
         <div v-else class="text-xl font-bold">
           等待开始叫号
