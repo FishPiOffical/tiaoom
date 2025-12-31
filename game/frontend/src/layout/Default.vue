@@ -66,8 +66,15 @@
             </span>
             <span class="font-medium">{{ gameStore.player?.nickname }}</span>
           </section>
+          <ThemeController />
           <div class="flex items-center gap-2">
-            <ThemeController />
+            <router-link 
+              to="/leaderboard"
+              class="icon-btn"
+              title="排行榜"
+            >
+              <Icon icon="mdi:trophy-outline" />
+            </router-link>
             <router-link 
               v-if="gameStore.player?.isAdmin"
               to="/admin"

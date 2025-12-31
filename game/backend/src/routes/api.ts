@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { Controller } from "../controller";
 import { login as fishpiLogin, register as fishpiRegister, updateUserInfo } from "../login/fishpi";
-import { Record, RecordRepo, User, UserRepo } from "@/entities";
+import { Record, RecordRepo, User, UserRepo, AppDataSource, PlayerStats } from "@/entities";
 import { getPlayerStats } from "@/utils";
 import { Like } from "typeorm";
 
@@ -51,6 +51,28 @@ const createRoutes = (game: GameContext, gameName: string) => {
     } else {
       res.json({ code: 1, message: "用户不存在" });
     }
+  });
+
+  router.get("/leaderboard/:type", async (req: Request, res: Response) => {
+    const { type } = req.params;
+    const statsRepo = AppDataSource.getRepository(PlayerStats);
+    
+    const leaderboard = await statsRepo.createQueryBuilder("stats")
+      .select("stats.player", "player")
+      .addSelect("stats.wins", "wins")
+      .addSelect("stats.total", "total")
+      .addSelect("stats.draws", "draws")
+      .addSelect("stats.losses", "losses")
+      .addSelect("stats.score", "score")
+      .addSelect("(stats.wins * 1.0 / stats.total)", "winRate")
+      .where("stats.type = :type", { type })
+      .andWhere("stats.total > 0")
+      .orderBy("winRate", "DESC")
+      .addOrderBy("stats.score", "DESC")
+      .limit(20)
+      .getRawMany();
+
+    res.json({ code: 0, data: leaderboard });
   });
 
   router.get("/user/:username/record", async (req: Request, res: Response) => {

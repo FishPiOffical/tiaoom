@@ -105,6 +105,9 @@ export const api = {
       params: { p: page, count }
     });
   },
+  getLeaderboard(type: string): Promise<any[]> {
+    return instance.get(`/leaderboard/${type}`)
+  },
   getMessages(): Promise<{ messages: { data: string, sender: Player, createdAt: number }[] }> {
     return instance.get('/message')
   },
