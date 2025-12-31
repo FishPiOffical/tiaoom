@@ -2,6 +2,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { Room, RoomPlayer } from 'tiaoom/client'
 import { GameCore } from '@/core/game'
 import { useGameEvents } from '@/hook/useGameEvents'
+import { useEventListener } from '@/hook/useEventListener'
 
 // 定义俄罗斯方块游戏相关的类型
 type TetrominoType = 'I' | 'J' | 'L' | 'O' | 'S' | 'T' | 'Z'
@@ -174,13 +175,11 @@ export function useTetris(game: GameCore, roomPlayer: RoomPlayer & { room: Room 
     'room.command': onCommand,
   })
 
-  onMounted(() => {
-    window.addEventListener('keydown', handleKeyDown);
-  });
-
-  onUnmounted(() => {
-    window.removeEventListener('keydown', handleKeyDown);
-  });
+  useEventListener({
+    el: window,
+    name: 'keydown',
+    listener: handleKeyDown,
+  })
 
   // 计算属性 - 将游戏板转换为可渲染的格式
   const renderedBoard = computed(() => {

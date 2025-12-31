@@ -53,6 +53,33 @@
           </div>
         </div>
       </div>
+      <!-- 控制按钮 -->
+      <div v-if="roomPlayer.role === 'player'" class="sticky bottom-0 left-0 right-0 p-4 pb-4 backdrop-blur z-50 flex flex-col gap-4 select-none touch-manipulation border-base-content/10 w-full">
+        <div class="flex justify-between items-end px-2 max-w-md mx-auto w-full">
+          <!-- 方向控制 -->
+          <div class="grid grid-cols-3 gap-2">
+            <button class="btn btn-circle btn-lg btn-neutral shadow-lg active:scale-90 transition-transform" @click="moveLeft">
+              <Icon icon="mdi:arrow-left-bold" class="text-3xl" />
+            </button>
+            <button class="btn btn-circle btn-lg btn-neutral shadow-lg active:scale-90 transition-transform" @click="moveDown">
+              <Icon icon="mdi:arrow-down-bold" class="text-3xl" />
+            </button>
+            <button class="btn btn-circle btn-lg btn-neutral shadow-lg active:scale-90 transition-transform" @click="moveRight">
+              <Icon icon="mdi:arrow-right-bold" class="text-3xl" />
+            </button>
+          </div>
+
+          <!-- 动作控制 -->
+          <div class="flex gap-3">
+            <button class="btn btn-circle btn-lg btn-secondary shadow-lg active:scale-90 transition-transform" @click="drop">
+              <Icon icon="mdi:elevator-down" class="text-3xl" />
+            </button>
+            <button class="btn btn-circle btn-lg btn-primary shadow-lg active:scale-90 transition-transform" @click="rotate">
+              <Icon icon="mdi:rotate-right-variant" class="text-3xl" />
+            </button>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- 侧边栏 -->
@@ -177,34 +204,6 @@
         </template>
       </GameChat>
     </aside>
-
-    <!-- 移动端控制按钮 -->
-    <div v-if="roomPlayer.role === 'player'" class="sticky bottom-0 left-0 right-0 p-4 pb-4 bg-base-200/90 backdrop-blur md:hidden z-50 flex flex-col gap-4 select-none touch-manipulation border-t border-base-content/10">
-      <div class="flex justify-between items-end px-2 max-w-md mx-auto w-full">
-        <!-- 方向控制 -->
-        <div class="grid grid-cols-3 gap-2">
-          <button class="btn btn-circle btn-lg btn-neutral shadow-lg active:scale-90 transition-transform" @click="moveLeft">
-            <Icon icon="mdi:arrow-left-bold" class="text-3xl" />
-          </button>
-          <button class="btn btn-circle btn-lg btn-neutral shadow-lg active:scale-90 transition-transform" @click="moveDown">
-            <Icon icon="mdi:arrow-down-bold" class="text-3xl" />
-          </button>
-          <button class="btn btn-circle btn-lg btn-neutral shadow-lg active:scale-90 transition-transform" @click="moveRight">
-            <Icon icon="mdi:arrow-right-bold" class="text-3xl" />
-          </button>
-        </div>
-
-        <!-- 动作控制 -->
-        <div class="flex gap-3">
-          <button class="btn btn-circle btn-lg btn-secondary shadow-lg active:scale-90 transition-transform" @click="drop">
-            <Icon icon="mdi:elevator-down" class="text-3xl" />
-          </button>
-          <button class="btn btn-circle btn-lg btn-primary shadow-lg active:scale-90 transition-transform" @click="rotate">
-            <Icon icon="mdi:rotate-right-variant" class="text-3xl" />
-          </button>
-        </div>
-      </div>
-    </div>
   </section>
 </template>
 
