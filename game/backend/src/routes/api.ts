@@ -68,7 +68,7 @@ const createRoutes = (game: GameContext, gameName: string) => {
       .addSelect("(stats.wins + 1.0) / (stats.total + 2.0)", "adjustedRate")
       .where("stats.type = :type", { type })
       .andWhere("stats.total > 0")
-      .orderBy("stats.score", "DESC", "NULLS LAST")
+      .orderBy("stats.score", "DESC")
       .addOrderBy("adjustedRate", "DESC")
       .addOrderBy("stats.total", "DESC")
       .limit(20)
