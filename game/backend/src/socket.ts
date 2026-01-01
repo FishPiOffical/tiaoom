@@ -31,7 +31,7 @@ export class SocketManager extends EventEmitter<IMessageEmitterEvents> implement
                   type: MessageTypes.PlayerError,
                   data: { name: err.name, message: err.message }
                 }));
-                LogRepo.save(LogRepo.create({
+                LogRepo().save(LogRepo().create({
                   type: MessageTypes.PlayerError,
                   data: message.data,
                   senderId: message.sender?.id,
@@ -44,7 +44,7 @@ export class SocketManager extends EventEmitter<IMessageEmitterEvents> implement
           }
         } catch (err) {
           this.emit("error", err as Error);
-          LogRepo.save(LogRepo.create({
+          LogRepo().save(LogRepo().create({
             type: MessageTypes.PlayerError,
             data: data,
             senderId: undefined,

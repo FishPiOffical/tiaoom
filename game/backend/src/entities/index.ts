@@ -1,11 +1,13 @@
 import 'reflect-metadata';
-import { EventSubscriber, EntitySubscriberInterface, InsertEvent, UpdateEvent, DataSource, Repository } from 'typeorm';
+import { gameLoaded } from '@/games';
+import { EventSubscriber, EntitySubscriberInterface, InsertEvent, UpdateEvent, DataSource, Repository, getMetadataArgsStorage, EntityTarget } from 'typeorm';
 import { User } from "./User";
 import { RoomSQL, RoomMongo, Room } from "./Room";
 import { Log } from "./Log";
 import { Record } from "./Record";
 import { PlayerStats } from "./PlayerStats";
 import utils from '@/utils'
+import { Manage } from './Manage';
 
 @EventSubscriber()
 export class EntitySubscriber implements EntitySubscriberInterface {
@@ -28,20 +30,39 @@ export class EntitySubscriber implements EntitySubscriberInterface {
   }
 }
 
-export const AppDataSource = utils.config ? new DataSource({
-  type: "mysql",
-  logging: false,
-  ...utils.config.database,
-  synchronize: true,
-  entities: [User, Log, Record, PlayerStats, ...(utils.config.persistence?.driver == 'mysql' ? [RoomSQL] : [])],
-  migrations: [],
-  subscribers: [],
-  charset: "utf8mb4_unicode_ci"
-}) : {} as DataSource;
+
+async function getGameDatas() {
+  const metadata = getMetadataArgsStorage();
+  const Games = await gameLoaded;
+  return Object.keys(Games).filter(g => (Games[g] as any).Model).map(g => {
+    const Model = (Games[g] as any).Model;
+    const tableMetadata = metadata.tables. find(table => table.target === Model);
+    if (tableMetadata && !tableMetadata.name?.startsWith(g)) {
+      tableMetadata.name = g + '_' + tableMetadata.name; // 修改表名
+    }
+    return Model;
+  });
+}
+
+export let AppDataSource = {} as DataSource;
+
+(async () => {
+  AppDataSource = utils.config ? new DataSource({
+    type: "mysql",
+    logging: false,
+    ...utils.config.database,
+    synchronize: true,
+    entities: [User, Log, Record, PlayerStats, Manage, ...await getGameDatas(), ...(utils.config.persistence?.driver == 'mysql' ? [RoomSQL] : [])],
+    migrations: [],
+    subscribers: [],
+    charset: "utf8mb4_unicode_ci"
+  }) : {} as DataSource;
+})()
 
 export {
   User,
   Room,
+  Manage,
   RoomSQL,
   RoomMongo,
   Log,
@@ -51,8 +72,10 @@ export {
 
 export * from './mongo';
 export * from './redis';
-
-export const UserRepo = utils.config ? AppDataSource.getRepository(User) : {} as Repository<User>;
-export const LogRepo = utils.config ? AppDataSource.getRepository(Log) : {} as Repository<Log>;
-export const RecordRepo = utils.config ? AppDataSource.getRepository(Record) : {} as Repository<Record>;
-export const RoomRepo = utils.config && utils.config.persistence?.driver == 'mysql' ? AppDataSource.getRepository(RoomSQL) : {} as any;
+  
+export const UserRepo = () => utils.config ? AppDataSource.getRepository(User) : {} as Repository<User>;
+export const LogRepo = () => utils.config ? AppDataSource.getRepository(Log) : {} as Repository<Log>;
+export const RecordRepo = () => utils.config ? AppDataSource.getRepository(Record) : {} as Repository<Record>;
+export const ManageRepo = () => utils.config ? AppDataSource.getRepository(Manage) : {} as Repository<Manage>;
+export const StatsRepo = () => utils.config ? AppDataSource.getRepository(PlayerStats) : {} as Repository<PlayerStats>;
+export const RoomRepo = () => utils.config && utils.config.persistence?.driver == 'mysql' ? AppDataSource.getRepository(RoomSQL) : {} as any;

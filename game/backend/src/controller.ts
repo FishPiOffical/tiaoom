@@ -199,7 +199,7 @@ export class Controller extends Tiaoom {
   }
 
   isAdmin(player: IPlayer): Promise<boolean> {
-    return UserRepo.findOneBy({ id: player.id }).then(user => {
+    return UserRepo().findOneBy({ id: player.id }).then(user => {
       return user?.isAdmin || false;
     });
   }

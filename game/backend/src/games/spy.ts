@@ -1,6 +1,6 @@
 import { PlayerRole, PlayerStatus, RoomPlayer, RoomStatus } from "tiaoom";
-import { GameRoom, IGameCommand } from ".";
-import { sleep } from "@/utils";
+import { BaseModel, GameRoom, IGameCommand, IGameData } from ".";
+import { Column, Entity, EntityTarget, Like, PrimaryGeneratedColumn, Repository } from "typeorm";
 
 const questions = [
   ['蝴蝶', '蜜蜂'],
@@ -29,6 +29,24 @@ const questions = [
   ["医生", "护士"],
 ];
 
+@Entity({ name: 'word', comment: '谁是卧底用词' })
+export class Model extends BaseModel {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column({ comment: "词1" })
+  word1: string = '';
+
+  @Column({ comment: "词2" })
+  word2: string = '';
+
+  @Column('bigint', { comment: "创建时间" })
+  createdAt: number = Date.now();
+
+  @Column('bigint', { comment: "更新时间" })
+  updatedAt: number = Date.now();
+}
+
 export const name = '谁是卧底？';
 export const minSize = 4;
 export const maxSize = 12;
@@ -41,7 +59,7 @@ export const points = {
   '梭哈！': 10000,
 }
 
-class SpyGameRoom extends GameRoom {
+class SpyGameRoom extends GameRoom implements IGameData<Model> {
   words: string[] = [];
   alivePlayers: RoomPlayer[] = [];
   currentTalkPlayer?: RoomPlayer;
@@ -53,6 +71,30 @@ class SpyGameRoom extends GameRoom {
 
   readonly TURN_TIMEOUT = 5 * 60 * 1000; // 5 minutes
   readonly VOTE_TIMEOUT = 2 * 60 * 1000; // 2 minutes
+
+  async getList(query: { word: string, page: number; count: number; }): Promise<{ records: Model[]; total: number; }> {
+    const [records, total] = await Model.getRepo<Model>(Model).findAndCount({
+      where: [
+        { word1: Like(`%${query.word || ''}%`) },
+        { word2: Like(`%${query.word || ''}%`) },
+      ],
+      skip: (query.page - 1) * query.count,
+      take: query.count,
+    });
+    return { records, total }; 
+  }
+
+  async insert(data: Model): Promise<Model> {
+    return await Model.getRepo<Model>(Model).save(Model.getRepo<Model>(Model).create(data));
+  }
+
+  async update(id: string, data: Partial<Model>): Promise<void> {
+    await Model.getRepo<Model>(Model).update(id, data);
+  }
+
+  async delete(id: string): Promise<void> {
+    await Model.getRepo<Model>(Model).delete(id);
+  }
 
   init() {
     this.restoreTimer({
@@ -264,7 +306,7 @@ class SpyGameRoom extends GameRoom {
     }
   }
 
-  onStart() {
+  async onStart() {
     if (this.room.validPlayers.length < this.room.minSize) {
       return this.say(`玩家人数不足，无法开始游戏。`);
     }
@@ -280,7 +322,18 @@ class SpyGameRoom extends GameRoom {
 
     const mainWordIndex = Math.floor(Math.random() * 2);
     const spyWordIndex = mainWordIndex == 0 ? 1 : 0;
-    const questWord = questions[Math.floor(Math.random() * questions.length)];
+    const questWord = await Model.getRepo<Model>(Model).createQueryBuilder()
+      .orderBy('RAND()')
+      .getOne()
+      .then((word) => {
+        if (word) {
+          return [word.word1, word.word2];
+        } else {
+          // 若数据库无词库，则使用默认词库
+          const defaultWords = questions[Math.floor(Math.random() * questions.length)];
+          return defaultWords;
+        }
+      });
     this.words = Array(this.room.validPlayers.length).fill(questWord[mainWordIndex]);
     const spyIndex = Math.floor(Math.random() * this.room.validPlayers.length);
     this.words[spyIndex] = questWord[spyWordIndex];

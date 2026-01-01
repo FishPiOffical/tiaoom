@@ -1,4 +1,4 @@
-import { AppDataSource } from "@/entities";
+import { StatsRepo } from "@/entities";
 import { PlayerStats } from "@/entities/PlayerStats";
 
 export interface GameStats {
@@ -11,8 +11,7 @@ export interface GameStats {
 }
 
 export async function getPlayerStats(username: string): Promise<GameStats[]> {
-  const statsRepo = AppDataSource.getRepository(PlayerStats);
-  const stats = await statsRepo.find({
+  const stats = await StatsRepo().find({
     where: { player: username }
   });
 
@@ -27,8 +26,7 @@ export async function getPlayerStats(username: string): Promise<GameStats[]> {
 }
 
 export async function getPlayerStat(username: string, type: string): Promise<GameStats | null> {
-  const statsRepo = AppDataSource.getRepository(PlayerStats);
-  const stat = await statsRepo.findOne({
+  const stat = await StatsRepo().findOne({
     where: { player: username, type }
   });
 
@@ -46,9 +44,7 @@ export async function getPlayerStat(username: string, type: string): Promise<Gam
   }
 }
 
-export async function updatePlayerStats(username: string, type: string, result: 'win' | 'draw' | 'loss', score?: number) {
-  const statsRepo = AppDataSource.getRepository(PlayerStats);
-  
+export async function updatePlayerStats(username: string, type: string, result: 'win' | 'draw' | 'loss', score?: number) {  
   const incrementData = {
     total: 1,
     wins: result === 'win' ? 1 : 0,
@@ -58,7 +54,7 @@ export async function updatePlayerStats(username: string, type: string, result: 
   };
 
   const update = async (id: number) => {
-    await statsRepo.createQueryBuilder()
+    await StatsRepo().createQueryBuilder()
       .update()
       .set({
         total: () => "total + 1",
@@ -72,7 +68,7 @@ export async function updatePlayerStats(username: string, type: string, result: 
   };
 
   // 尝试查找记录
-  const existing = await statsRepo.findOne({
+  const existing = await StatsRepo().findOne({
     where: { player: username, type }
   });
 
@@ -81,14 +77,14 @@ export async function updatePlayerStats(username: string, type: string, result: 
   } else {
     // 尝试插入，如果并发导致插入失败（唯一索引冲突），则回退到更新
     try {
-      await statsRepo.save({
+      await StatsRepo().save({
         player: username,
         type,
         ...incrementData
       });
     } catch (e) {
       // 假设是唯一索引冲突，再次尝试更新
-      const retryExisting = await statsRepo.findOne({
+      const retryExisting = await StatsRepo().findOne({
         where: { player: username, type }
       });
       if (retryExisting) {

@@ -68,6 +68,12 @@ export class User implements IUser {
   }
 }
 
+export interface IManageData {
+  key: string;
+  name: string;
+  canManage: boolean;
+}
+
 const instance = axios.create({
   baseURL: '/api',
   withCredentials: true,
@@ -78,7 +84,7 @@ instance.interceptors.response.use(
   (response) => {
     const res = response.data
     if (res.code !== 0) {
-      return Promise.reject(res.message || 'Unknown Error')
+      return Promise.reject(new Error(res.message || 'Unknown Error'))
     }
     return res.data
   },
@@ -138,4 +144,22 @@ export const api = {
   getPlayer(id: string): Promise<Player> {
     return instance.get(`/players/${id}`)
   },
+  getManages(): Promise<IManageData[]> {
+    return instance.get('/game/manages');
+  },
+  getManageDateList(gameKey: string, query: any & { page?: number, count?: number }): Promise<{ records: any[], total: number }> {
+    return instance.get(`/game/manages/${gameKey}/list`, { params: query });
+  },
+  saveManageData(gameKey: string, record: any) {
+    return instance.post(`/game/manages/${gameKey}`, record);
+  },
+  updateManageData(gameKey: string, id: number, record: any) {
+    return instance.put(`/game/manages/${gameKey}/${id}`, record);
+  },
+  removeManageData(gameKey: string, id: number) {
+    return instance.delete(`/game/manages/${gameKey}/${id}`);
+  },
+  importManageData(gameKey: string, records: any[]) {
+    return instance.post(`/game/manages/${gameKey}/import`, records);
+  }
 }

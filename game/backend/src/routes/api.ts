@@ -1,9 +1,10 @@
 import { Router, Request, Response } from "express";
 import { Controller } from "../controller";
 import { login as fishpiLogin, register as fishpiRegister, updateUserInfo } from "../login/fishpi";
-import { Record, RecordRepo, User, UserRepo, AppDataSource, PlayerStats } from "@/entities";
+import { Record, RecordRepo, User, UserRepo, AppDataSource, PlayerStats, ManageRepo } from "@/entities";
 import { getPlayerStats } from "@/utils";
 import { Like } from "typeorm";
+import GameRouter from "./game";
 
 export interface GameContext {
   controller?: Controller;
@@ -18,6 +19,7 @@ const createRoutes = (game: GameContext, gameName: string) => {
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
     res.sendStatus(200);
   });
+
   router.get("/config", (req: Request, res: Response) => {
     // 允许跨域
     res.setHeader("Access-Control-Allow-Origin", "*");
@@ -44,7 +46,7 @@ const createRoutes = (game: GameContext, gameName: string) => {
   });
 
   router.get("/user/:username", async (req: Request, res: Response) => {
-    const user = await UserRepo.findOneBy({ username: req.params.username });
+    const user = await UserRepo().findOneBy({ username: req.params.username });
     if (user) {
       const state = await getPlayerStats(user.username);
       res.json({ code: 0, data: { ...user, state } });
@@ -81,7 +83,7 @@ const createRoutes = (game: GameContext, gameName: string) => {
     const { p, count } = req.query;
     const page = parseInt(p as string) || 1;
     const pageSize = parseInt(count as string) || 10;
-    const records = await RecordRepo.findAndCount({
+    const records = await RecordRepo().findAndCount({
       skip: (page - 1) * pageSize,
       take: pageSize,
       where: { players: Like(`%"${req.params.username}"%`) },
@@ -91,7 +93,7 @@ const createRoutes = (game: GameContext, gameName: string) => {
   });
 
   router.get("/record/:id", async (req: Request, res: Response) => {
-    const record = await RecordRepo.findOneBy({ id: Number(req.params.id) });
+    const record = await RecordRepo().findOneBy({ id: Number(req.params.id) });
     if (record) {
       res.json({ code: 0, data: record });
     } else {
@@ -160,6 +162,8 @@ const createRoutes = (game: GameContext, gameName: string) => {
   router.get("/rooms", (req: Request, res: Response) => {
     res.json({ code: 0, data: game.controller?.rooms });
   });
+
+  router.use("/game", GameRouter)
 
   return router;
 };

@@ -76,7 +76,7 @@
               <Icon icon="mdi:trophy-outline" />
             </router-link>
             <router-link 
-              v-if="gameStore.player?.isAdmin"
+              v-if="gameStore.player?.isAdmin || gameManages.length > 0"
               to="/admin"
               class="icon-btn"
               title="房间管理"
@@ -270,6 +270,8 @@ onMounted(() => {
     isReady.value = true;
   });
 })
+
+const gameManages = computed(() => gameStore.gameManages);
 </script>
 
 <style scoped>

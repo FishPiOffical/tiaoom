@@ -1184,7 +1184,7 @@ class DoudizhuGameRoom extends GameRoom {
     const basePoint = this.room.attrs?.point;
     if (!basePoint || isNaN(basePoint) || basePoint <= 0) {
       // 无积分房间，只保存记录
-      this.saveGameRecord(winners);
+      this.saveRecord(winners);
       return;
     }
 
@@ -1226,20 +1226,7 @@ class DoudizhuGameRoom extends GameRoom {
     }
 
     // 保存游戏记录
-    this.saveGameRecord(winners);
-  }
-
-  /**
-   * 保存游戏记录
-   */
-  private async saveGameRecord(winners: RoomPlayer[]) {
-    RecordRepo.save(RecordRepo.create({
-      type: this.room.attrs!.type,
-      roomName: this.room.name,
-      data: await this.getData(),
-      players: this.room.validPlayers.map(p => p.attributes?.username).filter(Boolean),
-      winners: winners.map(w => w.attributes?.username).filter(Boolean),
-    })).catch(console.error);
+    this.saveRecord(winners);
   }
 }
 
