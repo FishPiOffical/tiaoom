@@ -161,5 +161,11 @@ export const api = {
   },
   importManageData(gameKey: string, records: any[]) {
     return instance.post(`/game/manages/${gameKey}/import`, records);
+  },
+  getManagePermissions(gameKey: string): Promise<string[]> {
+    return instance.get(`/game/manages/${gameKey}/permissions`);
+  },
+  updateManagePermissions(gameKey: string, manages: string[]) {
+    return instance.put(`/game/manages/${gameKey}/permissions`, { manages });
   }
 }

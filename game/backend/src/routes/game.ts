@@ -45,6 +45,39 @@ router.use("/manages/:gameKey", async (req: Request, res: Response, next) => {
   }
 });
 
+router.get("/manages/:gameKey/permissions", async (req: Request, res: Response) => {
+  try {
+    if (!req.session.player?.isAdmin) {
+      throw new Error("权限不足");
+    }
+
+    const { gameKey } = req.params;
+    const manages = await ManageRepo().findOneBy({ type: gameKey });
+    res.json({ code: 0, data: manages ? manages.manages : [] });
+  } catch (error: any) {
+    res.json({ code: 1, message: error.message });
+  }
+});
+
+router.put("/manages/:gameKey/permissions", async (req: Request, res: Response) => {
+  try {
+    if (!req.session.player?.isAdmin) {
+      throw new Error("权限不足");
+    }
+    const { gameKey } = req.params;
+    const { manages } = req.body;
+    let manageRecord = await ManageRepo().findOneBy({ type: gameKey });
+    if (!manageRecord) {
+      manageRecord = ManageRepo().create({ type: gameKey, manages: [] });
+    }
+    manageRecord.manages = manages;
+    await ManageRepo().save(manageRecord);
+    res.json({ code: 0, message: "权限更新成功" });
+  } catch (error: any) {
+    res.json({ code: 1, message: error.message });
+  }
+});
+
 router.get("/manages/:gameKey/list", async (req: Request, res: Response) => {
   try {
     const { gameKey } = req.params;

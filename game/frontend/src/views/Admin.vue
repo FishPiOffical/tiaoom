@@ -7,8 +7,8 @@
           <button class="btn btn-ghost" @click="$router.back()">
             <Icon icon="meteor-icons:arrow-left" />
           </button>
-          <div role="tablist" class="tabs tabs-box" v-if="gameStore.player?.isAdmin">
-            <a role="tab" class="tab space-x-1" :class="{ 'tab-active': activeTab == 'room'}" @click="activeTab = 'room'">
+          <div role="tablist" class="tabs tabs-box">
+            <a role="tab" class="tab space-x-1" :class="{ 'tab-active': activeTab == 'room'}" @click="activeTab = 'room'" v-if="gameStore.player?.isAdmin">
               <Icon icon="mingcute:settings-3-line" />
               <span>房间管理</span>
             </a>
@@ -208,7 +208,6 @@ import { getComponent } from '@/main'
 const gameStore = useGameStore()
 const isDrawerOpen = ref(false)
 const selectedRoom = ref<Room | null>(null)
-const activeTab = ref(gameStore.player?.isAdmin ? 'room' : gameStore.gameManages[0]?.key || '')
 
 const broadcastModal = ref<HTMLDialogElement | null>(null)
 const broadcastInput = ref('')
@@ -275,4 +274,11 @@ function getGameForm(type: string) {
     return null
   }
 }
+
+const activeTab = ref(gameStore.player?.isAdmin ? 'room' : manageList.value[0]?.key || '')
+watch(() => manageList.value, (newList) => {
+  if (!activeTab.value) {
+    activeTab.value = newList[0]?.key || ''
+  }
+}, { immediate: true })
 </script>

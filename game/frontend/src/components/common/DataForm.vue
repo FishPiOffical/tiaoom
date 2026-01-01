@@ -40,6 +40,12 @@ const page = ref(1);
 const count = ref(10);
 const query = reactive<Record<string, any>>({});
 
+// Permission Modal
+const showPermissionModal = ref(false);
+const permissions = ref<string[]>([]);
+const newPermission = ref('');
+const isAdmin = ref(false);
+
 // Initialize query defaults
 if (props.searchFields) {
   props.searchFields.forEach(field => {
@@ -227,8 +233,57 @@ const formatValue = (record: any, col: Field) => {
     return record[col.key];
 };
 
+const checkAdmin = async () => {
+  try {
+    const user = await api.getUserInfo();
+    isAdmin.value = user.isAdmin;
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+const openPermissionModal = async () => {
+  try {
+    const res = await api.getManagePermissions(props.gameKey);
+    permissions.value = res;
+    showPermissionModal.value = true;
+  } catch (e: any) {
+    msg.error(e.message || '获取权限列表失败');
+  }
+};
+
+const addPermission = async () => {
+  if (!newPermission.value) return;
+  if (permissions.value.includes(newPermission.value)) {
+    msg.error('用户已存在');
+    return;
+  }
+  try {
+    const newPermissions = [...permissions.value, newPermission.value];
+    await api.updateManagePermissions(props.gameKey, newPermissions);
+    permissions.value = newPermissions;
+    newPermission.value = '';
+    msg.success('添加成功');
+  } catch (e: any) {
+    msg.error(e.message || '添加失败');
+  }
+};
+
+const removePermission = async (username: string) => {
+  if (!confirm(`确定要移除 ${username} 的管理权限吗？`)) return;
+  try {
+    const newPermissions = permissions.value.filter(p => p !== username);
+    await api.updateManagePermissions(props.gameKey, newPermissions);
+    permissions.value = newPermissions;
+    msg.success('移除成功');
+  } catch (e: any) {
+    msg.error(e.message || '移除失败');
+  }
+};
+
 onMounted(() => {
   fetchData();
+  checkAdmin();
 });
 
 watch(() => props.gameKey, () => {
@@ -273,6 +328,9 @@ defineExpose({
         </button>
         <button class="btn btn-accent" @click="handleDownloadTemplate">
           <Icon icon="mingcute:download-fill" /> 下载模板
+        </button>
+        <button v-if="isAdmin" class="btn btn-warning" @click="openPermissionModal">
+          <Icon icon="mingcute:user-setting-fill" /> 权限管理
         </button>
         <input 
           type="file" 
@@ -324,5 +382,43 @@ defineExpose({
         </tbody>
       </table>
     </div>
+
+    <!-- Permission Modal -->
+    <dialog class="modal" :class="{ 'modal-open': showPermissionModal }">
+      <div class="modal-box">
+        <h3 class="font-bold text-lg mb-4">权限管理</h3>
+        
+        <div class="flex gap-2 mb-4">
+          <input type="text" v-model="newPermission" class="input input-bordered w-full" placeholder="输入用户名" @keyup.enter="addPermission" />
+          <button class="btn btn-primary" @click="addPermission">添加</button>
+        </div>
+
+        <div class="overflow-y-auto max-h-60">
+          <table class="table w-full">
+            <thead>
+              <tr>
+                <th>用户名</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="permissions.length === 0">
+                <td colspan="2" class="text-center">暂无管理员</td>
+              </tr>
+              <tr v-for="user in permissions" :key="user">
+                <td>{{ user }}</td>
+                <td>
+                  <button class="btn btn-xs btn-error" @click="removePermission(user)">移除</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="modal-action">
+          <button class="btn" @click="showPermissionModal = false">关闭</button>
+        </div>
+      </div>
+    </dialog>
   </section>
 </template>
