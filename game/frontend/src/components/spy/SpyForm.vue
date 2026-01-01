@@ -11,10 +11,6 @@ const columns: Field[] = [
   { key: 'word2', label: '词语2', type: 'text' },
 ];
 
-const searchFields: Field[] = [
-  { key: 'word', label: '关键词', type: 'text' },
-];
-
 const dataFormRef = ref();
 const showModal = ref(false);
 const isEdit = ref(false);
@@ -22,6 +18,7 @@ const currentId = ref<number | null>(null);
 const formData = reactive({
   word1: '',
   word2: '',
+  valid: true,
 });
 
 const handleAdd = () => {
@@ -29,6 +26,7 @@ const handleAdd = () => {
   currentId.value = null;
   formData.word1 = '';
   formData.word2 = '';
+  formData.valid = true;
   showModal.value = true;
 };
 
@@ -37,6 +35,7 @@ const handleEdit = (record: any) => {
   currentId.value = record.id;
   formData.word1 = record.word1;
   formData.word2 = record.word2;
+  formData.valid = record.valid;
   showModal.value = true;
 };
 
@@ -67,10 +66,34 @@ const handleSubmit = async () => {
       ref="dataFormRef"
       :game-key="gameKey"
       :columns="columns"
-      :search-fields="searchFields"
+      :default-query="{ valid: '' }"
       @add="handleAdd"
       @edit="handleEdit"
-    />
+    >
+      <template #search="{ query }">
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend">
+            <span class="label-text">词语</span>
+          </legend>
+          <input
+            type="text"
+            v-model="query.word"
+            class="input input-bordered"
+            placeholder="请输入关键词搜索"
+          />
+        </fieldset>
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend">
+            <span class="label-text">状态</span>
+          </legend>
+          <select v-model="query.valid" class="select select-bordered">
+            <option value="">全部</option>
+            <option value="1">发布</option>
+            <option value="0">草稿</option>
+          </select>
+        </fieldset>
+      </template>
+    </DataForm>
 
     <dialog class="modal" :class="{ 'modal-open': showModal }">
       <div class="modal-box">
@@ -87,6 +110,15 @@ const handleSubmit = async () => {
               <span class="label-text">词语2</span>
             </label>
             <input type="text" v-model="formData.word2" class="input input-bordered w-full" placeholder="请输入卧底词/平民词" />
+          </div>
+          <div class="form-control w-full">
+            <label class="label">
+              <span class="label-text">状态</span>
+            </label>
+            <select v-model="formData.valid" class="select select-bordered w-full">
+              <option :value="true">发布</option>
+              <option :value="false">草稿</option>
+            </select>
           </div>
         </div>
         <div class="modal-action">

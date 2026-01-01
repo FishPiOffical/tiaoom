@@ -40,8 +40,6 @@ export class Controller extends Tiaoom {
     }, {} as Record<string, IGameInfo>);
   }
 
-  
-
   run() {
     return super.run().on("room", async (room: Room) => {
       const gameType = room.attrs?.type;

@@ -23,20 +23,11 @@ import { Column, Entity, PrimaryGeneratedColumn, Like } from "typeorm";
 // 1. 定义数据模型
 @Entity({ name: 'word', comment: '谁是卧底用词' })
 export class Model extends BaseModel {
-  @PrimaryGeneratedColumn()
-  id: number;
-
   @Column({ comment: "词1" })
   word1: string = '';
 
   @Column({ comment: "词2" })
   word2: string = '';
-
-  @Column('bigint', { comment: "创建时间" })
-  createdAt: number = Date.now();
-
-  @Column('bigint', { comment: "更新时间" })
-  updatedAt: number = Date.now();
 }
 
 // 2. 实现 IGameData 接口
@@ -95,11 +86,6 @@ const columns: Field[] = [
   { key: 'word2', label: '词语2', type: 'text' },
 ];
 
-// 定义查询字段
-const searchFields: Field[] = [
-  { key: 'word', label: '关键词', type: 'text' },
-];
-
 const dataFormRef = ref();
 const showModal = ref(false);
 const isEdit = ref(false);
@@ -150,10 +136,19 @@ const handleSubmit = async () => {
       ref="dataFormRef"
       :game-key="gameKey"
       :columns="columns"
-      :search-fields="searchFields"
       @add="handleAdd"
       @edit="handleEdit"
-    />
+    >
+      <template #search="{ query }">
+        <input
+          type="text"
+          v-model="query.word"
+          class="input input-bordered w-full max-w-xs"
+          placeholder="请输入关键词搜索"
+        />
+      </template>
+    </DataForm>
+
 
     <!-- 自定义新增/编辑弹窗 -->
     <dialog class="modal" :class="{ 'modal-open': showModal }">
@@ -167,6 +162,70 @@ const handleSubmit = async () => {
     </dialog>
   </div>
 </template>
+```
+
+## 扩展页面
+
+游戏数据管理后台需要开通权限才能访问，而如果要开放给所有用户使用，可以使用游戏扩展页面功能，创建一个前端页面并调用相应的 API。
+
+### 配置扩展页面
+
+在游戏配置文件中（通常是 `game/backend/src/games/<game>.ts`），导出配置对象时添加 `extendPages` 属性。
+
+```typescript
+export const extendPages: [
+  {
+    name: '投稿', // 按钮显示的文字
+    component: 'SpyPost' // 点击后在抽屉中显示的组件
+  }
+]
+```
+
+添加游戏扩展接口
+
+```typescript
+class SpyGameRoom extends GameRoom implements IGameData<Model> {
+  // ... 其他方法 ...
+
+  // 提交投稿
+  get Routers() {
+    const router = Router()
+    router.post('/post', async (req, res) => {
+      const data = req.body;
+      // 处理投稿逻辑，例如保存到数据库
+      res.json({ code: 0, message: '投稿成功' });
+    });
+    router.get('/my-posts', async (req, res) => {
+      const userId = req.user.id;
+      // 查询该用户的投稿记录
+      const records = []; // 从数据库获取
+      res.json({ code: 0, data: records });
+    });
+    return router;
+  }
+}
+```
+
+### 开发扩展组件
+
+扩展组件就是一个标准的 Vue 组件。它可以调用后端 API 来实现各种功能，例如玩家投稿、查看排行榜、查看游戏说明等。
+
+扩展组件将在创建房间页面的侧边抽屉中显示。
+
+```vue
+<!-- SpyPost.vue -->
+<template>
+  <div class="p-4">
+    <h2>我要投稿</h2>
+    <!-- 表单内容 -->
+  </div>
+</template>
+<script setup lang="ts">
+// 组件逻辑
+// ...
+// 调用接口
+http.post('/api/games/spy/post', { word1, word2 });
+</script>
 ```
 
 ## 接口定义
@@ -227,6 +286,12 @@ export interface IGameData<T> {
 | 方法名 | 参数 | 说明 |
 | :--- | :--- | :--- |
 | `refresh` | - | 刷新当前列表数据 |
+
+**Slots**
+
+| 插槽名 | 说明 |
+| :--- | :--- |
+| `search` | 自定义查询区域内容，作用域插槽，提供 `query` 对象供使用 |
 
 **Field Interface**
 

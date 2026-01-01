@@ -5,6 +5,7 @@ import * as path from "path";
 import { Model } from '@/model';
 import { getPlayerStat, omit, setPoints, updatePlayerStats } from '@/utils';
 import { AppDataSource, RecordRepo } from '@/entities';
+import { Router } from "express";
 const files = glob.sync(path.join(__dirname, '*.*').replace(/\\/g, '/')).filter(f => f.endsWith('.ts') || f.endsWith('.js')).concat(
   glob.sync(path.join(__dirname, '**', 'index.*').replace(/\\/g, '/')).filter(f => f.endsWith('.ts') || f.endsWith('.js'))
 );
@@ -42,6 +43,19 @@ export interface IGameInfo {
    * 房间积分奖励说明，若自行实现积分奖励，需填写此字段
    */
   rewardDescription?: string;
+  /**
+   * 扩展页面入口
+   */
+  extendPages?: {
+    /** 
+     * 入口名称 
+     **/
+    name: string;
+    /** 
+     * 页面路径 
+     **/
+    component: string;
+  }[];
 }
 
 export interface IGameMethod {
@@ -157,6 +171,10 @@ export class GameRoom {
 
   constructor(room: Room) {
     this.room = room;
+  }
+
+  get Routers(): Router | null {
+    return null;
   }
 
   /**
@@ -489,6 +507,15 @@ export class GameRoom {
 }
 
 export class BaseModel {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column('bigint', { comment: "创建时间" })
+  createdAt: number = Date.now();
+
+  @Column('bigint', { comment: "更新时间" })
+  updatedAt: number = Date.now();
+
   static getRepo<T extends BaseModel>(target: EntityTarget<T>): Repository<T> {
     return AppDataSource.getRepository<T>(target);
   }

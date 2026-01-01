@@ -5,6 +5,7 @@ import { Record, RecordRepo, User, UserRepo, AppDataSource, PlayerStats, ManageR
 import { getPlayerStats } from "@/utils";
 import { Like } from "typeorm";
 import GameRouter from "./game";
+import Games, { GameRoom } from "@/games";
 
 export interface GameContext {
   controller?: Controller;
@@ -164,6 +165,14 @@ const createRoutes = (game: GameContext, gameName: string) => {
   });
 
   router.use("/game", GameRouter)
+
+  Object.entries(Games || {}).forEach(([key, game]) => {
+    const defaultExport = game.default as any;
+    if (defaultExport.prototype instanceof GameRoom) {
+      const routers = (new defaultExport() as any).Routers;
+      if (routers) router.use(`/game/${key}`, routers);
+    }
+  });
 
   return router;
 };

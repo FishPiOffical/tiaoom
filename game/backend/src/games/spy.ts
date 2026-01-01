@@ -1,6 +1,7 @@
 import { PlayerRole, PlayerStatus, RoomPlayer, RoomStatus } from "tiaoom";
 import { BaseModel, GameRoom, IGameCommand, IGameData } from ".";
-import { Column, Entity, EntityTarget, Like, PrimaryGeneratedColumn, Repository } from "typeorm";
+import { And, Column, Entity, EntityTarget, Like, PrimaryGeneratedColumn, Repository } from "typeorm";
+import { Router } from "express";
 
 const questions = [
   ['蝴蝶', '蜜蜂'],
@@ -31,20 +32,17 @@ const questions = [
 
 @Entity({ name: 'word', comment: '谁是卧底用词' })
 export class Model extends BaseModel {
-  @PrimaryGeneratedColumn()
-  id: number;
-
   @Column({ comment: "词1" })
   word1: string = '';
 
   @Column({ comment: "词2" })
   word2: string = '';
 
-  @Column('bigint', { comment: "创建时间" })
-  createdAt: number = Date.now();
+  @Column({ comment: "是否有效" })
+  valid: boolean = false;
 
-  @Column('bigint', { comment: "更新时间" })
-  updatedAt: number = Date.now();
+  @Column({ comment: "创建者" })
+  from: string = '';
 }
 
 export const name = '谁是卧底？';
@@ -58,6 +56,9 @@ export const points = {
   '大赢家': 1000,
   '梭哈！': 10000,
 }
+export const extendPages = [
+  { name: '投稿', component: 'SpyPost' },
+];
 
 class SpyGameRoom extends GameRoom implements IGameData<Model> {
   words: string[] = [];
@@ -72,11 +73,62 @@ class SpyGameRoom extends GameRoom implements IGameData<Model> {
   readonly TURN_TIMEOUT = 5 * 60 * 1000; // 5 minutes
   readonly VOTE_TIMEOUT = 2 * 60 * 1000; // 2 minutes
 
-  async getList(query: { word: string, page: number; count: number; }): Promise<{ records: Model[]; total: number; }> {
+  get Routers() {
+    const router = Router();
+    router.use((req, res, next) => {
+      if (!req.session.player) {
+        return res.json({ code: 1, message: "请先登录" });
+      }
+      next();
+    });
+    router.post("/post", async (req, res) => {
+      try {
+        const { word1, word2 } = req.body;
+        if (!word1 || !word2) {
+          throw new Error("词语不能为空");
+        }
+        if (word1.length > 10 || word2.length > 10) {
+          throw new Error("词语长度不能超过10个字符");
+        }
+        const existing = await Model.getRepo<Model>(Model).findOneBy(
+          { word1, word2 },
+        );
+        if (existing?.from === req.session.player?.username) {
+          throw new Error("你已经提交过相同的词语组合");
+        }
+        if (existing) {
+          throw new Error("该词语组合已存在");
+        }
+        const model = new Model();
+        model.word1 = word1;
+        model.word2 = word2;
+        model.valid = false;
+        model.from = req.session.player?.username || '';
+        await this.insert(model);
+        res.json({ code: 0, data: model });
+      } catch (error: any) {
+        res.json({ code: 1, message: error.message });
+      }
+    });
+    router.get("/my-posts", async (req, res) => {
+      try {
+        const posts = await Model.getRepo<Model>(Model).find({
+          where: { from: req.session.player?.username || '' },
+          order: { createdAt: "DESC" },
+        });
+        res.json({ code: 0, data: posts });
+      } catch (error: any) {
+        res.json({ code: 1, message: error.message });
+      }
+    }); 
+    return router;
+  }
+
+  async getList(query: { word: string, valid: string, page: number; count: number; }): Promise<{ records: Model[]; total: number; }> {
     const [records, total] = await Model.getRepo<Model>(Model).findAndCount({
       where: [
-        { word1: Like(`%${query.word || ''}%`) },
-        { word2: Like(`%${query.word || ''}%`) },
+        { word1: Like(`%${query.word || ''}%`), valid: query.valid === '1' },
+        { word2: Like(`%${query.word || ''}%`), valid: query.valid === '1' },
       ],
       skip: (query.page - 1) * query.count,
       take: query.count,

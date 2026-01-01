@@ -25,6 +25,7 @@ const props = defineProps<{
   columns: Field[];
   searchFields?: Field[];
   importFields?: Field[];
+  defaultQuery?: Record<string, any>;
 }>();
 
 const emit = defineEmits<{
@@ -38,7 +39,7 @@ const total = ref(0);
 const loading = ref(false);
 const page = ref(1);
 const count = ref(10);
-const query = reactive<Record<string, any>>({});
+const query = reactive<Record<string, any>>(props.defaultQuery || {});
 
 // Permission Modal
 const showPermissionModal = ref(false);
@@ -298,22 +299,15 @@ defineExpose({
 <template>
   <section class="p-4">
     <!-- Search Area -->
-    <header class="mb-4 flex flex-wrap gap-4 items-end" v-if="searchFields && searchFields.length">
-      <div v-for="field in searchFields" :key="field.key" class="form-control w-full max-w-xs">
-        <label class="label">
-          <span class="label-text">{{ field.label }}</span>
-        </label>
-        <input v-if="!field.type || field.type === 'text'" type="text" v-model="query[field.key]" class="input input-bordered w-full max-w-xs" />
-        <select v-else-if="field.type === 'select'" v-model="query[field.key]" class="select select-bordered w-full max-w-xs">
-            <option :value="undefined">全部</option>
-            <option v-for="opt in field.options" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-        </select>
-      </div>
-      <div class="flex gap-2 pb-1">
-        <button class="btn btn-primary" @click="handleSearch">
-            <Icon icon="mingcute:search-line" /> 查询
-        </button>
-        <button class="btn btn-ghost" @click="handleReset">重置</button>
+    <header class="mb-4 flex flex-wrap items-end">
+      <div class="form-control w-full grid grid-cols-1 md:grid-cols-4 items-end gap-4">
+        <slot name="search" :query="query"></slot>
+        <section class="mb-1">
+          <button class="btn btn-primary" @click="handleSearch">
+              <Icon icon="mingcute:search-line" /> 查询
+          </button>
+          <button class="btn btn-ghost" @click="handleReset">重置</button>
+        </section>
       </div>
     </header>
 
