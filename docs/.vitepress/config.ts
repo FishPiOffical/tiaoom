@@ -32,6 +32,7 @@ export default defineConfig({
             { text: '项目介绍', link: '/game/' },
             { text: '快速开始', link: '/game/getting-started' },
             { text: '开发详解', link: '/game/development' },
+            { text: '游戏数据', link: '/game/data' },
             { text: '调试部署', link: '/game/deploy' },
             { text: '游戏嵌入', link: '/game/embed' },
           ]
