@@ -125,10 +125,11 @@ class SpyGameRoom extends GameRoom implements IGameData<Model> {
   }
 
   async getList(query: { word: string, valid: string, page: number; count: number; }): Promise<{ records: Model[]; total: number; }> {
+    const where = query.valid ? { valid: query.valid === '1' } : {};
     const [records, total] = await Model.getRepo<Model>(Model).findAndCount({
       where: [
-        { word1: Like(`%${query.word || ''}%`), valid: query.valid === '1' },
-        { word2: Like(`%${query.word || ''}%`), valid: query.valid === '1' },
+        { word1: Like(`%${query.word || ''}%`), ...where },
+        { word2: Like(`%${query.word || ''}%`), ...where },
       ],
       skip: (query.page - 1) * query.count,
       take: query.count,
