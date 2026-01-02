@@ -4,7 +4,7 @@
 
 要启用游戏数据管理功能，开发者需要在后端实现 `IGameData` 接口并定义数据模型，在前端基于 `DataForm` 组件实现管理界面。
 
-## 后端实现
+## 后端实现 {#backend}
 
 1. 定义数据模型 (Model)
    使用 TypeORM 定义数据实体。
@@ -12,7 +12,7 @@
 2. 实现 IGameData 接口
    在游戏主类（继承自 `GameRoom`）中实现 `IGameData<T>` 接口，提供 `getList`, `insert`, `update`, `delete` 方法。
 
-### 示例：谁是卧底 (Spy)
+示例：谁是卧底 (Spy)
 
 ```typescript
 // game/backend/src/games/spy.ts
@@ -64,11 +64,11 @@ class SpyGameRoom extends GameRoom implements IGameData<Model> {
 }
 ```
 
-## 前端实现
+## 前端实现 {#frontend}
 
 前端需创建一个管理组件，使用 `DataForm` 组件来展示列表和处理查询，并自行实现新增/编辑的弹窗逻辑。
 
-### 示例：SpyForm.vue
+示例：`SpyForm.vue`
 
 ```vue
 <script setup lang="ts">
@@ -164,11 +164,11 @@ const handleSubmit = async () => {
 </template>
 ```
 
-## 扩展页面
+## 扩展页面 {#extend-pages}
 
 游戏数据管理后台需要开通权限才能访问，而如果要开放给所有用户使用，可以使用游戏扩展页面功能，创建一个前端页面并调用相应的 API。
 
-### 配置扩展页面
+### 配置扩展页面 {#configure-extend-pages}
 
 在游戏配置文件中（通常是 `game/backend/src/games/<game>.ts`），导出配置对象时添加 `extendPages` 属性。
 
@@ -206,7 +206,7 @@ class SpyGameRoom extends GameRoom implements IGameData<Model> {
 }
 ```
 
-### 开发扩展组件
+### 开发扩展组件 {#develop-extend-components}
 
 扩展组件就是一个标准的 Vue 组件。它可以调用后端 API 来实现各种功能，例如玩家投稿、查看排行榜、查看游戏说明等。
 
@@ -228,9 +228,9 @@ http.post('/api/games/spy/post', { word1, word2 });
 </script>
 ```
 
-## 接口定义
+## 接口定义 {#definitions}
 
-### IGameData (Backend)
+### IGameData (Backend) {#igamedata}
 
 ```typescript
 export interface IGameData<T> {
@@ -261,7 +261,7 @@ export interface IGameData<T> {
 }
 ```
 
-### DataForm (Frontend)
+### DataForm (Frontend) {#dataform}
 
 通用数据管理表单组件，提供列表展示、分页、查询、删除、批量导入/导出模板等功能。
 

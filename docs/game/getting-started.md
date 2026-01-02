@@ -2,7 +2,7 @@
 
 本指南将通过一个简单的示例，演示如何添加一个新的游戏。
 
-## 1. 创建后端逻辑
+## 1. 创建后端逻辑 {#backend-logic}
 
 在 `game/backend/src/games` 目录下创建 `click.ts` 文件。
 
@@ -90,7 +90,7 @@ export default class ClickRoom extends GameRoom {
 }
 ```
 
-## 2. 创建前端组件
+## 2. 创建前端组件 {#frontend-component}
 
 在 `game/frontend/src/components/click` 目录下创建 `useClick.ts` 文件，编写游戏前端逻辑。
 
@@ -205,13 +205,13 @@ const { onCommand, handleClick, isPlaying, count, target } = useClick(props.game
 </script>
 ```
 
-## 3. 注册游戏
+## 3. 注册游戏 {#register-game}
 
 后端会自动扫描 `games` 目录下的文件，无需手动注册。
 
 前端组件会自动根据后端返回的游戏类型加载对应的组件（命名需符合 `<Type>Room.vue` 规则）。
 
-## 4. 运行测试
+## 4. 运行测试 {#run-tests}
 
 在 game 目录启动开发服务器：
 

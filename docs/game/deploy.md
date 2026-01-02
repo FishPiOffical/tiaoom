@@ -1,6 +1,6 @@
 # 调试部署
 
-## 安装依赖
+## 安装依赖 {#install}
 
 使用 npm workspace 统一管理依赖：
 
@@ -10,7 +10,7 @@ cd game
 npm install
 ```
 
-## 开发模式
+## 开发模式 {#development}
 
 ```bash
 # 方式1: 同时启动前后端（推荐）
@@ -31,7 +31,7 @@ VSCode 按下 F5 可直接启动调试后端。
 
 ![模拟登录](/login.png)
 
-## 生产构建
+## 生产构建 {#build}
 
 ```bash
 # 构建前后端
@@ -42,7 +42,7 @@ npm run build:backend
 npm run build:frontend
 ```
 
-## 部署
+## 部署 {#deploy}
 
 生产构建后运行 `node index.js` 即可。
 
