@@ -2,7 +2,7 @@
 
 本指南将带你深入了解如何使用 Tiaoom 构建完整的游戏应用。我们将涵盖从网络层适配到游戏逻辑实现的各个方面。
 
-## 1. 服务端：实现 Socket 通信层
+## 1. 服务端：实现 Socket 通信层 {#server-socket}
 
 Tiaoom 不绑定具体的网络协议，你需要实现 `Message` 接口来适配你的网络层（如 WebSocket）。以下是一个使用 `ws` 库的完整示例：
 
@@ -80,7 +80,7 @@ export class SocketManager extends EventEmitter implements IMessage {
 }
 ```
 
-## 2. 服务端：编写游戏逻辑
+## 2. 服务端：编写游戏逻辑 {#server-logic}
 
 你可以通过监听房间事件来编写具体的游戏逻辑。
 
@@ -115,7 +115,7 @@ export default function setupGame(room: Room) {
 }
 ```
 
-## 3. 客户端：集成与扩展
+## 3. 客户端：集成与扩展 {#client-integration}
 
 在客户端，你需要继承 `Tiaoom` 类并实现连接逻辑。
 
@@ -166,11 +166,11 @@ client.on('room.message', (msg) => {
   console.log('收到消息:', msg);
 });
 ```
-## 4. 其他接口示例
+## 4. 其他接口示例 {#other-examples}
 
 以下是一些常见的前端功能实现示例，包括房间列表、玩家列表和聊天功能。
 
-### 获取房间列表
+### 获取房间列表 {#room-list}
 
 客户端可以通过监听 `room.list` 事件来获取实时更新的房间列表。
 
@@ -190,7 +190,7 @@ client.send({ type: 'room.list' });
 console.log(client.rooms);
 ```
 
-### 获取在线玩家列表
+### 获取在线玩家列表 {#player-list}
 
 类似地，可以通过监听 `player.list` 事件获取在线玩家列表。
 
@@ -210,11 +210,11 @@ client.send({ type: 'player.list' });
 console.log(client.players);
 ```
 
-### 实现聊天功能
+### 实现聊天功能 {#chat}
 
 聊天功能通常分为“大厅聊天”（全局）和“房间聊天”。
 
-#### 全局聊天
+#### 全局聊天 {#global-chat}
 
 ```typescript
 // 发送全局消息
@@ -233,7 +233,7 @@ client.on('global.command', (cmd) => {
 });
 ```
 
-#### 房间聊天
+#### 房间聊天 {#room-chat}
 
 ```typescript
 // 发送房间消息
@@ -256,7 +256,7 @@ client.on('room.command', (cmd) => {
 });
 ```
 
-## 房间管理
+## 房间管理 {#room-management}
 
 Tiaoom 处理了房间管理的繁重工作：
 

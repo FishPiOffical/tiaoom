@@ -37,7 +37,7 @@
 
         <!-- 成就表 -->
         <div v-if="activeTab === 'achievements'">
-          <AchievementTable :achievements="achievements" show-draw />
+          <AchievementTable :achievements="achievements" :show-draw="showDraw" />
         </div>
         
         <!-- 玩家列表 -->
@@ -69,7 +69,7 @@
         
       </section>
       
-      <GameChat v-if="chat">
+      <GameChat v-if="chat" :canSend="canChat">
         <template #rules>
           <slot name="rules"></slot>
         </template>
@@ -85,27 +85,63 @@ import { GameCore } from "@/core/game";
 import { useGameEvents } from "@/hook/useGameEvents";
 
 const props = withDefaults(defineProps<{
+  /**
+   * 当前玩家在房间中的信息
+   */
   roomPlayer: RoomPlayer & { room: Room };
+  /**
+   * 游戏实例
+   */
   game: GameCore;
+  /**
+   * 自定义玩家状态显示
+   * @param player 玩家信息
+   */
   playerStatus?: (player: RoomPlayer) => string;
+  /**
+   * 自定义围观者状态显示
+   * @param player 围观者信息
+   */
   watcherStatus?: (player: RoomPlayer) => string;
+  /**
+   * 是否显示战绩
+   */
   achievements?: boolean;
+  /**
+   * 是否显示聊天框
+   */
   chat?: boolean;
+  /**
+   * 当前激活的标签页
+   */
   activeTab?: string;
+  /**
+   * 自定义标签页
+   */
   tabs?: Record<string, { name: string; icon: string }>;
+  /**
+   * 战绩是否显示平局
+   */
   showDraw?: boolean;
+  /**
+   * 是否为简化模式（隐藏侧边栏）
+   */
   lite?: boolean;
+  /**
+   * 聊天框是否允许发送消息
+   */
+  canChat?: boolean;
 }>(), {
   chat: true,
   showDraw: true,
   achievements: true,
   lite: false,
+  canChat: true,
 });
 
 const emit = defineEmits<{
   (e: "command", msg: { type: string; data: any }): void;
 }>();
-
 
 useGameEvents(props.game, {
   "player.command": onCommand,

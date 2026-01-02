@@ -4,11 +4,11 @@
 
 通常不需要直接在模板中使用此组件，而是通过导出的 [API](#use) 来调用。
 
-## 方法 (Exposed)
+## 方法 {#methods}
 
 组件通过 `defineExpose` 暴露了以下方法：
 
-### `add(payload)`
+### `add(payload)` {#add}
 
 添加一条消息。
 
@@ -24,7 +24,7 @@
 
 - `id`: `number` - 消息 ID。
 
-### `remove(id)`
+### `remove(id)` {#remove}
 
 移除指定 ID 的消息。
 
@@ -32,9 +32,9 @@
 
 - `id`: `number` - 消息 ID。
 
-## 示例
+## 示例 {#example}
 
-### 基础用法（组件内）
+### 基础用法（组件内）{#example-component}
 
 ```vue
 <template>

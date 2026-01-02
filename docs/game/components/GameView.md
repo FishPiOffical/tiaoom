@@ -16,6 +16,7 @@
 | `tabs` | `Record<string, { name: string; icon: string }>` | - | 自定义 Tab 配置。 |
 | `showDraw` | `boolean` | `true` | 战绩表是否显示平局。 |
 | `lite` | `boolean` | `false` | 是否为精简模式（不显示侧边栏）。 |
+| `canChat` | `boolean` | `true` | 聊天组件是否允许发送消息。 |
 
 ## Slots
 
@@ -34,16 +35,7 @@
 | :--- | :--- | :--- |
 | `command` | `msg: { type: string; data: any }` | 当接收到 `player.command` 或 `room.command` 时触发。 |
 
-## 功能
-
-- **响应式布局**: 在桌面端显示为左右结构，在移动端侧边栏会调整。
-- **Tab 切换**: 支持在玩家列表、战绩表和自定义 Tab 之间切换。
-- **玩家列表**: 自动显示房间内的玩家，支持自定义状态和徽章。
-- **战绩显示**: 自动处理 `status` 命令中的 `achievements` 数据并显示。
-- **聊天集成**: 内置 `GameChat` 组件。
-- **事件转发**: 自动监听并转发游戏命令事件。
-
-## 使用示例
+## 使用示例 {#example}
 
 ```vue
 <template>

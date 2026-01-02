@@ -2,15 +2,9 @@
 
 `tiaoom/client` 中的 `Tiaoom` 类提供了与游戏服务器交互的方法。
 
-## 类: `Tiaoom`
+## 类: `Tiaoom` {#tiaoom}
 
-### 构造函数
-
-```typescript
-constructor()
-```
-
-### 抽象方法
+### 抽象方法 {#abstract-methods}
 
 你必须在子类中实现这些方法：
 
@@ -26,7 +20,7 @@ constructor()
 | :--- | :--- | :--- |
 | `message` | `{ type: `[`MessageTypes`](./models.md#messagetypes-client)`, data?: any }` | 要发送的消息对象。 |
 
-### 方法
+### 方法 {#methods}
 
 #### `run(): this` {#run}
 
@@ -157,7 +151,7 @@ constructor()
 
 **返回:** `this`
 
-### 事件监听方法
+### 事件监听方法 {#event-listeners}
 
 #### `onReady(cb: (...args: any[]) => void): this` {#onready}
 
@@ -171,7 +165,7 @@ constructor()
 
 监听房间列表变更事件。
 
-### 事件
+### 事件方法 {#event-methods}
 
 `Tiaoom` 客户端类自行实现了简易的 `EventEmitter`，并会转发来自服务器的事件。请参考 [事件文档](./events.md)。
 

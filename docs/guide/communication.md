@@ -2,7 +2,7 @@
 
 Tiaoom 的后端通信核心在于 [`IMessage`](./api/models#imessage) 接口的实现。通过实现该接口，你可以适配不同的通信协议（如 WebSocket、Socket.IO，RPC 等）。
 
-## [`IMessage`](./api/models#imessage) 接口
+## [`IMessage`](./api/models#imessage) 接口 {#imessage}
 
 [`IMessage`](./api/models#imessage) 接口定义了后端通信类必须具备的基本能力，包括事件监听、消息发送和连接管理。
 
@@ -35,7 +35,7 @@ export interface IMessage extends EventEmitter<IMessageEmitterEvents> {
 }
 ```
 
-## 接收前端消息
+## 接收前端消息 {#receive-messages}
 
 当后端收到来自前端的消息时，需要将其转换为 [`IMessageData`](./api/models#imessagedata) 格式，并通过 `this.emit('message', ...)` 触发 Tiaoom 库的内部处理逻辑。
 
@@ -74,7 +74,7 @@ socket.on("message", (data: any) => {
 });
 ```
 
-## 消息转发处理
+## 消息转发处理 {#send-messages}
 
 在 `send` 方法的实现中，会接收一个 [`IMessagePackages`](./api/models#imessagepackages) 对象。该对象包含消息类型、数据以及接收者 ID 列表。
 
@@ -100,7 +100,7 @@ send(message: IMessagePackages) {
 }
 ```
 
-## 玩家登出机制
+## 玩家登出机制 {#player-offline}
 
 为了支持多端登录并准确判断玩家是否离线，后端通信类需要在连接关闭时进行特殊处理。
 
@@ -133,7 +133,7 @@ socket.on("close", () => {
 });
 ```
 
-## 前端通信
+## 前端通信 {#client-communication}
 
 前端通信主要依赖于继承实现 [`tiaoom/client`](./api/client.md) 模块中的 `Tiaoom` 类中的两个抽象方法。
 

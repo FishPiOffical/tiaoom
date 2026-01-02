@@ -29,9 +29,9 @@
 | :--- | :--- |
 | `default` | 自定义弹窗内容区域。 |
 
-## 示例
+## 示例 {#example}
 
-### 基础用法
+### 基础用法 {#example-base}
 
 ```vue
 <template>

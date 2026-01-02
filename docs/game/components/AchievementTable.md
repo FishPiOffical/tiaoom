@@ -9,7 +9,7 @@
 | `achievements` | `Record<string, { win: number; lost: number; draw?: number }>` | - | **必填**。战绩数据对象，键为玩家名称，值为战绩统计。 |
 | `showDraw` | `boolean` | `false` | 是否显示平局列。 |
 
-## 示例
+## 示例 {#example}
 
 ```vue
 <template>
