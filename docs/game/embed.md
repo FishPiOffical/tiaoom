@@ -2,13 +2,13 @@
 
 游戏状态嵌入脚本，提供将游戏状态嵌入到网页中的能力。
 
-## 安装
+## 安装 {#installation}
 
 ```html
 <script src="http://your.deployed.domain/embed.min.js"></script>
 ```
 
-## 使用示例
+## 使用示例 {#usage-example}
 
 ```typescript
 const gameEmbed = new GameEmbed();
@@ -31,7 +31,7 @@ gameEmbed.append((data) => {
 }, 'player-oId-67890');
 ```
 
-## API 参考
+## API 参考 {#reference}
 
 ### `listen(selector: string, playerIdAttr: string): WatchHandle` {#listen}
 
@@ -62,7 +62,7 @@ gameEmbed.append((data) => {
 | `render` | `(data: GameRenderData) => void` | 渲染函数，接收游戏渲染数据。 |
 | `playerId` | `string` | 玩家 ID。 |
 
-### `GameRenderData`
+### `GameRenderData` {#gamerenderdata}
 
 游戏渲染数据接口，包含玩家和房间信息和 logo 等。
 

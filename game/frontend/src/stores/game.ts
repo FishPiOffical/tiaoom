@@ -3,9 +3,10 @@ import { ref, computed } from 'vue'
 import type { GameConfig } from '@/types'
 import { Player, Room } from 'tiaoom/client'
 import { GameCore } from '@/core/game'
-import { api, User } from '@/api'
+import { api, IManageData, User } from '@/api'
 import msg from '@/components/msg';
 import router from '@/router'
+import { store } from '.'
 
 export const useGameStore = defineStore('game', () => {
   const game = ref<GameCore | null>(null)
@@ -15,6 +16,7 @@ export const useGameStore = defineStore('game', () => {
   const games = ref<Record<string, GameConfig>>({})
   const globalMessages = ref<{ data: string, sender?: Player, createdAt: number }[]>([])
   const globalBoardcastMessage = ref<string>('');
+  const gameManages = ref<IManageData[]>([]);
 
   const roomPlayer = computed(() => {
     if (!player.value) return null
@@ -56,6 +58,10 @@ export const useGameStore = defineStore('game', () => {
       console.error('Failed to load messages:', error)
     }
   }
+
+  api.getManages().then(manages => {
+    gameManages.value = manages;
+  });
 
   loadMessages();
 
@@ -159,6 +165,7 @@ export const useGameStore = defineStore('game', () => {
     globalBoardcastMessage,
     roomPlayer,
     playerStatus,
+    gameManages,
     initConfig,
     checkSession,
     initGame,
@@ -166,3 +173,7 @@ export const useGameStore = defineStore('game', () => {
     logout,
   }
 })
+
+export function useGameStoreWithOut() {
+  return useGameStore(store);
+}

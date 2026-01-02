@@ -2,43 +2,78 @@
   <section class="flex flex-col items-center justify-center p-2 py-4" ref="containerRef">
     <!-- 棋盘 -->
     <div class="relative inline-block bg-base-300 p-3 rounded-lg shadow-2xl m-auto select-none">
-      <div class="flex flex-col bg-base-200 rounded border-4 border-base-content/20 overflow-hidden relative">
-        <div v-for="(row, rowIndex) in board" :key="rowIndex" class="flex">
-          <div 
-            v-for="(cell, colIndex) in row" 
-            :key="colIndex" 
-            @click="handleColumnClick(colIndex)"
-            @mouseenter="hoverCol = colIndex"
-            @mouseleave="hoverCol = -1"
-            class="relative w-[10vw] h-[10vw] md:w-16 md:h-16 flex items-center justify-center border border-base-content/10"
-            :class="{ 
-              'cursor-pointer': isMyTurn && cell !== -1,
-              'bg-base-content/5': hoverCol === colIndex && isMyTurn
-            }"
-          >
-            <!-- 孔洞背景 -->
-            <div class="w-[8vw] h-[8vw] md:w-14 md:h-14 rounded-full bg-base-content/10 shadow-inner"></div>
-
-            <!-- 真实棋子 -->
-            <transition name="drop">
-              <span 
-                v-if="cell > 0"
-                class="absolute w-[8vw] h-[8vw] md:w-14 md:h-14 rounded-full shadow-lg"
-                :class="[
-                  cell === 1 ? 'bg-black border border-white/20' : 'bg-white border border-black/20',
-                  currentPlace?.x === rowIndex && currentPlace?.y === colIndex ? 'ring-2 ring-error' : ''
-                ]"
-              />
-            </transition>
-
-            <!-- 预览棋子 -->
-            <span 
-              v-if="cell === 0 && hoverCol === colIndex && isMyTurn"
-              class="absolute w-[8vw] h-[8vw] md:w-14 md:h-14 rounded-full opacity-40"
-              :class="currentPlayer?.attributes.color === 1 ? 'bg-black' : 'bg-white'"
-            />
+      <div class="grid grid-cols-[auto_max-content_auto]">
+        <!-- 上方坐标 -->
+        <div></div>
+        <div class="flex pl-[4px] mb-1">
+          <div v-for="i in 8" :key="i" class="flex items-center justify-center w-[10vw] md:w-16 text-base-content/50 font-mono font-bold text-sm md:text-base">
+            {{ String.fromCharCode(64 + i) }}
           </div>
         </div>
+        <div></div>
+
+        <!-- 左侧坐标 -->
+        <div class="flex flex-col pt-[4px] mr-1">
+          <div v-for="i in 8" :key="i" class="flex items-center justify-center h-[10vw] md:h-16 text-base-content/50 font-mono font-bold text-sm md:text-base">
+            {{ 9 - i }}
+          </div>
+        </div>
+
+        <!-- 棋盘 -->
+        <div class="flex flex-col bg-base-200 rounded border-4 border-base-content/20 overflow-hidden relative">
+          <div v-for="(row, rowIndex) in board" :key="rowIndex" class="flex">
+            <div 
+              v-for="(cell, colIndex) in row" 
+              :key="colIndex" 
+              @click="handleColumnClick(colIndex)"
+              @mouseenter="hoverCol = colIndex"
+              @mouseleave="hoverCol = -1"
+              class="relative w-[10vw] h-[10vw] md:w-16 md:h-16 flex items-center justify-center border border-base-content/10"
+              :class="{ 
+                'cursor-pointer': isMyTurn && cell !== -1,
+                'bg-base-content/5': hoverCol === colIndex && isMyTurn
+              }"
+            >
+              <!-- 孔洞背景 -->
+              <div class="w-[8vw] h-[8vw] md:w-14 md:h-14 rounded-full bg-base-content/10 shadow-inner"></div>
+
+              <!-- 真实棋子 -->
+              <transition name="drop">
+                <span 
+                  v-if="cell > 0"
+                  class="absolute w-[8vw] h-[8vw] md:w-14 md:h-14 rounded-full shadow-lg"
+                  :class="[
+                    cell === 1 ? 'bg-black border border-white/20' : 'bg-white border border-black/20',
+                    currentPlace?.x === rowIndex && currentPlace?.y === colIndex ? 'ring-2 ring-error' : ''
+                  ]"
+                />
+              </transition>
+
+              <!-- 预览棋子 -->
+              <span 
+                v-if="cell === 0 && hoverCol === colIndex && isMyTurn"
+                class="absolute w-[8vw] h-[8vw] md:w-14 md:h-14 rounded-full opacity-40"
+                :class="currentPlayer?.attributes.color === 1 ? 'bg-black' : 'bg-white'"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- 右侧坐标 -->
+        <div class="flex flex-col pt-[4px] ml-1">
+          <div v-for="i in 8" :key="i" class="flex items-center justify-center h-[10vw] md:h-16 text-base-content/50 font-mono font-bold text-sm md:text-base">
+            {{ 9 - i }}
+          </div>
+        </div>
+
+        <!-- 下方坐标 -->
+        <div></div>
+        <div class="flex pl-[4px] mt-1">
+          <div v-for="i in 8" :key="i" class="flex items-center justify-center w-[10vw] md:w-16 text-base-content/50 font-mono font-bold text-sm md:text-base">
+            {{ String.fromCharCode(64 + i) }}
+          </div>
+        </div>
+        <div></div>
       </div>
     </div>
     

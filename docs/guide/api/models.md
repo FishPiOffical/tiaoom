@@ -4,7 +4,7 @@
 
 ## Player (玩家) {#player}
 
-### IPlayer
+### IPlayer {#iplayer}
 
 玩家的基本信息接口。
 
@@ -16,7 +16,7 @@
 | `status` | [`PlayerStatus`](#playerstatus) | 玩家的当前状态。 |
 | `isAdmin` | `boolean` | 玩家是否为管理员。 |
 
-### IPlayerOptions
+### IPlayerOptions {#playeroptions}
 
 创建玩家时的选项接口。
 
@@ -27,7 +27,7 @@
 | `attributes` | `any` | 玩家的属性集合（可选）。 |
 | `isAdmin` | `boolean` | 玩家是否为管理员。 |
 
-### PlayerStatus
+### PlayerStatus {#playerstatus}
 
 玩家的状态枚举。
 
@@ -41,7 +41,7 @@
 
 ## Room (房间) {#room}
 
-### IRoom
+### IRoom {#iroom}
 
 房间的基本信息接口。
 
@@ -54,7 +54,7 @@
 | `attrs` | `Record<string, any>` | 房间的自定义属性。 |
 | `players` | [`IRoomPlayer[]`](#iroomplayer) | 房间内的玩家列表。 |
 
-### IRoomOptions
+### IRoomOptions {#iroomoptions}
 
 创建房间时的选项接口。
 
@@ -66,7 +66,7 @@
 | `minSize` | `number` | 房间最小玩家数量。 |
 | `attrs` | `Record<string, any>` | 房间的自定义属性。 |
 
-### IRoomPlayer
+### IRoomPlayer {#iroomplayer}
 
 房间内的玩家接口，继承自 [`IPlayer`](#iplayer)。
 
@@ -77,7 +77,7 @@
 | `roomId` | `string` | 玩家所在的房间 ID。 |
 | `role` | [`PlayerRole`](#playerrole) | 玩家角色。 |
 
-### IRoomPlayerOptions
+### IRoomPlayerOptions {#iroomplayeroptions}
 
 加入房间时的玩家选项接口，继承自 [`PlayerOptions`](#playeroptions)。
 
@@ -85,7 +85,7 @@
 | :--- | :--- | :--- |
 | `roomId` | `string` | 要加入的房间 ID。 |
 
-### PlayerRole
+### PlayerRole {#playerrole}
 
 房间玩家角色枚举。
 
@@ -94,7 +94,7 @@
 | `player` | `'player'` | 玩家。 |
 | `watcher` | `'watcher'` | 观众。 |
 
-### RoomStatus
+### RoomStatus {#roomstatus}
 
 房间的状态枚举。
 
@@ -106,7 +106,7 @@
 
 ## IMessage (消息) {#imessage}
 
-### IMessagePackages
+### IMessagePackages {#imessagepackages}
 
 消息包接口，用于在服务器给客户发送数据。
 
@@ -116,7 +116,7 @@
 | `data` | `any` (可选) | 消息数据，可以是 `PlayerOptions`, `IRoomOptions`, `IPlayer`, `IRoom`, `IRoomPlayer` 等。 |
 | `senderIds` | `string[]` | 消息接收者的玩家 ID 列表。 |
 
-### IMessageData
+### IMessageData {#imessagedata}
 
 消息包接口，用于在服务器接收客户端发送的数据。（必定包含发送者信息）
 

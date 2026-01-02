@@ -158,37 +158,72 @@ function getPlayerName(color: number) {
     <!-- Board Area -->
     <section class="flex-1 md:h-full flex flex-col items-center justify-start md:justify-center overflow-auto p-4 select-none">
       <div class="relative inline-block bg-base-300 p-3 rounded-lg shadow-2xl m-auto select-none">
-        <div class="flex flex-col bg-base-200 rounded border-4 border-base-content/20 overflow-hidden relative">
-          <div v-for="(row, rowIndex) in currentBoard" :key="rowIndex" class="flex">
-            <div 
-              v-for="(cell, colIndex) in row" 
-              :key="colIndex" 
-              class="relative w-12 h-12 md:w-16 md:h-16 flex items-center justify-center border border-base-content/10"
-            >
-              <!-- Hole Background -->
-              <div class="w-10 h-10 md:w-14 md:h-14 rounded-full bg-base-content/10 shadow-inner"></div>
+        <div class="grid grid-cols-[auto_max-content_auto]">
+          <!-- Top Labels -->
+          <div></div>
+          <div class="flex pl-[4px] mb-1">
+            <div v-for="i in 8" :key="i" class="flex items-center justify-center w-12 md:w-16 text-base-content/50 font-mono font-bold text-lg">
+              {{ String.fromCharCode(64 + i) }}
+            </div>
+          </div>
+          <div></div>
 
-              <!-- Pieces -->
-              <span 
-                v-if="cell > 0"
-                class="absolute w-10 h-10 md:w-14 md:h-14 rounded-full shadow-lg transition-all duration-200"
-                :class="[
-                  cell === 1 ? 'bg-black border border-white/20' : 'bg-white border border-black/20',
-                ]"
-              />
-              
-              <!-- Last move highlight -->
+          <!-- Left Labels -->
+          <div class="flex flex-col pt-[4px] mr-1">
+            <div v-for="i in 8" :key="i" class="flex items-center justify-center w-8 h-12 md:h-16 text-base-content/50 font-mono font-bold text-lg">
+              {{ 9 - i }}
+            </div>
+          </div>
+
+          <!-- Board -->
+          <div class="flex flex-col bg-base-200 rounded border-4 border-base-content/20 overflow-hidden relative">
+            <div v-for="(row, rowIndex) in currentBoard" :key="rowIndex" class="flex">
               <div 
-                v-if="currentStep > 0 && props.history[currentStep-1]"
-                class="absolute inset-0 pointer-events-none z-20"
+                v-for="(cell, colIndex) in row" 
+                :key="colIndex" 
+                class="relative w-12 h-12 md:w-16 md:h-16 flex items-center justify-center border border-base-content/10"
               >
-                 <div v-if="(8 - parseInt(props.history[currentStep-1].place.slice(1))) === rowIndex && (props.history[currentStep-1].place.charCodeAt(0) - 65) === colIndex"
-                      class="w-full h-full flex items-center justify-center">
-                    <div class="w-2 h-2 bg-error rounded-full ring-2 ring-white"></div>
-                 </div>
+                <!-- Hole Background -->
+                <div class="w-10 h-10 md:w-14 md:h-14 rounded-full bg-base-content/10 shadow-inner"></div>
+
+                <!-- Pieces -->
+                <span 
+                  v-if="cell > 0"
+                  class="absolute w-10 h-10 md:w-14 md:h-14 rounded-full shadow-lg transition-all duration-200"
+                  :class="[
+                    cell === 1 ? 'bg-black border border-white/20' : 'bg-white border border-black/20',
+                  ]"
+                />
+                
+                <!-- Last move highlight -->
+                <div 
+                  v-if="currentStep > 0 && props.history[currentStep-1]"
+                  class="absolute inset-0 pointer-events-none z-20"
+                >
+                   <div v-if="(8 - parseInt(props.history[currentStep-1].place.slice(1))) === rowIndex && (props.history[currentStep-1].place.charCodeAt(0) - 65) === colIndex"
+                        class="w-full h-full flex items-center justify-center">
+                      <div class="w-2 h-2 bg-error rounded-full ring-2 ring-white"></div>
+                   </div>
+                </div>
               </div>
             </div>
           </div>
+
+          <!-- Right Labels -->
+          <div class="flex flex-col pt-[4px] ml-1">
+            <div v-for="i in 8" :key="i" class="flex items-center justify-center w-8 h-12 md:h-16 text-base-content/50 font-mono font-bold text-lg">
+              {{ 9 - i }}
+            </div>
+          </div>
+
+          <!-- Bottom Labels -->
+          <div></div>
+          <div class="flex pl-[4px] mt-1">
+            <div v-for="i in 8" :key="i" class="flex items-center justify-center w-12 md:w-16 text-base-content/50 font-mono font-bold text-lg">
+              {{ String.fromCharCode(64 + i) }}
+            </div>
+          </div>
+          <div></div>
         </div>
       </div>
 

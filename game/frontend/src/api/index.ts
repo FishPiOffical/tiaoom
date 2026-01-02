@@ -68,17 +68,23 @@ export class User implements IUser {
   }
 }
 
-const instance = axios.create({
+export interface IManageData {
+  key: string;
+  name: string;
+  canManage: boolean;
+}
+
+export const http = axios.create({
   baseURL: '/api',
   withCredentials: true,
   timeout: 10000,
 })
 
-instance.interceptors.response.use(
+http.interceptors.response.use(
   (response) => {
     const res = response.data
     if (res.code !== 0) {
-      return Promise.reject(res.message || 'Unknown Error')
+      return Promise.reject(new Error(res.message || 'Unknown Error'))
     }
     return res.data
   },
@@ -89,30 +95,33 @@ instance.interceptors.response.use(
 
 export const api = {
   getConfig(): Promise<Record<string, GameConfig>> {
-    return instance.get('/config')
+    return http.get('/config')
   },
   getUserInfo(): Promise<User> {
-    return instance.get('/info').then((data: any) => new User(data.player))
+    return http.get('/info').then((data: any) => new User(data.player))
   },
   getRecord(id: number): Promise<any> {
-    return instance.get(`/record/${id}`);
+    return http.get(`/record/${id}`);
   },
   getUser(username: string): Promise<User> {
-    return instance.get(`/user/${username}`).then((data: any) => new User(data))
+    return http.get(`/user/${username}`).then((data: any) => new User(data))
   },
   getUserRecords(username: string, page: number = 1, count: number = 10): Promise<{ records: any[], total: number }> {
-    return instance.get(`/user/${username}/record`, {
+    return http.get(`/user/${username}/record`, {
       params: { p: page, count }
     });
   },
+  getLeaderboard(type: string): Promise<any[]> {
+    return http.get(`/leaderboard/${type}`)
+  },
   getMessages(): Promise<{ messages: { data: string, sender: Player, createdAt: number }[] }> {
-    return instance.get('/message')
+    return http.get('/message')
   },
   login(name: string): Promise<User> {
-    return instance.post('/login', { name }).then((data: any) => new User(data))
+    return http.post('/login', { name }).then((data: any) => new User(data))
   },
   checkLoginError() {
-    return instance.get('/login/error').catch((err) => {
+    return http.get('/login/error').catch((err) => {
       if (err?.status == 404) {
         location.href = '/config';
       } else {
@@ -121,18 +130,42 @@ export const api = {
     })
   },
   logout(): Promise<void> {
-    return instance.post('/logout')
+    return http.post('/logout')
   },
   getPlayers(): Promise<Player[]> {
-    return instance.get('/players')
+    return http.get('/players')
   },
   getRooms(): Promise<Room[]> {
-    return instance.get('/rooms')
+    return http.get('/rooms')
   },
   getRoom(id: string): Promise<Room> {
-    return instance.get(`/rooms/${id}`)
+    return http.get(`/rooms/${id}`)
   },
   getPlayer(id: string): Promise<Player> {
-    return instance.get(`/players/${id}`)
+    return http.get(`/players/${id}`)
   },
+  getManages(): Promise<IManageData[]> {
+    return http.get('/game/manages');
+  },
+  getManageDateList(gameKey: string, query: any & { page?: number, count?: number }): Promise<{ records: any[], total: number }> {
+    return http.get(`/game/manages/${gameKey}/list`, { params: query });
+  },
+  saveManageData(gameKey: string, record: any) {
+    return http.post(`/game/manages/${gameKey}`, record);
+  },
+  updateManageData(gameKey: string, id: number, record: any) {
+    return http.put(`/game/manages/${gameKey}/${id}`, record);
+  },
+  removeManageData(gameKey: string, id: number) {
+    return http.delete(`/game/manages/${gameKey}/${id}`);
+  },
+  importManageData(gameKey: string, records: any[]) {
+    return http.post(`/game/manages/${gameKey}/import`, records);
+  },
+  getManagePermissions(gameKey: string): Promise<string[]> {
+    return http.get(`/game/manages/${gameKey}/permissions`);
+  },
+  updateManagePermissions(gameKey: string, manages: string[]) {
+    return http.put(`/game/manages/${gameKey}/permissions`, { manages });
+  }
 }

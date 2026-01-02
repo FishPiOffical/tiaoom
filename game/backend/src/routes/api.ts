@@ -1,9 +1,11 @@
 import { Router, Request, Response } from "express";
 import { Controller } from "../controller";
 import { login as fishpiLogin, register as fishpiRegister, updateUserInfo } from "../login/fishpi";
-import { Record, RecordRepo, User, UserRepo } from "@/entities";
+import { Record, RecordRepo, User, UserRepo, AppDataSource, PlayerStats, ManageRepo } from "@/entities";
 import { getPlayerStats } from "@/utils";
 import { Like } from "typeorm";
+import GameRouter from "./game";
+import Games, { GameRoom } from "@/games";
 
 export interface GameContext {
   controller?: Controller;
@@ -18,6 +20,7 @@ const createRoutes = (game: GameContext, gameName: string) => {
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
     res.sendStatus(200);
   });
+
   router.get("/config", (req: Request, res: Response) => {
     // 允许跨域
     res.setHeader("Access-Control-Allow-Origin", "*");
@@ -44,7 +47,7 @@ const createRoutes = (game: GameContext, gameName: string) => {
   });
 
   router.get("/user/:username", async (req: Request, res: Response) => {
-    const user = await UserRepo.findOneBy({ username: req.params.username });
+    const user = await UserRepo().findOneBy({ username: req.params.username });
     if (user) {
       const state = await getPlayerStats(user.username);
       res.json({ code: 0, data: { ...user, state } });
@@ -53,11 +56,35 @@ const createRoutes = (game: GameContext, gameName: string) => {
     }
   });
 
+  router.get("/leaderboard/:type", async (req: Request, res: Response) => {
+    const { type } = req.params;
+    const statsRepo = AppDataSource.getRepository(PlayerStats);
+    
+    const leaderboard = await statsRepo.createQueryBuilder("stats")
+      .select("stats.player", "player")
+      .addSelect("stats.wins", "wins")
+      .addSelect("stats.total", "total")
+      .addSelect("stats.draws", "draws")
+      .addSelect("stats.losses", "losses")
+      .addSelect("stats.score", "score")
+      .addSelect("(stats.wins * 1.0 / stats.total)", "winRate")
+      .addSelect("(stats.wins + 1.0) / (stats.total + 2.0)", "adjustedRate")
+      .where("stats.type = :type", { type })
+      .andWhere("stats.total > 0")
+      .orderBy("stats.score", "DESC")
+      .addOrderBy("adjustedRate", "DESC")
+      .addOrderBy("stats.total", "DESC")
+      .limit(20)
+      .getRawMany();
+
+    res.json({ code: 0, data: leaderboard });
+  });
+
   router.get("/user/:username/record", async (req: Request, res: Response) => {
     const { p, count } = req.query;
     const page = parseInt(p as string) || 1;
     const pageSize = parseInt(count as string) || 10;
-    const records = await RecordRepo.findAndCount({
+    const records = await RecordRepo().findAndCount({
       skip: (page - 1) * pageSize,
       take: pageSize,
       where: { players: Like(`%"${req.params.username}"%`) },
@@ -67,7 +94,7 @@ const createRoutes = (game: GameContext, gameName: string) => {
   });
 
   router.get("/record/:id", async (req: Request, res: Response) => {
-    const record = await RecordRepo.findOneBy({ id: Number(req.params.id) });
+    const record = await RecordRepo().findOneBy({ id: Number(req.params.id) });
     if (record) {
       res.json({ code: 0, data: record });
     } else {
@@ -135,6 +162,16 @@ const createRoutes = (game: GameContext, gameName: string) => {
 
   router.get("/rooms", (req: Request, res: Response) => {
     res.json({ code: 0, data: game.controller?.rooms });
+  });
+
+  router.use("/game", GameRouter)
+
+  Object.entries(Games || {}).forEach(([key, game]) => {
+    const defaultExport = game.default as any;
+    if (defaultExport.prototype instanceof GameRoom) {
+      const routers = (new defaultExport() as any).Routers;
+      if (routers) router.use(`/game/${key}`, routers);
+    }
   });
 
   return router;

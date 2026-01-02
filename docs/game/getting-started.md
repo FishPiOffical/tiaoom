@@ -2,7 +2,7 @@
 
 本指南将通过一个简单的示例，演示如何添加一个新的游戏。
 
-## 1. 创建后端逻辑
+## 1. 创建后端逻辑 {#backend-logic}
 
 在 `game/backend/src/games` 目录下创建 `click.ts` 文件。
 
@@ -20,28 +20,38 @@ export default class ClickRoom extends GameRoom {
   count = 0;
   currentPlayer: RoomPlayer | undefined;
   target = 0;
+  history: { playerId: string; increment: number; time: number }[] = [];
 
   // 游戏开始时调用
   onStart() {
     this.count = 0;
-    // 广播初始状态
+    this.history = [];
+
     this.currentPlayer = this.room.validPlayers.find(p => p.id !== this.currentPlayer?.id);
     this.target = Math.floor(Math.random() * 40) + 20; // 随机目标数字在 20-60 之间
+    
+    // 广播初始状态
     this.room.emit('command', { type: 'update', data: { count: this.count, target: this.target } });
     this.room.emit('command', { type: 'click', data: { player: this.currentPlayer } });
-    this.save(); // 保存初始状态
   }
 
   // 处理玩家指令
   onCommand(message: IGameCommand) {
     super.onCommand(message); // 处理通用指令
     if (message.type === 'click') {
-      this.count+= Number(message.data - 1) % 4 + 1; // 增加计数，确保增加量在 1-4 之间
+      // 计算增加的数值，确保在 1-4 之间
+      const increment = Number(message.data - 1) % 4 + 1;
+      this.count += increment;
+
+      // 记录历史
+      this.history.push({ playerId: message.sender.id, increment, time: Date.now() - this.beginTime });
+      
       // 广播新状态
       this.room.emit('command', { type: 'update', data: { count: this.count } });
+
       // 保存状态
       this.save();
-      if (this.count % 7 === 0) {
+      if (this.count  === this.target) {
         this.saveAchievements(this.room.validPlayers.filter(p => p.id === message.sender.id));
         this.say(`${message.sender.name} 计数达到 ${this.count}，获胜！`);
       } else if (this.count > this.target) {
@@ -54,6 +64,7 @@ export default class ClickRoom extends GameRoom {
         this.room.emit('command', { type: 'click', data: { player: this.currentPlayer } });
         return;
       }
+      // 大于等于目标数字，游戏结束
       this.room.end();
     }
   }
@@ -67,22 +78,95 @@ export default class ClickRoom extends GameRoom {
       currentPlayer: this.currentPlayer,
     };
   }
+
+  getData() {
+    return {
+      ...super.getData(),
+      target: this.target,
+      history: this.history,
+      players: this.room.validPlayers.map(p => ({ id: p.id, name: p.name })),
+    };
+  }
 }
 ```
 
-## 2. 创建前端组件
+## 2. 创建前端组件 {#frontend-component}
 
-在 `game/frontend/src/components/games` 目录下创建 `ClickRoom.vue` 文件。
+在 `game/frontend/src/components/click` 目录下创建 `useClick.ts` 文件，编写游戏前端逻辑。
+
+```typescript
+import { GameCore } from "@/core/game";
+import { Room, RoomPlayer } from "tiaoom/client";
+import { computed, ref } from "vue";
+
+export function useClick(game: GameCore, roomPlayer: RoomPlayer & { room: Room }) {
+  const count = ref(0);
+  const target = ref(0);
+
+  // 处理按钮点击
+  function handleClick(n: number) {
+    game.command(roomPlayer.room.id, { type: "click", data: n });
+  }
+
+  // 当前操作的玩家
+  const currentPlayer = ref<RoomPlayer | null>(null);
+
+  // 处理来自后端的指令
+  function onCommand(msg: any) {
+    switch(msg.type) {
+      // 点击用户切换
+      case "click":
+        if (msg.data.player) {
+          currentPlayer.value = msg.data.player;
+        }
+        break;
+      // 更新计数
+      case "update":
+        count.value = msg.data.count;
+        if (msg.data.target) {
+          target.value = msg.data.target;
+        }
+        break;
+      // 游戏状态恢复
+      case "status":
+        currentPlayer.value = msg.data.currentPlayer;
+        target.value = msg.data.target || 0;
+        count.value = msg.data.count || 0;
+        break;
+    }
+  }
+
+  // 判断当前玩家是否可以操作
+  const isPlaying = computed(() => {
+    return (
+      roomPlayer.role === "player" &&
+      roomPlayer.room.status === "playing" &&
+      currentPlayer.value?.id === roomPlayer.id
+    );
+  });
+
+  return {
+    onCommand,
+    handleClick,
+    isPlaying,
+    count,
+    target,
+    currentPlayer,
+  }
+}
+```
+
+然后创建 `ClickRoom.vue` 组件，编写游戏界面。
 
 ```vue
 <template>
-  <section class="flex flex-col md:flex-row gap-4 md:h-full">
+  <GameView :room-player="roomPlayer" :game="game" @command="onCommand">
     <!-- 左侧：游戏区域 -->
     <div class="flex-1 flex flex-col items-center justify-center">
       <h1 class="text-[50px] font-bold p-4">
-        {{ count }} {{ count == target ? "=" : "!" }}= {{ target }}
+        {{ count }} {{ count == target ? "=" : "≠" }} {{ target }}
       </h1>
-      <!-- 操作 -->
+      <!-- 操作按钮 -->
       <div class="join">
         <button
           v-for="n in 4"
@@ -96,96 +180,38 @@ export default class ClickRoom extends GameRoom {
       </div>
     </div>
 
-    <!-- 右侧：侧边栏 -->
-    <aside
-      class="w-full md:w-96 flex-none border-t md:border-t-0 md:border-l border-base-content/20 pt-4 md:pt-0 md:pl-4 space-y-4 md:h-full flex flex-col"
-    >
-      
-      <!-- 玩家列表 -->
-      <PlayerList :players="roomPlayer.room.players" />
-
-      <!-- 聊天窗口与游戏规则 -->
-      <GameChat>
-        <template #rules>
-          <ul class="space-y-2 text-sm">
-            <li>1. 双方轮流点击按钮加1~4。</li>
-            <li>2. 当计数达到目标数字时，当前玩家获胜。</li>
-            <li>3. 当计数大于目标数字时，则打成平手。</li>
-          </ul>
-        </template>
-      </GameChat>
-    </aside>
-  </section>
+    <!-- 游戏规则 -->
+    <template #rules>
+      <ul class="space-y-2 text-sm">
+        <li>1. 双方轮流点击按钮加1~4。</li>
+        <li>2. 当计数达到目标数字时，当前玩家获胜。</li>
+        <li>3. 当计数大于目标数字时，则打成平手。</li>
+      </ul>
+    </template>
+  </GameView>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
 import { RoomPlayer, Room } from "tiaoom/client";
 import { GameCore } from "@/core/game";
-import { useGameEvents } from "@/hook/useGameEvents";
+import { useClick } from "./useClick";
 
 const props = defineProps<{
   roomPlayer: RoomPlayer & { room: Room };
   game: GameCore;
 }>();
 
-const count = ref(0);
-const target = ref(0);
-
-function handleClick(n: number) {
-  props.game.command(props.roomPlayer.room.id, { type: "click", data: n });
-}
-
-const currentPlayer = ref<RoomPlayer | null>(null);
-useGameEvents(props.game, {
-  "player.command": onCommand,
-  "room.command": onCommand,
-});
-
-function onCommand(msg: any) {
-  switch(msg.type) {
-    case "click":
-      if (msg.data.player) {
-        currentPlayer.value = msg.data.player;
-      }
-      break;
-    case "update":
-      count.value = msg.data.count;
-      if (msg.data.target) {
-        target.value = msg.data.target;
-      }
-      break;
-    case "status":
-      if (msg.data.currentPlayer) {
-        currentPlayer.value = msg.data.currentPlayer;
-      }
-      if (msg.data.target) {
-        target.value = msg.data.target;
-      }
-      if (msg.data.count !== undefined) {
-        count.value = msg.data.count;
-      }
-      break;
-  }
-}
-
-const isPlaying = computed(() => {
-  return (
-    props.roomPlayer.role === "player" &&
-    props.roomPlayer.room.status === "playing" &&
-    currentPlayer.value?.id === props.roomPlayer.id
-  );
-});
+const { onCommand, handleClick, isPlaying, count, target } = useClick(props.game, props.roomPlayer);
 </script>
 ```
 
-## 3. 注册游戏
+## 3. 注册游戏 {#register-game}
 
 后端会自动扫描 `games` 目录下的文件，无需手动注册。
 
 前端组件会自动根据后端返回的游戏类型加载对应的组件（命名需符合 `<Type>Room.vue` 规则）。
 
-## 4. 运行测试
+## 4. 运行测试 {#run-tests}
 
 在 game 目录启动开发服务器：
 

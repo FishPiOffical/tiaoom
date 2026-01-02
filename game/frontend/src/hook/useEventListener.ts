@@ -6,7 +6,7 @@ export type RemoveEventFn = () => void;
 export interface UseEventParams {
   el?: Element | Ref<Element | undefined> | Window | any;
   name: string;
-  listener: EventListener;
+  listener: (ev: any) => void;
   options?: boolean | AddEventListenerOptions;
   debounce?: boolean;
   wait?: number;

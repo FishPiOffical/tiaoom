@@ -2,9 +2,9 @@
 
 `Tiaoom` 类是服务端逻辑的主要入口点。此外，服务端还扩展了 `Room` 和 `Player` 类以提供游戏逻辑支持。
 
-## `Tiaoom`
+## `Tiaoom` {#tiaoom}
 
-### 构造函数
+### 构造函数 {#constructor}
 
 ```typescript
 constructor(options: ITiaoomOptions)
@@ -14,15 +14,15 @@ constructor(options: ITiaoomOptions)
 | :--- | :--- | :--- |
 | `options` | `ITiaoomOptions` | 初始化选项。 |
 
-### 方法
+### 方法 {#methods}
 
-#### `run()`
+#### `run()` {#run}
 
 启动游戏引擎并设置事件监听器。
 
 **返回:** `this`
 
-#### `on(event: TiaoomEvents, listener: Function): this`
+#### `on(event: TiaoomEvents, listener: Function): this` {#on}
 
 监听服务器事件。
 
@@ -33,7 +33,7 @@ constructor(options: ITiaoomOptions)
 
 **返回:** `this`
 
-#### `emit(event: TiaoomEvents, ...args: any[]): boolean`
+#### `emit(event: TiaoomEvents, ...args: any[]): boolean` {#emit}
 
 触发服务器事件。
 
@@ -44,7 +44,7 @@ constructor(options: ITiaoomOptions)
 
 **返回:** `boolean`
 
-#### `searchPlayer(player: string | PlayerOptions | IRoomPlayerOptions): Player | undefined`
+#### `searchPlayer(player: string | PlayerOptions | IRoomPlayerOptions): Player | undefined` {#searchplayer}
 
 搜索玩家。
 
@@ -54,7 +54,7 @@ constructor(options: ITiaoomOptions)
 
 **返回:** [`Player`](#player) \| `undefined`
 
-#### `searchRoom(room: string | Partial<IRoomOptions>): Room | undefined`
+#### `searchRoom(room: string | Partial<IRoomOptions>): Room | undefined` {#searchroom}
 
 搜索房间。
 
@@ -64,7 +64,7 @@ constructor(options: ITiaoomOptions)
 
 **返回:** [`Room`](#room) \| `undefined`
 
-#### `createRoom(sender: IPlayer, options: IRoomOptions): Room`
+#### `createRoom(sender: IPlayer, options: IRoomOptions): Room` {#create-room}
 
 创建一个新房间。
 
@@ -75,7 +75,7 @@ constructor(options: ITiaoomOptions)
 
 **返回:** [`Room`](#room)
 
-#### `startRoom(sender: IPlayer, room: IRoom): boolean`
+#### `startRoom(sender: IPlayer, room: IRoom): boolean` {#start-room}
 
 开始房间游戏。
 
@@ -86,7 +86,7 @@ constructor(options: ITiaoomOptions)
 
 **返回:** `boolean`
 
-#### `closeRoom(sender: IPlayer, room: IRoom): Room`
+#### `closeRoom(sender: IPlayer, room: IRoom): Room` {#close-room}
 
 关闭房间。
 
@@ -97,7 +97,7 @@ constructor(options: ITiaoomOptions)
 
 **返回:** [`Room`](#room)
 
-#### `kickPlayer(sender: IPlayer, data: { roomId: string, playerId: string }): IRoomPlayer | undefined`
+#### `kickPlayer(sender: IPlayer, data: { roomId: string, playerId: string }): IRoomPlayer | undefined` {#kick-player}
 
 将玩家踢出房间。
 
@@ -108,7 +108,7 @@ constructor(options: ITiaoomOptions)
 
 **返回:** [`IRoomPlayer`](./models.md#iroomplayer) \| `undefined`
 
-#### `transferOwner(sender: IPlayer, data: { roomId: string, playerId: string }): Room | undefined`
+#### `transferOwner(sender: IPlayer, data: { roomId: string, playerId: string }): Room | undefined` {#transfer-owner}
 
 转让房主权限。
 
@@ -119,7 +119,7 @@ constructor(options: ITiaoomOptions)
 
 **返回:** [`Room`](#room) \| `undefined`
 
-#### `loginPlayer(player: PlayerOptions, cb?: (data: { player: Player }) => void): Player`
+#### `loginPlayer(player: PlayerOptions, cb?: (data: { player: Player }) => void): Player` {#login-player}
 
 玩家登录。
 
@@ -130,7 +130,7 @@ constructor(options: ITiaoomOptions)
 
 **返回:** [`Player`](#player)
 
-#### `joinPlayer(sender: IPlayer, player: IRoomPlayerOptions, isCreator?: boolean): IRoomPlayer | undefined`
+#### `joinPlayer(sender: IPlayer, player: IRoomPlayerOptions, isCreator?: boolean): IRoomPlayer | undefined` {#join-player}
 
 玩家加入房间。
 
@@ -142,7 +142,7 @@ constructor(options: ITiaoomOptions)
 
 **返回:** [`IRoomPlayer`](./models.md#iroomplayer) \| `undefined`
 
-#### `leavePlayer(sender: IPlayer, player: IRoomPlayerOptions): IRoomPlayer | undefined`
+#### `leavePlayer(sender: IPlayer, player: IRoomPlayerOptions): IRoomPlayer | undefined` {#leave-player}
 
 玩家离开房间。
 
@@ -153,7 +153,7 @@ constructor(options: ITiaoomOptions)
 
 **返回:** [`IRoomPlayer`](./models.md#iroomplayer) \| `undefined`
 
-#### `readyPlayer(sender: IPlayer, player: IRoomPlayer): this`
+#### `readyPlayer(sender: IPlayer, player: IRoomPlayer): this` {#ready-player}
 
 玩家准备。
 
@@ -164,7 +164,7 @@ constructor(options: ITiaoomOptions)
 
 **返回:** `this`
 
-#### `unReadyPlayer(sender: IPlayer, player: IRoomPlayer): this`
+#### `unReadyPlayer(sender: IPlayer, player: IRoomPlayer): this` {#unready-player}
 
 玩家取消准备。
 
@@ -175,7 +175,7 @@ constructor(options: ITiaoomOptions)
 
 **返回:** `this`
 
-#### `removePlayer(sender: IPlayer): Player | undefined`
+#### `removePlayer(sender: IPlayer): Player | undefined` {#remove-player}
 
 移除玩家（完全登出）。
 
@@ -185,13 +185,13 @@ constructor(options: ITiaoomOptions)
 
 **返回:** [`Player`](#player) \| `undefined`
 
-#### `toJSON(): { players: Player[]; rooms: Room[] }`
+#### `toJSON(): { players: Player[]; rooms: Room[] }` {#room-tojson}
 
 序列化当前服务器状态。
 
 **返回:** <code>{ players: [`Player`](#player)[]; rooms: [`Room`](#room)[] }</code>
 
-#### `loadFrom(data: { players: PlayerOptions[]; rooms: IRoomOptions[] }): this`
+#### `loadFrom(data: { players: PlayerOptions[]; rooms: IRoomOptions[] }): this` {#loadfrom}
 
 从序列化数据加载服务器状态。
 
@@ -201,7 +201,7 @@ constructor(options: ITiaoomOptions)
 
 **返回:** `this`
 
-#### `isAdmin(player: IPlayer): Promise<boolean>`
+#### `isAdmin(player: IPlayer): Promise<boolean>` {#is-admin}
 检查玩家是否为管理员。
 
 | 参数 | 类型 | 描述 |
@@ -210,7 +210,7 @@ constructor(options: ITiaoomOptions)
 
 **返回:** `Promise<boolean>` 默认返回 `false`。若有配置管理员需求，需重写此方法。
 
-#### `isBanned(player: IPlayer): Promise<boolean>`
+#### `isBanned(player: IPlayer): Promise<boolean>` {#is-banned}
 检查玩家是否被封禁。
 
 | 参数 | 类型 | 描述 |
@@ -219,17 +219,17 @@ constructor(options: ITiaoomOptions)
 
 **返回:** `Promise<boolean>` 默认返回 `false`。若有封禁需求，需重写此方法。
 
-### 事件
+### 事件 {#room-events}
 
 请参考 [事件文档](./events.md#tiaoom-events)。
 
-## `Room`
+## `Room` {#room}
 
 服务端房间类，继承自 `EventEmitter` 并实现了 [`IRoom`](./models.md#iroom) 接口。
 
-### 方法
+### 方法 {#room-methods}
 
-#### `on(event: RoomEvents, listener: Function): this`
+#### `on(event: RoomEvents, listener: Function): this` {#room-on}
 
 监听房间事件。
 
@@ -240,7 +240,7 @@ constructor(options: ITiaoomOptions)
 
 **返回:** `this`
 
-#### `emit(event: RoomEvents, ...args: any[]): boolean`
+#### `emit(event: RoomEvents, ...args: any[]): boolean` {#room-emit}
 
 触发房间事件。
 
@@ -251,7 +251,7 @@ constructor(options: ITiaoomOptions)
 
 **返回:** `boolean`
 
-#### `setCreator(player: Player): this`
+#### `setCreator(player: Player): this` {#set-creator}
 
 设置房主。
 
@@ -261,7 +261,7 @@ constructor(options: ITiaoomOptions)
 
 **返回:** `this`
 
-#### `addPlayer(player: Player, isCreator?: boolean): RoomPlayer`
+#### `addPlayer(player: Player, isCreator?: boolean): RoomPlayer` {#add-player}
 
 添加玩家到房间。
 
@@ -272,7 +272,7 @@ constructor(options: ITiaoomOptions)
 
 **返回:** [`RoomPlayer`](./models.md#iroomplayer)
 
-#### `kickPlayer(player: IPlayer | string): RoomPlayer`
+#### `kickPlayer(player: IPlayer | string): RoomPlayer` {#room-kick-player}
 
 从房间踢出玩家。
 
@@ -282,7 +282,7 @@ constructor(options: ITiaoomOptions)
 
 **返回:** [`RoomPlayer`](./models.md#iroomplayer)
 
-#### `searchPlayer(player: IPlayer | string): RoomPlayer | undefined`
+#### `searchPlayer(player: IPlayer | string): RoomPlayer | undefined` {#room-search-player}
 
 在房间内搜索玩家。
 
@@ -292,19 +292,19 @@ constructor(options: ITiaoomOptions)
 
 **返回:** [`RoomPlayer`](./models.md#iroomplayer) \| `undefined`
 
-#### `start(): boolean`
+#### `start(): boolean` {#start}
 
 开始游戏。
 
 **返回:** `boolean` (是否有监听器被触发)
 
-#### `end(): boolean`
+#### `end(): boolean` {#end}
 
 结束游戏。
 
 **返回:** `boolean` (是否有监听器被触发)
 
-#### `setSender(sender: (type: string, ...message: any) => void): this`
+#### `setSender(sender: (type: string, ...message: any) => void): this` {#room-set-sender}
 
 设置房间的消息发送器。⚠️ **内部调用，一般不要使用。**
 
@@ -314,7 +314,7 @@ constructor(options: ITiaoomOptions)
 
 **返回:** `this`
 
-### 属性 (Getters)
+### 属性 {#room-properties}
 
 - `validPlayers`: [`RoomPlayer[]`](./models.md#iroomplayer) - 有效玩家列表（非旁观者）。
 - `watchers`: [`RoomPlayer[]`](./models.md#iroomplayer) - 旁观者列表。
@@ -324,13 +324,13 @@ constructor(options: ITiaoomOptions)
 - `isPlaying`: `boolean` - 是否正在游戏中。
 - `isFull`: `boolean` - 房间是否已满。
 
-## `Player`
+## `Player` {#player}
 
 服务端玩家类，继承自 `EventEmitter` 并实现了 [`IPlayer`](./models.md#iplayer) 接口。
 
-### 方法
+### 方法 {#player-methods}
 
-#### `on(event: PlayerEvents, listener: Function): this`
+#### `on(event: PlayerEvents, listener: Function): this` {#player-on}
 
 监听玩家事件。
 
@@ -341,7 +341,7 @@ constructor(options: ITiaoomOptions)
 
 **返回:** `this`
 
-#### `emit(event: PlayerEvents, ...args: any[]): boolean`
+#### `emit(event: PlayerEvents, ...args: any[]): boolean` {#player-emit}
 
 触发玩家事件。
 
@@ -352,7 +352,7 @@ constructor(options: ITiaoomOptions)
 
 **返回:** `boolean`
 
-#### `setSender(sender: (type: string, ...message: any) => void): this`
+#### `setSender(sender: (type: string, ...message: any) => void): this` {#player-set-sender}
 
 设置玩家的消息发送器。⚠️ **内部调用，一般不要使用。**
 

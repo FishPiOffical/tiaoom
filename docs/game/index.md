@@ -2,7 +2,7 @@
 
 这是基于 [tiaoom](https://tiaoom.com) 开发的游戏项目。访问地址: [https://room.adventext.fun](https://room.adventext.fun)。你可以通过本文档了解如何运行和开发新的游戏。
 
-## 项目结构
+## 项目结构 {#project-structure}
 
 ```
 game/
@@ -37,7 +37,7 @@ game/
 └── README.md            # 本文件
 ```
 
-## 依赖管理
+## 依赖管理 {#dependency-management}
 
 本项目使用 **npm workspace** 管理 monorepo：
 
@@ -46,7 +46,7 @@ game/
 - 使用 `npm install` 一次性安装所有依赖
 - 使用 `npm run <script> --workspace=<package>` 操作特定包
 
-## 环境要求
+## 环境要求 {#environment-requirements}
 
 - Node.js >= 20.x
 - npm >= 9.x

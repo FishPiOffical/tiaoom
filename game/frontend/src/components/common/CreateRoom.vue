@@ -1,5 +1,5 @@
 <template>
-  <form @submit.prevent="createRoom" class="space-y-4 max-w-2xl mx-auto">
+  <form @submit.prevent="createRoom" class="space-y-4 max-w-2xl mx-auto p-2">
     <h3 class="text-xl font-light text-base-content">创建房间</h3>
     <div class="flex flex-wrap items-center gap-2">
       <input
@@ -87,6 +87,25 @@
       </span>
     </div>
   </form>
+  <div class="space-x-2 max-w-2xl mx-auto p-2">
+    <button v-for="page in currentGame.extendPages" :key="page.name" class="btn btn-secondary btn-soft whitespace-nowrap"
+      @click="extendPage = page.component">
+      {{ page.name }}
+    </button>
+  </div>
+
+  <div v-if="extendPage" class="fixed inset-0 z-50 flex justify-end">
+    <div class="absolute inset-0 bg-black/20 backdrop-blur-sm" @click="extendPage = null"></div>
+    <div class="relative w-full max-w-2xl bg-base-100 h-full shadow-xl overflow-y-auto p-4">
+      <div class="flex justify-between items-center">
+        <h3 class="text-lg font-bold"></h3>
+        <button class="btn btn-sm btn-circle btn-ghost" @click="extendPage = null">
+          <Icon icon="carbon:close" class="w-6 h-6" />
+        </button>
+      </div>
+      <component :is="extendPage" />
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -97,6 +116,7 @@ import msg from '@/components/msg'
 const gameStore = useGameStore()
 
 const showPasswd = ref(false)
+const extendPage = ref<any>(null)
 const room = ref({
   name: '',
   size: 4,

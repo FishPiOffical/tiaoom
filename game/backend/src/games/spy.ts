@@ -1,6 +1,7 @@
 import { PlayerRole, PlayerStatus, RoomPlayer, RoomStatus } from "tiaoom";
-import { GameRoom, IGameCommand } from ".";
-import { sleep } from "@/utils";
+import { BaseModel, GameRoom, IGameCommand, IGameData } from ".";
+import { And, Column, Entity, EntityTarget, Like, PrimaryGeneratedColumn, Repository } from "typeorm";
+import { Router } from "express";
 
 const questions = [
   ['蝴蝶', '蜜蜂'],
@@ -29,6 +30,21 @@ const questions = [
   ["医生", "护士"],
 ];
 
+@Entity({ name: 'word', comment: '谁是卧底用词' })
+export class Model extends BaseModel {
+  @Column({ comment: "词1" })
+  word1: string = '';
+
+  @Column({ comment: "词2" })
+  word2: string = '';
+
+  @Column({ comment: "是否有效" })
+  valid: boolean = false;
+
+  @Column({ comment: "创建者" })
+  from: string = '';
+}
+
 export const name = '谁是卧底？';
 export const minSize = 4;
 export const maxSize = 12;
@@ -40,8 +56,11 @@ export const points = {
   '大赢家': 1000,
   '梭哈！': 10000,
 }
+export const extendPages = [
+  { name: '投稿', component: 'SpyPost' },
+];
 
-class SpyGameRoom extends GameRoom {
+class SpyGameRoom extends GameRoom implements IGameData<Model> {
   words: string[] = [];
   alivePlayers: RoomPlayer[] = [];
   currentTalkPlayer?: RoomPlayer;
@@ -53,6 +72,82 @@ class SpyGameRoom extends GameRoom {
 
   readonly TURN_TIMEOUT = 5 * 60 * 1000; // 5 minutes
   readonly VOTE_TIMEOUT = 2 * 60 * 1000; // 2 minutes
+
+  get Routers() {
+    const router = Router();
+    router.use((req, res, next) => {
+      if (!req.session.player) {
+        return res.json({ code: 1, message: "请先登录" });
+      }
+      next();
+    });
+    router.post("/post", async (req, res) => {
+      try {
+        const { word1, word2 } = req.body;
+        if (!word1 || !word2) {
+          throw new Error("词语不能为空");
+        }
+        if (word1.length > 10 || word2.length > 10) {
+          throw new Error("词语长度不能超过10个字符");
+        }
+        const existing = await Model.getRepo<Model>(Model).findOneBy(
+          { word1, word2 },
+        );
+        if (existing?.from === req.session.player?.username) {
+          throw new Error("你已经提交过相同的词语组合");
+        }
+        if (existing) {
+          throw new Error("该词语组合已存在");
+        }
+        const model = new Model();
+        model.word1 = word1;
+        model.word2 = word2;
+        model.valid = false;
+        model.from = req.session.player?.username || '';
+        await this.insert(model);
+        res.json({ code: 0, data: model });
+      } catch (error: any) {
+        res.json({ code: 1, message: error.message });
+      }
+    });
+    router.get("/my-posts", async (req, res) => {
+      try {
+        const posts = await Model.getRepo<Model>(Model).find({
+          where: { from: req.session.player?.username || '' },
+          order: { createdAt: "DESC" },
+        });
+        res.json({ code: 0, data: posts });
+      } catch (error: any) {
+        res.json({ code: 1, message: error.message });
+      }
+    }); 
+    return router;
+  }
+
+  async getList(query: { word: string, valid: string, page: number; count: number; }): Promise<{ records: Model[]; total: number; }> {
+    const where = query.valid ? { valid: query.valid === '1' } : {};
+    const [records, total] = await Model.getRepo<Model>(Model).findAndCount({
+      where: [
+        { word1: Like(`%${query.word || ''}%`), ...where },
+        { word2: Like(`%${query.word || ''}%`), ...where },
+      ],
+      skip: (query.page - 1) * query.count,
+      take: query.count,
+    });
+    return { records, total }; 
+  }
+
+  async insert(data: Model): Promise<Model> {
+    return await Model.getRepo<Model>(Model).save(Model.getRepo<Model>(Model).create(data));
+  }
+
+  async update(id: string, data: Partial<Model>): Promise<void> {
+    await Model.getRepo<Model>(Model).update(id, data);
+  }
+
+  async delete(id: string): Promise<void> {
+    await Model.getRepo<Model>(Model).delete(id);
+  }
 
   init() {
     this.restoreTimer({
@@ -264,7 +359,7 @@ class SpyGameRoom extends GameRoom {
     }
   }
 
-  onStart() {
+  async onStart() {
     if (this.room.validPlayers.length < this.room.minSize) {
       return this.say(`玩家人数不足，无法开始游戏。`);
     }
@@ -280,7 +375,18 @@ class SpyGameRoom extends GameRoom {
 
     const mainWordIndex = Math.floor(Math.random() * 2);
     const spyWordIndex = mainWordIndex == 0 ? 1 : 0;
-    const questWord = questions[Math.floor(Math.random() * questions.length)];
+    const questWord = await Model.getRepo<Model>(Model).createQueryBuilder()
+      .orderBy('RAND()')
+      .getOne()
+      .then((word) => {
+        if (word) {
+          return [word.word1, word.word2];
+        } else {
+          // 若数据库无词库，则使用默认词库
+          const defaultWords = questions[Math.floor(Math.random() * questions.length)];
+          return defaultWords;
+        }
+      });
     this.words = Array(this.room.validPlayers.length).fill(questWord[mainWordIndex]);
     const spyIndex = Math.floor(Math.random() * this.room.validPlayers.length);
     this.words[spyIndex] = questWord[spyWordIndex];

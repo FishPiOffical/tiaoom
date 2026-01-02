@@ -8,11 +8,11 @@ export async function saveUser(userInfo: { id: string, name: string, nickname?: 
   user.from = 'fishpi';
   user.ip = userInfo.ip || '';
   user.isAdmin = isAdmin;
-  const existingUser = await UserRepo.findOneBy({ id: user.id });
+  const existingUser = await UserRepo().findOneBy({ id: user.id });
   if (existingUser) {
-    await UserRepo.update({ id: user.id }, { ...user, ip: user.ip || undefined});
+    await UserRepo().update({ id: user.id }, { ...user, ip: user.ip || undefined});
   } else {
-    await UserRepo.save(UserRepo.create(user));
+    await UserRepo().save(UserRepo().create(user));
   }
   return user;
 }

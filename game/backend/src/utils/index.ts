@@ -109,7 +109,7 @@ export async function setPoints(value: number, username: string, reason: string)
   }
   pointFinger.editUserPoints(username, value, reason).catch((err) => {
     console.error('积分操作失败：', err.message, username, '积分', value, '原因', reason);
-    LogRepo.save(LogRepo.create({
+    LogRepo().save(LogRepo().create({
       type: 'PointError',
       data: { username, value, reason },
       error: { message: err.message },

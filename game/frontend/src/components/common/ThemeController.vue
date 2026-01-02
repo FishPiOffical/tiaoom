@@ -1,5 +1,5 @@
 <template>
-  <div title="切换主题" class="dropdown dropdown-end block">
+  <div title="切换主题" class="dropdown dropdown-center block">
     <div
       tabindex="0"
       role="button"
@@ -18,9 +18,9 @@
     </div>
     <div
       tabindex="0"
-      class="dropdown-content bg-base-200 text-base-content rounded-box top-px h-122 max-h-[calc(100vh-8.6rem)] overflow-y-auto border-(length:--border) border-white/5 shadow-2xl outline-(length:--border) outline-black/5 mt-16"
+      class="dropdown-content bg-base-200 text-base-content rounded-box top-px h-122 max-h-[calc(100vh-8.6rem)] overflow-auto border-(length:--border) border-white/5 shadow-2xl outline-(length:--border) outline-black/5 mt-16"
     >
-      <ul class="menu w-56">
+      <ul class="menu w-46">
         <li class="menu-title text-xs">主题</li>
         <!--[-->
         <li v-for="t in themes" :key="t">
@@ -39,7 +39,7 @@
               <div class="bg-secondary size-1 rounded-full"></div>
               <div class="bg-accent size-1 rounded-full"></div>
             </div>
-            <div class="w-32 truncate">{{ t }}</div>
+            <div class="w-20 truncate">{{ t }}</div>
             <Icon icon="iconamoon:check-bold" v-if="theme === t" />
           </button>
         </li>

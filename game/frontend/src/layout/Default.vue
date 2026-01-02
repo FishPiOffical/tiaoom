@@ -66,10 +66,17 @@
             </span>
             <span class="font-medium">{{ gameStore.player?.nickname }}</span>
           </section>
+          <ThemeController />
           <div class="flex items-center gap-2">
-            <ThemeController />
             <router-link 
-              v-if="gameStore.player?.isAdmin"
+              to="/leaderboard"
+              class="icon-btn"
+              title="排行榜"
+            >
+              <Icon icon="mdi:trophy-outline" />
+            </router-link>
+            <router-link 
+              v-if="gameStore.player?.isAdmin || gameManages.length > 0"
               to="/admin"
               class="icon-btn"
               title="房间管理"
@@ -263,6 +270,8 @@ onMounted(() => {
     isReady.value = true;
   });
 })
+
+const gameManages = computed(() => gameStore.gameManages);
 </script>
 
 <style scoped>

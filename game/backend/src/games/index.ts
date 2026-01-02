@@ -1,10 +1,14 @@
+import { Column, Entity, EntityTarget, PrimaryGeneratedColumn, Repository } from "typeorm";
 import { IPlayer, IRoomPlayer, PlayerRole, PlayerStatus, Room, RoomPlayer, RoomStatus } from 'tiaoom';
 import * as glob from 'glob';
 import * as path from "path";
 import { Model } from '@/model';
 import { getPlayerStat, omit, setPoints, updatePlayerStats } from '@/utils';
-import { RecordRepo } from '@/entities';
-const files = glob.sync(path.join(__dirname, '*.*').replace(/\\/g, '/')).filter(f => f.endsWith('.ts') || f.endsWith('.js'));
+import { AppDataSource, RecordRepo } from '@/entities';
+import { Router } from "express";
+const files = glob.sync(path.join(__dirname, '*.*').replace(/\\/g, '/')).filter(f => f.endsWith('.ts') || f.endsWith('.js')).concat(
+  glob.sync(path.join(__dirname, '**', 'index.*').replace(/\\/g, '/')).filter(f => f.endsWith('.ts') || f.endsWith('.js'))
+);
 
 export interface IGame extends IGameInfo {
   default: (room: Room, methods: IGameMethod) => any;
@@ -39,6 +43,19 @@ export interface IGameInfo {
    * 房间积分奖励说明，若自行实现积分奖励，需填写此字段
    */
   rewardDescription?: string;
+  /**
+   * 扩展页面入口
+   */
+  extendPages?: {
+    /** 
+     * 入口名称 
+     **/
+    name: string;
+    /** 
+     * 页面路径 
+     **/
+    component: string;
+  }[];
 }
 
 export interface IGameMethod {
@@ -46,17 +63,26 @@ export interface IGameMethod {
   restore: () => Promise<Record<string, any> | null>;
 }
 
-export type GameMap = { [key: string]: (IGame | ({ default: typeof GameRoom })) };
+export type GameMap = { [key: string]: (IGame | ({ default: typeof GameRoom & IGameData<any>, Model?: EntityTarget<any> } & IGameInfo)) };
 
 const games :GameMap = {};
-files.forEach(async (file) => {
-  const name = path.basename(file.replace(/\.(ts|js)$/, ''));
-  if (name == 'index') return;
-  file = './' + name;
-  const game = await import(file);
-  if (!game) return;
-  games[name] = game;
-});
+async function loadGames() {
+  await Promise.all(files.map(async (file) => {
+    let name = path.basename(file.replace(/\.(ts|js)$/, ''));
+    if (name == 'index') {
+      name = path.basename(path.dirname(file));
+      if (name == 'games') return;
+    }
+    file = './' + name;
+    const game = await import(file);
+    if (!game) return;
+    games[name] = game;
+    return game;
+  }));
+  return games;
+}
+
+export const gameLoaded = loadGames();
 
 export default games;
 
@@ -145,6 +171,10 @@ export class GameRoom {
 
   constructor(room: Room) {
     this.room = room;
+  }
+
+  get Routers(): Router | null {
+    return null;
   }
 
   /**
@@ -406,7 +436,7 @@ export class GameRoom {
    * @param score 分数
    */
   async saveRecord(winners: RoomPlayer[] | null | undefined, score?: number) {
-    RecordRepo.save(RecordRepo.create({
+    RecordRepo().save(RecordRepo().create({
       type: this.room.attrs!.type,
       roomName: this.room.name,
       data: await this.getData(),
@@ -474,4 +504,26 @@ export class GameRoom {
       }
     });
   }
+}
+
+export class BaseModel {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column('bigint', { comment: "创建时间" })
+  createdAt: number = Date.now();
+
+  @Column('bigint', { comment: "更新时间" })
+  updatedAt: number = Date.now();
+
+  static getRepo<T extends BaseModel>(target: EntityTarget<T>): Repository<T> {
+    return AppDataSource.getRepository<T>(target);
+  }
+}
+
+export interface IGameData<T> {
+  getList(query: { [key: string]: any, page: number, count: number }): Promise<{ records: T[], total: number }>;
+  insert(data: T): Promise<T>;
+  update(id: string, data: Partial<T>): Promise<void>;
+  delete(id: string): Promise<void>;
 }

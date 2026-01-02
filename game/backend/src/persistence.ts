@@ -13,39 +13,39 @@ export interface IRoomPersistence {
 
 class MySQLPersistence implements IRoomPersistence {
   async createRoom(room: GameRoom) {
-    const existing = await RoomRepo.findOneBy({ roomId: room.id });
+    const existing = await RoomRepo().findOneBy({ roomId: room.id });
     if (existing) return existing;
     const newRoom = new RoomSQL(room);
-    return RoomRepo.save(RoomRepo.create(newRoom));
+    return RoomRepo().save(RoomRepo().create(newRoom));
   }
 
   async getRooms() {
-    return RoomRepo.find();
+    return RoomRepo().find();
   }
 
   async updatePlayerList(roomId: string, players: RoomPlayer[]) {
-    const room = await RoomRepo.findOneBy({ roomId: roomId });
+    const room = await RoomRepo().findOneBy({ roomId: roomId });
     if (room) {
       room.players = players;
-      await RoomRepo.save(room);
+      await RoomRepo().save(room);
     }
   }
 
   async saveGameData(roomId: string, gameData: any) {
-    const room = await RoomRepo.findOneBy({ roomId: roomId });
+    const room = await RoomRepo().findOneBy({ roomId: roomId });
     if (room) {
       room.gameData = gameData;
-      await RoomRepo.save(room);
+      await RoomRepo().save(room);
     }
   }
 
   async getGameData(roomId: string) {
-    const room = await RoomRepo.findOneBy({ roomId: roomId });
+    const room = await RoomRepo().findOneBy({ roomId: roomId });
     return room ? room.gameData : null;
   }
 
   async closeRoom(roomId: string) {
-    await RoomRepo.delete({ roomId: roomId });
+    await RoomRepo().delete({ roomId: roomId });
   }
 }
 

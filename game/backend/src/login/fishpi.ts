@@ -52,7 +52,7 @@ export function updateUserInfo(userId: string, req?: Request) {
           avatar: userInfo.userAvatarURL, 
           ip: req?.header('x-forwarded-for') || req?.header('x-real-ip') || req?.socket.remoteAddress || req?.ip
         },
-        userDetail?.role == '管理员' ? true : false
+        userDetail?.role == '管理员' || userDetail?.role == 'OP' ? true : false
       );
       return user;
     }

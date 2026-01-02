@@ -2,6 +2,7 @@
 
 如下通用组件可以辅助开发游戏前端，无需手动引入，可直接通过组件名使用：
 
+- [GameView](GameView.md) - 游戏视图组件
 - [PlayerList](PlayerList.md) - 玩家列表组件
 - [AchievementTable](AchievementTable.md) - 胜负展示组件
 - [GameChat](GameChat.md) - 游戏聊天组件

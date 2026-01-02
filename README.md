@@ -57,8 +57,14 @@ class YourGameClient extends Tiaoom {
 - 四子棋
 - 黑白棋
 - 谁是卧底
+- 抢数字
+- 斗兽棋
 - UNO (by [@csfwff](https://github.com/csfwff))
 - 斗地主 (by [@zhazhahehedian](https://github.com/zhazhahehedian))
+- 翻转象棋 (by [@zhazhahehedian](https://github.com/zhazhahehedian))
+- 象棋 (by [@iwpz](https://github.com/iwpz))
+- 药丸博弈 (by [@iwpz](https://github.com/iwpz))
+- 俄罗斯方块 (by [@Cooooing](https://github.com/cooooing))
   
 ## ⚙️ 调试/运行
 

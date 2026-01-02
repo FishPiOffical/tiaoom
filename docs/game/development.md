@@ -2,7 +2,7 @@
 
 可以通过在 `backend/src/games` 目录下添加新的游戏模块来扩展游戏内容。游戏界面组件位于 `frontend/src/components/` 目录下。
 
-## 命名规范
+## 命名规范 {#naming-convention}
 
 游戏文件名需按照如下规则命名：
 
@@ -11,7 +11,7 @@
 - 前端游戏小窗组件(可选)：`<GameName>Lite.vue`
 - 前端游戏回放组件(可选)：`<GameName>Replay.vue`
 
-## 后端开发
+## 后端开发 {#backend-development}
 
 后端需暴露如下接口，并导出一个继承自 `GameRoom` 的类：
 
@@ -34,6 +34,7 @@ export const rates = { // 可选，房间奖励积分倍率
   '玩的就是心跳': 5,
 }
 // export const rewardDescription = '' // 可选，房间积分奖励说明，若自行实现积分奖励，需填写此字段
+// export const extendPages = [ ... ] // 可选，游戏扩展页面配置，具体见 `游戏数据 > 扩展页面` 章节
 
 export default class MyGameRoom extends GameRoom {
   // ... 实现游戏逻辑
@@ -52,7 +53,7 @@ export default class MyGameRoom extends GameRoom {
 > [!IMPORTANT]
 > 游戏结束一定要调用 `this.room.end()` 方法，否则房间状态没有变更，由此会导致玩家无法离开房间。
 
-## 前端开发
+## 前端开发 {#frontend-development}
 
 前端游戏组件需接收如下 Props：
 
@@ -66,32 +67,30 @@ const props = defineProps<{
 }>()
 ```
 
-建议采用布局：
+可以使用 `GameView` 组件搭建游戏界面：
 
 ```vue
 <template>
-  <section class="flex flex-col md:flex-row gap-4 md:h-full">
+    <GameView :room-player="roomPlayer" :game="game" @command="onCommand">
     <!-- 左侧：游戏区域 -->
-    <div class="flex-1 flex items-center justify-center">
-      <!-- 游戏内容 -->
+    <div class="flex-1 flex flex-col items-center justify-center">
+      
     </div>
 
-    <!-- 右侧：侧边栏 -->
-    <aside class="w-full md:w-96 flex-none border-t md:border-t-0 md:border-l border-base-content/20 pt-4 md:pt-0 md:pl-4 space-y-4 md:h-full flex flex-col">
-      <!-- 聊天与游戏规则 -->
-      <GameChat>
-        <template #rules>
-          <ul class="space-y-2 text-sm">
-            <li>1. 游戏规则。</li>
-          </ul>
-        </template>
-      </GameChat>
-    </aside>
-  </section>
+    <!-- 右侧：操作区域 -->
+    <template #actions>
+      <p>操作区域内容</p>
+    </template>
+
+    <!-- 游戏规则 -->
+    <template #rules>
+      <p>游戏规则描述</p>
+    </template>
+  </GameView>
 </template>
 ```
 
-## 数据持久化
+## 数据持久化 {#data-persistence}
 
 `GameRoom` 会自动处理数据持久化。也可以调用 `this.save()` 方法，手动将当前类实例的属性保存到数据库。
 
@@ -121,7 +120,7 @@ export default class MyGame extends GameRoom {
 - 收到消息后
 - 服务重启前
 
-## 积分奖励与成就保存
+## 积分奖励与成就保存 {#achievements}
 
 `GameRoom` 提供了积分奖励功能，可在游戏结束时调用 `this.saveAchievements(winner)` 方法保存成就数据并执行积分奖励。
 
@@ -138,7 +137,7 @@ export default class MyGame extends GameRoom {
 - 若未配置 `rates`，则默认倍率为 1。
 - 若游戏平局，则不进行积分奖励。
 
-### 自定义积分奖励
+### 自定义积分奖励 {#custom-achievements}
 
 如果需要自定义积分奖励逻辑，重载 `saveAchievements` 方法。另外需要配置 `rewardDescription` 字段，说明自定义积分奖励的规则。
 
@@ -154,7 +153,7 @@ export default class MyGame extends GameRoom {
 }
 ```
 
-## 游戏回放
+## 游戏回放 {#game-replay}
 
 `GameRoom` 提供了游戏回放功能。可以通过重载 `getData` 方法，返回需要保存的游戏回放数据。每局结束后，调用 `this.saveAchievements` 或 `this.saveScore` 时会自动保存回放数据。也可以调用 `this.saveRecord` 方法手动保存回放数据。**三个方法仅可选择其一调用！**
 
@@ -181,7 +180,7 @@ export default class MyGame extends GameRoom {
 
 也可以直接记录当前时间戳，前端回放组件的 Prop 可以通过 `props.beginTime` 获取游戏开始时间戳。
 
-## 前端状态管理
+## 前端状态管理 {#frontend-state}
 
 `useGameStore` 提供游戏状态管理，方便在组件间共享游戏状态。
 
@@ -201,7 +200,7 @@ export default class MyGame extends GameRoom {
 | `login(name)` | `Promise<boolean>` | 用户登录，游戏内无需调用 |
 | `logout()` | `Promise<boolean>` | 用户登出，游戏内无需调用 |
 
-#### 使用示例
+使用示例
 
 ```typescript
 import { useGameStore } from '@/stores/game';
@@ -221,7 +220,7 @@ const isOwner = gameStore.roomPlayer?.isCreator;
 const game = gameStore.game;
 ```
 
-## 前端游戏事件监听
+## 前端游戏事件监听 {#frontend-game-events}
 
 有时候我们需要监听 `game` 对象的事件，以便处理一些自定义逻辑。可以通过如下方式监听：
 
@@ -264,11 +263,11 @@ useGameEvents(game, {
 });
 ```
 
-## 游戏倒计时
+## 游戏倒计时 {#game-timer}
 
 `GameRoom` 内置了倒计时功能，可用于限制玩家操作时间。
 
-### 创建与使用
+### 创建与使用 {#create-timer}
 
 使用 `startTimer` 方法启动倒计时，使用 `stopTimer` 方法停止倒计时。
 
@@ -283,7 +282,7 @@ this.startTimer(() => {
 this.stopTimer('turn');
 ```
 
-### 响应倒计时
+### 响应倒计时 {#handle-timer}
 
 后端调用 `startTimer` 时，会自动向房间广播 `countdown` 指令。前端需监听该指令并显示倒计时。
 
@@ -304,7 +303,7 @@ game.on('command', (msg) => {
 });
 ```
 
-### 初始化与恢复
+### 初始化与恢复 {#restore-timer}
 
 为了防止服务器重启导致倒计时丢失，需要在 `init` 方法中注册恢复回调。同时，在 `getStatus` 中返回剩余时间，以便玩家重连时同步。
 
@@ -337,7 +336,7 @@ game.on('command', (msg) => {
 });
 ```
 
-### 完整示例
+### 完整示例 {#timer-example}
 
 后端代码
 
@@ -408,9 +407,9 @@ export function useGame(game: GameCore) {
 }
 ```
 
-## GameRoom 核心属性与方法
+## GameRoom 核心属性与方法 {#gameroom-core}
 
-### 核心属性
+### 核心属性 {#gameroom-properties}
 
 - `room`: `Room` 实例，用于操作房间和玩家。
 - `messageHistory`: 聊天消息历史。
@@ -419,7 +418,7 @@ export function useGame(game: GameCore) {
 - `saveIgnoreProps`: 保存状态时忽略的属性名列表。
 - `beginTime`: 游戏开始时间戳（毫秒）。
 
-### 核心方法
+### 核心方法 {#gameroom-methods}
 
 - `init()`: 
   初始化游戏房间。可在此监听房间事件（如 `join`, `player-offline`）。需调用 `super.init()`。
@@ -460,10 +459,11 @@ export function useGame(game: GameCore) {
 - `restoreTimer(timer)`: 
   恢复倒计时（用于服务器重启后恢复状态）。
 
-## 前端通用组件
+## 前端通用组件 {#frontend-components}
 
 前端可使用如下封装组件实现通用功能：
 
+- [`GameView`](./components/GameView.md)：游戏视图布局
 - [`PlayerList`](./components/PlayerList.md)：玩家列表
 - [`AchievementTable`](./components/AchievementTable.md)：胜负展示
 - [`GameChat`](./components/GameChat.md)：游戏内聊天

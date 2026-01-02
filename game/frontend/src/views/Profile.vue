@@ -81,7 +81,7 @@ import { getComponent } from '@/main';
   const hasReplayComponent = (type: string) => {
     try {
       if (!type) return false
-      return !!getComponent(type.slice(0, 1).toUpperCase() + type.slice(1) + 'Replay')
+      return !!getComponent(type.split('-').map(t => t.slice(0, 1).toUpperCase() + t.slice(1)).join('') + 'Replay')
     } catch {
       return false
     }
@@ -177,19 +177,19 @@ import { getComponent } from '@/main';
       <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
           <div class="flex justify-between items-center mb-4">
-              <h3 class="card-title text-lg">
-                <Icon icon="mdi:history" class="text-secondary" />
-                游玩记录
-              </h3>
-              <div class="join">
-                  <button class="join-item btn btn-sm" :disabled="page <= 1" @click="prevPage">
-                    <Icon icon="flowbite:caret-left-solid" />
-                  </button>
-                  <button class="join-item btn btn-sm">Page {{ page }}</button>
-                  <button class="join-item btn btn-sm" :disabled="page >= totalPages" @click="nextPage">
-                    <Icon icon="flowbite:caret-right-solid" />
-                  </button>
-              </div>
+            <h3 class="card-title text-lg">
+              <Icon icon="mdi:history" class="text-secondary" />
+              游玩记录
+            </h3>
+            <div class="join">
+                <button class="join-item btn btn-sm" :disabled="page <= 1" @click="prevPage">
+                  <Icon icon="flowbite:caret-left-solid" />
+                </button>
+                <button class="join-item btn btn-sm">Page {{ page }}</button>
+                <button class="join-item btn btn-sm" :disabled="page >= totalPages" @click="nextPage">
+                  <Icon icon="flowbite:caret-right-solid" />
+                </button>
+            </div>
           </div>
           
           <div v-if="records.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-3">
