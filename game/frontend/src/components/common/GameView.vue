@@ -43,7 +43,7 @@
         <!-- 玩家列表 -->
         <div v-if="activeTab === 'players'">
           <PlayerList :players="roomPlayer.room.players">
-            <template v-if="playerStatus || $slots.player" #default="{ player: p }">
+            <template v-if="playerStatus || $slots.player || $slots['player-badge']" #default="{ player: p }">
               <slot name="player" :player="p">
                 <span v-if="p.role === 'player'" class="inline-flex gap-2 items-center">
                   <span>[{{ playerStatus?.(p) || getPlayerStatus(p) }}]</span>
