@@ -419,7 +419,7 @@ export default class AeroplaneChessRoom extends GameRoom {
           pc.area = 'hangar';
           pc.pos = other.color + 'h' + pc.index;
           pc.posIndex = -1;
-          const msg = `${this.getPlayerName(player.playerId)} 的 P${moved.index + 1} 吃掉了 ${this.getPlayerName(other.playerId)} 的 P${pc.index + 1}！`;
+          const msg = `${this.getPlayerName(player.playerId)} 的 ${this.pieceNames[player.color]}${moved.index + 1} 吃掉了 ${this.getPlayerName(other.playerId)} 的 ${this.pieceNames[other.color]}${pc.index + 1}！`;
           this.say(msg);
           events.push(`撞回 ${this.pieceNames[other.color]}${pc.index + 1}`);
         }
@@ -444,6 +444,7 @@ export default class AeroplaneChessRoom extends GameRoom {
             piece.posIndex = -1;
           }
         }
+        this.say(`${this.getPlayerName(player.playerId)} 连续掷出三个六，所有起飞的飞机被迫返航！`);
         this.state.turnPlayerId = nextTurnPlayerId(this.currentOrder(), this.state.turnPlayerId);
       }
     } else {

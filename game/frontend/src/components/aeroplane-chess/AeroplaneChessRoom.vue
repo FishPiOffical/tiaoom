@@ -79,6 +79,7 @@ const {
   myPieces,
   canRoll,
   canMove,
+  myColor,
   roll,
   move,
 } = useAeroplaneChess(props.game, props.roomPlayer);
@@ -92,7 +93,7 @@ const currentPlayer = computed(() => {
 });
 
 function pieceText(p: any) {
-  const label = `P${(p.index ?? 0) + 1}`;
+  const label = `${myColor.value?.toUpperCase()}${(p.index ?? 0) + 1}`;
   if (p.area === 'hangar') return `${label}（待命）`;
   if (p.area === 'finish') return `${label}（到达）`;
   return label;
