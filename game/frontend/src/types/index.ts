@@ -3,6 +3,7 @@ export interface GameConfig {
   minSize: number
   maxSize: number
   description: string
+  requireAllReadyToStart?: boolean
   rates?: Record<string, number>
   points?: Record<string, number>
   rewardDescription?: string

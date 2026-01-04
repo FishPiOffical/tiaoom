@@ -3,6 +3,14 @@ import { BaseModel, GameRoom, IGameCommand, IGameData } from ".";
 import { Column, Entity, Like } from "typeorm";
 import { Router } from "express";
 
+// 文章状态枚举
+export enum ArticleStatus {
+  PENDING = 'pending',      // 待审核
+  AVAILABLE = 'available',  // 可用
+  FROZEN = 'frozen',        // 冻结
+  DELETED = 'deleted'       // 已删除
+}
+
 // 文章实体模型
 @Entity({ name: 'article', comment: '猜盐游戏文章' })
 export class Model extends BaseModel {
@@ -12,25 +20,32 @@ export class Model extends BaseModel {
   @Column({ comment: "正文", type: 'text' })
   content: string = '';
 
-  @Column({ comment: "分类", default: '默认' })
-  category: string = '默认';
-
   @Column({ comment: "难度", default: '简单' })
   difficulty: string = '简单';
 
-  @Column({ comment: "是否有效" })
-  valid: boolean = false;
+  @Column({ 
+    comment: "状态", 
+    type: 'varchar',
+    default: ArticleStatus.PENDING 
+  })
+  status: ArticleStatus = ArticleStatus.PENDING;
 
   @Column({ comment: "投送人" })
   from: string = '';
 
   @Column({ comment: "权重", default: 100 })
   weight: number = 100;
+
+  // 为了向后兼容，保留valid字段的getter
+  get valid(): boolean {
+    return this.status === ArticleStatus.AVAILABLE;
+  }
 }
 
 export const name = '猜盐游戏';
-export const minSize = 1;
-export const maxSize = 1;
+export const minSize = 0;
+export const maxSize = 0;
+export const requireAllReadyToStart = false;
 export const description = `系统随机选取一篇文章，玩家通过猜测字符来还原文章内容。
 猜出完整标题即视为完成。`;
 export const points = {
@@ -48,32 +63,37 @@ const DEFAULT_ARTICLES = [
   {
     title: '万里长城',
     content: '万里长城是中国古代的军事防御工事，是一道高大、坚固而且连绵不断的长垣，用以限隔敌骑的行动。长城不是一道单纯孤立的城墙，而是以城墙为主体，同大量的城、障、亭、标相结合的防御体系。',
-    category: '历史',
-    difficulty: '简单'
+    difficulty: '简单',
+    status: ArticleStatus.AVAILABLE
   },
   {
     title: '人工智能',
     content: '人工智能是计算机科学的一个分支，它企图了解智能的实质，并生产出一种新的能以人类智能相似的方式做出反应的智能机器。该领域的研究包括机器人、语言识别、图像识别、自然语言处理和专家系统等。',
-    category: '科技',
-    difficulty: '中等'
+    difficulty: '中等',
+    status: ArticleStatus.AVAILABLE
   },
   {
     title: '红楼梦',
     content: '《红楼梦》是中国古代章回体长篇小说，又名《石头记》，被列为中国古典四大名著之首。小说以贾、史、王、薛四大家族的兴衰为背景，以富贵公子贾宝玉为视角，以贾宝玉与林黛玉、薛宝钗的爱情婚姻悲剧为主线，描绘了一批举止见识出于须眉之上的闺阁佳人的人生百态。',
-    category: '文学',
-    difficulty: '困难'
+    difficulty: '困难',
+    status: ArticleStatus.AVAILABLE
   }
 ];
 
 // 玩家游戏状态
 type PlayerGameStatus = 'waiting' | 'guessing' | 'completed' | 'giveup';
 
+interface GuessHistoryItem {
+  char: string;
+  correct: boolean;
+}
+
 interface PlayerGameState {
   player: RoomPlayer;
   status: PlayerGameStatus;
-  guessedChars: Set<string>; // 已猜测的字符
-  correctChars: Set<string>; // 猜对的字符
-  wrongChars: Set<string>; // 猜错的字符
+  guessHistory: GuessHistoryItem[]; // 猜测历史（按输入顺序）
+  guessedCharsSet: Set<string>; // 已猜测的字符集合（用于快速查找）
+  correctCharsSet: Set<string>; // 猜对的字符集合（用于进度计算）
   lastGuessTime: number; // 最后猜测时间
   titleProgress: number; // 标题进度百分比
   contentProgress: number; // 正文进度百分比
@@ -83,13 +103,13 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
   currentArticle?: Model;
   playerStates: Map<string, PlayerGameState> = new Map();
   gameStartTime: number = 0;
+  restrictAlphanumeric: boolean = false; // 是否禁止数字和字母
 
   // 所有可能的汉字字符（用于统计进度）
   titleChars: Set<string> = new Set();
   contentChars: Set<string> = new Set();
 
   readonly INACTIVE_TIMEOUT = 3 * 60 * 1000; // 3分钟无活动超时
-  private resetTimer?: NodeJS.Timeout; // 重置计时器
 
   // 重写save方法以正确序列化Map和Set
   save() {
@@ -98,32 +118,28 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
     this.playerStates.forEach((state, key) => {
       playerStatesObj[key] = {
         ...state,
-        guessedChars: Array.from(state.guessedChars),
-        correctChars: Array.from(state.correctChars),
-        wrongChars: Array.from(state.wrongChars),
+        guessedCharsSet: Array.from(state.guessedCharsSet),
+        correctCharsSet: Array.from(state.correctCharsSet),
       };
     });
 
-    // 临时保存原始Map和Timer
+    // 临时保存原始Map
     const originalPlayerStates = this.playerStates;
     const originalTitleChars = this.titleChars;
     const originalContentChars = this.contentChars;
-    const originalResetTimer = this.resetTimer;
 
-    // 替换为可序列化的对象，移除Timer
+    // 替换为可序列化的对象
     (this as any).playerStates = playerStatesObj;
     (this as any).titleChars = Array.from(this.titleChars);
     (this as any).contentChars = Array.from(this.contentChars);
-    (this as any).resetTimer = undefined; // Timer对象不能序列化
 
     // 调用父类save方法
     super.save();
 
-    // 恢复原始Map和Timer
+    // 恢复原始Map
     this.playerStates = originalPlayerStates;
     this.titleChars = originalTitleChars;
     this.contentChars = originalContentChars;
-    this.resetTimer = originalResetTimer;
   }
 
   get Routers() {
@@ -138,7 +154,7 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
     // 投稿文章
     router.post("/post", async (req, res) => {
       try {
-        const { title, content, category, difficulty } = req.body;
+        const { title, content, difficulty } = req.body;
         if (!title || !content) {
           throw new Error("标题和正文不能为空");
         }
@@ -152,9 +168,8 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
         const model = new Model();
         model.title = title;
         model.content = content;
-        model.category = category || '默认';
         model.difficulty = difficulty || '简单';
-        model.valid = false;
+        model.status = ArticleStatus.PENDING; // 投稿后默认为待审核
         model.from = req.session.player?.username || '';
         await this.insert(model);
         res.json({ code: 0, data: model });
@@ -179,13 +194,10 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
     return router;
   }
 
-  async getList(query: { title?: string; category?: string; difficulty?: string; valid?: string; page: number; count: number; }): Promise<{ records: Model[]; total: number; }> {
+  async getList(query: { title?: string; status?: string; difficulty?: string; page: number; count: number; }): Promise<{ records: Model[]; total: number; }> {
     const where: any = {};
-    if (query.valid) {
-      where.valid = query.valid === '1';
-    }
-    if (query.category) {
-      where.category = query.category;
+    if (query.status) {
+      where.status = query.status;
     }
     if (query.difficulty) {
       where.difficulty = query.difficulty;
@@ -229,23 +241,46 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
       if (oldStates && typeof oldStates === 'object') {
         Object.entries(oldStates).forEach(([key, value]: [string, any]) => {
           if (value && value.player) {
-            // 重建 Set 对象
-            if (value.guessedChars && !Array.isArray(value.guessedChars)) {
-              value.guessedChars = new Set(Object.values(value.guessedChars || {}));
-            } else if (Array.isArray(value.guessedChars)) {
-              value.guessedChars = new Set(value.guessedChars);
-            }
-            
-            if (value.correctChars && !Array.isArray(value.correctChars)) {
-              value.correctChars = new Set(Object.values(value.correctChars || {}));
-            } else if (Array.isArray(value.correctChars)) {
-              value.correctChars = new Set(value.correctChars);
-            }
-            
-            if (value.wrongChars && !Array.isArray(value.wrongChars)) {
-              value.wrongChars = new Set(Object.values(value.wrongChars || {}));
-            } else if (Array.isArray(value.wrongChars)) {
-              value.wrongChars = new Set(value.wrongChars);
+            // 兼容旧数据格式
+            if (value.correctChars || value.wrongChars) {
+              // 从旧格式迁移到新格式
+              value.guessHistory = [];
+              const oldCorrectChars = Array.isArray(value.correctChars) 
+                ? value.correctChars 
+                : (value.correctChars ? Array.from(Object.values(value.correctChars)) : []);
+              const oldWrongChars = Array.isArray(value.wrongChars) 
+                ? value.wrongChars 
+                : (value.wrongChars ? Array.from(Object.values(value.wrongChars)) : []);
+              
+              // 合并旧数据到guessHistory（无法保证顺序）
+              oldCorrectChars.forEach((char: string) => {
+                value.guessHistory.push({ char, correct: true });
+              });
+              oldWrongChars.forEach((char: string) => {
+                value.guessHistory.push({ char, correct: false });
+              });
+              
+              value.correctCharsSet = new Set(oldCorrectChars);
+              value.guessedCharsSet = new Set([...oldCorrectChars, ...oldWrongChars]);
+            } else {
+              // 恢复新格式
+              value.guessHistory = value.guessHistory || [];
+              
+              if (value.guessedCharsSet && !Array.isArray(value.guessedCharsSet)) {
+                value.guessedCharsSet = new Set(Object.values(value.guessedCharsSet || {}));
+              } else if (Array.isArray(value.guessedCharsSet)) {
+                value.guessedCharsSet = new Set(value.guessedCharsSet);
+              } else {
+                value.guessedCharsSet = new Set();
+              }
+              
+              if (value.correctCharsSet && !Array.isArray(value.correctCharsSet)) {
+                value.correctCharsSet = new Set(Object.values(value.correctCharsSet || {}));
+              } else if (Array.isArray(value.correctCharsSet)) {
+                value.correctCharsSet = new Set(value.correctCharsSet);
+              } else {
+                value.correctCharsSet = new Set();
+              }
             }
             
             this.playerStates.set(key, value);
@@ -266,6 +301,9 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
       checkInactive: () => {
         this.checkInactivePlayers();
       },
+      reset: () => {
+        this.resetGame();
+      },
     });
     
     // 监听玩家加入事件
@@ -273,8 +311,18 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
       console.log('[猜盐后端] 玩家加入事件触发:', player.name, '房间状态:', this.room.status);
       // 如果游戏正在进行，新加入的玩家状态为"等待中"
       if (this.room.status === RoomStatus.playing) {
-        const roomPlayer = this.room.validPlayers.find(p => p.id === player.id);
+        // join 事件里传来的 player 可能还是 watcher（默认行为），这里对猜盐做特判：允许直接转为 player 参与
+        const roomPlayer = this.room.players.find(p => p.id === player.id);
         if (roomPlayer) {
+          if (roomPlayer.role === PlayerRole.watcher) {
+            roomPlayer.role = PlayerRole.player;
+            roomPlayer.isReady = false;
+            roomPlayer.status = PlayerStatus.playing;
+            roomPlayer.emit('status', PlayerStatus.playing);
+            this.room.emit('update', this.room);
+          }
+
+          // 初始化为等待中（也能参与猜题，首次猜测会自动进入流程）
           this.initPlayerState(roomPlayer, 'waiting');
           this.say(`玩家 ${roomPlayer.name} 加入游戏，状态为等待中。`);
           this.broadcastPlayersUpdate();
@@ -326,20 +374,18 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
     // 监听玩家离开事件
     this.room.on('leave', (player) => {
       const state = this.playerStates.get(player.id);
-      if (state && state.status === 'guessing') {
-        // 如果离开的是猜题中的玩家，检查游戏是否结束
+      if (state) {
         this.playerStates.delete(player.id);
-        this.broadcastPlayersUpdate();
-        this.checkGameEnd();
-        this.save();
-      } else if (state) {
-        this.playerStates.delete(player.id);
-        this.broadcastPlayersUpdate();
-        this.save();
-      } else {
-        // 准备阶段也广播玩家列表更新
-        this.broadcastPlayersUpdate();
       }
+
+      this.broadcastPlayersUpdate();
+
+      // 游戏中：踢出/离开都可能导致满足结束条件（例如最后一个 guess 玩家被踢）
+      if (this.room.status === RoomStatus.playing) {
+        this.checkGameEnd();
+      }
+
+      this.save();
     });
     
     return super.init().on('end', () => {
@@ -395,13 +441,13 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
 
     // 计算标题进度
     const titleGuessed = Array.from(this.titleChars).filter(char => 
-      state.correctChars.has(char)
+      state.correctCharsSet.has(char)
     ).length;
     state.titleProgress = this.titleChars.size > 0 ? (titleGuessed / this.titleChars.size) * 100 : 0;
 
     // 计算正文进度
     const contentGuessed = Array.from(this.contentChars).filter(char => 
-      state.correctChars.has(char)
+      state.correctCharsSet.has(char)
     ).length;
     state.contentProgress = this.contentChars.size > 0 ? (contentGuessed / this.contentChars.size) * 100 : 0;
 
@@ -460,37 +506,24 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
     const allPlayers = Array.from(this.playerStates.values());
     const guessingPlayers = allPlayers.filter(state => state.status === 'guessing');
     const completedPlayers = allPlayers.filter(state => state.status === 'completed');
+    const activePlayers = allPlayers.filter(state => state.status !== 'waiting'); // 排除等待中的玩家
 
     // 所有猜题中的玩家已完成或放弃
-    if (guessingPlayers.length === 0) {
-      // 检查是否所有玩家都完成了（包括只有一个玩家的情况）
-      if (completedPlayers.length > 0 && completedPlayers.length === allPlayers.length) {
+    if (guessingPlayers.length === 0 && activePlayers.length > 0) {
+      // 检查是否所有活跃玩家都完成了（排除等待中的玩家）
+      if (completedPlayers.length > 0 && completedPlayers.length === activePlayers.length) {
         this.say(`所有玩家已完成！10秒后开始下一轮...`);
         
-        // 清除之前的定时器（如果存在）
-        if (this.resetTimer) {
-          clearTimeout(this.resetTimer);
-        }
-        
-        // 倒计时提醒
-        let countdown = 10;
-        const countdownInterval = setInterval(() => {
-          countdown--;
-          if (countdown > 0) {
-            this.say(`${countdown}秒后开始下一轮...`);
-          } else {
-            clearInterval(countdownInterval);
-          }
-        }, 1000);
-        
-        // 10秒后重置游戏
-        this.resetTimer = setTimeout(() => {
-          clearInterval(countdownInterval);
+        // 使用 GameRoom 的 startTimer 方法启动倒计时
+        // 会自动广播 countdown 指令给前端
+        this.startTimer(() => {
           this.resetGame();
-        }, 10000);
+        }, 10000, 'reset');
       } else {
-        this.say(`所有猜题中的玩家已完成或放弃，本回合结束。`);
-        this.room.end();
+        this.say(`所有猜题中的玩家已完成或放弃，本回合将在10秒后结束。`);
+        this.startTimer(() => {
+          this.resetGame();
+        }, 10000, 'reset');
       }
     }
   }
@@ -527,9 +560,7 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
       players: Array.from(this.playerStates.values()).map(s => ({
         name: s.player.name,
         status: s.status,
-        guessedChars: Array.from(s.guessedChars),
-        correctChars: Array.from(s.correctChars),
-        wrongChars: Array.from(s.wrongChars),
+        guessHistory: s.guessHistory,
         titleProgress: s.titleProgress,
         contentProgress: s.contentProgress,
         avatar: s.player.attributes?.avatar,
@@ -550,14 +581,13 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
         return this.sayTo(`你还未完成，无法在通关频道发言。`, sender);
       }
       
-      // 只发送给已完成的玩家
+      // 只发送给已完成的玩家，通过单独的 command 发送以保留 sender 信息
       const completedPlayers = Array.from(this.playerStates.values())
         .filter(s => s.status === 'completed')
         .map(s => s.player);
       
-      const fullMessage = `[通关] ${sender.name}: ${data}`;
       completedPlayers.forEach(player => {
-        this.sayTo(fullMessage, player);
+        player.emit('message', { content: `[通关] ${data}`, sender });
       });
     } else {
       // 公开频道，发送给所有人
@@ -576,6 +606,13 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
       case 'giveup':
         this.handleGiveup(sender);
         break;
+      case 'setRestrictAlphanumeric':
+        if (sender.isCreator && this.room.status !== RoomStatus.playing) {
+          this.restrictAlphanumeric = message.data.restrictAlphanumeric;
+          this.command('restrictAlphanumericChanged', { restrictAlphanumeric: this.restrictAlphanumeric });
+          this.save();
+        }
+        break;
     }
   }
 
@@ -587,17 +624,30 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
       this.initPlayerState(sender, 'waiting');
     }
 
+    // 如果开启了数字字母限制，检查输入是否为汉字
+    if (this.restrictAlphanumeric && !/[一-龥]/.test(char)) {
+      return this.sayTo('只能输入汉字！', sender);
+    }
+
     const state = this.playerStates.get(sender.id)!;
 
-    state.guessedChars.add(char);
+    // 检查是否已经猜过这个字符
+    if (state.guessedCharsSet.has(char)) {
+      return; // 重复输入，直接返回不更新
+    }
+
     state.lastGuessTime = Date.now();
 
     // 检查字符是否在文章中
     const allChars = new Set([...this.titleChars, ...this.contentChars]);
-    if (allChars.has(char)) {
-      state.correctChars.add(char);
-    } else {
-      state.wrongChars.add(char);
+    const correct = allChars.has(char);
+    
+    // 添加到历史记录（按输入顺序）
+    state.guessHistory.push({ char, correct });
+    state.guessedCharsSet.add(char);
+    
+    if (correct) {
+      state.correctCharsSet.add(char);
     }
 
     // 如果是已放弃的玩家继续猜测，状态改为等待中
@@ -619,14 +669,14 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
       
       displayTitle = Array.from(this.currentArticle.title).map(char => {
         if (/[\u4e00-\u9fa5]/.test(char)) {
-          return state.correctChars.has(char) || showFull ? char : '□';
+          return state.correctCharsSet.has(char) || showFull ? char : '□';
         }
         return char;
       }).join('');
 
       displayContent = Array.from(this.currentArticle.content).map(char => {
         if (/[\u4e00-\u9fa5]/.test(char)) {
-          return state.correctChars.has(char) || showFull ? char : '□';
+          return state.correctCharsSet.has(char) || showFull ? char : '□';
         }
         return char;
       }).join('');
@@ -641,7 +691,6 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
       article: {
         title: displayTitle,
         content: displayContent,
-        category: this.currentArticle?.category,
         difficulty: this.currentArticle?.difficulty,
       },
     }, sender);
@@ -683,9 +732,9 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
     this.playerStates.set(player.id, {
       player,
       status,
-      guessedChars: new Set(),
-      correctChars: new Set(),
-      wrongChars: new Set(),
+      guessHistory: [],
+      guessedCharsSet: new Set(),
+      correctCharsSet: new Set(),
       lastGuessTime: Date.now(),
       titleProgress: 0,
       contentProgress: 0,
@@ -693,16 +742,18 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
   }
 
   async onStart() {
-    if (this.room.validPlayers.length < this.room.minSize) {
+    // 当 minSize 为 0 时，至少需要 1 个玩家
+    const minPlayers = this.room.minSize === 0 ? 1 : this.room.minSize;
+    if (this.room.validPlayers.length < minPlayers) {
       return this.say(`玩家人数不足，无法开始游戏。`);
     }
 
     this.playerStates.clear();
     this.stopTimer();
 
-    // 获取所有有效文章
+    // 获取所有可用状态的文章
     const articles = await Model.getRepo<Model>(Model).find({
-      where: { valid: true },
+      where: { status: ArticleStatus.AVAILABLE },
     });
 
     if (articles.length === 0) {
@@ -714,9 +765,8 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
         const model = new Model();
         model.title = articleData.title;
         model.content = articleData.content;
-        model.category = articleData.category;
         model.difficulty = articleData.difficulty;
-        model.valid = true;
+        model.status = articleData.status;
         model.from = 'system';
         model.weight = 100;
         await this.insert(model);
@@ -775,7 +825,7 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
       // 标题显示
       displayTitle = Array.from(this.currentArticle.title).map(char => {
         if (/[\u4e00-\u9fa5]/.test(char)) {
-          return state.correctChars.has(char) || showFull ? char : '□';
+          return state.correctCharsSet.has(char) || showFull ? char : '□';
         }
         return char;
       }).join('');
@@ -783,7 +833,7 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
       // 正文显示：完成后显示完整内容
       displayContent = Array.from(this.currentArticle.content).map(char => {
         if (/[\u4e00-\u9fa5]/.test(char)) {
-          return state.correctChars.has(char) || showFull ? char : '□';
+          return state.correctCharsSet.has(char) || showFull ? char : '□';
         }
         return char;
       }).join('');
@@ -793,13 +843,11 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
       article: this.currentArticle ? {
         title: displayTitle,
         content: displayContent,
-        category: this.currentArticle.category,
         difficulty: this.currentArticle.difficulty,
       } : null,
       playerState: state ? {
         status: state.status,
-        correctChars: Array.from(state.correctChars),
-        wrongChars: Array.from(state.wrongChars),
+        guessHistory: state.guessHistory, // 返回完整的猜测历史
         titleProgress: state.titleProgress,
         contentProgress: state.contentProgress,
       } : null,
@@ -820,6 +868,7 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
             avatar: p.attributes?.avatar,
             isPlaying: false,
           })),
+      restrictAlphanumeric: this.restrictAlphanumeric,
     };
   }
 

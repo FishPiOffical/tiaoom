@@ -7,16 +7,14 @@ interface Article {
   id: string;
   title: string;
   content: string;
-  category: string;
   difficulty: string;
-  valid: boolean;
+  status: string;
   from: string;
 }
 
 const form = ref({
   title: '',
   content: '',
-  category: '百科',
   difficulty: '简单',
 });
 
@@ -24,8 +22,7 @@ const myPosts = ref<Article[]>([]);
 const loading = ref(false);
 const submitting = ref(false);
 
-const categories = ['百科', '历史', '科技', '文学', '地理', '艺术'];
-const difficulties = ['简单', '中等', '困难', '地狱'];
+const difficulties = ['简单', '中等', '困难'];
 
 const fetchMyPosts = async () => {
   loading.value = true;
@@ -52,10 +49,9 @@ const submit = async () => {
   submitting.value = true;
   try {
     await http.post('/game/guess/post', { ...form.value });
-    msg.success('投稿成功！');
+    msg.success('投稿成功！审核通过后即可参与游戏');
     form.value.title = '';
     form.value.content = '';
-    form.value.category = '百科';
     form.value.difficulty = '简单';
     await fetchMyPosts();
   } catch (error: any) {
@@ -72,16 +68,16 @@ onMounted(() => {
 
 <template>
   <div class="p-4 max-w-4xl mx-auto">
-    <h1 class="text-xl font-bold mb-6">文章投稿</h1>
+    <h1 class="text-xl font-bold mb-6">我要投稿</h1>
     
     <!-- 投稿表单 -->
     <div class="card bg-base-200 mb-8">
       <div class="card-body">
-        <h2 class="card-title mb-4">投稿新文章</h2>
+        <h2 class="card-title mb-4">新文章投稿</h2>
         
         <div class="form-control w-full mb-4">
           <label class="label">
-            <span class="label-text">标题 *</span>
+            <span class="label-text">标题</span>
             <span class="label-text-alt">{{ form.title.length }}/100</span>
           </label>
           <input 
@@ -95,7 +91,7 @@ onMounted(() => {
 
         <div class="form-control w-full mb-4">
           <label class="label">
-            <span class="label-text">正文 *</span>
+            <span class="label-text">正文</span>
             <span class="label-text-alt">{{ form.content.length }}/5000</span>
           </label>
           <textarea 
@@ -106,26 +102,16 @@ onMounted(() => {
           ></textarea>
         </div>
 
-        <div class="flex flex-col md:flex-row gap-4 mb-4">
-          <div class="form-control w-full">
-            <label class="label">
-              <span class="label-text">分类</span>
-            </label>
-            <select v-model="form.category" class="select select-bordered w-full">
-              <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
-            </select>
-          </div>
-          <div class="form-control w-full">
-            <label class="label">
-              <span class="label-text">难度</span>
-            </label>
-            <select v-model="form.difficulty" class="select select-bordered w-full">
-              <option v-for="diff in difficulties" :key="diff" :value="diff">{{ diff }}</option>
-            </select>
-          </div>
+        <div class="form-control w-full">
+          <label class="label">
+            <span class="label-text">难度</span>
+          </label>
+          <select v-model="form.difficulty" class="select select-bordered w-full">
+            <option v-for="diff in difficulties" :key="diff" :value="diff">{{ diff }}</option>
+          </select>
         </div>
 
-        <div class="card-actions justify-end">
+        <div class="card-actions justify-end mt-4">
           <button 
             class="btn btn-primary" 
             @click="submit" 
@@ -151,36 +137,44 @@ onMounted(() => {
           暂无投稿记录
         </div>
         
-        <div v-else class="space-y-4">
-          <div 
-            v-for="post in myPosts" 
-            :key="post.id"
-            class="p-4 bg-base-100 rounded-lg border border-base-content/10"
-          >
-            <div class="flex justify-between items-start mb-2">
-              <h3 class="font-bold text-lg">{{ post.title }}</h3>
-              <div class="flex gap-2">
-                <span class="badge badge-sm" :class="post.valid ? 'badge-success' : 'badge-warning'">
-                  {{ post.valid ? '已审核' : '待审核' }}
-                </span>
-                <span class="badge badge-sm badge-info">{{ post.category }}</span>
-                <span class="badge badge-sm badge-secondary">{{ post.difficulty }}</span>
-              </div>
-            </div>
-            <p class="text-sm text-base-content/70 line-clamp-3">{{ post.content }}</p>
-          </div>
+        <div v-else class="overflow-x-auto">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>标题</th>
+                <th>难度</th>
+                <th>状态</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="post in myPosts" :key="post.id">
+                <td>
+                  <div class="max-w-xs truncate" :title="post.title">
+                    {{ post.title }}
+                  </div>
+                </td>
+                <td>
+                  <span class="badge badge-sm badge-secondary">{{ post.difficulty }}</span>
+                </td>
+                <td>
+                  <div class="badge" :class="{
+                    'badge-warning': post.status === 'pending',
+                    'badge-success': post.status === 'available',
+                    'badge-error': post.status === 'frozen',
+                    'badge-ghost': post.status === 'deleted'
+                  }">
+                    {{ 
+                      post.status === 'pending' ? '待审核' : 
+                      post.status === 'available' ? '可用' : 
+                      post.status === 'frozen' ? '冻结' : '已删除'
+                    }}
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-.line-clamp-3 {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-</style>

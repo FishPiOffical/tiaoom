@@ -2,30 +2,43 @@
   <section class="flex flex-col lg:flex-row gap-4 lg:h-full">
     <!-- 主游戏区域 -->
     <section class="flex-1 lg:h-full overflow-auto p-4">
-      <!-- 准备阶段：显示游戏说明 -->
+      <!-- 准备阶段：显示房主设置 -->
       <div v-if="!isPlaying" class="space-y-4">
-        <div class="card bg-base-200">
+        <!-- 房主设置面板 -->
+        <div v-if="isOwner" class="card bg-base-200">
           <div class="card-body">
-            <h2 class="card-title">猜盐游戏</h2>
-            <p class="text-base-content/80">
-              系统将随机选取一篇文章，玩家通过猜测字符来还原文章内容。
-            </p>
-            <p class="text-base-content/80">
-              猜出完整标题即视为完成！
-            </p>
-          </div>
-        </div>
-        
-        <div class="card bg-base-200">
-          <div class="card-body">
-            <h3 class="font-bold">游戏规则</h3>
-            <ul class="list-disc list-inside space-y-2 text-base-content/80">
-              <li>每次猜测一个汉字字符</li>
-              <li>猜对的字符会在文章中显示出来</li>
-              <li>标题和正文中的汉字都可以被猜测</li>
-              <li>完全还原标题即可通关</li>
-              <li>已完成的玩家可以在通关频道聊天</li>
-            </ul>
+            <h3 class="font-bold">游戏设置</h3>
+            <div class="space-y-3">
+              <div>
+                <label class="label">
+                  <span class="label-text">难度</span>
+                </label>
+                <select 
+                  v-model="difficulty" 
+                  @change="setDifficulty(difficulty)"
+                  class="select select-bordered w-full"
+                >
+                  <option value="简单">简单</option>
+                  <option value="中等">中等</option>
+                  <option value="困难">困难</option>
+                </select>
+              </div>
+              
+              <div class="form-control">
+                <label class="label cursor-pointer">
+                  <span class="label-text">禁止输入数字和字母</span>
+                  <input 
+                    v-model="restrictAlphanumeric"
+                    @change="setRestrictAlphanumeric(restrictAlphanumeric)"
+                    type="checkbox" 
+                    class="checkbox checkbox-primary"
+                  />
+                </label>
+                <div class="label">
+                  <span class="label-text-alt text-base-content/60"> 开启后仅允许输入汉字</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -57,7 +70,7 @@
           <div class="p-4 bg-base-200 rounded-lg">
             <div class="flex justify-between items-center mb-2">
               <div class="text-xs text-base-content/60">正文 ({{ contentProgress.toFixed(1) }}%)</div>
-              <div class="text-xs text-base-content/60">{{ article.category }} · {{ article.difficulty }}</div>
+              <div class="text-xs text-base-content/60">难度：{{ article.difficulty }}</div>
             </div>
             <div class="text-base leading-loose break-all">
               <span 
@@ -108,22 +121,16 @@
         <!-- 输入历史 -->
         <div class="mb-4 p-4 bg-base-200 rounded-lg">
           <h3 class="font-bold mb-2">输入历史</h3>
-          <div class="flex flex-wrap gap-2">
+          <div class="flex flex-wrap gap-1">
             <span 
-              v-for="char in correctChars" 
-              :key="`correct-${char}`"
-              class="badge badge-success badge-lg"
+              v-for="(item, index) in guessHistory" 
+              :key="`guess-${index}`"
+              class="w-6 h-6 flex items-center justify-center rounded font-bold text-sm"
+              :class="item.correct ? 'bg-success text-success-content' : 'bg-error text-error-content'"
             >
-              {{ char }}
+              {{ item.char }}
             </span>
-            <span 
-              v-for="char in wrongChars" 
-              :key="`wrong-${char}`"
-              class="badge badge-error badge-lg"
-            >
-              {{ char }}
-            </span>
-            <span v-if="correctChars.length === 0 && wrongChars.length === 0" class="text-base-content/60 text-sm">
+            <span v-if="guessHistory.length === 0" class="text-base-content/60 text-sm">
               还没有猜测记录
             </span>
           </div>
@@ -138,78 +145,69 @@
         }">
           {{ getStatusText(playerStatus) }}
         </div>
+
+        <!-- 倒计时显示 -->
+        <div v-if="countdown > 0" class="mb-4 p-4 bg-primary/20 rounded-lg text-center">
+          <div class="text-sm text-base-content/70 mb-1">下一轮即将开始</div>
+          <div class="text-3xl font-bold text-primary">{{ countdown }}秒</div>
+        </div>
       </div>
     </section>
     
-    <!-- 侧边栏：玩家列表 -->
+    <!-- 侧边栏：玩家列表和聊天 -->
     <aside class="w-full lg:w-96 flex-none border-t lg:border-t-0 lg:border-l border-base-content/20 pt-4 lg:pt-0 lg:pl-4 space-y-4">
       <h3 class="font-bold text-lg">玩家列表 ({{ allPlayers.length }})</h3>
       
-      <div class="space-y-2 overflow-auto max-h-[500px]">
-        <div 
-          v-for="player in allPlayers" 
-          :key="player.name"
-          class="p-3 bg-base-200 rounded-lg transition-all"
-          :class="{
-            'ring-2 ring-primary': player.name === roomPlayer.name
-          }"
-        >
-          <div class="flex items-center gap-3 mb-2">
-            <div class="w-10 h-10 rounded-full bg-base-300 flex items-center justify-center font-bold text-sm">
-              <span v-if="!player.avatar">{{ player.name.substring(0, 1).toUpperCase() }}</span>
-              <img v-else :src="player.avatar" alt="avatar" class="w-full h-full object-cover rounded-full" />
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="font-bold truncate">{{ player.name }}</div>
-              <div class="text-xs" :class="{
-                'text-base-content/60': player.status === 'unready',
-                'text-success': player.status === 'ready' || player.status === 'completed',
-                'text-info': player.status === 'waiting',
-                'text-warning': player.status === 'guessing',
-                'text-error': player.status === 'giveup'
-              }">
-                {{ getStatusText(player.status) }}
+      <!-- 使用 PlayerList 组件，通过插槽自定义显示 -->
+      <PlayerList :players="roomPlayer.room.players">
+        <template #default="{ player }">
+          <div 
+            class="relative flex flex-col gap-2 p-3 bg-base-200 rounded-lg transition-all"
+            :class="{
+              'ring-2 ring-primary': player.name === roomPlayer.name
+            }"
+          >
+            <button
+              v-if="isOwner && player.id !== roomPlayer.id"
+              class="btn btn-xs btn-ghost absolute top-2 right-2"
+              title="踢出玩家"
+              @click.stop.prevent="kickPlayer(player.id)"
+            >
+              <Icon icon="mdi:account-remove" />
+            </button>
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-base-300 flex items-center justify-center font-bold text-sm">
+                <span v-if="!player.attributes?.avatar">{{ player.name.substring(0, 1).toUpperCase() }}</span>
+                <img v-else :src="player.attributes.avatar" alt="avatar" class="w-full h-full object-cover rounded-full" />
               </div>
+              <div class="flex-1 min-w-0">
+                <div class="font-bold truncate">{{ player.name }}</div>
+                <div class="text-xs" :class="{
+                  'text-base-content/60': getPlayerGameStatus(player) === 'unready' || player.role === 'watcher',
+                  'text-success': getPlayerGameStatus(player) === 'ready' || getPlayerGameStatus(player) === 'completed',
+                  'text-info': getPlayerGameStatus(player) === 'waiting',
+                  'text-warning': getPlayerGameStatus(player) === 'guessing',
+                  'text-error': getPlayerGameStatus(player) === 'giveup',
+                }">
+                  {{ player.role === 'watcher' ? '围观中' : getStatusText(getPlayerGameStatus(player)) }}
+                </div>
+              </div>
+            </div>
+            
+            <!-- 进度文本（仅在游戏中显示） -->
+            <div v-if="player.role === 'player' && isPlaying" class="text-xs text-base-content/70">
+              标题 {{ (getPlayerProgress(player).titleProgress || 0).toFixed(1) }}% · 正文 {{ (getPlayerProgress(player).contentProgress || 0).toFixed(1) }}%
             </div>
           </div>
-          
-          <!-- 进度条（仅在游戏中显示） -->
-          <div v-if="player.isPlaying !== false" class="space-y-1">
-            <div>
-              <div class="flex justify-between text-xs mb-1">
-                <span>标题</span>
-                <span>{{ (player.titleProgress || 0).toFixed(1) }}%</span>
-              </div>
-              <progress 
-                class="progress progress-primary w-full" 
-                :value="player.titleProgress || 0" 
-                max="100"
-              ></progress>
-            </div>
-            <div>
-              <div class="flex justify-between text-xs mb-1">
-                <span>正文</span>
-                <span>{{ (player.contentProgress || 0).toFixed(1) }}%</span>
-              </div>
-              <progress 
-                class="progress progress-secondary w-full" 
-                :value="player.contentProgress || 0" 
-                max="100"
-              ></progress>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 房间管理按钮 -->
-      <PlayerList :players="(roomPlayer.room.players as any).filter((p: any) => p.role === 'watcher')" />
+        </template>
+      </PlayerList>
       
-      <!-- 聊天区域 -->
+      <!-- 聊天区域 - 使用框架自带组件 -->
       <div class="mt-4 border-t border-base-content/20 pt-4">
         <div class="flex justify-between items-center mb-2">
           <h3 class="font-bold text-lg">聊天</h3>
-          <!-- 频道切换（仅已完成玩家可见） -->
-          <div v-if="playerStatus === 'completed'" class="tabs tabs-boxed tabs-xs">
+          <!-- 频道切换（仅游戏中且已完成玩家可见） -->
+          <div v-if="isPlaying && playerStatus === 'completed'" class="tabs tabs-boxed tabs-xs">
             <button 
               class="tab" 
               :class="{ 'tab-active': chatChannel === 'public' }"
@@ -227,43 +225,33 @@
           </div>
         </div>
         
-        <!-- 消息列表 -->
-        <div class="bg-base-200 rounded-lg p-3 h-48 overflow-y-auto mb-2 space-y-2">
-          <div 
-            v-for="(msg, idx) in filteredMessages" 
-            :key="idx"
-            class="text-sm"
-          >
-            <span v-if="msg.sender" class="font-bold">{{ msg.sender.name }}:</span>
-            <span v-else class="font-bold text-info">系统：</span>
-            <span class="ml-1">{{ String(msg.content) }}</span>
-          </div>
-          <div v-if="filteredMessages.length === 0" class="text-base-content/60 text-center py-8">
-            暂无消息
-          </div>
+        <!-- 通关频道提示 -->
+        <div v-if="chatChannel === 'completed'" class="alert alert-warning mb-2 py-2 text-xs">
+          <Icon icon="mdi:information-outline" />
+          <span>当前在通关频道，只有已完成的玩家能看到消息</span>
         </div>
         
-        <!-- 输入框 -->
-        <div class="flex gap-2">
-          <input 
-            v-model="chatInput"
-            @keyup.enter="sendMessage"
-            type="text" 
-            placeholder="输入消息..."
-            class="input input-bordered input-sm flex-1"
-          />
-          <button 
-            @click="sendMessage" 
-            class="btn btn-primary btn-sm"
-            :disabled="!chatInput.trim()"
-          >
-            发送
-          </button>
-        </div>
-        
-        <div v-if="chatChannel === 'completed'" class="text-xs text-warning mt-1">
-          当前在通关频道，只有已完成的玩家能看到
-        </div>
+        <!-- 使用框架的 GameChat 组件 -->
+        <GameChat 
+          :can-send="chatChannel === 'public' || (isPlaying && playerStatus === 'completed')"
+          :placeholder="chatChannel === 'completed' ? '通关频道聊天...' : '随便聊聊'"
+          :custom-send="true"
+          @send="handleChatSend"
+        >
+          <template #rules>
+            <ul class="space-y-2 text-sm">
+              <li><strong>游戏目标：</strong>通过猜测字符，还原隐藏的文章标题和正文内容。</li>
+              <li><strong>猜测规则：</strong>
+                <ul class="pl-4 mt-1 list-disc">
+                  <li>每次猜测一个汉字字符</li>
+                  <li>猜对的字符会在标题和正文中同时显示</li>
+                  <li>猜错的字符会记录在输入历史中</li>
+                </ul>
+              </li>
+              <li><strong>通关条件：</strong>完全还原标题即可完成游戏</li>
+            </ul>
+          </template>
+        </GameChat>
       </div>
     </aside>
   </section>
@@ -272,8 +260,9 @@
 <script setup lang="ts">
 import { useGuess, type GuessRoomPlayer } from './useGuess'
 import PlayerList from '@/components/common/PlayerList.vue'
+import GameChat from '@/components/common/GameChat.vue'
 import type { Room } from 'tiaoom/client'
-import { onMounted, onBeforeUnmount, ref, computed } from 'vue'
+import { onMounted, onBeforeUnmount, ref } from 'vue'
 
 const props = defineProps<{
   game: any
@@ -292,68 +281,47 @@ onBeforeUnmount(() => {
 
 const {
   article,
+  guessHistory,
   correctChars,
-  wrongChars,
   playerStatus,
   titleProgress,
   contentProgress,
   allPlayers,
-  category,
   difficulty,
+  restrictAlphanumeric,
   guessInput,
+  countdown,
   isPlaying,
   isOwner,
   canGuess,
   giveup,
-  setCategory,
   setDifficulty,
+  setRestrictAlphanumeric,
   handleGuessSubmit,
-  messages,
+  kickPlayer,
 } = useGuess(props.game, props.roomPlayer)
 
-// 聊天相关状态
-const chatInput = ref('')
+// 聊天频道状态
 const chatChannel = ref<'public' | 'completed'>('public')
 
-// 根据频道过滤消息
-const filteredMessages = computed(() => {
-  return messages.value.filter(msg => {
-    // 系统消息总是显示
-    if (!msg.sender) return true
-    
-    // 确保内容是字符串
-    const content = String(msg.content || '')
-    
-    // 通关频道消息（以[通关]开头）
-    if (content.startsWith('[通关]')) {
-      // 只有在通关频道才显示
-      return chatChannel.value === 'completed'
-    }
-    
-    // 公开频道消息
-    return chatChannel.value === 'public'
-  })
-})
-
-// 发送消息
-function sendMessage() {
-  if (!chatInput.value.trim()) return
-  
+// 处理聊天发送
+function handleChatSend(text: string) {
   if (chatChannel.value === 'completed') {
     // 发送到通关频道
     props.game.command(props.roomPlayer.room.id, { 
       type: 'say', 
       data: { 
-        message: chatInput.value,
+        message: text,
         channel: 'completed'
       } 
     })
   } else {
     // 发送到公开频道
-    props.game.say(chatInput.value, props.roomPlayer.room.id)
+    props.game.command(props.roomPlayer.room.id, { 
+      type: 'say', 
+      data: text
+    })
   }
-  
-  chatInput.value = ''
 }
 
 function getStatusText(status: string): string {
@@ -366,6 +334,22 @@ function getStatusText(status: string): string {
     giveup: '已放弃'
   }
   return statusMap[status] || status
+}
+
+// 从 RoomPlayer 中获取游戏状态
+function getPlayerGameStatus(player: any): string {
+  // 从 allPlayers 中查找对应玩家的状态信息
+  const gamePlayer = allPlayers.value.find(p => p.name === player.name)
+  return gamePlayer?.status || 'unready'
+}
+
+// 从 RoomPlayer 中获取进度信息
+function getPlayerProgress(player: any): { titleProgress: number; contentProgress: number } {
+  const gamePlayer = allPlayers.value.find(p => p.name === player.name)
+  return {
+    titleProgress: gamePlayer?.titleProgress || 0,
+    contentProgress: gamePlayer?.contentProgress || 0
+  }
 }
 </script>
 

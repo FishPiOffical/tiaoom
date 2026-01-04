@@ -140,7 +140,12 @@
                       【{{ gameStore.games[r.attrs.type].name }}】{{ r.name }}
                     </span>
                     <span class="text-xs text-base-content/60 whitespace-nowrap">
-                      ({{ r.players.filter(p => p.role === 'player').length }}/{{ r.size }})
+                      <template v-if="r.size === 0">
+                        ({{ r.players.filter(p => p.role === 'player').length }})
+                      </template>
+                      <template v-else>
+                        ({{ r.players.filter(p => p.role === 'player').length }}/{{ r.size }})
+                      </template>
                     </span>
                   </div>
                   <button
@@ -148,7 +153,7 @@
                     @click="joinRoom(r)"
                     class="px-2 py-1 btn-xs whitespace-nowrap btn"
                   >
-                    {{ r.players.filter(p => p.role === 'player').length < r.size ? '进入' : '围观' }}
+                    {{ r.size === 0 || r.players.filter(p => p.role === 'player').length < r.size ? '进入' : '围观' }}
                   </button>
                 </li>
               </ul>

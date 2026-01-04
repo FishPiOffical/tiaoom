@@ -198,6 +198,7 @@ export class Room {
   players: RoomPlayer[];
   size: number;
   minSize: number;
+  requireAllReadyToStart: boolean;
   status: RoomStatus;
   attrs: Record<string, any>;
   constructor(room: Room) {
@@ -206,6 +207,7 @@ export class Room {
     this.players = room.players.map(player => new RoomPlayer(player));
     this.size = room.size;
     this.minSize = room.minSize;
+    this.requireAllReadyToStart = room.requireAllReadyToStart ?? true;
     this.status = room.status;
     this.attrs = room.attrs;
   }
