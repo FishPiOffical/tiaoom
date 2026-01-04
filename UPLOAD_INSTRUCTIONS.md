@@ -2,7 +2,7 @@
 
 ## 已创建的文件
 
-本次工作已经创建了以下文件，这些文件已提交到当前分支 `copilot/add-claude-skills-for-game`：
+本次工作已经创建了以下文件，这些文件已提交到本 Pull Request 的分支：
 
 1. **tiaoom-game-development-skill.md** - Tiaoom 竞技大厅游戏开发 Claude Skill
 2. **CLAUDE_SKILL_README.md** - Claude Skill 使用说明文档
