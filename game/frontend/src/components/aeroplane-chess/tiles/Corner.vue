@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full h-full relative" :id="id">
+  <div class="w-full h-full relative" :id="id" :title="id">
     <div class="absolute inset-0 pr-1 pb-1 w-[200%] -left-full top-0 flex items-end justify-end border-base-100" 
       :class="canTakeOff ? 
       (getBorderColor(color) + ` border-2 border-dashed`) : 
@@ -13,8 +13,8 @@
       <div 
         v-if="piece"
         class="bg-base-100/80 text-base-content border-base-300 border-2 rounded-full w-1/2 h-1/2 flex items-center justify-center text-2xl"
-        :class="getBgColor(piece.color)"
-        :style="planeDir ? { transform: `rotate(${rotateMap[planeDir]})` } : {}"
+        :class="getBgColor(piece.color) + ' ' + getTextColor(piece.color)"
+        :style="planeDir || getPlaneDir ? { transform: `rotate(${rotateMap[getPlaneDir?.(piece.color) || planeDir!]})` } : {}"
       >
         <div class="indicator">
           <span class="indicator-item badge badge-xs border border-base-100 z-9 scale-80" :class="getBadgeColor(piece.color)" v-if="piece.index !== undefined">
@@ -22,14 +22,14 @@
           </span>
           <span>✈</span>
         </div>
-       </div>
+      </div>
       <div
         v-else
         class="bg-base-100/80 border border-base-content/10 rounded-full w-1/2 h-1/2 flex items-center justify-center text-2xl"
         :class="getTextColor(color, false)"
         :style="planeDir ? { transform: `rotate(${rotateMap[planeDir]})` } : {}"
       >
-        <span v-if="planeDir" class="opacity-50">✈</span>
+        <span v-if="planeDir && showPlane" class="opacity-50">✈</span>
       </div>
     </div>
   </div>
@@ -44,7 +44,10 @@ type Dir = 'tl' | 'tr' | 'br' | 'bl';
 
 const props = defineProps<{ 
   color: AeroplaneColor; 
-  dir: Dir, planeDir?: Dir, 
+  dir: Dir, 
+  planeDir?: Dir, 
+  getPlaneDir?: (color: AeroplaneColor) => Dir,
+  showPlane?: boolean,
   canTakeOff?: boolean, 
   id: string, 
   pieces?: AeroplanePlayerState[]

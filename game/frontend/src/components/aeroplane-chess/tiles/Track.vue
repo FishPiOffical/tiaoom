@@ -1,6 +1,7 @@
 <template>
   <div 
     :id="id"
+    :title="id"
     class="w-full h-full relative flex items-center justify-center border-base-100" 
     :class="getBgColor(color) + 
       (border == true ? ' border' : border ? 
@@ -19,7 +20,7 @@
         width: (size - 2) + 'px', 
         height: (size - 2) + 'px', 
         borderRadius: (size - 2) + 'px', 
-        ...planeDir ? { transform: `rotate(${rotateMap[planeDir]})` } : {}
+        ...(planeDir || getPlaneDir ? { transform: `rotate(${rotateMap[getPlaneDir?.(piece.color) || planeDir!]})` } : {})
       }"
     >
       <div class="indicator">
@@ -40,7 +41,7 @@
         ...planeDir ? { transform: `rotate(${rotateMap[planeDir]})` } : {}
       }"
     >
-      <span v-if="planeDir" class="opacity-50">✈</span>
+      <span v-if="planeDir && showPlane" class="opacity-50">✈</span>
     </div>
   </div>
 </template>
@@ -56,6 +57,8 @@ const props = withDefaults(defineProps<{
   color: AeroplaneColor;
   size: number;
   planeDir?: Dir;
+  getPlaneDir?: (color: AeroplaneColor) => Dir,
+  showPlane?: boolean;
   border?: boolean | { l?: boolean; r?: boolean; t?: boolean; b?: boolean };
   id: string;
   pieces?: AeroplanePlayerState[]

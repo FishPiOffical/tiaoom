@@ -22,11 +22,11 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import HangarTile from './tiles/HangarTile.vue';
-import TrackTile from './tiles/TrackTile.vue';
-import RunwayTile from './tiles/RunwayTile.vue';
+import Hangar from './tiles/Hangar.vue';
+import Track from './tiles/Track.vue';
+import Runway from './tiles/Runway.vue';
 import Corner from './tiles/Corner.vue';
-import CenterTile from './tiles/CenterTile.vue';
+import Center from './tiles/Center.vue';
 
 import { GRID_SIZE } from './board';
 import { DEFAULT_TILES, type TilePlacement } from './layout';
@@ -65,15 +65,15 @@ function tileStyle(t: TilePlacement) {
 function tileComponent(t: TilePlacement) {
   switch (t.kind) {
     case 'hangar':
-      return HangarTile;
+      return Hangar;
     case 'track':
-      return TrackTile;
+      return Track;
     case 'runway':
-      return RunwayTile;
+      return Runway;
     case 'corner':
       return Corner;
     case 'center':
-      return CenterTile;
+      return Center;
   }
 }
 
