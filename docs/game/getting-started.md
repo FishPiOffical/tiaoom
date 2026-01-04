@@ -1,6 +1,17 @@
 # 快速开始
 
-本指南将通过一个简单的示例，演示如何添加一个新的游戏。
+本指南将通过一个简单的示例，演示如何添加一个新的游戏。开始之前，请先 clone 本仓库：
+
+```bash
+git clone https://github.com/FishPiOffical/tiaoom.git
+```
+
+然后 cd 进入 `game` 目录，安装依赖：
+
+```bash
+cd tiaoom/game
+npm install
+```
 
 ## 1. 创建后端逻辑 {#backend-logic}
 
