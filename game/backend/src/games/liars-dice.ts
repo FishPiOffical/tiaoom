@@ -67,7 +67,7 @@ export default class LiarsDiceRoom extends GameRoom {
     if (message.sender.id !== this.currentPlayer?.id) return;
 
     if (message.type === 'bid') {
-      if (!this.lastBid || this.room.status !== 'playing') return;
+      if (this.room.status !== 'playing') return;
       const { count, face, zhai } = message.data;
       // Validation
       if (!Number.isInteger(count) || !Number.isInteger(face) || face < 1 || face > 6) return;
