@@ -1,13 +1,18 @@
 <template>
-  <div class="p-4 max-w-4xl mx-auto">
-    <h2 class="text-2xl font-bold mb-4">排行榜</h2>
+  <div class="p-4 w-full max-w-4xl mx-auto">
+    <div class="flex items-center gap-2 mb-4">
+      <button class="btn btn-circle btn-ghost btn-sm" @click="router.back()">
+        <Icon icon="mdi:arrow-left" class="text-xl" />
+      </button>
+      <h2 class="text-2xl font-bold">排行榜</h2>
+    </div>
     
-    <div role="tablist" class="tabs tabs-boxed mb-4">
+    <div role="tablist" class="tabs tabs-boxed mb-4 overflow-auto flex-nowrap md:flex-wrap">
       <a 
         v-for="(game, key) in gameStore.games" 
         :key="key" 
         role="tab" 
-        class="tab" 
+        class="tab whitespace-nowrap" 
         :class="{ 'tab-active': activeTab === key }"
         @click="activeTab = key as string"
       >
@@ -55,10 +60,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, computed } from 'vue'
+import { ref, watch, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useGameStore } from '@/stores/game'
 import { api } from '@/api'
+import Icon from '@/components/common/Icon.vue'
 
+const router = useRouter()
 const gameStore = useGameStore()
 const activeTab = ref<string>('')
 const leaderboard = ref<any[]>([])
