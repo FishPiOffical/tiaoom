@@ -6,7 +6,7 @@
         <div
           v-for="n in 4"
           :key="n"
-          class="bg-base-100/80 border-2 border-base-200 rounded-full w-2/3 h-2/3 mx-auto my-auto flex items-center justify-center text-2xl"
+          class="bg-base-100/80 border-2 border-base-200 rounded-full w-2/3 h-2/3 mx-auto my-auto flex items-center justify-center text-base md:text-2xl"
           :class="pieces?.some(p => p.index === n - 1) ? getTextColor(color) + ' ' + getBgColor(color) : getTextColor(color, false)"
         >
           <div class="indicator" v-if="pieces?.some(p => p.index === n - 1)">

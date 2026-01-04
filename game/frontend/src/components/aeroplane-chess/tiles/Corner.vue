@@ -12,7 +12,7 @@
     >
       <div 
         v-if="piece"
-        class="bg-base-100/80 text-base-content border-base-300 border-2 rounded-full w-1/2 h-1/2 flex items-center justify-center text-2xl"
+        class="bg-base-100/80 text-base-content border-base-300 border-2 rounded-full w-1/2 h-1/2 flex items-center justify-center text-base md:text-xl"
         :class="getBgColor(piece.color) + ' ' + getTextColor(piece.color)"
         :style="planeDir || getPlaneDir ? { transform: `rotate(${rotateMap[getPlaneDir?.(piece.color) || planeDir!]})` } : {}"
       >
@@ -25,7 +25,7 @@
       </div>
       <div
         v-else
-        class="bg-base-100/80 border border-base-content/10 rounded-full w-1/2 h-1/2 flex items-center justify-center text-2xl"
+        class="bg-base-100/80 border border-base-content/10 rounded-full w-1/2 h-1/2 flex items-center justify-center text-base md:text-xl"
         :class="getTextColor(color, false)"
         :style="planeDir ? { transform: `rotate(${rotateMap[planeDir]})` } : {}"
       >

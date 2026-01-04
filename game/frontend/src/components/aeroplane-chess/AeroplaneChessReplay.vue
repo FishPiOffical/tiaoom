@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch, onUnmounted, nextTick } from 'vue';
+import { computed, ref, watch, onUnmounted, nextTick, onMounted } from 'vue';
 import AeroplaneChessBoard from './AeroplaneChessBoard.vue';
 import { AeroplaneColor } from './board';
 import { AeroplaneGameState } from './useAeroplaneChess';
@@ -44,7 +44,13 @@ const isAutoStepping = ref(false);
 
 const cellPx = ref(34);
 const moveListRef = ref<HTMLElement | null>(null);
-
+const mainRef = ref<HTMLElement | null>(null);
+onMounted(() => {
+  if (mainRef.value) {
+    const w = mainRef.value.clientWidth;
+    cellPx.value = Math.max(Math.min(34, Math.floor((w - 32) / 17)), 24);
+  }
+});
 // --- Game Logic ---
 
 const currentState = computed<AeroplaneGameState>(() => {
@@ -245,22 +251,25 @@ function getPlayerColor(id: string) {
 <template>
   <section class="flex flex-col md:flex-row gap-4 h-full overflow-hidden p-4">
     <!-- Game Area -->
-    <section class="flex-1 h-full flex flex-col items-center justify-center bg-base-200 rounded-lg relative overflow-hidden">
+    <section ref="mainRef" class="flex-1 h-full flex flex-col items-center justify-center bg-base-200 rounded-lg relative overflow-hidden">
         <div class="absolute top-4 left-4 text-sm opacity-60 font-mono z-10">
             {{ formatTime(currentTime) }}
         </div>
         
-        <div class="w-full h-full overflow-auto flex items-center justify-center p-4">
+        <div class="w-full h-full overflow-auto flex md:items-center md:justify-center p-4">
              <AeroplaneChessBoard
                 :state="currentState"
                 :my-player-id="''"
                 :movable="[]"
                 :can-move="false"
                 :cell-px="cellPx"
+                :style="{
+                  fontSize: cellPx - 2 + 'px'
+                }"
             />
         </div>
         
-        <div class="absolute bottom-4 left-0 right-0 text-center pointer-events-none">
+        <div class="absolute bottom-4 left-0 right-0 text-center pointer-events-none z-11">
              <div class="inline-block bg-base-100/80 backdrop-blur px-4 py-2 rounded-full shadow text-lg font-bold text-primary">
                 {{ currentHistoryItem?.text || '游戏开始' }}
              </div>

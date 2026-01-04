@@ -14,7 +14,7 @@
     >
     <div
       v-if="piece"
-      class="bg-base-100/80 border-base-300 border-2 text-base-200 rounded-full text-xl flex items-center justify-center shadow-2xl"
+      class="bg-base-100/80 border-base-300 border-2 text-base-200 rounded-full text-xs md:text-xl flex items-center justify-center shadow-2xl"
       :class="getBgColor(piece.color) + ' ' + getTextColor(piece.color)"
       :style="{ 
         width: (size - 2) + 'px', 
@@ -32,7 +32,7 @@
     </div>
     <div
       v-else
-      class="bg-base-100/80 border border-base-content/10 rounded-full text-2xl flex items-center justify-center"
+      class="bg-base-100/80 border border-base-content/10 rounded-full text-xl flex items-center justify-center"
       :class="getTextColor(color, false)"
       :style="{ 
         width: size + 'px', 

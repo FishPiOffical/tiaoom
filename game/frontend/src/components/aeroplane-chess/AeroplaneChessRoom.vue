@@ -2,7 +2,7 @@
   <GameView :room-player="roomPlayer" :game="game" @command="onCommand">
     <section class="flex-1 flex flex-col items-center justify-center" ref="mainRef" :style="{ '--size': size + 'px' }">
       <!-- Board -->
-      <section class="flex-1 md:h-full flex flex-col items-center justify-start md:justify-center overflow-auto p-4 select-none">
+      <section class="flex-1 w-full h-full flex flex-col md:items-center md:justify-center overflow-auto p-4 select-none">
         <div class="inline-block p-3 rounded">
           <AeroplaneChessBoard
             :state="state"
@@ -103,7 +103,7 @@ const mainRef = ref<HTMLElement | null>(null);
 onMounted(() => {
   if (mainRef.value) {
     const w = mainRef.value.clientWidth;
-    cellPx.value = size.value = Math.min(34, Math.floor((w - 32) / 17));
+    cellPx.value = size.value = Math.max(30, Math.min(34, Math.floor((w - 32) / 17)));
   }
 });
 
