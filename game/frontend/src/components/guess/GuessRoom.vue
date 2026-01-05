@@ -1,5 +1,12 @@
 <template>
   <section class="flex flex-col lg:flex-row gap-4 lg:h-full">
+    <!-- Toast 提示 -->
+    <div v-if="showToast" class="toast toast-top toast-center z-50">
+      <div class="alert alert-warning">
+        <span>{{ toastMessage }}</span>
+      </div>
+    </div>
+    
     <!-- 主游戏区域 -->
     <section class="flex-1 lg:h-full overflow-auto p-4">
       <!-- 准备阶段：显示房主设置 -->
@@ -222,8 +229,8 @@
       </PlayerList>
       
       <!-- 聊天区域 - 使用框架自带组件 -->
-      <div class="mt-4 border-t border-base-content/20 pt-4">
-        <div class="flex justify-between items-center mb-2">
+      <div class="mt-4 border-t border-base-content/20 pt-4 flex flex-col max-h-[500px]">
+        <div class="flex justify-between items-center mb-2 flex-none">
           <h3 class="font-bold text-lg">聊天</h3>
           <!-- 频道切换（仅游戏中且已完成玩家可见） -->
           <div v-if="isPlaying && playerStatus === 'completed'" class="tabs tabs-boxed tabs-xs">
@@ -245,9 +252,9 @@
         </div>
         
         <!-- 通关频道提示 -->
-        <div v-if="chatChannel === 'completed'" class="alert alert-warning mb-2 py-2 text-xs">
+        <div v-if="isPlaying && playerStatus === 'completed' && chatChannel === 'completed'" class="alert alert-info mb-2 py-2 text-xs flex-none">
           <Icon icon="mdi:information-outline" />
-          <span>当前在通关频道，只有已完成的玩家能看到消息</span>
+          <span>发送到通关频道，只有已完成的玩家能看到（消息有黄色边框标记）</span>
         </div>
         
         <!-- 使用框架的 GameChat 组件 -->
@@ -304,6 +311,8 @@ const {
   isPlaying,
   isOwner,
   canGuess,
+  toastMessage,
+  showToast,
   giveup,
   setDifficulty,
   setRestrictAlphanumeric,

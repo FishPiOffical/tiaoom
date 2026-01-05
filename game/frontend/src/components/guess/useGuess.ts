@@ -33,6 +33,11 @@ export function useGuess(game: GameCore, roomPlayer: GuessRoomPlayer & { room: R
   const titleProgress = ref(0);
   const contentProgress = ref(0);
   
+  // Toast 提示状态
+  const toastMessage = ref('');
+  const showToast = ref(false);
+  let toastTimer: any = null;
+  
   // 使用缓存或初始化空数组
   const roomId = roomPlayer.room.id;
   if (!playersCache.has(roomId)) {
@@ -59,6 +64,20 @@ export function useGuess(game: GameCore, roomPlayer: GuessRoomPlayer & { room: R
     isPlaying.value && 
     playerStatus.value !== 'completed'
   );
+
+  // 显示 Toast 提示
+  function showToastMessage(message: string) {
+    toastMessage.value = message;
+    showToast.value = true;
+    
+    if (toastTimer) {
+      clearTimeout(toastTimer);
+    }
+    
+    toastTimer = setTimeout(() => {
+      showToast.value = false;
+    }, 2000);
+  }
 
   function onRoomStart() {
     // 游戏开始，清空状态
@@ -215,8 +234,9 @@ export function useGuess(game: GameCore, roomPlayer: GuessRoomPlayer & { room: R
     // 只接受单个字符
     if (char.length !== 1) return;
 
-    // 已经输入过的字：提交后无效果，但清空输入框
+    // 已经输入过的字：提交后无效果，但清空输入框，并显示提示
     if (guessHistory.value.some(item => item.char === char)) {
+      showToastMessage(`已经输入过"${char}"了`);
       guessInput.value = '';
       return;
     }
@@ -263,6 +283,8 @@ export function useGuess(game: GameCore, roomPlayer: GuessRoomPlayer & { room: R
     isPlaying,
     isOwner,
     canGuess,
+    toastMessage,
+    showToast,
     guess,
     giveup,
     setDifficulty,
