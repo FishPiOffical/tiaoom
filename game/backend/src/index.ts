@@ -9,7 +9,7 @@ import cookieParser from 'cookie-parser';
 import createRoutes from "./routes/api";
 import utils from './utils'
 import configRouter from "./routes/config";
-import { AppDataSource, MongoDataSource, redisClient } from "./entities";
+import { AppDataSource, MongoDataSource, redisClient, initDataSource } from "./entities";
 
 const FileStore = sessionStore(session);
 
@@ -45,6 +45,9 @@ export class Game {
     if (!utils.config) {
       this.app.use("/config", configRouter);
     } else {
+      // 等待 AppDataSource 初始化完成
+      await initDataSource;
+      
       // API 路由
       if (utils.config.persistence?.driver === 'mongodb') {
         await MongoDataSource.initialize().catch(err => {

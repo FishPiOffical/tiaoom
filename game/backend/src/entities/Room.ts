@@ -47,12 +47,18 @@ export class Room {
    */
   attrs: Record<string, any> = {};
 
+  /**
+   * 开始游戏是否需要所有玩家准备
+   */
+  requireAllReadyToStart: boolean = true;
+
   toRoom(): IRoom {
     return {
       id: this.roomId,
       name: this.name,
       size: this.size,
       minSize: this.minSize,
+      requireAllReadyToStart: this.requireAllReadyToStart,
       attrs: {
         ...this.attrs,
         type: this.type,
@@ -71,6 +77,7 @@ export class Room {
     this.passwd = room?.attrs?.passwd || '';
     this.players = room?.players || [];
     this.attrs = room?.attrs || {};
+    this.requireAllReadyToStart = room?.requireAllReadyToStart ?? true;
   }
 }
 
@@ -92,6 +99,9 @@ export abstract class RoomBase extends Room {
 
   @Column({ comment: "房间属性", type: 'simple-json', nullable: true })
   attrs: Record<string, any> = {};
+
+  @Column({ comment: '开始游戏是否需要所有玩家准备', default: true })
+  requireAllReadyToStart: boolean = true;
   
   @Column('simple-json', { comment: "玩家列表" })
   players: RoomPlayer[] = [];
@@ -116,6 +126,7 @@ export abstract class RoomBase extends Room {
     this.passwd = room?.attrs?.passwd || '';
     this.players = room?.players || [];
     this.attrs = room?.attrs || {};
+    this.requireAllReadyToStart = room?.requireAllReadyToStart ?? true;
   }
 }
 

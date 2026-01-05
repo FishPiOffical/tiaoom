@@ -89,9 +89,11 @@ import { GameCore } from '@/core/game';
 const props = withDefaults(defineProps<{
   canSend?: boolean
   placeholder?: string
+  customSend?: boolean  // 是否使用自定义发送逻辑
 }>(), {
   canSend: true,
-  placeholder: '随便聊聊'
+  placeholder: '随便聊聊',
+  customSend: false
 })
 
 const emit = defineEmits<{
@@ -106,8 +108,17 @@ function handleSend(e:any) {
   if (!inputText.value.trim() || !roomPlayer.value) return
   if (!props.canSend) return
   
-  game.value?.command(roomPlayer.value.room.id, { type: 'say', data: inputText.value })
+  const text = inputText.value
   inputText.value = ''
+  
+  // 如果使用自定义发送逻辑，只触发事件不执行默认发送
+  if (props.customSend) {
+    emit('send', text)
+    return
+  }
+  
+  // 默认发送到公开频道
+  game.value?.command(roomPlayer.value.room.id, { type: 'say', data: text })
 }
 
 function handleBroadcast() {

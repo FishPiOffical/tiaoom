@@ -73,10 +73,15 @@ const props = defineProps<{
 
 const isPlaying = computed(() => props.roomPlayer.room.status === RoomStatus.playing)
 const isAllReady = computed(() => {
-  return props.roomPlayer.room.players.filter((p: any) => p.role === 'player').length >= props.roomPlayer.room.minSize &&
-    props.roomPlayer.room.players.every((p: any) => p.isReady || p.role === 'watcher')
+  const minPlayers = props.roomPlayer.room.minSize === 0 ? 1 : props.roomPlayer.room.minSize
+  const hasEnoughPlayers = props.roomPlayer.room.players.filter((p: any) => p.role === 'player').length >= minPlayers
+
+  if (!props.roomPlayer.room.requireAllReadyToStart) return hasEnoughPlayers
+
+  return hasEnoughPlayers && props.roomPlayer.room.players.every((p: any) => p.isReady || p.role === 'watcher')
 })
 const isRoomFull = computed(() => {
+  if (props.roomPlayer.room.size === 0) return false // size为0表示不限制人数
   return props.roomPlayer.room.players.filter((p: any) => p.role === 'player').length >= props.roomPlayer.room.size
 })
 

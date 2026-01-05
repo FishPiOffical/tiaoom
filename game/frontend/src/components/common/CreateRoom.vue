@@ -121,6 +121,7 @@ const room = ref({
   name: '',
   size: 4,
   minSize: 4,
+  requireAllReadyToStart: true,
   attrs: { type: 'othello', passwd: '', rate: '', point: '' } as Record<string, any>,
 })
 
@@ -130,15 +131,22 @@ const currentGame = computed(() => {
 
 function onTypeChange() {
   const game = gameStore.games[room.value.attrs.type]
-  if (room.value.size < game.minSize) {
-    room.value.size = game.minSize
-  }
-  if (room.value.size > game.maxSize) {
-    room.value.size = game.maxSize
-  }
-  if (room.value.minSize < game.minSize) {
+  console.log('[CreateRoom] 切换游戏类型:', room.value.attrs.type, 'minSize:', game.minSize, 'maxSize:', game.maxSize)
+
+  room.value.requireAllReadyToStart = game.requireAllReadyToStart ?? true
+  
+  // 如果 minSize 和 maxSize 都是 0，表示不限制人数
+  if (game.minSize === 0 && game.maxSize === 0) {
+    room.value.size = 0
+    room.value.minSize = 0
+    console.log('[CreateRoom] 设置为不限制人数: size=0, minSize=0')
+  } else {
+    // 有人数限制的游戏，设置为游戏的默认最小人数
     room.value.minSize = game.minSize
+    room.value.size = game.minSize
+    console.log('[CreateRoom] 设置人数限制: size=' + room.value.size + ', minSize=' + room.value.minSize)
   }
+  
   room.value.attrs.rate = '';
   room.value.attrs.point = '';
 }
@@ -152,10 +160,32 @@ async function createRoom() {
     msg.error('房间名称已存在，请更换一个')
     return
   }
-  room.value.minSize = Math.min(room.value.minSize, currentGame.value.minSize)
-  room.value.size = Math.min(room.value.size, currentGame.value.maxSize)
-  room.value.size = Math.max(room.value.size, room.value.minSize)
-  await gameStore.game?.createRoom(room.value)
+  
+  // 根据游戏类型设置人数限制
+  const game = currentGame.value
+  if (game.minSize === 0 && game.maxSize === 0) {
+    // 不限制人数的游戏（如猜盐）
+    room.value.minSize = 0
+    room.value.size = 0
+  } else {
+    // 有人数限制的游戏
+    room.value.minSize = Math.max(room.value.minSize, game.minSize)
+    room.value.minSize = Math.min(room.value.minSize, room.value.size)
+    room.value.size = Math.max(room.value.size, game.minSize)
+    room.value.size = Math.min(room.value.size, game.maxSize)
+  }
+  
+  // 创建房间数据对象，确保所有字段都明确传递
+  const roomData = {
+    name: room.value.name,
+    size: room.value.size,
+    minSize: room.value.minSize,
+    requireAllReadyToStart: game.requireAllReadyToStart ?? true,
+    attrs: { ...room.value.attrs }
+  }
+  
+  console.log('[CreateRoom] 创建房间数据:', roomData)
+  await gameStore.game?.createRoom(roomData)
 }
 </script>
 

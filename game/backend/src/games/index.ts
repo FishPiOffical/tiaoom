@@ -31,6 +31,13 @@ export interface IGameInfo {
    * 游戏描述
    */
   description: string;
+
+  /**
+   * 开始游戏是否需要所有玩家准备
+   * - true: 需要所有玩家准备（默认）
+   * - false: 只要人数满足即可开始
+   */
+  requireAllReadyToStart?: boolean;
   /**
    * 房间积分奖励
    */
