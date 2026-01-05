@@ -580,7 +580,8 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
       const messageWithChannel = {
         content: data,
         sender,
-        channel: 'completed'
+        channel: 'completed',
+        createdAt: Date.now(),
       };
       
       // 保存到消息历史
@@ -598,7 +599,8 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
       const messageWithChannel = {
         content: data,
         sender,
-        channel: 'public'
+        channel: 'public',
+        createdAt: Date.now(),
       };
       
       // 保存到消息历史
