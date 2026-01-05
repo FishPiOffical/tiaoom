@@ -122,9 +122,9 @@ export default class MyGame extends GameRoom {
 
 ## 积分奖励与成就保存 {#achievements}
 
-`GameRoom` 提供了积分奖励功能，可在游戏结束时调用 `this.saveAchievements(winner)` 方法保存成就数据并执行积分奖励。
+`GameRoom` 提供了积分奖励功能，可在游戏结束时调用 `this.saveAchievements([winner])` 方法保存成就数据并执行积分奖励。
 
-- `winner`：获胜玩家对象，传入 `null` 则表示平局。
+- `winner`：获胜玩家对象数组，传入 `null` 则表示平局。
 
 保存后会在玩家个人页面显示胜负记录。
 
@@ -146,7 +146,7 @@ export const rewardDescription = '自定义积分奖励规则说明';
 export default class MyGame extends GameRoom {
   // ...
 
-  saveAchievements(winner: RoomPlayer | null = null): Promise<void> {
+  saveAchievements(winner: RoomPlayer[] | null = null): Promise<void> {
     // 自定义积分奖励逻辑
     // ...
   }
@@ -444,7 +444,7 @@ export function useGame(game: GameCore) {
   模拟玩家发出房间指令，用于模拟触发玩家行为。
 - `save()`: 
   保存当前游戏状态。可以在游戏逻辑中调用此方法以持久化数据。
-- `saveAchievements(winner?: RoomPlayer | null, saveRecord: boolean = true)`: 
+- `saveAchievements(winner?: RoomPlayer[] | null, saveRecord: boolean = true)`: 
   保存成就数据（胜/负/平），不传则表示平局。若有胜负且配置了积分奖励，将会执行积分奖励。若只需执行积分奖励，无需保存游戏记录，可将 `saveRecord` 设为 `false`。
 - `saveScore(score: number)`: 
   保存玩家分数，若保存分数，则个人页面将不会显示胜负数据，而只会显示历史最高得分。
