@@ -169,10 +169,9 @@ async function createRoom() {
     room.value.size = 0
   } else {
     // 有人数限制的游戏
-    room.value.minSize = Math.max(room.value.minSize, game.minSize)
-    room.value.minSize = Math.min(room.value.minSize, room.value.size)
-    room.value.size = Math.max(room.value.size, game.minSize)
+    room.value.minSize = Math.min(room.value.minSize, game.minSize)
     room.value.size = Math.min(room.value.size, game.maxSize)
+    room.value.size = Math.max(room.value.size, room.value.minSize)  
   }
   
   // 创建房间数据对象，确保所有字段都明确传递

@@ -196,6 +196,15 @@ export class Controller extends Tiaoom {
         });
       }
     }
+    if (roomInstance) {
+      const gameType = roomInstance?.attrs?.type;
+      const defaultExport = Games[gameType].default;
+      if (defaultExport.prototype instanceof GameRoom) {
+        const GameClass = defaultExport as new (room: Room) => GameRoom;
+        const gameRoomInstance = new GameClass(roomInstance);
+        gameRoomInstance.onPreStart(sender, roomInstance);
+      }
+    }
     return super.startRoom(sender, room);
   }
 

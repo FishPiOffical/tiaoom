@@ -392,10 +392,6 @@ export class Room extends EventEmitter implements IRoom {
     if (this.status === RoomStatus.playing) {
       throw new Error('room is already started.');
     }
-    const senderInRoom = this.searchPlayer(sender);
-    if (!senderInRoom || !senderInRoom.isCreator) {
-      throw new Error('only room owner can start the game.');
-    }
     this.players.forEach((player) => {
       if (player.role != PlayerRole.player) return;
       player.status = PlayerStatus.playing;

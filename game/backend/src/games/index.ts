@@ -287,6 +287,10 @@ export class GameRoom {
     this.save();
   }
 
+  onPreStart(sender: IPlayer, room: Room) {
+
+  }
+
   /**
    * 游戏开始时调用，继承时重写
    */

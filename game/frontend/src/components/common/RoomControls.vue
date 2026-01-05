@@ -77,8 +77,6 @@ const props = defineProps<{
 const isPlaying = computed(() => props.roomPlayer.room.status === RoomStatus.playing)
 const isAllReady = computed(() => {
   if (!props.roomPlayer) return false
-  return props.roomPlayer.room.players.filter((p: any) => p.role === 'player').length >= props.roomPlayer.room.minSize &&
-    props.roomPlayer.room.players.every((p: any) => p.isReady || p.role === 'watcher')
   const minPlayers = props.roomPlayer.room.minSize === 0 ? 1 : props.roomPlayer.room.minSize
   const hasEnoughPlayers = props.roomPlayer.room.players.filter((p: any) => p.role === 'player').length >= minPlayers
 

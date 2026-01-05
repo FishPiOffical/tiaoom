@@ -1,4 +1,4 @@
-import { PlayerRole, PlayerStatus, RoomPlayer, RoomStatus } from "tiaoom";
+import { IPlayer, PlayerRole, PlayerStatus, Room, RoomPlayer, RoomStatus } from "tiaoom";
 import { BaseModel, GameRoom, IGameCommand, IGameData } from ".";
 import { Column, Entity, Like } from "typeorm";
 import { Router } from "express";
@@ -229,6 +229,12 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
 
   async delete(id: string): Promise<void> {
     await Model.getRepo<Model>(Model).delete(id);
+  }
+
+  onPreStart(sender: IPlayer, room: Room): void {
+    if (!room.searchPlayer(sender)?.isCreator) {
+      throw new Error('只有房主可以启动游戏。');
+    }
   }
 
   init() {
