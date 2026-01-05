@@ -7,6 +7,7 @@ import Games, { GameRoom, IGame, IGameInfo } from "./games";
 import { Model } from "./model";
 import { UserRepo } from "./entities";
 import FishPi from "fishpi";
+import utils from "./utils";
 
 export class Controller extends Tiaoom {
   messages: { data: string, sender: Player, createdAt: number }[] = [];
@@ -65,7 +66,7 @@ export class Controller extends Tiaoom {
           });
         }
       }
-      else console.error("game not found:", room);
+      else this.send({ type: MessageTypes.GlobalError, data: `游戏类型 ${gameType} 不存在，无法开始游戏。`, sender: room });
       function updatePlayerList() {
         Model.updatePlayerList(room.id, room.players);
       }
@@ -139,7 +140,7 @@ export class Controller extends Tiaoom {
     if (options.attrs?.passwd) {
       options.attrs.passwd = crypto.createHash('md5').update(options.attrs.passwd).digest('hex');
     }
-    if (options.attrs?.point && !isNaN(options.attrs.point)) {
+    if (options.attrs?.point && !isNaN(options.attrs.point) && utils.config.secret.goldenKey) {
       const username = sender?.attributes?.username;
       if (!username) throw new Error("用户信息不完整，无法创建房间。");
       // 检查用户积分是否足够
@@ -181,7 +182,7 @@ export class Controller extends Tiaoom {
 
   async startRoom(sender: IPlayer, room: IRoom) {
     const roomInstance = this.searchRoom(room);
-    if (roomInstance && roomInstance.attrs?.point && !isNaN(roomInstance.attrs?.point)) {
+    if (roomInstance && roomInstance.attrs?.point && !isNaN(roomInstance.attrs?.point) && utils.config.secret.goldenKey) {
       for (const player of roomInstance.validPlayers) {
         const username = player.attributes?.username;
         if (!username) throw new Error("用户信息不完整，无法开始游戏。");
@@ -199,6 +200,9 @@ export class Controller extends Tiaoom {
   }
 
   isAdmin(player: IPlayer): Promise<boolean> {
+    if (process.env.NODE_ENV === 'development' && player.name === 'Admin') {
+      return Promise.resolve(true);
+    }
     return UserRepo().findOneBy({ id: player.id }).then(user => {
       return user?.isAdmin || false;
     });

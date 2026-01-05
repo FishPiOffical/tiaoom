@@ -18,7 +18,7 @@
       "args": [
           "${workspaceRoot}/game/backend/src/index.ts"
       ],
-      "env": { "TS_NODE_PROJECT": "${workspaceRoot}/game/backend/tsconfig.json" },
+      "env": { "TS_NODE_PROJECT": "${workspaceRoot}/game/backend/tsconfig.json", "NODE_ENV": "development" },
       "sourceMaps": true,
       "cwd": "${workspaceRoot}/game/backend"
     }
