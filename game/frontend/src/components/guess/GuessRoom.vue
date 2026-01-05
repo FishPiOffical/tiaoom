@@ -91,15 +91,15 @@
             <div v-if="article.from && playerStatus === 'completed'" class="mt-3 pt-3 border-t border-base-content/10">
               <div class="text-xs text-base-content/60">来源</div>
               <div class="mt-1 text-sm break-all">
-                <a 
+                <!-- <a 
                   v-if="article.from.includes('http')" 
                   :href="article.from.includes('Wikipedia:') ? article.from.split('Wikipedia: ')[1] : article.from"
                   target="_blank"
                   class="link link-primary hover:link-hover"
                 >
                   {{ article.from }}
-                </a>
-                <span v-else class="text-base-content/80">{{ article.from }}</span>
+                </a> -->
+                <span class="text-base-content/80">{{ article.from }}</span>
               </div>
             </div>
           </div>
@@ -288,15 +288,6 @@ const props = defineProps<{
   roomPlayer: GuessRoomPlayer & { room: Room }
 }>()
 
-console.log('[猜盐组件] GuessRoom setup 执行, roomId:', props.roomPlayer.room.id, 'playerName:', props.roomPlayer.name);
-
-onMounted(() => {
-  console.log('[猜盐组件] GuessRoom onMounted');
-});
-
-onBeforeUnmount(() => {
-  console.log('[猜盐组件] GuessRoom onBeforeUnmount');
-});
 
 const {
   article,

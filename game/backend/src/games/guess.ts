@@ -308,7 +308,6 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
     
     // 监听玩家加入事件
     this.room.on('join', (player) => {
-      console.log('[猜盐后端] 玩家加入事件触发:', player.name, '房间状态:', this.room.status);
       // 如果游戏正在进行，新加入的玩家状态为"等待中"
       if (this.room.status === RoomStatus.playing) {
         // join 事件里传来的 player 可能还是 watcher（默认行为），这里对猜盐做特判：允许直接转为 player 参与
@@ -330,13 +329,11 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
         }
       } else {
         // 准备阶段也广播玩家列表更新
-        console.log('[猜盐后端] 准备阶段，广播玩家列表更新');
         this.broadcastPlayersUpdate();
       }
       
       // 延迟后向新加入的玩家发送完整状态
       setTimeout(() => {
-        console.log('[猜盐后端] 延迟200ms后发送玩家列表给', player.name);
         const roomPlayer = this.room.validPlayers.find(p => p.id === player.id);
         if (roomPlayer) {
           const players = this.room.status === RoomStatus.playing 
@@ -356,7 +353,6 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
                 avatar: p.attributes?.avatar,
                 isPlaying: false,
               }));
-          console.log('[猜盐后端] 发送玩家列表:', players);
           this.commandTo('playersUpdate', { players }, roomPlayer);
         }
       }, 200);
@@ -457,6 +453,9 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
       this.say(`玩家 ${state.player.name} 完成了猜测！`);
       this.commandTo('statusChanged', { status: 'completed' }, state.player);
       
+      // 玩家完成时，重新发送完整状态（包括带from字段的文章）
+      this.commandTo('status', this.getStatusData(state.player), state.player);
+      
       // 如果是猜题中的玩家完成，保存成就
       if (state.status === 'completed') {
         this.saveAchievements([state.player]);
@@ -472,8 +471,6 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
   // 广播玩家列表更新
   broadcastPlayersUpdate() {
     let players;
-    
-    console.log('[猜盐后端] broadcastPlayersUpdate 被调用, 房间状态:', this.room.status);
     
     if (this.room.status === RoomStatus.playing) {
       // 游戏中：显示游戏状态和进度
@@ -497,7 +494,6 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
       }));
     }
     
-    console.log('[猜盐后端] 广播玩家列表:', players);
     this.command('playersUpdate', { players });
   }
 
@@ -668,25 +664,29 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
       const showFull = (state.status as PlayerGameStatus) === 'completed';
       
       displayTitle = Array.from(this.currentArticle.title).map(char => {
+        // 标点符号和空白字符直接显示
+        if (/[^\u4e00-\u9fa5a-zA-Z0-9]/.test(char)) {
+          return char;
+        }
+        // 汉字：根据是否猜中显示
         if (/[\u4e00-\u9fa5]/.test(char)) {
           return state.correctCharsSet.has(char) || showFull ? char : '□';
         }
-        // 如果开启了数字字母限制，英文和数字也显示为□
-        if (this.restrictAlphanumeric && /[a-zA-Z0-9]/.test(char)) {
-          return '□';
-        }
-        return char;
+        // 英文和数字：未完成时显示为□
+        return showFull ? char : '□';
       }).join('');
 
       displayContent = Array.from(this.currentArticle.content).map(char => {
+        // 标点符号和空白字符直接显示
+        if (/[^\u4e00-\u9fa5a-zA-Z0-9]/.test(char)) {
+          return char;
+        }
+        // 汉字：根据是否猜中显示
         if (/[\u4e00-\u9fa5]/.test(char)) {
           return state.correctCharsSet.has(char) || showFull ? char : '□';
         }
-        // 如果开启了数字字母限制，英文和数字也显示为□
-        if (this.restrictAlphanumeric && /[a-zA-Z0-9]/.test(char)) {
-          return '□';
-        }
-        return char;
+        // 英文和数字：未完成时显示为□
+        return showFull ? char : '□';
       }).join('');
     }
 
@@ -700,6 +700,8 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
         title: displayTitle,
         content: displayContent,
         difficulty: this.currentArticle?.difficulty,
+        // 如果玩家已完成，也发送 from 字段
+        ...((state.status as PlayerGameStatus) === 'completed' ? { from: this.currentArticle?.from } : {}),
       },
     }, sender);
 
@@ -782,7 +784,7 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
       
       // 随机选一个预制文章
       const selected = DEFAULT_ARTICLES[Math.floor(Math.random() * DEFAULT_ARTICLES.length)];
-      this.currentArticle = Object.assign(new Model(), { ...selected, weight: 100 });
+      this.currentArticle = Object.assign(new Model(), { ...selected, weight: 100, from: 'system' });
     } else {
       // 基于权重的随机选择
       this.currentArticle = this.selectArticleByWeight(articles);
@@ -791,6 +793,8 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
     // 提取文章中的汉字
     this.titleChars = this.extractChineseChars(this.currentArticle.title);
     this.contentChars = this.extractChineseChars(this.currentArticle.content);
+
+    console.log(`[猜盐游戏] 已选择文章: 《${this.currentArticle.title}》 (难度: ${this.currentArticle.difficulty}, 来源: ${this.currentArticle.from || '系统'})`);
 
     // 初始化所有在房间中的玩家为"猜题中"状态
     this.room.validPlayers.forEach(player => {
@@ -832,30 +836,34 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
       
       // 标题显示
       displayTitle = Array.from(this.currentArticle.title).map(char => {
+        // 标点符号和空白字符直接显示
+        if (/[^\u4e00-\u9fa5a-zA-Z0-9]/.test(char)) {
+          return char;
+        }
+        // 汉字：根据是否猜中显示
         if (/[\u4e00-\u9fa5]/.test(char)) {
           return state.correctCharsSet.has(char) || showFull ? char : '□';
         }
-        // 如果开启了数字字母限制，英文和数字也显示为□
-        if (this.restrictAlphanumeric && /[a-zA-Z0-9]/.test(char)) {
-          return '□';
-        }
-        return char;
+        // 英文和数字：未完成时显示为□
+        return showFull ? char : '□';
       }).join('');
 
       // 正文显示：完成后显示完整内容
       displayContent = Array.from(this.currentArticle.content).map(char => {
+        // 标点符号和空白字符直接显示
+        if (/[^\u4e00-\u9fa5a-zA-Z0-9]/.test(char)) {
+          return char;
+        }
+        // 汉字：根据是否猜中显示
         if (/[\u4e00-\u9fa5]/.test(char)) {
           return state.correctCharsSet.has(char) || showFull ? char : '□';
         }
-        // 如果开启了数字字母限制，英文和数字也显示为□
-        if (this.restrictAlphanumeric && /[a-zA-Z0-9]/.test(char)) {
-          return '□';
-        }
-        return char;
+        // 英文和数字：未完成时显示为□
+        return showFull ? char : '□';
       }).join('');
     }
 
-    return {
+    const result = {
       article: this.currentArticle ? {
         title: displayTitle,
         content: displayContent,
@@ -888,7 +896,9 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
           })),
       restrictAlphanumeric: this.restrictAlphanumeric,
     };
-  }
+    
+    return result;
+}
 
   // 基于权重的随机选择文章
   selectArticleByWeight(articles: Model[]): Model {

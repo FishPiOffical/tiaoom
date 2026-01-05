@@ -37,7 +37,6 @@ export class Controller extends Tiaoom {
     return Object.keys(Games).reduce((obj, key) => {
       const gameInfo = { ...Games[key] } as IGameInfo;
       delete (gameInfo as any).default; // 移除 default 导出函数
-      console.log(`[Controller] Game ${key}:`, gameInfo);
       obj[key] = gameInfo;
       return obj;
     }, {} as Record<string, IGameInfo>);
