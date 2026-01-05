@@ -1,5 +1,4 @@
 import { StatsRepo } from "@/entities";
-import { PlayerStats } from "@/entities/PlayerStats";
 
 export interface GameStats {
   type: string;

@@ -229,6 +229,8 @@ const { onCommand, handleClick, isPlaying, count, target } = useClick(props.game
 ```bash
 npm run dev:frontend
 npm run dev:backend # 或 VSCode 按下 F5 运行
+# 或
+npm run dev # 同时启动前后端
 ```
 
 访问前端页面，在`创建房间`选择 "抢数字"，创建房间即可看到效果。

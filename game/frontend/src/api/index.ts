@@ -94,6 +94,9 @@ http.interceptors.response.use(
 )
 
 export const api = {
+  isConfigured(): Promise<boolean> {
+    return http.get('/is-configured')
+  },
   getConfig(): Promise<Record<string, GameConfig>> {
     return http.get('/config')
   },

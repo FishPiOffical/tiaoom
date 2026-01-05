@@ -1,6 +1,6 @@
-import { Room as GameRoom, RoomPlayer } from "tiaoom";
-import { Room, RoomRepo, MongoRoomRepo, redisClient, RoomSQL, RoomMongo } from "./entities";
 import utils from "@/utils";
+import { Room as GameRoom, RoomPlayer } from "tiaoom";
+import { Room, RoomRepo, RoomSQL, RoomMongo, redisClient, MongoRoomRepo } from "./entities";
 
 export interface IRoomPersistence {
   createRoom(room: GameRoom): Promise<any>;
@@ -96,7 +96,7 @@ class RedisPersistence implements IRoomPersistence {
   private prefix: string;
 
   constructor() {
-    const { prefix } = utils.config.persistence || {};
+    const { prefix } = utils.config?.persistence || {};
     this.prefix = (prefix || 'tiaoom:').replace(/[_\/]/g, ':');
   }
 
@@ -211,7 +211,7 @@ export class PersistenceFactory {
   static getPersistence(): IRoomPersistence {
     if (this.instance) return this.instance;
 
-    const driver = utils.config.persistence?.driver || 'none';
+    const driver = utils.config?.persistence?.driver || 'none';
     switch (driver) {
       case 'mysql':
         this.instance = new MySQLPersistence();

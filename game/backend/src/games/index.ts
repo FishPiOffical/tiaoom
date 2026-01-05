@@ -3,7 +3,7 @@ import { IPlayer, IRoomPlayer, PlayerRole, PlayerStatus, Room, RoomPlayer, RoomS
 import * as glob from 'glob';
 import * as path from "path";
 import { Model } from '@/model';
-import { getPlayerStat, omit, setPoints, updatePlayerStats } from '@/utils';
+import { getPlayerStat, isConfigured, omit, setPoints, updatePlayerStats } from '@/utils';
 import { AppDataSource, RecordRepo } from '@/entities';
 import { Router } from "express";
 const files = glob.sync(path.join(__dirname, '*.*').replace(/\\/g, '/')).filter(f => f.endsWith('.ts') || f.endsWith('.js')).concat(
@@ -524,6 +524,9 @@ export class BaseModel {
   updatedAt: number = Date.now();
 
   static getRepo<T extends BaseModel>(target: EntityTarget<T>): Repository<T> {
+    if (!isConfigured()) {
+      throw new Error("系统未配置数据库，无法使用该功能");
+    }
     return AppDataSource.getRepository<T>(target);
   }
 }

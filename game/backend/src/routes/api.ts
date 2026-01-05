@@ -2,7 +2,7 @@ import { Router, Request, Response } from "express";
 import { Controller } from "../controller";
 import { login as fishpiLogin, register as fishpiRegister, updateUserInfo } from "../login/fishpi";
 import { Record, RecordRepo, User, UserRepo, AppDataSource, PlayerStats, ManageRepo } from "@/entities";
-import { getPlayerStats } from "@/utils";
+import { getPlayerStats, isConfigured } from "@/utils";
 import { Like } from "typeorm";
 import GameRouter from "./game";
 import Games, { GameRoom } from "@/games";
@@ -19,6 +19,10 @@ const createRoutes = (game: GameContext, gameName: string) => {
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
     res.sendStatus(200);
+  });
+
+  router.get("/is-configured", async (_req: Request, res: Response) => {
+    res.json({ code: 0, data: isConfigured() });
   });
 
   router.get("/config", (req: Request, res: Response) => {
@@ -116,6 +120,7 @@ const createRoutes = (game: GameContext, gameName: string) => {
       return res.json({ code: 1, message: "昵称已被使用" });
     }
     req.session.player = new User(new Date().getTime().toString(), req.body.name, req.body.name);
+    if (!isConfigured()) req.session.player.isAdmin = true;
     res.json({ code: 0, data: req.session.player });
   });
 

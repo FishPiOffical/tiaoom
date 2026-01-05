@@ -1,11 +1,15 @@
 import { ManageRepo } from "@/entities";
 import Games, { GameRoom, IGameData } from "../games";
 import { Router, Request, Response } from "express";
+import { isConfigured } from "@/utils/config";
 
 
 const router = Router();
 
 router.get("/manages", async (req: Request, res: Response) => {
+  if (!isConfigured()) {
+    return res.json({ code: 0, data: [] });
+  }
   const manages = await ManageRepo().find();
   res.json({ 
     code: 0, 
@@ -34,6 +38,9 @@ router.use("/manages/:gameKey", async (req: Request, res: Response, next) => {
         (Games[gameKey]?.default.prototype as any).getList) {
       throw new Error("该游戏不支持数据管理");
     }
+    if (!isConfigured()) {
+      throw new Error("系统未配置，无法使用该功能");
+    }
     const manages = await ManageRepo().findOneBy({ type: gameKey });
     if (!req.session.player?.isAdmin 
       && !(manages && manages.manages.includes(req.session.player?.username || ''))) {
@@ -50,7 +57,9 @@ router.get("/manages/:gameKey/permissions", async (req: Request, res: Response) 
     if (!req.session.player?.isAdmin) {
       throw new Error("权限不足");
     }
-
+    if (!isConfigured()) {
+      throw new Error("系统未配置，无法使用该功能");
+    }
     const { gameKey } = req.params;
     const manages = await ManageRepo().findOneBy({ type: gameKey });
     res.json({ code: 0, data: manages ? manages.manages : [] });

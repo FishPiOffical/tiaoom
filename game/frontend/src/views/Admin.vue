@@ -1,8 +1,8 @@
 <template>
-  <div class="drawer drawer-end">
+  <div class="drawer drawer-end h-full">
     <input id="room-drawer" type="checkbox" class="drawer-toggle" v-model="isDrawerOpen" />
-    <div class="drawer-content p-4">
-      <div class="flex justify-between items-center mb-4">
+    <div class="drawer-content p-4 h-full flex flex-col overflow-hidden">
+      <div class="navbar flex justify-between items-center mb-4 w-full">
         <div class="flex items-center">
           <button class="btn btn-ghost" @click="$router.back()">
             <Icon icon="meteor-icons:arrow-left" />
@@ -23,6 +23,10 @@
               <Icon icon="material-symbols:database" />
               <span>{{ manage.name }}</span>
             </a>
+            <a role="tab" class="tab space-x-1" :class="{ 'tab-active': activeTab == 'config'}" @click="activeTab = 'config'" v-if="!gameStore.isConfigured">
+              <Icon icon="mingcute:tool-line" />
+              <span>初始化配置</span>
+            </a>
           </div>
         </div>
         <button class="btn btn-primary btn-sm" @click="openBroadcastModal" v-if="gameStore.player?.isAdmin">
@@ -30,54 +34,59 @@
           发布公告
         </button>
       </div>
-      
-      <template v-if="activeTab == 'room'">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div v-for="room in gameStore.rooms" :key="room.id" 
-               class="card bg-base-200 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer border border-base-content/10"
-               @click="openRoomDetail(room)">
-            <div class="card-body p-4">
-              <div class="flex justify-between items-start">
-                <h2 class="card-title text-lg">
-                  {{ room.name }}
-                  <div class="badge badge-primary badge-outline text-xs">{{ getGameName(room.attrs.type) }}</div>
-                </h2>
-                <div class="flex gap-1">
-                  <button class="btn btn-ghost btn-xs btn-square text-info" @click.stop="broadcastToRoom(room)" title="发送广播">
-                    <Icon icon="bi:broadcast" class="text-lg" />
-                  </button>
-                  <button class="btn btn-ghost btn-xs btn-square text-error" @click.stop="closeRoom(room)" title="关闭房间">
-                    <Icon icon="mingcute:close-circle-line" class="text-lg" />
-                  </button>
+      <!-- Content -->
+      <section class="flex-1 overflow-auto">
+        <template v-if="activeTab == 'config'">
+          <Config />
+        </template>
+  
+        <template v-if="activeTab == 'room'">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div v-for="room in gameStore.rooms" :key="room.id" 
+                class="card bg-base-200 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer border border-base-content/10"
+                @click="openRoomDetail(room)">
+              <div class="card-body p-4">
+                <div class="flex justify-between items-start">
+                  <h2 class="card-title text-lg">
+                    {{ room.name }}
+                    <div class="badge badge-primary badge-outline text-xs">{{ getGameName(room.attrs.type) }}</div>
+                  </h2>
+                  <div class="flex gap-1">
+                    <button class="btn btn-ghost btn-xs btn-square text-info" @click.stop="broadcastToRoom(room)" title="发送广播">
+                      <Icon icon="bi:broadcast" class="text-lg" />
+                    </button>
+                    <button class="btn btn-ghost btn-xs btn-square text-error" @click.stop="closeRoom(room)" title="关闭房间">
+                      <Icon icon="mingcute:close-circle-line" class="text-lg" />
+                    </button>
+                  </div>
                 </div>
+                
+                <div class="flex gap-4 text-sm text-base-content/70 mt-2">
+                  <div class="flex items-center gap-1" title="玩家/容量">
+                    <Icon icon="mingcute:user-3-line" />
+                    <span>{{ room.players.filter(p => p.role === 'player').length }} / {{ room.size }}</span>
+                  </div>
+                  <div class="flex items-center gap-1" title="观众">
+                    <Icon icon="mingcute:eye-2-line" />
+                    <span>{{ room.players.filter(p => p.role === 'watcher').length }}</span>
+                  </div>
+                </div>
+                
+                <div class="text-xs text-base-content/40 mt-2 font-mono">ID: {{ room.id }}</div>
               </div>
-              
-              <div class="flex gap-4 text-sm text-base-content/70 mt-2">
-                <div class="flex items-center gap-1" title="玩家/容量">
-                  <Icon icon="mingcute:user-3-line" />
-                  <span>{{ room.players.filter(p => p.role === 'player').length }} / {{ room.size }}</span>
-                </div>
-                <div class="flex items-center gap-1" title="观众">
-                  <Icon icon="mingcute:eye-2-line" />
-                  <span>{{ room.players.filter(p => p.role === 'watcher').length }}</span>
-                </div>
-              </div>
-              
-              <div class="text-xs text-base-content/40 mt-2 font-mono">ID: {{ room.id }}</div>
             </div>
           </div>
-        </div>
-        
-        <div v-if="gameStore.rooms.length === 0" class="text-center py-10 text-base-content/50">
-          暂无活跃房间
-        </div>
-      </template>
-
-      <template v-for="m in manageList" :key="m.key">
-        <component :is="getGameForm(m.key)" v-if="activeTab == m.key && getGameForm(m.key)" />
-      </template>
+          
+          <div v-if="gameStore.rooms.length === 0" class="text-center py-10 text-base-content/50">
+            暂无活跃房间
+          </div>
+        </template>
+  
+        <template v-for="m in manageList" :key="m.key">
+          <component :is="getGameForm(m.key)" v-if="activeTab == m.key && getGameForm(m.key)" />
+        </template>
+      </section>
     </div>
-    
     <div class="drawer-side z-50">
       <label for="room-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
       <div class="menu p-4 w-80 min-h-full bg-base-200 text-base-content">
@@ -203,7 +212,7 @@ import { Room, RoomPlayer } from 'tiaoom/client'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { getComponent } from '@/main'
-
+import Config from './Config.vue'
 
 const gameStore = useGameStore()
 const isDrawerOpen = ref(false)
