@@ -15,6 +15,7 @@ export interface GuessArticle {
   title: string;
   content: string;
   difficulty: string;
+  from?: string; // 文章来源（只有完成时才有）
 }
 
 // 模块级别的玩家列表缓存，按房间ID存储，避免组件重建时丢失数据
@@ -240,6 +241,17 @@ export function useGuess(game: GameCore, roomPlayer: GuessRoomPlayer & { room: R
 
   function handleGuessSubmit() {
     const char = guessInput.value.trim();
+    
+    // 检查是否为空
+    if (!char) return;
+    
+    // 检查是否超过1个字符
+    if (char.length > 1) {
+      // 超过1个字符时不提交，只保留提示
+      return;
+    }
+    
+    // 只接受单个字符
     if (char.length !== 1) return;
 
     // 已经输入过的字：提交后无效果，但清空输入框

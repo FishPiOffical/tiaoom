@@ -671,12 +671,20 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
         if (/[\u4e00-\u9fa5]/.test(char)) {
           return state.correctCharsSet.has(char) || showFull ? char : '□';
         }
+        // 如果开启了数字字母限制，英文和数字也显示为□
+        if (this.restrictAlphanumeric && /[a-zA-Z0-9]/.test(char)) {
+          return '□';
+        }
         return char;
       }).join('');
 
       displayContent = Array.from(this.currentArticle.content).map(char => {
         if (/[\u4e00-\u9fa5]/.test(char)) {
           return state.correctCharsSet.has(char) || showFull ? char : '□';
+        }
+        // 如果开启了数字字母限制，英文和数字也显示为□
+        if (this.restrictAlphanumeric && /[a-zA-Z0-9]/.test(char)) {
+          return '□';
         }
         return char;
       }).join('');
@@ -827,6 +835,10 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
         if (/[\u4e00-\u9fa5]/.test(char)) {
           return state.correctCharsSet.has(char) || showFull ? char : '□';
         }
+        // 如果开启了数字字母限制，英文和数字也显示为□
+        if (this.restrictAlphanumeric && /[a-zA-Z0-9]/.test(char)) {
+          return '□';
+        }
         return char;
       }).join('');
 
@@ -834,6 +846,10 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
       displayContent = Array.from(this.currentArticle.content).map(char => {
         if (/[\u4e00-\u9fa5]/.test(char)) {
           return state.correctCharsSet.has(char) || showFull ? char : '□';
+        }
+        // 如果开启了数字字母限制，英文和数字也显示为□
+        if (this.restrictAlphanumeric && /[a-zA-Z0-9]/.test(char)) {
+          return '□';
         }
         return char;
       }).join('');
@@ -844,6 +860,8 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
         title: displayTitle,
         content: displayContent,
         difficulty: this.currentArticle.difficulty,
+        // 只有完成时才发送 from 字段
+        ...(state?.status === 'completed' ? { from: this.currentArticle.from } : {}),
       } : null,
       playerState: state ? {
         status: state.status,

@@ -86,6 +86,22 @@
                 {{ char }}
               </span>
             </div>
+            
+            <!-- 文章来源（只在完成时显示） -->
+            <div v-if="article.from && playerStatus === 'completed'" class="mt-3 pt-3 border-t border-base-content/10">
+              <div class="text-xs text-base-content/60">来源</div>
+              <div class="mt-1 text-sm break-all">
+                <a 
+                  v-if="article.from.includes('http')" 
+                  :href="article.from.includes('Wikipedia:') ? article.from.split('Wikipedia: ')[1] : article.from"
+                  target="_blank"
+                  class="link link-primary hover:link-hover"
+                >
+                  {{ article.from }}
+                </a>
+                <span v-else class="text-base-content/80">{{ article.from }}</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -96,15 +112,15 @@
               v-model="guessInput"
               @keyup.enter="handleGuessSubmit"
               type="text" 
-              maxlength="1"
               placeholder="输入一个字符后回车提交"
               class="input input-bordered flex-1 text-center text-2xl font-bold"
+              :class="{ 'input-error': guessInput.trim().length > 1 }"
               :disabled="!canGuess"
             />
             <button 
               @click="handleGuessSubmit" 
               class="btn btn-primary"
-              :disabled="!guessInput.trim()"
+              :disabled="!guessInput.trim() || guessInput.trim().length > 1"
             >
               提交
             </button>
@@ -115,6 +131,9 @@
             >
               放弃
             </button>
+          </div>
+          <div v-if="guessInput.trim().length > 1" class="mt-2 text-error text-sm">
+            ⚠️ 只能提交一个字符，请删除多余的字符
           </div>
         </div>
 
