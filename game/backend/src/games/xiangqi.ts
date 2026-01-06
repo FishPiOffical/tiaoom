@@ -21,7 +21,7 @@ export const maxSize = 2
 export const description = `中国象棋：随机红/绿方，红方先手。服务器严格校验走法（马别腿/象塞眼/炮隔子/九宫/过河兵）、将帅对脸与自陷将军；吃掉将/帅即胜。`;
 export const description_extra = `规则：服务器严格校验走法与将帅对脸；每回合 60 秒超时判负；吃掉对方将/帅即胜。`;
 export const points = {
-  '我就玩玩': 1,
+  '我就玩玩': 0,
   '小博一下': 100,
   '大赢家': 1000,
   '梭哈！': 10000,

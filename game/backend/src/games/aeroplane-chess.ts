@@ -46,10 +46,20 @@ export const name = '飞行棋';
 export const minSize = 2;
 export const maxSize = 4;
 export const description = '经典飞行棋：掷骰起飞、绕圈前进、吃子、回家。';
+export const points = {
+  '我就玩玩': 0,
+  '小博一下': 100,
+  '大赢家': 1000,
+  '梭哈！': 10000,
+}
+export const rates = {
+  '我就玩玩': 1.0,
+  '小博一下': 2,
+  '大赢家': 5,
+};
+
 
 const COLORS: AeroplaneColor[] = ['y', 'r', 'b', 'g'];
-const HOME_LEN = 6;
-const MAIN_LEN = 52;
 
 function clampPieceIndex(n: any): 0 | 1 | 2 | 3 | null {
   const v = Number(n);

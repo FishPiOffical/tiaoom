@@ -10,7 +10,7 @@ export const minSize = 2;
 export const maxSize = 2;
 export const description = `出租车司机知晓毒胶囊位置，选择交给夏洛克一个；夏洛克可选择是否交换。60秒倒计时，明牌聊天。`;
 export const points = {
-  '我就玩玩': 1,
+  '我就玩玩': 0,
   '小博一下': 100,
   '大赢家': 1000,
   '梭哈！': 10000,
