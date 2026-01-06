@@ -70,10 +70,10 @@ class YourGameClient extends Tiaoom {
 
 1. cd 到 `game`, 执行 `npm install`;
 2. 使用 Visual Studio Code 运行调试（直接按下`F5`即可），或执行 `npm run dev:backend` 启动后端开发服务器。
-3. 执行 `npm run dev:frontend` 启动前端开发服务器，访问 `http://localhost:5173`。
-4. 首次访问会跳转到 `/config` 页面，配置好 MySQL (>=7.0) 数据库与持久化选项（可选）后保存，回到首页即可开始开发。
+3. 执行 `npm run dev:frontend` 启动前端开发服务器，访问 `http://localhost:5173` 即可开始开发。
+4. 或执行 `npm run dev` 同时启动后端和前端，访问 `http://localhost:5173` 也可开始开发。
 
-> 更多开发细节见 [摸鱼派竞技大厅开发指南](./game/#readme)
+> 更多开发细节见 [摸鱼派竞技大厅开发指南](https://tiaoom.com/game/)
 
 ## 📁 目录与文件
 - .vscode - VSCode 调试配置

@@ -171,7 +171,10 @@ game/
 └── README.md            # 本文件
 ```
 
+更多开发细节请参考 [摸鱼竞技大厅开发指南](https://tiaoom.com/game/)
+
 ## 其他
 
 - [tiaoom 文档](https://tiaoom.com/) 了解更多 API 和使用方法。
 - [游戏状态嵌入脚本](./embed/#readme) 提供将游戏状态嵌入到任意网页中的能力。
+  
