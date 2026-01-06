@@ -235,6 +235,10 @@ export class Tiaoom extends EventEmitter {
     }
 
     room = this.rooms.splice(roomIndex, 1)[0];
+    room.players.forEach((player) => {
+      player.status = PlayerStatus.online;
+      player.emit("status", PlayerStatus.online);
+    });
 
     this.emit("rooms", this.rooms);
     roomInstance.emit('close');

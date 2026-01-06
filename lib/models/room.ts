@@ -211,7 +211,7 @@ export class Room extends EventEmitter implements IRoom {
    */
   get status(): RoomStatus {
     if (!this.isReady) return RoomStatus.waiting;
-    if (this.players.findIndex((target) => target.status === PlayerStatus.playing) != -1) return RoomStatus.playing;
+    if (this.validPlayers.every((target) => target.status === PlayerStatus.playing)) return RoomStatus.playing;
     return RoomStatus.ready;
   }
 
