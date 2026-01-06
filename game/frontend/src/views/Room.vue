@@ -116,7 +116,7 @@ const hasLiteComponent = computed(() => {
               gameStore.roomPlayer.room.players.filter(
                 (p) => p.role === "player"
               ).length
-            }}/{{ gameStore.roomPlayer.room.size }})
+            }}<span v-if="gameStore.roomPlayer.room.size > 0">/{{ gameStore.roomPlayer.room.size }})</span>
           </span>
         </h3>
         <div
@@ -158,6 +158,12 @@ const hasLiteComponent = computed(() => {
           :game="gameStore.game"
           :room-player="gameStore.roomPlayer"
         >
+          <component 
+            v-if="gameStore.roomPlayer" 
+            :is="gameStore.roomPlayer.room.attrs.type + '-room-controls'" 
+            :game="gameStore.game" 
+            :room-player="gameStore.roomPlayer"
+          />
           <button
             v-if="hasLiteComponent"
             class="btn btn-circle md:btn-lg btn-soft hidden md:flex tooltip tooltip-left"

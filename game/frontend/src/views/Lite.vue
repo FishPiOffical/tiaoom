@@ -8,10 +8,17 @@
         v-if="gameStore.game && gameStore.roomPlayer"
         :game="gameStore.game" 
         :room-player="gameStore.roomPlayer"
-      />
+      >
+        <component 
+          v-if="gameStore.roomPlayer" 
+          :is="gameStore.roomPlayer.room.attrs.type + '-room-controls'" 
+          :game="gameStore.game" 
+          :room-player="gameStore.roomPlayer"
+        />
+      </RoomControlsLite>
       <!-- 房间内容 -->
       <component 
-        v-if="gameStore.roomPlayer?.room.attrs?.type" 
+        v-if="gameStore.roomPlayer" 
         :is="gameStore.roomPlayer.room.attrs.type + '-lite'" 
         :game="gameStore.game" 
         :room-player="gameStore.roomPlayer"

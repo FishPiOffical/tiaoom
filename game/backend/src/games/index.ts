@@ -202,9 +202,7 @@ export class GameRoom {
       if (sender.role != PlayerRole.player && message.type == 'say') {
         // 游玩时间观众发言仅广播给其他观众
         if (this.room.status == RoomStatus.playing) {
-          this.room.watchers.forEach((watcher) => {
-            watcher.emit('message', { content: `${message.data}`, sender });
-          });
+          this.onWatcherSay(message);
           return;
         }
       }
@@ -320,8 +318,20 @@ export class GameRoom {
     }
   }
 
+  /**
+   * 在游戏中时，观众聊天指令处理，继承时可重写
+   * @param message 游戏指令
+   */
+  onWatcherSay(message: IGameCommand) {
+    const sender = message.sender as RoomPlayer;
+    this.room.watchers.forEach((watcher) => {
+      watcher.emit('message', { content: `${message.data}`, sender });
+    });
+  }
+
   /** 
    * 玩家聊天指令处理，继承时可重写
+   * @param message 游戏指令
    */
   onSay(message: IGameCommand) {
     const sender = message.sender as RoomPlayer;
