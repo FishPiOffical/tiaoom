@@ -10,6 +10,13 @@
         <Icon icon="mdi:logout" />
       </button>
       <button class="btn btn-circle md:btn-lg btn-soft tooltip tooltip-left" 
+         v-if="roomPlayer.isCreator"
+         @click="manageVisible = true"
+         data-tip="管理房间"
+      >
+        <Icon icon="mingcute:settings-3-line" />
+      </button>
+      <button class="btn btn-circle md:btn-lg btn-soft tooltip tooltip-left" 
         @click="game?.leaveSeat(roomPlayer.room.id)"
         :disabled="roomPlayer.isReady"
         data-tip="离开座位"
@@ -51,18 +58,21 @@
     <!-- Extra Slot -->
     <slot />
   </div>
+  <RoomManagementDrawer v-model:visible="manageVisible" :room="roomPlayer.room" />
 </template>
 
 <script setup lang="ts">
 import { GameCore } from '@/core/game';
 import { RoomPlayer, Room, PlayerRole, RoomStatus } from 'tiaoom/client';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
+import RoomManagementDrawer from './RoomManagementDrawer.vue';
 
 const props = defineProps<{
   roomPlayer: RoomPlayer & { room: Room },
   game: GameCore,  
 }>()
 
+const manageVisible = ref(false)
 const isPlaying = computed(() => props.roomPlayer.room.status === RoomStatus.playing)
 const isAllReady = computed(() => {
   if (!props.roomPlayer) return false

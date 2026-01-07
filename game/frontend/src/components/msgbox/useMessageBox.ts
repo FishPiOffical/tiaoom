@@ -7,18 +7,22 @@ export interface MsgBoxOptions {
   showCancel?: boolean
   confirmText?: string
   cancelText?: string
+  showInput?: boolean
+  inputPlaceholder?: string
+  inputValue?: string
+  inputType?: string
 }
 
-function mountBox(options: MsgBoxOptions) {
+function mountBox<T = boolean>(options: MsgBoxOptions): Promise<T | false> {
   const container = document.createElement('div')
   document.body.appendChild(container)
 
-  return new Promise<boolean>((resolve) => {
+  return new Promise((resolve) => {
     const app = createApp(MessageBox, {
       ...options,
       visible: true,
-      onConfirm: () => {
-        resolve(true)
+      onConfirm: (val: any) => { // 接收组件 emit 出来的值
+        resolve(val)
         close()
       },
       onCancel: () => {
@@ -31,7 +35,7 @@ function mountBox(options: MsgBoxOptions) {
       }
     })
 
-    const vm = app.mount(container)
+    app.mount(container)
 
     function close() {
       try {
@@ -45,14 +49,25 @@ function mountBox(options: MsgBoxOptions) {
 }
 
 export function confirm(message: string, title = '确认', options: Partial<MsgBoxOptions> = {}) {
-  return mountBox({ title, message, showCancel: true, ...options })
+  return mountBox<boolean>({ title, message, showCancel: true, ...options })
 }
 
 export function alert(message: string, title = '提示', options: Partial<MsgBoxOptions> = {}) {
-  return mountBox({ title, message, showCancel: false, confirmText: '知道了', ...options })
+  return mountBox<boolean>({ title, message, showCancel: false, confirmText: '知道了', ...options })
+}
+
+export function prompt(message: string, title = '请输入', options: Partial<MsgBoxOptions> = {}) {
+  return mountBox<string | false>({ 
+    title, 
+    message, 
+    showCancel: true, 
+    showInput: true, 
+    ...options 
+  })
 }
 
 export default {
   confirm,
-  alert
+  alert,
+  prompt
 }

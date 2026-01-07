@@ -1,10 +1,13 @@
 <script lang="ts" setup>
+import { md5 } from 'js-md5';
 import msg from "@/components/msg";
+import { useGameEvents } from "@/hook/useGameEvents";
 import { getComponent } from "@/main";
 import { useGameStore } from "@/stores/game";
 import { openSmallWindow } from "@/utils/dom";
 import { computed, onMounted, watch, ref, nextTick, onUnmounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import msgbox from '@/components/msgbox';
 
 const gameStore = useGameStore();
 const route = useRoute();
@@ -12,7 +15,7 @@ const router = useRouter();
 
 const roomId = computed(() => (route.params.id as string));
 
-function init() {
+async function init() {
   if (roomId.value) {
     if (
       gameStore.roomPlayer &&
@@ -22,20 +25,24 @@ function init() {
         gameStore.game?.leaveRoom(gameStore.roomPlayer.room.id);
       } else {
         msg.warning("您正在游戏中，无法切换房间！");
-        router.replace("/");
+        router.replace('/');
         return;
       }
     }
     const room = gameStore.rooms.find((r) => r.id === roomId.value);
     if (!room) {
       msg.error("房间不存在或已被解散！");
-      router.replace("/");
+      router.replace('/');
       return;
     }
     let passwd: string | undefined;
-    if (room.attrs?.passwd) {
-      passwd = prompt("请输入房间密码：") || "";
-      if (!passwd) return;
+    if (room.attrs?.passwd && !room.players.some(p => p.id !== gameStore.player?.id)) {
+      passwd = await msgbox.prompt("请输入房间密码：") || "";
+      if (!passwd) return router.back();
+      if (room.attrs.passwd !== md5(passwd)) {
+        msg.error("密码错误，无法加入房间。");
+        return router.getRoutes().length ? router.back() : router.replace('/');
+      }
     }
     gameStore.game?.joinRoom(room.id, { passwd });
   }
@@ -48,11 +55,25 @@ function load() {
   });
 }
 
+if (gameStore.game) {
+  useGameEvents(gameStore.game, {
+    'onRoomList': () => {
+      const room = gameStore.rooms.find((r) => r.id === roomId.value);
+      if (!room) {
+        msg.error("房间不存在或已被解散！");
+        router.back();
+        return;
+      }
+    }
+  });
+}
+
 watch(
   () => route.params.id,
-  () => {
-    load();
-  }
+  (val, old) => {
+    if (val && val !== old && old) load();
+  },
+  { immediate: true }
 );
 
 onMounted(() => {

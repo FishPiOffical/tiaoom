@@ -1,7 +1,6 @@
 <template>
-  <div class="drawer drawer-end h-full">
-    <input id="room-drawer" type="checkbox" class="drawer-toggle" v-model="isDrawerOpen" />
-    <div class="drawer-content p-4 h-full flex flex-col overflow-hidden">
+  <div class="h-full relative">
+    <div class="p-4 h-full flex flex-col overflow-hidden">
       <div class="navbar flex justify-between items-center mb-4 w-full">
         <div class="flex items-center">
           <button class="btn btn-ghost" @click="$router.back()">
@@ -87,88 +86,7 @@
         </template>
       </section>
     </div>
-    <div class="drawer-side z-50">
-      <label for="room-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
-      <div class="menu p-4 w-80 min-h-full bg-base-200 text-base-content">
-        <div v-if="selectedRoom">
-          <h3 class="text-xl font-bold mb-4 border-b border-base-content/10 pb-2">
-            {{ selectedRoom.name }}
-          </h3>
-          
-          <div class="space-y-6">
-            <!-- Players -->
-            <div>
-              <h4 class="font-bold text-sm opacity-70 mb-2 flex items-center gap-2">
-                <Icon icon="mingcute:game-2-line" />
-                玩家 ({{ players.length }})
-              </h4>
-              <ul class="space-y-2">
-                <li v-for="p in players" :key="p.id" class="bg-base-100 rounded p-2 flex flex-row items-center justify-between group">
-                  <div class="flex items-center gap-2 overflow-hidden">
-                    <div class="avatar placeholder">
-                      <div class="bg-neutral text-neutral-content rounded-full w-8 flex items-center justify-center font-bold">
-                        <img v-if="p.attributes?.avatar" :src="p.attributes.avatar" />
-                        <span v-else>{{ p.name[0] }}</span>
-                      </div>
-                    </div>
-                    <div class="flex flex-col min-w-0">
-                      <span class="font-medium truncate flex items-center gap-1">
-                        {{ p.name }}
-                        <Icon v-if="p.isCreator" icon="bxs:crown" class="text-warning" />
-                      </span>
-                      <span class="text-xs opacity-50 truncate">{{ p.id }}</span>
-                    </div>
-                  </div>
-                  
-                  <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button class="btn btn-ghost btn-xs btn-square text-warning" 
-                            v-if="!p.isCreator"
-                            @click="transferOwner(p)" title="移交房主">
-                      <Icon icon="mingcute:transfer-line" />
-                    </button>
-                    <button class="btn btn-ghost btn-xs btn-square text-error" 
-                            @click="kickPlayer(p)" title="踢出">
-                      <Icon icon="mingcute:exit-line" />
-                    </button>
-                  </div>
-                </li>
-              </ul>
-            </div>
-
-            <!-- Spectators -->
-            <div v-if="watchers.length > 0">
-              <h4 class="font-bold text-sm opacity-70 mb-2 flex items-center gap-2">
-                <Icon icon="mingcute:eye-2-line" />
-                观众 ({{ watchers.length }})
-              </h4>
-              <ul class="space-y-2">
-                <li v-for="p in watchers" :key="p.id" class="bg-base-100 rounded p-2 flex flex-row items-center justify-between group">
-                  <div class="flex items-center gap-2 overflow-hidden">
-                    <div class="avatar placeholder">
-                      <div class="bg-neutral text-neutral-content rounded-full w-8 flex items-center justify-center font-bold">
-                        <img v-if="p.attributes?.avatar" :src="p.attributes.avatar" />
-                        <span v-else>{{ p.name[0] }}</span>
-                      </div>
-                    </div>
-                    <div class="flex flex-col min-w-0">
-                      <span class="font-medium truncate">{{ p.name }}</span>
-                      <span class="text-xs opacity-50 truncate">{{ p.id }}</span>
-                    </div>
-                  </div>
-                  
-                  <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button class="btn btn-ghost btn-xs btn-square text-error" 
-                            @click="kickPlayer(p)" title="踢出">
-                      <Icon icon="mingcute:exit-line" />
-                    </button>
-                  </div>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <RoomManagementDrawer v-model:visible="isDrawerOpen" :room="selectedRoom" />
 
     <!-- Broadcast Modal -->
     <dialog ref="broadcastModal" class="modal">
@@ -208,11 +126,12 @@
 import { ref, computed, watch } from 'vue'
 import { useGameStore } from '@/stores/game'
 import { Icon } from '@iconify/vue'
-import { Room, RoomPlayer } from 'tiaoom/client'
+import { Room } from 'tiaoom/client'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { getComponent } from '@/main'
 import Config from './Config.vue'
+import RoomManagementDrawer from '@/components/common/RoomManagementDrawer.vue'
 
 const gameStore = useGameStore()
 const isDrawerOpen = ref(false)
@@ -226,9 +145,6 @@ watch(broadcastInput, async (newVal) => {
   const parsed = await marked.parse(newVal)
   broadcastPreview.value = DOMPurify.sanitize(parsed)
 })
-
-const players = computed(() => selectedRoom.value?.players.filter(p => p.role === 'player') || [])
-const watchers = computed(() => selectedRoom.value?.players.filter(p => p.role === 'watcher') || [])
 
 function getGameName(type: string) {
   return gameStore.games[type]?.name || type
@@ -259,18 +175,6 @@ function broadcastToRoom(room: Room) {
   const msg = prompt(`向房间 "${room.name}" 发送广播:`)
   if (!msg) return
   gameStore.game?.command(room.id, { type: 'broadcast', data: msg })
-}
-
-function kickPlayer(player: RoomPlayer) {
-  if (!selectedRoom.value) return
-  if (!confirm(`确定要踢出玩家 "${player.name}" 吗？`)) return
-  gameStore.game?.kickPlayer(selectedRoom.value.id, player.id)
-}
-
-function transferOwner(player: RoomPlayer) {
-  if (!selectedRoom.value) return
-  if (!confirm(`确定将房主移交给 "${player.name}" 吗？`)) return
-  gameStore.game?.transferRoom(selectedRoom.value.id, player.id)
 }
 
 const manageList = computed(() => {

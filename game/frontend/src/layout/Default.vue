@@ -253,7 +253,7 @@ const isDesktopSidebarCollapsed = ref(false)
 const activeTab = ref<'rooms' | 'players'>('rooms')
 
 function joinRoom(r: IRoomOptions) {
-  router.replace(`/r/${r.id}`)
+  router.push(`/r/${r.id}`)
   isSidebarOpen.value = false
 }
 
