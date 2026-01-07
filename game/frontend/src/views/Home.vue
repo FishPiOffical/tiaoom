@@ -13,9 +13,9 @@
 
       <!-- 聊天区域 (侧边栏) -->
       <!-- 移动端高度固定或伸缩，PC端固定宽度 -->
-      <aside class="flex-shrink-0 w-full lg:w-[380px] xl:w-[420px] h-[40vh] lg:h-full flex flex-col border-t lg:border-t-0 lg:border-l border-base-200 bg-base-100/50 backdrop-blur-sm shadow-inner lg:shadow-none z-10 transition-all duration-300">
+      <aside class="shrink-0 w-full lg:w-[380px] xl:w-[420px] h-[40vh] lg:h-full flex flex-col border-t lg:border-t-0 lg:border-l border-base-200 bg-base-100/50 backdrop-blur-sm shadow-inner lg:shadow-none z-10 transition-all duration-300">
         <!-- 聊天头部 -->
-        <div class="h-12 min-h-[3rem] px-4 border-b border-base-200 flex justify-between items-center bg-base-100/80 sticky top-0 z-10">
+        <div class="h-12 min-h-12 px-4 border-b border-base-200 flex justify-between items-center bg-base-100/80 sticky top-0 z-10">
           <h3 class="font-bold text-base-content flex items-center gap-2 text-sm lg:text-base">
             <Icon icon="carbon:chat" class="w-4 h-4 lg:w-5 lg:h-5 text-primary" />
             <span>公共频道</span>
@@ -43,7 +43,7 @@
             }"
           >
              <!-- 发送者名字 -->
-            <div v-if="m.sender && m.sender.id !== gameStore.player?.id" class="text-[10px] text-base-content/50 mb-0.5 px-2 flex items-center gap-1">
+            <div v-if="m.sender" class="text-[10px] text-base-content/50 mb-0.5 px-2 flex items-center gap-1">
                 <span class="font-medium hover:underline cursor-pointer">{{ m.sender.name }}</span>
             </div>
 
