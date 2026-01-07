@@ -8,6 +8,7 @@ export interface GameConfig {
   points?: Record<string, number>
   rewardDescription?: string
   extendPages?: {
+    icon?: string;
     /** 
      * 入口名称 
      **/

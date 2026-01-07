@@ -103,7 +103,7 @@ const size = ref(34);
 const mainRef = ref<HTMLElement | null>(null);
 onMounted(() => {
   if (mainRef.value) {
-    const w = mainRef.value.clientWidth;
+    const w = Math.min(mainRef.value.clientWidth, mainRef.value.clientHeight);
     cellPx.value = size.value = Math.max(30, Math.min(34, Math.floor((w - 32) / 17)));
   }
 });
