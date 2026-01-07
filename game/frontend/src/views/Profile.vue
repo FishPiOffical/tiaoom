@@ -1,14 +1,13 @@
 <script lang="ts" setup>
   import { api, User } from '@/api';
   import { ref, watch, computed } from 'vue';
-  import { useRoute, useRouter } from 'vue-router';
+  import { useRoute } from 'vue-router';
   import Icon from '@/components/common/Icon.vue';
   import { useGameStore } from '@/stores/game';
-import { getComponent } from '@/main';
+  import { getComponent } from '@/main';
 
   const user = ref<User>();
   const route = useRoute();
-  const router = useRouter();
   const gameStore = useGameStore();
   const error = ref<string>('正在加载中...');
 
@@ -99,10 +98,7 @@ import { getComponent } from '@/main';
     <header
       class="flex justify-between items-center px-4 py-2 bg-base-100 shadow-sm z-10"
     >
-      <button class="btn btn-ghost btn-sm gap-2" @click="router.back()">
-        <Icon icon="mdi:arrow-left" />
-        返回
-      </button>
+      <Back />
       <h1 class="text-lg font-bold">用户资料</h1>
       <div class="w-16"></div> <!-- Spacer for centering -->
     </header>

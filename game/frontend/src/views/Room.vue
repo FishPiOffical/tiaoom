@@ -41,7 +41,7 @@ async function init() {
       if (!passwd) return router.back();
       if (room.attrs.passwd !== md5(passwd)) {
         msg.error("密码错误，无法加入房间。");
-        return router.getRoutes().length ? router.back() : router.replace('/');
+        return history.state.back ? router.back() : router.replace('/');
       }
     }
     gameStore.game?.joinRoom(room.id, { passwd });
@@ -58,12 +58,16 @@ function load() {
 if (gameStore.game) {
   useGameEvents(gameStore.game, {
     'onRoomList': () => {
-      const room = gameStore.rooms.find((r) => r.id === roomId.value);
-      if (!room) {
-        msg.error("房间不存在或已被解散！");
-        router.back();
-        return;
-      }
+      setTimeout(() => {
+        if (!route.params.id) return;
+        const room = gameStore.rooms.find((r) => r.id === roomId.value);
+        if (!room) {
+          msg.error("房间不存在或已被解散！");
+          debugger;
+          history.state.back ? router.back() : router.replace('/');
+          return;
+        }
+      }, 100)
     }
   });
 }

@@ -3,7 +3,7 @@
     <!-- Waiting: Player Actions -->
     <template v-if="!isPlaying && roomPlayer.role === PlayerRole.player">
       <button class="btn btn-circle md:btn-lg btn-soft tooltip tooltip-left" 
-        @click="game?.leaveRoom(roomPlayer.room.id), $router.push('/')"
+        @click="$router.push('/').then(() => game?.leaveRoom(roomPlayer.room.id))"
         :disabled="roomPlayer.isReady"
         data-tip="离开房间"
       >
@@ -41,7 +41,7 @@
     <!-- Watcher Actions -->
     <template v-if="roomPlayer.role === PlayerRole.watcher">
       <button class="btn btn-circle md:btn-lg btn-soft tooltip tooltip-left" 
-        @click="game?.leaveRoom(roomPlayer.room.id), $router.push('/')"
+        @click="$router.push('/').then(() => game?.leaveRoom(roomPlayer.room.id))"
         :disabled="roomPlayer.isReady"
         data-tip="离开房间"
       >

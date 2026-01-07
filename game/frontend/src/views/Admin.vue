@@ -1,11 +1,9 @@
 <template>
-  <div class="h-full relative">
+  <div class="h-full relative w-full">
     <div class="p-4 h-full flex flex-col overflow-hidden">
       <div class="navbar flex justify-between items-center mb-4 w-full">
         <div class="flex items-center">
-          <button class="btn btn-ghost" @click="$router.back()">
-            <Icon icon="meteor-icons:arrow-left" />
-          </button>
+          <Back />
           <div role="tablist" class="tabs tabs-box">
             <a role="tab" class="tab space-x-1" :class="{ 'tab-active': activeTab == 'room'}" @click="activeTab = 'room'" v-if="gameStore.player?.isAdmin">
               <Icon icon="mingcute:settings-3-line" />

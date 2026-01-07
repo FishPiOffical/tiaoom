@@ -1,9 +1,7 @@
 <template>
   <div class="p-4 w-full max-w-4xl mx-auto">
     <div class="flex items-center gap-2 mb-4">
-      <button class="btn btn-circle btn-ghost btn-sm" @click="router.back()">
-        <Icon icon="mdi:arrow-left" class="text-xl" />
-      </button>
+      <Back />
       <h2 class="text-2xl font-bold">排行榜</h2>
     </div>
     
@@ -61,12 +59,9 @@
 
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import { useRouter } from 'vue-router'
 import { useGameStore } from '@/stores/game'
 import { api } from '@/api'
-import Icon from '@/components/common/Icon.vue'
 
-const router = useRouter()
 const gameStore = useGameStore()
 const activeTab = ref<string>('')
 const leaderboard = ref<any[]>([])
