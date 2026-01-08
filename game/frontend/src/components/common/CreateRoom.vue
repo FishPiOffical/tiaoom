@@ -169,8 +169,8 @@
                  class="btn btn-sm btn-soft gap-2 hover:bg-base-200"
                  @click="extendPage = page.component"
                >
-                <Icon v-if="page.icon" icon="carbon:settings" class="w-4 h-4" />
-                {{ page.name }}
+                <Icon v-if="page.icon" :icon="page.icon" class="w-4 h-4" />
+                <span>{{ page.name }}</span>
               </button>
              </div>
              
@@ -194,12 +194,16 @@
         @click="extendPage = null"
       ></div>
       <div class="relative w-full max-w-2xl bg-base-100 h-full shadow-2xl overflow-y-auto p-6 md:p-8 animate-slide-left border-l border-base-200">
-        <div class="flex justify-between items-center mb-8 sticky top-0 bg-base-100 z-10 py-2 border-b border-base-100">
-          <h3 class="text-xl font-bold flex items-center gap-3">
+        <div class="flex justify-between items-center mb-2 sticky top-0 bg-base-100 z-10 py-2 border-b border-base-100">
+          <h3 class="text-xl font-bold flex items-center gap-2">
             <div class="p-2 bg-primary/10 rounded-lg text-primary">
-              <Icon v-if="currentGame.extendPages?.find((p: any) => p.component === extendPage)?.icon" :icon="currentGame.extendPages.find((p: any) => p.component === extendPage)?.icon" class="w-6 h-6" />
+              <Icon 
+                v-if="currentGame.extendPages?.find((p: any) => p.component === extendPage)?.icon" 
+                :icon="currentGame.extendPages.find((p: any) => p.component === extendPage)?.icon" 
+                class="w-6 h-6" 
+              />
             </div>
-            {{ currentGame.extendPages?.find((p: any) => p.component === extendPage)?.name || '设置' }}
+            <span>{{ currentGame.extendPages?.find((p: any) => p.component === extendPage)?.name || '设置' }}</span>
           </h3>
           <button class="btn btn-sm btn-circle btn-ghost" @click="extendPage = null">
             <Icon icon="carbon:close" class="w-6 h-6" />
