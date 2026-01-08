@@ -30,7 +30,7 @@ export type TiaoomEvents = {
    * 全局消息事件
    * @param message 消息内容
    */
-  "global.message": (message: string, sender?: Player) => void;
+  "global.message": (data: { content: string, sender?: Player }) => void;
   /**
    * 玩家列表更新事件
    * @param players 玩家列表
@@ -464,7 +464,7 @@ export class Tiaoom {
    * @param {boolean} on 开启/关闭监听
    * @returns this
    */
-  onMessage(cb: (message: string, sender?: Player) => void, on=true) {
+  onMessage(cb: (data: { content: string, sender?: Player }) => void, on=true) {
     if (on) this.on("global.message", cb);
     else this.off("global.message", cb);
     return this;

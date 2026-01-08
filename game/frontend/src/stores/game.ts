@@ -114,8 +114,8 @@ export const useGameStore = defineStore('game', () => {
       })
       .onPlayerReady(onPlayerReady)
       .onPlayerUnready(onPlayerReady)
-      .on('global.message', (message, sender) => {
-        globalMessages.value.unshift({ data: message, sender, createdAt: Date.now() })
+      .onMessage(({ content, sender }) => {
+        globalMessages.value.push({ data: content, sender, createdAt: Date.now() })
       }).on('global.command', (command) => {
         if (command.type === 'boardcast' && command.data) {
           globalBoardcastMessage.value = command.data;

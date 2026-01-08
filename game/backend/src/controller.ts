@@ -119,7 +119,7 @@ export class Controller extends Tiaoom {
       }
     }).on("command", (command: any & { sender: Player }) => {
       if (command.type === 'say') {
-        this.messages.unshift({ data: command.data, sender: command.sender, createdAt: Date.now() });
+        this.messages.push({ data: command.data, sender: command.sender, createdAt: Date.now() });
         this.messages = this.messages.slice(0, 500); // keep last 500 messages
         this.emit('message', command.data, command.sender);
       } else if (command.type === 'boardcast') {

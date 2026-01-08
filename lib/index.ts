@@ -160,7 +160,7 @@ export class Tiaoom extends EventEmitter {
     });
 
     this.on('message', (data, sender) => {
-      this.send({ type: MessageTypes.GlobalMessage, data, sender });
+      this.send({ type: MessageTypes.GlobalMessage, data: { content: data, sender } });
     });
 
     return this;
