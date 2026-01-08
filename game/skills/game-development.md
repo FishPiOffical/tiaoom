@@ -300,9 +300,9 @@ game.on('command', (msg) => {
     countdown.value = msg.data.seconds;
     startLocalTimer();
   }
-  if (msg.type === 'status' && msg.data.tickTimeEnd['turn']) {
+  if (msg.type === 'status' && msg.data.tickEndTime['turn']) {
     countdown.value = Math.max(0, Math.ceil(
-      (msg.data.tickTimeEnd['turn'] - Date.now()) / 1000
+      (msg.data.tickEndTime['turn'] - Date.now()) / 1000
     ));
     startLocalTimer();
   }
@@ -737,7 +737,7 @@ A: 确保调用了 `this.room.end()` 方法。
 A: 检查是否正确实现了 `getData()` 和 `getStatus()` 方法，并且没有将关键属性添加到 `saveIgnoreProps`。
 
 ### Q: 倒计时在重连后不准确？
-A: 确保在 `init()` 中调用了 `restoreTimer()`，并在 `getStatus()` 中返回了 `tickTimeEnd`。
+A: 确保在 `init()` 中调用了 `restoreTimer()`，并在 `getStatus()` 中返回了 `tickEndTime`。
 
 ### Q: 前端无法接收到后端消息？
 A: 检查事件监听是否正确，使用 `@command="onCommand"` 或 `game.on('command', onCommand)`。

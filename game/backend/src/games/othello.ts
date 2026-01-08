@@ -183,10 +183,14 @@ class OthelloGameRoom extends GameRoom {
   history: { place: string, time: number }[] = [];
 
   init() {
+    this.restoreTimer({
+      turn: () => this.handleTurnTimeout(),
+    });
     return super.init().on('player-offline', async (player) => {
       await sleep(4 * 60 * 1000); // 等待 4 分钟，判定为离线
       if (!this.isPlayerOnline(player)) return;
       if (this.room.status === RoomStatus.playing && player.role === PlayerRole.player) {
+        this.stopTimer('turn');
         this.say(`玩家 ${player.name} 已离线，游戏结束。`);
         this.lastLosePlayer = this.room.validPlayers.find((p) => p.id != player.id)!;
         this.saveAchievements([this.lastLosePlayer]);
@@ -255,6 +259,7 @@ class OthelloGameRoom extends GameRoom {
           this.sayTo(`无效落子！`, sender);
           return;
         }
+        this.stopTimer('turn');
 
         this.history.push({ place: `${String.fromCharCode(65 + y)}${8 - x}`, time: Date.now() - this.beginTime });
 
@@ -288,6 +293,7 @@ class OthelloGameRoom extends GameRoom {
             this.say(`游戏以平局结束！`);
           }
           this.saveAchievements(winner ? [winner] : null);
+          this.stopTimer('turn');
           this.room.end();
           return;
         }
@@ -297,6 +303,7 @@ class OthelloGameRoom extends GameRoom {
           this.currentPlayer = current;
           this.command('place-turn', { player: this.currentPlayer });
           this.save();
+          this.startTimer(() => this.handleTurnTimeout(), 60000, 'turn');
         }
         break;
       }
@@ -307,6 +314,7 @@ class OthelloGameRoom extends GameRoom {
         break;
       }
       case 'request-lose': {
+        this.stopTimer('turn');
         this.say(`玩家 ${sender.name} 认输。`);
         this.room.validPlayers.forEach((player) => {
           if (!this.achievements[player.name]) {
@@ -328,6 +336,7 @@ class OthelloGameRoom extends GameRoom {
           this.say(`玩家 ${sender.name} 拒绝和棋，游戏继续。`);
           break;
         }
+        this.stopTimer('turn');
         this.say(`玩家 ${sender.name} 同意和棋，游戏结束。`);
         this.lastLosePlayer = this.room.validPlayers.find((p) => p.id != sender.id)!;
         this.saveAchievements(null);
@@ -374,6 +383,16 @@ class OthelloGameRoom extends GameRoom {
     this.say(`游戏开始。玩家 ${this.currentPlayer.name} 执黑先行。`);
     this.command('place-turn', { player: this.currentPlayer });
     this.command('board', this.board);
+    this.startTimer(() => this.handleTurnTimeout(), 60000, 'turn');
+  }
+
+  handleTurnTimeout() {
+    if (!this.currentPlayer) return;
+    this.say(`玩家 ${this.currentPlayer.name} 落子超时，判负。`);
+    this.lastLosePlayer = this.currentPlayer;
+    const winner = this.room.validPlayers.find((p) => p.id !== this.currentPlayer?.id);
+    this.saveAchievements(winner ? [winner] : null);
+    this.room.end();
   }
 }
 

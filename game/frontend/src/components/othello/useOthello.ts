@@ -9,6 +9,17 @@ export function useOthello(game: GameCore, roomPlayer: RoomPlayer & { room: Room
   const board = ref(Array(8).fill(0).map(() => Array(8).fill(-1)))
   const currentPlace = ref<{ x: number; y: number } | null>(null)
   const achievements = ref<Record<string, any>>({})
+  const timer = ref(0)
+  let timerInterval: any
+
+  function startLocalTimer(seconds: number) {
+    timer.value = seconds
+    if (timerInterval) clearInterval(timerInterval)
+    timerInterval = setInterval(() => {
+      timer.value--
+      if (timer.value <= 0) clearInterval(timerInterval)
+    }, 1000)
+  }
 
   function onRoomStart() {
     currentPlace.value = null
@@ -16,6 +27,7 @@ export function useOthello(game: GameCore, roomPlayer: RoomPlayer & { room: Room
 
   function onRoomEnd() {
     currentPlayer.value = null
+    if (timerInterval) clearInterval(timerInterval)
   }
 
   function onCommand(cmd: any) {
@@ -26,6 +38,14 @@ export function useOthello(game: GameCore, roomPlayer: RoomPlayer & { room: Room
         currentPlayer.value = cmd.data.current
         board.value = cmd.data.board
         achievements.value = cmd.data.achievements || {}
+        if (cmd.data.tickEndTime?.turn) {
+          startLocalTimer(Math.max(0, Math.ceil((cmd.data.tickEndTime.turn - Date.now()) / 1000)))
+        }
+        break
+      case 'countdown':
+        if (cmd.data.name === 'turn') {
+          startLocalTimer(cmd.data.seconds)
+        }
         break
       case 'board':
         board.value = cmd.data
@@ -89,5 +109,6 @@ export function useOthello(game: GameCore, roomPlayer: RoomPlayer & { room: Room
     placePiece,
     requestDraw,
     requestLose,
+    timer,
   }
 }

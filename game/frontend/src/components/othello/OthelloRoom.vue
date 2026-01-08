@@ -72,6 +72,9 @@
           />
         </div>
         <b class="text-base-content">{{ currentPlayer?.name }}</b>
+        <span class="text-xs bg-base-content/10 px-2 py-1 rounded" :class="{ 'text-error': timer < 10 }">
+          {{ timer }}s
+        </span>
       </div>
     </section>
     
@@ -172,6 +175,7 @@ const {
   requestDraw,
   requestLose,
   isPlaying,
+  timer,
 } = useOthello(props.game, props.roomPlayer)
 
 function getPlayerStatus(p: any) {

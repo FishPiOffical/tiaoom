@@ -96,6 +96,9 @@
         />
       </div>
       <b class="text-base-content">{{ currentPlayer?.name }}</b>
+      <span class="text-xs bg-base-content/10 px-2 py-0.5 rounded" :class="{ 'text-error': timer < 10 }">
+        {{ timer }}s
+      </span>
     </div>
     <div 
       v-if="isPlaying && showControl" 
@@ -140,6 +143,7 @@ const {
   placePiece,
   requestDraw,
   requestLose,
+  timer,
 } = useOthello(props.game, props.roomPlayer);
 
 onMounted(() => {

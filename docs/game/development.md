@@ -393,9 +393,9 @@ export function useGame(game: GameCore) {
         startLocalTimer();
         break;
       case 'status':
-        if (msg.data.tickTimeEnd['turn']) {
-          countdown.value = msg.data.tickTimeEnd['turn'] 
-            ? Math.max(0, Math.ceil((msg.data.tickTimeEnd['turn'] - Date.now()) / 1000)) 
+        if (msg.data.tickEndTime['turn']) {
+          countdown.value = msg.data.tickEndTime['turn'] 
+            ? Math.max(0, Math.ceil((msg.data.tickEndTime['turn'] - Date.now()) / 1000)) 
             : 0;
           startLocalTimer();
         }
@@ -428,6 +428,8 @@ export function useGame(game: GameCore) {
   处理玩家指令。建议调用 `super.onCommand(message)` 以处理通用指令（如聊天）。
 - `onSay(message: IGameCommand)`: 
   处理玩家聊天消息。
+- `onWatcherSay(message: IGameCommand)`: 
+  处理观众在游戏过程中的聊天消息，默认为玩家不可见的临时消息。
 - `getStatus(sender: IRoomPlayer)`: 
   获取当前游戏状态。用于玩家重连或获取最新状态。需调用 `super.getStatus(sender)` 并合并自定义状态。在玩家登录或进入房间时前端会通过 `status` 指令获取到此状态。
 - `getData()`: 
@@ -443,7 +445,7 @@ export function useGame(game: GameCore) {
 - `virtualCommand(type: string, data: any, receiver: RoomPlayer)`: 
   模拟玩家发出房间指令，用于模拟触发玩家行为。
 - `save()`: 
-  保存当前游戏状态。可以在游戏逻辑中调用此方法以持久化数据。
+  保存当前游戏状态。可以在游戏逻辑中调用此方法手动持久化数据。
 - `saveAchievements(winner?: RoomPlayer[] | null, saveRecord: boolean = true)`: 
   保存成就数据（胜/负/平），不传则表示平局。若有胜负且配置了积分奖励，将会执行积分奖励。若只需执行积分奖励，无需保存游戏记录，可将 `saveRecord` 设为 `false`。
 - `saveScore(score: number)`: 
