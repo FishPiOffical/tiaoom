@@ -107,25 +107,31 @@
             </template>
             
             <!-- 积分与倍率 -->
-             <div class="form-control w-full" v-if="currentGame.points && Object.keys(currentGame.points).length">
-               <label class="label"><span class="label-text">底分</span></label>
-               <select v-model.number="room.attrs.point" class="select select-bordered w-full" required>
-                  <option disabled selected hidden value="">请选择底分</option>
-                  <option v-for="(point, key) in currentGame.points" :key="key" :value="point">
-                    {{ key }}
-                  </option>
-                </select>
-             </div>
+            <div class="form-control w-full" v-if="currentGame.points && Object.keys(currentGame.points).length">
+              <label class="label"><span class="label-text">底分</span></label>
+              <select v-model.number="room.attrs.point" class="select select-bordered w-full" required>
+                <option disabled selected hidden value="">请选择底分</option>
+                <option v-for="(point, key) in currentGame.points" :key="key" :value="point">
+                  {{ key }}
+                </option>
+              </select>
+            </div>
              
-             <div class="form-control w-full" v-if="currentGame.rates && Object.keys(currentGame.rates).length">
-               <label class="label"><span class="label-text">倍率</span></label>
-               <select v-model.number="room.attrs.rate" class="select select-bordered w-full" required>
-                  <option disabled selected hidden value="">请选择倍率</option>
-                  <option v-for="(rate, key) in currentGame.rates" :key="key" :value="rate">
-                    {{ key }}
-                  </option>
-                </select>
-             </div>
+            <div class="form-control w-full" v-if="currentGame.rates && Object.keys(currentGame.rates).length">
+              <label class="label"><span class="label-text">倍率</span></label>
+              <select v-model.number="room.attrs.rate" class="select select-bordered w-full" required>
+                <option disabled selected hidden value="">请选择倍率</option>
+                <option v-for="(rate, key) in currentGame.rates" :key="key" :value="rate">
+                  {{ key }}
+                </option>
+              </select>
+            </div>
+
+            <component 
+              :is="room.attrs.type + '-attrs'" 
+              :game="gameStore.game" 
+              v-model:attrs="room.attrs"
+            />
           </div>
 
           <!-- 警告提示 -->

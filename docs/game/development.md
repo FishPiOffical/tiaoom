@@ -10,6 +10,8 @@
 - 前端游戏组件文件：`<GameName>Room.vue`
 - 前端游戏小窗组件(可选)：`<GameName>Lite.vue`
 - 前端游戏回放组件(可选)：`<GameName>Replay.vue`
+- 右上角房间控制扩展按钮组件(可选)：`<GameName>RoomControls.vue`
+- 创建房间表单字段扩展组件(可选)：`<GameName>Attrs.vue`
 
 ## 后端开发 {#backend-development}
 

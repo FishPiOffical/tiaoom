@@ -3,6 +3,21 @@
     <section class="flex-1 md:h-full flex flex-col items-center justify-start md:justify-center  overflow-auto p-4">
       <!-- 棋盘 -->
       <div class="relative inline-block bg-base-300 p-3 rounded-lg shadow-2xl m-auto select-none">
+        
+        <div v-if="isSealed" class="absolute inset-0 z-50 bg-base-100/50 backdrop-blur-sm flex items-center justify-center rounded">
+          <div class="text-center">
+            <div class="text-2xl font-bold mb-2">已封盘</div>
+            <div class="text-sm opacity-60">请等待请求者解除封盘</div>
+            <button 
+              v-if="sealRequesterId === roomPlayer.id"
+              class="btn btn-primary mt-4" 
+              @click="unseal"
+            >
+              解除封盘
+            </button>
+          </div>
+        </div>
+
         <div class="grid grid-cols-[auto_max-content_auto]">
           <!-- 上方坐标 -->
           <div></div>
@@ -41,7 +56,7 @@
                 <!-- 真实棋子 -->
                 <transition name="drop">
                   <span 
-                    v-if="cell > 0"
+                    v-if="cell > 0 && !isSealed"
                     class="absolute w-10 h-10 md:w-14 md:h-14 rounded-full shadow-lg"
                     :class="[
                       cell === 1 ? 'bg-black border border-white/20' : 'bg-white border border-black/20',
@@ -87,6 +102,7 @@
           />
         </div>
         <b class="text-base-content">{{ currentPlayer?.name }}</b>
+        <span class="font-mono text-base-content/70 ml-2" v-if="timer > 0">{{ timerStr }}</span>
       </div>
     </section>
     
@@ -144,6 +160,12 @@
           >
             认输
           </button>
+          <button class="btn" 
+            @click="requestSeal"
+            :disabled="currentPlayer?.id !== roomPlayer.id"
+          >
+            请求封盘
+          </button>
         </div>
         
         <hr class="border-base-content/20" />
@@ -191,6 +213,12 @@ const {
   handleColumnClick,
   requestDraw,
   requestLose,
+  requestSeal,
+  unseal,
+  timer,
+  timerStr,
+  isSealed,
+  sealRequesterId,
 } = useConnect4(props.game, props.roomPlayer)
 
 
