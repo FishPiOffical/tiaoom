@@ -2,7 +2,20 @@
   <section class="flex flex-col md:flex-row gap-4 md:h-full">
     <section class="flex-1 md:h-full flex flex-col items-center justify-start md:justify-center overflow-auto p-4 select-none">
       <!-- 棋盘 -->
-      <div class="inline-block bg-base-300 border border-base-content/20 p-2 rounded shadow-2xl m-auto">
+      <div class="inline-block bg-base-300 border border-base-content/20 p-2 rounded shadow-2xl m-auto relative">
+        <div v-if="isSealed" class="absolute inset-0 z-50 bg-base-100/50 backdrop-blur-sm flex items-center justify-center rounded">
+          <div class="text-center">
+            <div class="text-2xl font-bold mb-2">已封盘</div>
+            <div class="text-sm opacity-60">请等待请求者解除封盘</div>
+            <button 
+              v-if="sealRequesterId === roomPlayer.id"
+              class="btn btn-primary mt-4" 
+              @click="unseal"
+            >
+              解除封盘
+            </button>
+          </div>
+        </div>
         <!-- 顶部横坐标 (A-H) -->
         <div class="flex">
           <div class="w-[8vw] md:w-8 h-8 md:h-8 flex items-center justify-center text-xs font-bold text-base-content/60"></div>
@@ -30,11 +43,12 @@
             }"
           >
             <span 
+              v-if="!isSealed"
               class="group-hover:inline hidden opacity-80 w-[7vw] h-[7vw] md:w-7 md:h-7 rounded-full transition-all duration-500 z-10" 
               :class="[currentPlayer?.attributes?.color === 1 ? 'black-piece border border-base-content/20 shadow-lg' : 'white-piece shadow-lg']">
             </span>
             <span 
-              v-if="cell > 0"
+              v-if="cell > 0 && !isSealed"
               class="w-[7vw] h-[7vw] md:w-7 md:h-7 rounded-full transition-all duration-500 z-10"
               :class="[
                 cell === 1 ? 'black-piece border border-base-content/20 shadow-lg' : 'white-piece shadow-lg',
@@ -42,7 +56,7 @@
               ]"
             />
             <div 
-              v-if="cell === 0 && (currentPlayer?.id === roomPlayer.id || roomPlayer.role !== 'player')" 
+              v-if="cell === 0 && (currentPlayer?.id === roomPlayer.id || roomPlayer.role !== 'player') && !isSealed" 
               class="absolute w-2 h-2 rounded-full bg-base-content/30"
             ></div>
           </div>
@@ -73,7 +87,7 @@
         </div>
         <b class="text-base-content">{{ currentPlayer?.name }}</b>
         <span class="text-xs bg-base-content/10 px-2 py-1 rounded" :class="{ 'text-error': timer < 10 }">
-          {{ timer }}s
+          {{ timerStr }}
         </span>
       </div>
     </section>
@@ -120,18 +134,30 @@
         </div>
         
         <!-- 操作按钮 -->
-        <div v-if="isPlaying && roomPlayer.role === PlayerRole.player" class="group flex gap-2">
+        <div v-if="isPlaying && roomPlayer.role === PlayerRole.player" class="group flex gap-2 flex-wrap">
           <button class="btn" 
             @click="requestDraw"
-            :disabled="currentPlayer?.id !== roomPlayer.id"
+            :disabled="currentPlayer?.id !== roomPlayer.id || isSealed"
           >
             请求和棋
           </button>
           <button class="btn" 
             @click="requestLose"
-            :disabled="currentPlayer?.id !== roomPlayer.id"
+            :disabled="currentPlayer?.id !== roomPlayer.id || isSealed"
           >
             认输
+          </button>
+          <button class="btn"
+            v-if="!isSealed"
+            @click="requestSeal"
+          >
+            请求封盘
+          </button>
+          <button class="btn btn-primary"
+            v-if="isSealed && sealRequesterId === roomPlayer.id"
+            @click="unseal"
+          >
+            解除封盘
           </button>
         </div>
         
@@ -176,6 +202,11 @@ const {
   requestLose,
   isPlaying,
   timer,
+  timerStr,
+  isSealed,
+  sealRequesterId,
+  requestSeal,
+  unseal,
 } = useOthello(props.game, props.roomPlayer)
 
 function getPlayerStatus(p: any) {

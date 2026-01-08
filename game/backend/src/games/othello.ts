@@ -181,6 +181,34 @@ class OthelloGameRoom extends GameRoom {
   lastLosePlayer?: RoomPlayer;
   board: number[][] = Array.from({ length: size }, () => Array(size).fill(-1))
   history: { place: string, time: number }[] = [];
+  isSealed: boolean = false;
+  sealRequesterId: string | null = null;
+  turnStartTime: number = 0;
+  turnRemainingTime: number = 60000;
+  playerTimeRemaining: Record<string, number> = {};
+
+  startTurnTimer(duration?: number) {
+    // 0: 不计时, 1: 每步60s, 2: 每人15分钟
+    const countDownWay = this.room.attrs?.countDownWay ?? 1;
+    
+    if (countDownWay === 0) {
+      this.stopTimer('turn');
+      return;
+    }
+
+    if (duration === undefined) {
+      if (countDownWay === 2 && this.currentPlayer) {
+        duration = this.playerTimeRemaining[this.currentPlayer.id] ?? (15 * 60 * 1000);
+      } else {
+        // model 1 or default
+        duration = 60000;
+      }
+    }
+
+    this.turnRemainingTime = duration;
+    this.turnStartTime = Date.now();
+    this.startTimer(() => this.handleTurnTimeout(), duration, 'turn');
+  }
 
   init() {
     this.restoreTimer({
@@ -206,6 +234,9 @@ class OthelloGameRoom extends GameRoom {
       current: this.currentPlayer,
       board: this.board,
       color: sender.attributes?.color,
+      isSealed: this.isSealed,
+      sealRequesterId: this.sealRequesterId,
+      playerTimeRemaining: this.playerTimeRemaining,
     }
   }
 
@@ -243,6 +274,10 @@ class OthelloGameRoom extends GameRoom {
           this.sayTo(`游戏未开始，无法落子。`, sender);
           break;
         }
+        if (this.isSealed) {
+          this.sayTo(`游戏已封盘，无法落子。`, sender);
+          break;
+        }
         if (sender.id !== this.currentPlayer?.id) {
           this.sayTo(`轮到玩家 ${this.currentPlayer?.name} 落子。`, sender);
           break;
@@ -262,6 +297,12 @@ class OthelloGameRoom extends GameRoom {
         this.stopTimer('turn');
 
         this.history.push({ place: `${String.fromCharCode(65 + y)}${8 - x}`, time: Date.now() - this.beginTime });
+
+        // 更新当前玩家剩余时间 (仅模式2有效，但计算无妨)
+        const elapsed = Date.now() - this.turnStartTime;
+        if (this.room.attrs?.countDownWay === 2) {
+          this.playerTimeRemaining[sender.id] = Math.max(0, this.turnRemainingTime - elapsed);
+        }
 
         if (!result.flat().some(cell => cell === 0) && result.flat().filter(cell => cell <= 0).length) {
           result = markValidPlaces(result, color);
@@ -303,8 +344,48 @@ class OthelloGameRoom extends GameRoom {
           this.currentPlayer = current;
           this.command('place-turn', { player: this.currentPlayer });
           this.save();
-          this.startTimer(() => this.handleTurnTimeout(), 60000, 'turn');
+          this.startTurnTimer();
         }
+        break;
+      }
+      case 'request-seal': {
+        if (this.isSealed) return;
+        this.say(`玩家 ${sender.name} 请求封盘。`);
+        const otherPlayer = this.room.validPlayers.find((p) => p.id != sender.id)!;
+        this.commandTo('request-seal', { player: sender }, otherPlayer);
+        break;
+      }
+      case 'seal': {
+        if (!message.data.agree) {
+          const requester = this.room.validPlayers.find((p) => p.id == message.data.requesterId);
+          if (requester) this.sayTo(`玩家 ${sender.name} 拒绝封盘。`, requester);
+          break;
+        }
+        if (this.isSealed) break;
+        this.isSealed = true;
+        this.sealRequesterId = message.data.requesterId;
+        
+        // 计算剩余时间并暂停计时
+        const elapsed = Date.now() - this.turnStartTime;
+        this.turnRemainingTime = Math.max(0, this.turnRemainingTime - elapsed);
+        this.stopTimer('turn');
+
+        this.say(`玩家 ${sender.name} 同意封盘，游戏暂停，计时暂停。`, undefined);
+        this.command('seal', { isSealed: true, sealRequesterId: this.sealRequesterId });
+        break;
+      }
+      case 'unseal': {
+        if (!this.isSealed) break;
+        if (sender.id !== this.sealRequesterId) {
+          this.sayTo(`只有封盘发起者可以解封。`, sender);
+          break;
+        }
+        this.isSealed = false;
+        this.sealRequesterId = null;
+        this.turnStartTime = Date.now();
+        this.startTurnTimer(this.turnRemainingTime); // 恢复之前的剩余时间
+        this.say(`玩家 ${sender.name} 解除封盘，游戏继续。`, undefined);
+        this.command('unseal', { isSealed: false, remaining: Math.ceil(this.turnRemainingTime / 1000) });
         break;
       }
       case 'request-draw': {
@@ -381,9 +462,17 @@ class OthelloGameRoom extends GameRoom {
     });
     this.command('achievements', this.achievements);
     this.say(`游戏开始。玩家 ${this.currentPlayer.name} 执黑先行。`);
+    
+    // 初始化时间 (模式2)
+    if (this.room.attrs?.countDownWay === 2) {
+      this.room.validPlayers.forEach(p => {
+        this.playerTimeRemaining[p.id] = 15 * 60 * 1000;
+      });
+    }
+
     this.command('place-turn', { player: this.currentPlayer });
     this.command('board', this.board);
-    this.startTimer(() => this.handleTurnTimeout(), 60000, 'turn');
+    this.startTurnTimer();
   }
 
   handleTurnTimeout() {
