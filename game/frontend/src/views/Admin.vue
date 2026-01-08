@@ -44,9 +44,9 @@
                 @click="openRoomDetail(room)">
               <div class="card-body p-4">
                 <div class="flex justify-between items-start">
-                  <h2 class="card-title text-lg">
-                    {{ room.name }}
-                    <div class="badge badge-primary badge-outline text-xs">{{ getGameName(room.attrs.type) }}</div>
+                  <h2 class="card-title text-lg truncate">
+                    <span class="truncate">{{ room.name }}</span>
+                    <div class="badge badge-primary badge-outline text-xs whitespace-nowrap">{{ getGameName(room.attrs.type) }}</div>
                   </h2>
                   <div class="flex gap-1">
                     <button class="btn btn-ghost btn-xs btn-square text-info" @click.stop="broadcastToRoom(room)" title="发送广播">

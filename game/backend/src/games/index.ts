@@ -58,6 +58,10 @@ export interface IGameInfo {
      * 入口名称 
      **/
     name: string;
+    /**
+     * 入口图标
+     */
+    icon?: string;
     /** 
      * 页面路径 
      **/

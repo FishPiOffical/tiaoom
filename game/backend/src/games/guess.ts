@@ -55,7 +55,7 @@ export const points = {
   '梭哈！': 10000,
 }
 export const extendPages = [
-  { name: '投稿', component: 'GuessPost' },
+  { name: '投稿', icon: 'streamline-plump:inbox-post-solid', component: 'GuessPost' },
 ];
 
 // 预制文章数据
