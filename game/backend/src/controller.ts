@@ -169,8 +169,8 @@ export class Controller extends Tiaoom {
   async joinPlayer(sender: IPlayer, player: IRoomPlayerOptions & { params?: { passwd: string } }, isCreator: boolean = false) {
     const room = this.rooms.find(r => r.id === player.roomId);
     if (room) {
-      if (player.params?.passwd) {
-      const passwdHash = crypto.createHash('md5').update(player.params.passwd).digest('hex');
+      if (room.attrs?.passwd) {
+        const passwdHash = crypto.createHash('md5').update(player.params?.passwd || '').digest('hex');
         if (room.attrs?.passwd !== passwdHash) {
           throw new Error("密码错误，无法加入房间。");
         }

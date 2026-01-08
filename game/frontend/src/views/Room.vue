@@ -36,7 +36,7 @@ async function init() {
       return;
     }
     let passwd: string | undefined;
-    if (room.attrs?.passwd && !room.players.some(p => p.id !== gameStore.player?.id)) {
+    if (room.attrs?.passwd && !room.players.some(p => p.id == gameStore.player?.id)) {
       passwd = await msgbox.prompt("请输入房间密码：") || "";
       if (!passwd) return router.back();
       if (room.attrs.passwd !== md5(passwd)) {
