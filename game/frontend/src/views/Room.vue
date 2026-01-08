@@ -75,13 +75,17 @@ if (gameStore.game) {
 watch(
   () => route.params.id,
   (val, old) => {
-    if (val && val !== old && old) load();
+    if (val && val !== old && old) init();
   },
   { immediate: true }
 );
 
 onMounted(() => {
-  load();
+  if (gameStore.rooms.find((r) => r.id === roomId.value)) {
+    init();
+  } else {
+    load();
+  }
 });
 
 const isAlertExpanded = ref(false);
