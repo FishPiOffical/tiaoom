@@ -162,6 +162,12 @@
         </div>
         
         <hr class="border-base-content/20" />
+
+        <div class="px-2 text-xs text-base-content/60 flex items-center gap-2">
+          <Icon icon="mdi:clock-outline" />
+          <span>计时规则：{{ countDownText }}</span>
+        </div>
+
       </section>
       <GameChat>
         <template #rules>
@@ -183,7 +189,7 @@ import { GameCore } from '@/core/game';
 import { useOthello } from './useOthello';
 import AchievementTable from '@/components/common/AchievementTable.vue';
 import Icon from '@/components/common/Icon.vue';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 
 const props = defineProps<{
   roomPlayer: RoomPlayer & { room: Room }
@@ -191,6 +197,16 @@ const props = defineProps<{
 }>()
 
 const activeTab = ref<'players' | 'achievements'>('players')
+
+const countDownText = computed(() => {
+  const way = props.roomPlayer.room.attrs?.countDownWay ?? 1
+  switch (way) {
+    case 0: return '不计时'
+    case 1: return '每步限时 60s'
+    case 2: return '每人总限时 15m'
+    default: return '每步限时 60s'
+  }
+})
 
 const {
   currentPlayer,
