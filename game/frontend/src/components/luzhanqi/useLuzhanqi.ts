@@ -282,15 +282,43 @@ export function useLuzhanqi(game: GameCore, roomPlayer: RoomPlayer & { room: Roo
         }
 
         const p = board.value[r] ? board.value[r][c] : null;
+
+        // Flip Mode Logic
+        if (mode.value === 2) {
+             // If clicking a hidden piece (unknown side or my side hidden)
+             // In Flip Mode backend returns side=-1 (unknown) for hidden defined in backend?
+             // Need to check how backend returns hidden pieces. 
+             // Backend returns: { side: -1, type: 'unknown', revealed: false }
+             
+             // If p has revealed: false, it's a candidate for flipping
+             // Actually backend might send side if it's mine?
+             // My code in backend: "if (isFlipMode && !p.revealed) { return { side: -1 ... } }" even for self.
+             // So side will be -1.
+             
+             if (p && p.revealed === false) {
+                 // Send Flip (move self to self)
+                 game.command(roomPlayer.room.id, {
+                    type: 'move',
+                    data: { from: {r, c}, to: {r, c} }
+                 });
+                 selected.value = null; // Clear selection if any
+                 return;
+             }
+        }
+
         if (selected.value) {
             if (selected.value.r === r && selected.value.c === c) {
                 selected.value = null;
                 return;
             }
+            // Move Logic
+            // If selecting another piece of mine?
             if (p && p.side === mySide.value) {
                 selected.value = {r, c};
                 return;
             }
+            
+            // Move/Attack
             game.command(roomPlayer.room.id, {
                 type: 'move',
                 data: { from: selected.value, to: {r, c} }

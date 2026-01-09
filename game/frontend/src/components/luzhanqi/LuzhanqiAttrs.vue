@@ -21,6 +21,7 @@ import { onMounted } from 'vue';
     <select v-model.number="attrs.mode" class="select select-bordered w-full" required>
       <option value="0">暗棋</option>
       <option value="1">明棋</option>
+      <option value="2">翻棋</option>
     </select>
   </div>
 </template>

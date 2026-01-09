@@ -180,7 +180,6 @@ export default class AeroplaneChessRoom extends GameRoom {
     return {
       ...super.getStatus(sender),
       state: this.state,
-      history: this.history,
     };
   }
 
@@ -447,13 +446,11 @@ export default class AeroplaneChessRoom extends GameRoom {
         // 三个六返大陆
         this.state.consecutiveSixes = 0;
         const player = this.state.players[this.state.turnPlayerId];
-        for (const piece of player.pieces) {
-          if (this.takeOffPieceIndex.includes(piece.index)) {
-            piece.area = 'hangar';
-            piece.pos = player.color + 'h' + piece.index;
-            piece.posIndex = -1;
-          }
-        }
+        player.pieces.forEach(piece => {
+          piece.area = 'hangar';
+          piece.pos = player.color + 'h' + piece.index;
+          piece.posIndex = -1;
+        })
         this.say(`${this.getPlayerName(player.playerId)} 连续掷出三个六，所有起飞的飞机被迫返航！`);
         this.state.turnPlayerId = nextTurnPlayerId(this.currentOrder(), this.state.turnPlayerId);
       }

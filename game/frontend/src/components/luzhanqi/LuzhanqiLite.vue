@@ -79,12 +79,15 @@
          <div 
             class="w-full h-full rounded shadow-md border-2 flex flex-col items-center justify-center text-sm font-bold bg-base-100 relative"
             :class="[
-               p.side === 0 ? 'border-error text-error' : 'border-success text-success',
+               p.covered ? 'border-neutral bg-neutral-content text-neutral' :
+               p.side === 0 ? 'border-error text-error' : 
+               p.side === 1 ? 'border-success text-success' : 'border-neutral',
                isSelected(p.r, p.c) ? 'ring-4 ring-primary scale-105 z-30' : ''
             ]"
          >
-            <div v-if="p.hidden" class="w-full h-full bg-base-300 flex items-center justify-center pattern-diagonal-lines">
-               <span class="text-base-content/50 text-xs text-center">?</span>
+            <div v-if="p.hidden || p.covered" class="w-full h-full bg-base-300 flex items-center justify-center pattern-diagonal-lines">
+               <span v-if="p.covered" class="text-base-content/50 text-xs font-black">?</span>
+               <span v-else class="text-base-content/50 text-xs text-center">?</span>
             </div>
             <template v-else>
                 <span class="text-[10px] sm:text-xs md:text-sm font-black">{{ p.name }}</span>
@@ -96,7 +99,7 @@
   <div class="bg-base-100 rounded-lg shadow-sm border border-base-content/10 p-3 flex justify-between items-center">
       <div class="flex flex-col">
           <span class="text-xs font-bold text-base-content/70">当前回合</span>
-          <span class="text-[10px] text-base-content/40">{{ mode === 0 ? '暗棋' : '明棋' }}</span>
+          <span class="text-[10px] text-base-content/40">{{ mode === 0 ? '暗棋' : mode === 1 ? '明棋' : '翻棋' }}</span>
       </div>
       <div class="flex items-center gap-2">
         <span class="font-black" :class="turn === 0 ? 'text-error' : 'text-success'">
@@ -171,7 +174,11 @@ const displayPieces = computed(() => {
          
          const isMine = p.side === mySide.value;
          const hidden = ! isMine && p.type === 'unknown'; 
-         const name = hidden ? '' : p.name;
+         // Flip Mode: if p.revealed is false, it is strictly hidden (back of card)
+         // Backend sends side=-1, type='unknown', revealed=false for everyone
+         const covered = mode.value === 2 && p.revealed === false;
+         
+         const name = (hidden || covered) ? '?' : p.name;
          
          pieces.push({
             r, c, 
@@ -181,6 +188,7 @@ const displayPieces = computed(() => {
             name,
             rank: p.rank,
             hidden,
+            covered,
             type: p.type
          });
        }
