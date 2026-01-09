@@ -88,6 +88,11 @@ export function useLuzhanqi(game: GameCore, roomPlayer: RoomPlayer & { room: Roo
         return inventory.value.every(p => p.left === 0);
     });
 
+    const mode = computed(() => {
+        const m = roomPlayer.room.attrs ? roomPlayer.room.attrs.mode : 0;
+        return Number(m); 
+    });
+
     // Actions
     function initLocalBoard() {
         localBoard.value = Array(ROWS).fill(null).map(() => Array(COLS).fill(null));
@@ -329,6 +334,7 @@ export function useLuzhanqi(game: GameCore, roomPlayer: RoomPlayer & { room: Roo
         inventory,
         isFull,
         isSelected,
+        mode,
         
         // Actions
         onCommand,

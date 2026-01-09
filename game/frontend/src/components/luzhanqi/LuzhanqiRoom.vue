@@ -101,18 +101,23 @@
     <!-- Actions Slot -->
     <template #actions>
       <!-- Playing Phase Actions -->
-      <div v-if="phase === 'playing'" class="flex gap-4 p-2 bg-base-100 rounded-lg shadow w-full max-w-sm">
-         <div class="flex-1 text-center">
-            <div class="text-xs text-base-content/60">我的阵营</div>
-            <div class="font-bold text-lg" :class="mySide === 0 ? 'text-error' : 'text-success'">
-               {{ mySide === 0 ? '红方' : '绿方' }}
-            </div>
+      <div v-if="phase === 'playing'" class="flex flex-col gap-2 w-full max-w-sm">
+         <div class="flex gap-4 p-2 bg-base-100 rounded-lg shadow">
+           <div class="flex-1 text-center">
+              <div class="text-xs text-base-content/60">我的阵营</div>
+              <div class="font-bold text-lg" :class="mySide === 0 ? 'text-error' : 'text-success'">
+                 {{ mySide === 0 ? '红方' : '绿方' }}
+              </div>
+           </div>
+           <div class="flex-1 text-center">
+              <div class="text-xs text-base-content/60">当前回合</div>
+              <div class="font-bold text-lg" :class="turn === 0 ? 'text-error' : 'text-success'">
+                 {{ turn === 0 ? '红方' : '绿方' }} <span class="text-sm text-base-content/70 font-normal">({{ countdown }}s)</span>
+              </div>
+           </div>
          </div>
-         <div class="flex-1 text-center">
-            <div class="text-xs text-base-content/60">当前回合</div>
-            <div class="font-bold text-lg" :class="turn === 0 ? 'text-error' : 'text-success'">
-               {{ turn === 0 ? '红方' : '绿方' }} <span class="text-sm text-base-content/70 font-normal">({{ countdown }}s)</span>
-            </div>
+         <div class="text-xs text-center text-base-content/40">
+            模式: {{ mode === 0 ? '暗棋' : '明棋' }}
          </div>
       </div>
       
@@ -184,7 +189,8 @@ const {
   handleCellClick, 
   isSelected, 
   onCommand: onGameCommand, 
-  shouldFlip, 
+  shouldFlip,
+  mode,
   CAMPS, 
   HQS 
 } = useLuzhanqi(props.game, props.roomPlayer);

@@ -674,6 +674,11 @@ export default class LuzhanqiRoom extends GameRoom {
       // Enemy piece
       if (this.phase === 'deploy') return null; // Don't show enemy placement progress
       
+      // Bright Mode check
+      if (this.room.attrs && this.room.attrs.mode === 1) {
+          return p;
+      }
+
       return {
         side: p.side,
         type: 'unknown',

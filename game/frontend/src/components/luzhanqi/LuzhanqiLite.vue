@@ -94,7 +94,10 @@
   </div>
 
   <div class="bg-base-100 rounded-lg shadow-sm border border-base-content/10 p-3 flex justify-between items-center">
-      <span class="text-xs font-bold text-base-content/70">当前回合</span>
+      <div class="flex flex-col">
+          <span class="text-xs font-bold text-base-content/70">当前回合</span>
+          <span class="text-[10px] text-base-content/40">{{ mode === 0 ? '暗棋' : '明棋' }}</span>
+      </div>
       <div class="flex items-center gap-2">
         <span class="font-black" :class="turn === 0 ? 'text-error' : 'text-success'">
             {{ turn === 0 ? '红方' : '绿方' }}
@@ -126,6 +129,7 @@ const {
   handlePlayingClick, 
   shouldFlip, 
   isSelected, 
+  mode,
   onCommand 
 } = useLuzhanqi(props.game, props.roomPlayer);
 

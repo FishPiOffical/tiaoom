@@ -1,5 +1,5 @@
 <template>
-  <section class="flex flex-col md:flex-row gap-4 h-full">
+  <section class="flex flex-col md:flex-row gap-4 md:h-full h-[200%]">
     <!-- 左侧：游戏区域 -->
     <slot></slot>
 
