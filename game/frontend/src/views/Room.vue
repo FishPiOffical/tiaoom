@@ -2,7 +2,7 @@
 import { md5 } from 'js-md5';
 import msg from "@/components/msg";
 import { useGameEvents } from "@/hook/useGameEvents";
-import { getComponent } from "@/main";
+import { getComponent } from "@/components";
 import { useGameStore } from "@/stores/game";
 import { openSmallWindow } from "@/utils/dom";
 import { computed, onMounted, watch, ref, nextTick, onUnmounted } from "vue";
@@ -114,15 +114,9 @@ onUnmounted(() => {
   window.removeEventListener('resize', checkAlertOverflow);
 });
 
-const hasLiteComponent = computed(() => {
-  try {
-    const type = gameStore.roomPlayer?.room.attrs?.type as string;
-    if (!type) return false
-    return !!getComponent(type.split('-').map(t => t.slice(0, 1).toUpperCase() + t.slice(1)).join('') + 'Lite')
-  } catch {
-    return false
-  }
-})
+const ComponentLite = computed(() => getComponent(gameStore.roomPlayer?.room.attrs?.type, 'Lite'))
+const ComponentRoom = computed(() => getComponent(gameStore.roomPlayer?.room.attrs?.type, 'Room'))
+const ComponentRoomControls = computed(() => getComponent(gameStore.roomPlayer?.room.attrs?.type, 'RoomControls'))
 </script>
 
 <template>
@@ -187,13 +181,13 @@ const hasLiteComponent = computed(() => {
           :room-player="gameStore.roomPlayer"
         >
           <component 
-            v-if="gameStore.roomPlayer" 
-            :is="gameStore.roomPlayer.room.attrs.type + '-room-controls'" 
+            v-if="gameStore.roomPlayer && ComponentRoomControls" 
+            :is="ComponentRoomControls" 
             :game="gameStore.game" 
             :room-player="gameStore.roomPlayer"
           />
           <button
-            v-if="hasLiteComponent"
+            v-if="ComponentLite"
             class="btn btn-circle md:btn-lg btn-soft hidden md:flex tooltip tooltip-left"
             data-tip="弹出"
             @click="openSmallWindow('/#/lite')"
@@ -207,8 +201,8 @@ const hasLiteComponent = computed(() => {
     <!-- 动态游戏组件 -->
     <div class="flex-1 overflow-auto md:p-4">
       <component 
-        v-if="gameStore.roomPlayer.room.attrs?.type" 
-        :is="gameStore.roomPlayer.room.attrs.type + '-room'" 
+        v-if="gameStore.roomPlayer.room.attrs?.type && ComponentRoom" 
+        :is="ComponentRoom" 
         :game="gameStore.game" 
         :room-player="gameStore.roomPlayer"
       />

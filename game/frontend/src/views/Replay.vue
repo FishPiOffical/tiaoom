@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { api } from '@/api';
-import { getComponent } from '@/main';
+import { getComponent } from '@/components';
 import { computed, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 
@@ -24,15 +24,8 @@ onMounted(() => {
   load();
 });
 
-const hasReplayComponent = computed(() => {
-  try {
-    const typeValue = type.value
-    if (!typeValue) return false
-    return !!getComponent(typeValue.split('-').map(t => t.slice(0, 1).toUpperCase() + t.slice(1)).join('') + 'Replay')
-  } catch {
-    return false
-  }
-})
+const ComponentReplay = computed(() => getComponent(type.value, 'Replay'))
+
 </script>
 
 <template>
@@ -45,8 +38,8 @@ const hasReplayComponent = computed(() => {
       <div class="w-16"></div> <!-- Spacer for centering -->
     </header>
     <component
-      v-if="type && hasReplayComponent"
-      :is="type + '-replay'" 
+      v-if="type && ComponentReplay"
+      :is="ComponentReplay" 
       v-bind="replayData"
       :beginTime="beginTime"
       :roomName="roomName"

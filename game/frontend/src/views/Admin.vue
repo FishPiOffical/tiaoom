@@ -127,7 +127,7 @@ import { Icon } from '@iconify/vue'
 import { Room } from 'tiaoom/client'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
-import { getComponent } from '@/main'
+import { getComponent } from '@/components'
 import Config from './Config.vue'
 import RoomManagementDrawer from '@/components/common/RoomManagementDrawer.vue'
 
@@ -179,11 +179,7 @@ const manageList = computed(() => {
   return gameStore.gameManages.filter(m => m.canManage)
 })
 function getGameForm(type: string) {
-  try {
-    return getComponent(type.split('-').map(t => t.slice(0, 1).toUpperCase() + t.slice(1)).join('') + 'Form')
-  } catch {
-    return null
-  }
+  return getComponent(type, 'Form')
 }
 
 const activeTab = ref(gameStore.player?.isAdmin ? 'room' : manageList.value[0]?.key || '')

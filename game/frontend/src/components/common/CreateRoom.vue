@@ -127,8 +127,9 @@
               </select>
             </div>
 
-            <component 
-              :is="room.attrs.type + '-attrs'" 
+            <component
+              v-if="ComponentRoomAttrs"
+              :is="ComponentRoomAttrs" 
               :game="gameStore.game" 
               v-model:attrs="room.attrs"
             />
@@ -209,7 +210,7 @@
             <Icon icon="carbon:close" class="w-6 h-6" />
           </button>
         </div>
-        <component :is="extendPage" />
+        <component v-if="components[extendPage]" :is="components[extendPage]" />
       </div>
     </div>
   </div>
@@ -219,6 +220,7 @@
 import { ref, computed } from 'vue'
 import { useGameStore } from '@/stores/game'
 import msg from '@/components/msg'
+import { getComponent, components } from '@/components'
 
 const gameStore = useGameStore()
 
@@ -231,6 +233,8 @@ const room = ref({
   requireAllReadyToStart: true,
   attrs: { type: 'othello', passwd: '', rate: '', point: '' } as Record<string, any>,
 })
+const ComponentRoomAttrs = computed(() => getComponent(room.value.attrs.type, 'Attrs'))
+
 
 const currentGame = computed(() => {
   return gameStore.games[room.value.attrs.type]
