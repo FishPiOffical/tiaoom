@@ -113,8 +113,7 @@ export default class LuzhanqiRoom extends GameRoom {
   }
 
   onStart() {
-    if (this.room.validPlayers.length < 2) return;
-    
+    this.beginTime = Date.now();
     // Assign Sides
     const p1 = this.room.validPlayers[0];
     const p2 = this.room.validPlayers[1];
@@ -772,9 +771,10 @@ export default class LuzhanqiRoom extends GameRoom {
       this.endGame(winner);
       return;
     }
+    const timeoutPlayer = this.room.validPlayers.find(p => this.players[p.id] === this.turn)!;
     // Switch turn
     this.turn = this.turn === 0 ? 1 : 0;
-    this.say('超时，回合切换');
+    this.say(timeoutPlayer.name + ' 超时，回合切换');
     this.broadcastStatus();
     this.startTurnTimer();
   }
