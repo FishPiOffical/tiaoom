@@ -237,6 +237,8 @@ export class GameRoom {
       this.save();
     }).on('leave', () => {
       this.save();
+    }).on('close', () => {
+      this.stopTimer();
     });
   }
 
@@ -247,6 +249,16 @@ export class GameRoom {
    */
   isPlayerOnline(player: IPlayer): boolean {
     return !this.room.players.find((p) => p.id === player.id && p.status === PlayerStatus.offline);
+  }
+
+  /**
+   * 通过玩家ID获取玩家实例
+   * @param playerId 玩家ID
+   * @returns 玩家实例，未找到则返回 null
+   */
+  getPlayerById(playerId: string): RoomPlayer | null {
+    const player = this.room.players.find((p) => p.id === playerId);
+    return player || null;
   }
 
   /**

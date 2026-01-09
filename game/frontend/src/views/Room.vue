@@ -63,7 +63,6 @@ if (gameStore.game) {
         const room = gameStore.rooms.find((r) => r.id === roomId.value);
         if (!room) {
           msg.error("房间不存在或已被解散！");
-          debugger;
           history.state.back ? router.back() : router.replace('/');
           return;
         }
