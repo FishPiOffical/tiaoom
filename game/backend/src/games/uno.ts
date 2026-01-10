@@ -1,5 +1,7 @@
-import { Room, PlayerStatus } from "tiaoom";
+import { Room, PlayerStatus, RoomPlayer } from "tiaoom";
 import { IGameMethod } from "./index";
+import { updatePlayerStats } from "@/utils";
+import { RecordRepo } from "@/entities";
 
 export const name = "UNO";
 export const minSize = 2;
@@ -13,7 +15,35 @@ export interface UnoCard {
   type: 'number' | 'action' | 'wild';
 }
 
+export interface UnoHistoryItem {
+  player: string;
+  action: {
+    type: 'play_card' | 'draw_card' | 'challenge';
+    // play_card details
+    cardId?: string;
+    chosenColor?: 'red' | 'blue' | 'green' | 'yellow';
+    illegalWildDraw4?: boolean;
+    previousColor?: 'red' | 'blue' | 'green' | 'yellow';
+    // challenge details
+    result?: 'success' | 'failure';
+    targetPlayer?: string;
+    // draw_card details
+    count?: number;
+  };
+  time: number;
+}
+
+export interface UnoInitialState {
+  players: { [playerId: string]: UnoCard[] };
+  deck: UnoCard[]; // The state of deck AFTER dealing hands and BEFORE the first draw
+  discardPile: UnoCard[]; // The initial discard pile (usually 1 card)
+  firstPlayer: string; // ID of the first player
+  direction: 1 | -1;
+}
+
 export interface UnoGameState {
+  initialState?: UnoInitialState;
+  
   deck: UnoCard[];
   discardPile: UnoCard[];
   players: { [playerId: string]: UnoCard[] };
@@ -86,7 +116,8 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
   let gameState: UnoGameState | null = gameData?.gameState || null;
   let achievements: Record<string, { win: number; lost: number }> = gameData?.achievements || {};
   let messageHistory: { content: string, sender?: any }[] = gameData?.messageHistory || [];
-  let moveHistory: Array<{player: string, action: any, timestamp: number}> = gameData?.moveHistory || [];
+  let history: UnoHistoryItem[] = gameData?.history || [];
+  let beginTime = gameData?.beginTime || Date.now();
   
   // 倒计时配置
   const TURN_TIMEOUT = 15000; // 15秒倒计时
@@ -135,7 +166,7 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
         gameState,
         achievements,
         messageHistory,
-        moveHistory,
+        history,
         lastSaved: Date.now(),
         gameVersion: '1.0'
       });
@@ -147,6 +178,10 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
   const startGame = async () => {
     // 清除任何现有的倒计时
     clearTurnTimer();
+    beginTime = Date.now();
+    
+    // 重置历史记录
+    history = [];
     
     const deck = shuffleDeck(createDeck());
     const playerIds = room.validPlayers.map(p => p.id); // 只包含实际参与游戏的玩家
@@ -176,7 +211,18 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
       deck.push(...newDeck);
     }
     
+    // 记录初始状态
+     // 深度克隆以防止因引用修改导致的问题
+    const initialState: UnoInitialState = JSON.parse(JSON.stringify({
+      players: hands,
+      deck, 
+      discardPile: [firstCard],
+      firstPlayer: playerIds[0],
+      direction: 1
+    }));
+
     gameState = {
+      initialState,
       deck,
       discardPile: [firstCard],
       players: hands,
@@ -205,6 +251,58 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
     const initialTimeout = gameState.hosted && gameState.currentPlayer && gameState.hosted[gameState.currentPlayer] ? 5000 : TURN_TIMEOUT;
     startTurnTimer(initialTimeout);
   };
+
+  // 保存成就记录
+  async function saveAchievements(winners: RoomPlayer[]) {
+    room.validPlayers.forEach((p) => {
+      if (!achievements[p.name]) {
+        achievements[p.name] = { win: 0, lost: 0 };
+      }
+      if (winners?.some(w => w.id === p.id)) {
+        achievements[p.name].win += 1;
+      } else {
+        achievements[p.name].lost += 1;
+      }
+
+      if (p.attributes.username) {
+        let result: 'win' | 'draw' | 'loss' = 'draw';
+        if (winners && winners.length > 0) {
+           if (winners.some(w => w.id === p.id)) {
+             result = 'win';
+           } else {
+             result = 'loss';
+           }
+        }
+        updatePlayerStats(p.attributes.username, room.attrs!.type, result).catch(console.error);
+      }
+    });
+    saveRecord(winners);
+  }
+
+  function getData(winner: RoomPlayer) {
+    return {
+      winner,
+      history,
+      initialState: gameState?.initialState,
+    }
+  }
+
+  /**
+   * 保存游戏记录
+   * @param winners 当前局胜者，无胜者传 null 或 undefined
+   * @param score 分数
+   */
+  async function saveRecord(winners: RoomPlayer[], score?: number) {
+    RecordRepo().save(RecordRepo().create({
+      type: room.attrs!.type,
+      roomName: room.name,
+      data: getData(winners[0]),
+      players: room.validPlayers.map(p => p.attributes.username),
+      winners: winners?.map(w => w.attributes.username) || [],
+      beginTime: beginTime,
+      score,
+    })).catch(console.error);
+  }
   
   // 检查是否可以出+4（官方规则：只有在没有任何合法可出的牌时才能使用+4）
   const canPlayWildDraw4 = (hand: UnoCard[], topCard: UnoCard, currentColor: string): boolean => {
@@ -270,7 +368,7 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
         if (gameState && gameState.turnTimeLeft !== undefined) {
           gameState.turnTimeLeft = Math.max(0, gameState.turnTimeLeft - 1);
           // 实时发送倒计时更新给所有玩家
-          room.emit('command', { type: 'game:state', data: { ...gameState, moveHistory } });
+          room.emit('command', { type: 'game:state', data: { ...gameState, moveHistory: history } });
           
           // 当倒计时归零时清除定时器
           if (gameState.turnTimeLeft <= 0) {
@@ -333,6 +431,9 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
       }
       room.emit('message', { content: `${playerId} (托管) 被+2惩罚，抽了2张牌` });
       
+      // 记录惩罚抽牌
+      history.push({ player: playerId, action: { type: 'draw_card', count: 2 }, time: Date.now() - beginTime });
+
       // 标记+2已处理
       gameState.draw2Processed = true;
       
@@ -357,6 +458,9 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
       }
       room.emit('message', { content: `${playerId} (托管) 被+4惩罚，抽了4张牌` });
       
+      // 记录惩罚抽牌
+      history.push({ player: playerId, action: { type: 'draw_card', count: 4 }, time: Date.now() - beginTime });
+
       // 标记+4已处理
       gameState.wildDraw4Processed = true;
       
@@ -402,6 +506,9 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
       const card = hand[chosenIndex];
       // 简单策略：若是万能牌，选择手牌中最多的颜色
       let chosenColor: any = undefined;
+      // 保存出牌前的颜色（用于+4质疑检查）
+      const previousColor = gameState.color;
+      
       if (card.type === 'wild') {
         const colorCount: Record<string, number> = { red: 0, blue: 0, green: 0, yellow: 0 };
         hand.forEach(hc => { if (hc.color && hc.color !== 'black') colorCount[hc.color] = (colorCount[hc.color] || 0) + 1; });
@@ -469,17 +576,7 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
         room.emit('message', { content: `🎉 恭喜 ${playerSocket?.name || playerId} 获得胜利！` });
 
         // 更新成就（与主动出牌获胜时一致）
-        room.players.forEach((p) => {
-          if (p.role !== 'player') return;
-          if (!achievements[p.name]) {
-            achievements[p.name] = { win: 0, lost: 0 };
-          }
-          if (p.id === playerId) {
-            achievements[p.name].win += 1;
-          } else {
-            achievements[p.name].lost += 1;
-          }
-        });
+        saveAchievements([playerSocket!]).catch(console.error);
 
         // 清除倒计时并保存最终状态
         clearTurnTimer();
@@ -493,7 +590,7 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
         await saveGameData();
 
         // 广播最终状态与成就
-        room.emit('command', { type: 'game:state', data: { ...gameState, moveHistory } });
+        room.emit('command', { type: 'game:state', data: { ...gameState, moveHistory: history } });
         room.emit('command', { type: 'game:over', data: { winner: playerId } });
         room.emit('command', { type: 'achievements', data: achievements });
 
@@ -528,7 +625,7 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
       }
 
       // 记录移动历史
-      moveHistory.push({ player: playerId, action: { type: 'play_card', cardId: card.id, chosenColor }, timestamp: Date.now() });
+      history.push({ player: playerId, action: { type: 'play_card', cardId: card.id, chosenColor, previousColor, illegalWildDraw4: false }, time: Date.now() - beginTime });
 
     } else {
       // 无牌可出：检查是否面临+4惩罚
@@ -541,6 +638,9 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
           if (drawn) hand.push(drawn);
         }
         room.emit('message', { content: `${playerSocket?.name || playerId} (托管) 被+4惩罚，抽了4张牌` });
+        
+        // 记录惩罚抽牌
+        history.push({ player: playerId, action: { type: 'draw_card', count: 4 }, time: Date.now() - beginTime });
       } else {
         // 正常情况抽1张牌
         if (gameState.deck.length > 0) {
@@ -548,12 +648,13 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
           if (drawn) hand.push(drawn);
           room.emit('message', { content: `${playerSocket?.name || playerId} (托管) 抽了一张牌` });
         }
+        // 记录正常抽牌
+        history.push({ player: playerId, action: { type: 'draw_card', count: 1 }, time: Date.now() - beginTime });
       }
-
-      moveHistory.push({ player: playerId, action: { type: 'draw_card' }, timestamp: Date.now() });
     }
 
-    // 切换到下一个玩家
+      // 注意：这里不要再重复push history了，通过if else分支处理
+      // 切换到下一个玩家
     const nextPlayerId = getNextPlayer(Object.keys(gameState.players), gameState.currentPlayer, gameState.direction);
     const nextPlayer = room.players.find(p => p.id === nextPlayerId);
     if (nextPlayer) room.emit('message', { content: `轮到 ${nextPlayer.name} 出牌` });
@@ -567,7 +668,7 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
     }
 
     await saveGameData();
-    room.emit('command', { type: 'game:state', data: gameState });
+    room.emit('command', { type: 'game:state', data: { ...gameState, moveHistory: history } });
 
     // 为下一位玩家启动倒计时，若下一位被托管则为5秒
     const nextTimeout = isHosted(nextPlayerId) ? 5000 : TURN_TIMEOUT;
@@ -600,6 +701,9 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
         }
         room.emit('message', { content: `${currentPlayerSocket.name} 超时，被+2惩罚，抽了2张牌并被跳过回合` });
         
+        // 记录惩罚抽牌
+        history.push({ player: currentPlayerId, action: { type: 'draw_card', count: 2 }, time: Date.now() - beginTime });
+
         // 标记+2已处理
         gameState.draw2Processed = true;
         
@@ -618,6 +722,9 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
         }
         room.emit('message', { content: `${currentPlayerSocket.name} 超时，接受+4惩罚，抽了4张牌并被跳过回合` });
         
+        // 记录惩罚抽牌
+        history.push({ player: currentPlayerId, action: { type: 'draw_card', count: 4 }, time: Date.now() - beginTime });
+
         // 标记+4已处理
         gameState.wildDraw4Processed = true;
         
@@ -636,6 +743,9 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
           room.emit('message', { content: `${currentPlayerSocket.name} 超时，自动抽了一张牌` });
         }
         
+        // 记录正常抽牌
+        history.push({ player: currentPlayerId, action: { type: 'draw_card', count: 1 }, time: Date.now() - beginTime });
+
         // 切换到下一个玩家
         const nextPlayerId = getNextPlayer(Object.keys(gameState.players), gameState.currentPlayer, gameState.direction);
         const nextPlayer = room.players.find(p => p.id === nextPlayerId);
@@ -701,7 +811,7 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
           gameState,
           achievements,
           messageHistory,
-          moveHistory,
+          moveHistory: history,
           lastSaved: Date.now(),
           gameVersion: '1.0'
         }
@@ -937,17 +1047,7 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
           room.emit('message', { content: `🎉 恭喜 ${sender.name} 获得胜利！` });
           
           // 更新成就
-          room.players.forEach((p) => {
-            if (p.role !== 'player') return; // 只为实际玩家更新成就
-            if (!achievements[p.name]) {
-              achievements[p.name] = { win: 0, lost: 0 };
-            }
-            if (p.id === sender.id) {
-              achievements[p.name].win += 1;
-            } else {
-              achievements[p.name].lost += 1;
-            }
-          });
+          saveAchievements([sender]).catch(console.error);
           
           // 清除倒计时
           clearTurnTimer();
@@ -1015,6 +1115,9 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
           }
           room.emit('message', { content: `${room.players.find(p => p.id === nextPlayerId)?.name} 被+2惩罚，抽了2张牌并被跳过回合` });
           
+          // 记录惩罚抽牌
+          history.push({ player: nextPlayerId, action: { type: 'draw_card', count: 2 }, time: Date.now() - beginTime });
+
           // 标记+2已处理
           gameState.draw2Processed = true;
           
@@ -1037,16 +1140,16 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
         
         // 记录移动历史（所有出牌都要记录）
         // 对于+4，需要记录出牌前的颜色用于质疑检查
-        moveHistory.push({
+        history.push({
           player: sender.id,
           action: { type: 'play_card', cardId, chosenColor, illegalWildDraw4: isIllegalPlay, previousColor },
-          timestamp: Date.now()
+          time: Date.now() - beginTime
         });
         
         // 保存游戏状态
         await saveGameData();
         
-        room.emit('command', { type: 'game:state', data: { ...gameState, moveHistory } });
+        room.emit('command', { type: 'game:state', data: { ...gameState, moveHistory: history } });
         
         // 清除当前倒计时并开始下一回合的倒计时
         if (!gameState.winner) {
@@ -1073,6 +1176,9 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
           }
           room.emit('message', { content: `${sender.name} 被+2惩罚，抽了2张牌并被跳过回合` });
           
+          // 记录惩罚抽牌
+          history.push({ player: sender.id, action: { type: 'draw_card', count: 2 }, time: Date.now() - beginTime });
+
           // 标记+2已处理
           gameState.draw2Processed = true;
           
@@ -1092,6 +1198,9 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
           }
           room.emit('message', { content: `${sender.name} 接受+4惩罚，抽了4张牌并被跳过回合` });
           
+          // 记录惩罚抽牌
+          history.push({ player: sender.id, action: { type: 'draw_card', count: 4 }, time: Date.now() - beginTime });
+
           // 标记+4已处理
           gameState.wildDraw4Processed = true;
           
@@ -1121,16 +1230,16 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
         gameState.currentPlayer = nextPlayerId;
         
         // 记录移动历史
-        moveHistory.push({
+        history.push({
           player: sender.id,
-          action: { type: 'draw_card' },
-          timestamp: Date.now()
+          action: { type: 'draw_card', count: 1 },
+          time: Date.now() - beginTime
         });
         
         // 保存游戏状态
         await saveGameData();
         
-        room.emit('command', { type: 'game:state', data: { ...gameState, moveHistory } });
+        room.emit('command', { type: 'game:state', data: { ...gameState, moveHistory: history } });
         
         // 清除当前倒计时并开始下一回合的倒计时
         if (!gameState.winner) {  
@@ -1176,8 +1285,8 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
         
         // 获取上一次移动历史，找到出牌前的颜色
         let previousColor = gameState.color; // 默认使用当前颜色作为后备
-        if (moveHistory.length > 0) {
-          const lastMove = moveHistory[moveHistory.length - 1];
+        if (history.length > 0) {
+          const lastMove = history[history.length - 1];
           if (lastMove.player === prevPlayerId && lastMove.action.type === 'play_card' && lastMove.action.previousColor) {
             previousColor = lastMove.action.previousColor;
           }
@@ -1199,6 +1308,9 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
             const drawnCard = gameState.deck.pop();
             if (drawnCard) currentHand.push(drawnCard);
           }
+
+          // 记录质疑失败抽牌
+          history.push({ player: sender.id, action: { type: 'draw_card', count: 6 }, time: Date.now() - beginTime });
           
           // 标记+4已处理
           gameState.wildDraw4Processed = true;
@@ -1220,6 +1332,9 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
             if (drawnCard) prevHand.push(drawnCard);
           }
           
+          // 记录违规者抽牌
+          history.push({ player: prevPlayerId, action: { type: 'draw_card', count: 4 }, time: Date.now() - beginTime });
+          
           // 标记+4已处理
           gameState.wildDraw4Processed = true;
           
@@ -1227,9 +1342,20 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
           room.emit('message', { content: `${sender.name} 质疑成功，继续你的回合` });
         }
         
+        // 记录质疑历史
+        history.push({
+            player: sender.id,
+            action: {
+                type: 'challenge',
+                result: wasLegalPlay ? 'failure' : 'success',
+                targetPlayer: prevPlayerId
+            },
+            time: Date.now() - beginTime
+        });
+
         // 保存游戏状态
         await saveGameData();
-        room.emit('command', { type: 'game:state', data: { ...gameState, moveHistory } });
+        room.emit('command', { type: 'game:state', data: { ...gameState, moveHistory: history } });
         
         // 开始下一位玩家的倒计时
         if (!gameState.winner) {
@@ -1274,7 +1400,7 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
               gameState,
               achievements,
               messageHistory,
-              moveHistory,
+              moveHistory: history,
               lastSaved: Date.now(),
               gameVersion: '1.0'
             }
