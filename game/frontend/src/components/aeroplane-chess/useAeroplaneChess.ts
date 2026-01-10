@@ -38,6 +38,7 @@ export interface AeroplaneGameState {
   consecutiveSixes?: number;
   players: Record<string, AeroplanePlayerState>;
   winnerPlayerId?: string;
+  moveable?: Record<string, (0 | 1 | 2 | 3)[]>;
 }
 
 export function useAeroplaneChess(game: GameCore, roomPlayer: RoomPlayer & { room: Room }) {
@@ -49,6 +50,7 @@ export function useAeroplaneChess(game: GameCore, roomPlayer: RoomPlayer & { roo
     switch (msg.type) {
       case 'game:state':
         state.value = msg.data;
+        movable.value = state.value?.moveable?.[roomPlayer.id] || [];
         break;
       case 'status':
         if (msg.data?.state) state.value = msg.data.state;

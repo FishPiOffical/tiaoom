@@ -218,7 +218,8 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
       deck, 
       discardPile: [firstCard],
       firstPlayer: playerIds[0],
-      direction: 1
+      direction: 1,
+      topCard: firstCard,
     }));
 
     gameState = {
@@ -284,6 +285,11 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
       winner,
       history,
       initialState: gameState?.initialState,
+      players: room.validPlayers.map(p => ({
+        id: p.id,
+        name: p.name,
+        finalHand: gameState ? gameState.players[p.id] : []
+      })),
     }
   }
 
@@ -572,6 +578,9 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
 
       // 检查是否获胜
       if (hand.length === 0) {
+        // 记录最后一次出牌
+        history.push({ player: playerId, action: { type: 'play_card', cardId: card.id, chosenColor, previousColor, illegalWildDraw4: false }, time: Date.now() - beginTime });
+
         gameState.winner = playerId;
         room.emit('message', { content: `🎉 恭喜 ${playerSocket?.name || playerId} 获得胜利！` });
 
@@ -1043,6 +1052,13 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
         
         // 检查是否获胜
         if (playerHand.length === 0) {
+          // 记录最后一次出牌
+          history.push({
+            player: sender.id,
+            action: { type: 'play_card', cardId, chosenColor, illegalWildDraw4: isIllegalPlay, previousColor },
+            time: Date.now() - beginTime
+          });
+
           gameState.winner = sender.id;
           room.emit('message', { content: `🎉 恭喜 ${sender.name} 获得胜利！` });
           
