@@ -4,16 +4,16 @@ export const GRID_SIZE = 17;
 
 export const COLORS: AeroplaneColor[] = ['y', 'b', 'r', 'g'];
 
-export function getBgColor(color: AeroplaneColor) {
+export function getBgColor(color: AeroplaneColor, opacity=false) {
   switch (color) {
     case 'y':
-      return 'bg-warning';
+      return opacity ? 'bg-warning/20' : 'bg-warning';
     case 'b':
-      return 'bg-info';
+      return opacity ? 'bg-info/20' : 'bg-info';
     case 'r':
-      return 'bg-error';
+      return opacity ? 'bg-error/20' : 'bg-error';
     case 'g':
-      return 'bg-success';
+      return opacity ? 'bg-success/20' : 'bg-success';
   }
 }
 

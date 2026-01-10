@@ -26,7 +26,7 @@ export interface TilePlacement {
 
 export const DEFAULT_TILES: TilePlacement[] = [
   // 4x4 hangars
-  { id: 'hangar-y', kind: 'hangar', row: 0, col: 0, rowSpan: 4, colSpan: 4, color: 'y' },
+  { id: 'hangar-y', kind: 'hangar', row: 0, col: 0, rowSpan: 4, colSpan: 4, color: 'y', planeDir: 'br' },
   { id: 'hangar-b', kind: 'hangar', row: 0, col: GRID_SIZE - 4, rowSpan: 4, colSpan: 4, color: 'b', planeDir: 'bl' },
   { id: 'hangar-r', kind: 'hangar', row: GRID_SIZE - 4, col: GRID_SIZE - 4, rowSpan: 4, colSpan: 4, color: 'r', planeDir: 'tl' },
   { id: 'hangar-g', kind: 'hangar', row: GRID_SIZE - 4, col: 0, rowSpan: 4, colSpan: 4, color: 'g', planeDir: 'tr' },
