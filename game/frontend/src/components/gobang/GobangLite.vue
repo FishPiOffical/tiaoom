@@ -145,7 +145,11 @@ const {
 } = useGobang(props.game, props.roomPlayer)
 
 const containerRef = ref<HTMLElement>();
+const emit = defineEmits<{
+  (e: 'loaded'): void
+}>()
 onMounted(() => {
+  emit("loaded");
   const rect = containerRef.value?.parentElement?.getBoundingClientRect();
   if (!rect) return;
   if (rect.height < window.innerHeight) {

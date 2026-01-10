@@ -110,6 +110,10 @@ onMounted(() => {
   window.addEventListener('resize', checkAlertOverflow);
 });
 
+function loaded() {
+  gameStore.game!.init(gameStore.roomPlayer!.room.id, gameStore.player!.player)
+}
+
 onUnmounted(() => {
   window.removeEventListener('resize', checkAlertOverflow);
 });
@@ -205,6 +209,7 @@ const ComponentRoomControls = computed(() => getComponent(gameStore.roomPlayer?.
         :is="ComponentRoom" 
         :game="gameStore.game" 
         :room-player="gameStore.roomPlayer"
+        @loaded="loaded"
       />
     </div>
   </section>

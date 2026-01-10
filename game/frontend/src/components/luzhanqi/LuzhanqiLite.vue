@@ -114,7 +114,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import { RoomPlayer, Room } from 'tiaoom/client';
 import { GameCore } from '@/core/game';
 import { useGameEvents } from "@/hook/useGameEvents";
@@ -195,6 +195,13 @@ const displayPieces = computed(() => {
     }
   }
   return pieces;
+});
+
+const emit = defineEmits<{
+  (e: 'loaded'): void
+}>()
+onMounted(() => {
+  emit("loaded");
 });
 </script>
 

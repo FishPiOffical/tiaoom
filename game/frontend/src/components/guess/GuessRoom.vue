@@ -370,6 +370,13 @@ function getPlayerProgress(player: any): { titleProgress: number; contentProgres
     contentProgress: gamePlayer?.contentProgress || 0
   }
 }
+
+const emit = defineEmits<{
+  (e: 'loaded'): void
+}>()
+onMounted(() => {
+  emit("loaded");
+})
 </script>
 
 <style scoped>

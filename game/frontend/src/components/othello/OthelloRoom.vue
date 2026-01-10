@@ -189,7 +189,7 @@ import { GameCore } from '@/core/game';
 import { useOthello } from './useOthello';
 import AchievementTable from '@/components/common/AchievementTable.vue';
 import Icon from '@/components/common/Icon.vue';
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 
 const props = defineProps<{
   roomPlayer: RoomPlayer & { room: Room }
@@ -233,6 +233,12 @@ function getPlayerStatus(p: any) {
   return '准备好了'
 }
 
+const emit = defineEmits<{
+  (e: 'loaded'): void
+}>()
+onMounted(() => {
+  emit("loaded");
+})
 </script>
 <style scoped>
   .piece {

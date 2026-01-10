@@ -79,7 +79,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { RoomPlayer, Room } from "tiaoom/client";
 import { GameCore } from "@/core/game";
 import { useGameEvents } from "@/hook/useGameEvents";
@@ -141,6 +141,7 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
   (e: "command", msg: { type: string; data: any }): void;
+  (e: "loaded"): void;
 }>();
 
 useGameEvents(props.game, {
@@ -174,4 +175,8 @@ function getPlayerStatus(p: RoomPlayer): string {
 }
 
 const activeTab = ref<string>(props.activeTab || 'players')
+
+onMounted(() => {
+  emit("loaded");
+});
 </script>

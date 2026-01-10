@@ -197,7 +197,7 @@ import GameChat from '@/components/common/GameChat.vue'
 import { useConnect4 } from './useConnect4';
 import AchievementTable from '@/components/common/AchievementTable.vue';
 import Icon from '@/components/common/Icon.vue';
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 
 const props = defineProps<{
   roomPlayer: RoomPlayer & { room: Room }
@@ -244,6 +244,13 @@ function getPlayerStatus(p: any) {
   if (gameStatus.value === 'playing') return '等待中'
   return '准备好了'
 }
+
+const emit = defineEmits<{
+  (e: 'loaded'): void
+}>()
+onMounted(() => {
+  emit("loaded");
+})
 
 </script>
 

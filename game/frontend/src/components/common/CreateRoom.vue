@@ -136,7 +136,7 @@
           </div>
 
           <!-- 警告提示 -->
-          <div role="alert" class="alert alert-warning alert-soft shadow-inner text-sm mt-4 border border-warning/20" v-if="room.attrs.point || room.attrs.rate">
+          <div role="alert" class="alert alert-warning alert-soft shadow-inner text-sm mt-4 border border-warning/20" v-if="room.attrs.point">
             <Icon icon="ic:round-warning" class="text-2xl shrink-0" />
             <div class="flex flex-col gap-1">
               <span v-if="room.attrs.point" class="font-medium">注意：每局游戏将扣除 {{ room.attrs.point }} 积分</span>

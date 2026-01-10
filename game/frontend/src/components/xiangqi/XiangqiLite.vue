@@ -258,6 +258,13 @@ function svgX(col: number) {
 function svgY(row: number) {
   return row <= 4 ? row * 45 : 225 + (row - 5) * 45
 }
+
+const emit = defineEmits<{
+  (e: 'loaded'): void
+}>()
+onMounted(() => {
+  emit("loaded");
+})
 </script>
 
 <style scoped>
