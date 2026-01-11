@@ -603,20 +603,7 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
         room.emit('command', { type: 'game:over', data: { winner: playerId } });
         room.emit('command', { type: 'achievements', data: achievements });
 
-        // 将所有玩家状态重置为未准备，通知客户端以刷新准备列表
-        room.players.forEach(player => {
-          if (player.role === 'player') {
-            try {
-              player.isReady = false;
-              player.emit('status', PlayerStatus.unready);
-              room.emit('player-unready', { ...player });
-            } catch (e) {
-              console.warn('无法将玩家设为未准备', player.id, e);
-            }
-          }
-        });
-        // room.status 是只读，改为通过命令广播状态更新给客户端
-        room.emit('command', { type: 'status', data: { status: 'waiting' } });
+        room.end();
 
         // 局结束后踢出所有处于托管的玩家
         if (gameState && gameState.hosted) {
@@ -629,7 +616,6 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
           });
         }
 
-        // 不立即调用 room.end()，让玩家可以查看结果
         return;
       }
 
@@ -1080,21 +1066,7 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
           room.emit('command', { type: 'game:over', data: { winner: sender.id } });
           room.emit('command', { type: 'achievements', data: achievements });
           
-          // 设置所有玩家状态为unready（游戏结束），并通知客户端
-          room.players.forEach(player => {
-            if (player.role === 'player') {
-              try {
-                player.isReady = false;
-                player.emit('status', PlayerStatus.unready);
-                room.emit('player-unready', { ...player });
-              } catch (e) {
-                console.warn('无法将玩家设为未准备', player.id, e);
-              }
-            }
-          });
-          
-          // 设置房间状态为waiting，允许开始新一局（通过广播通知客户端，避免写入只读属性）
-          room.emit('command', { type: 'status', data: { status: 'waiting' } });
+          room.end();
           
           // 局结束后踢出所有处于托管的玩家
           if (gameState && gameState.hosted) {
@@ -1106,8 +1078,6 @@ export default async function onRoom(room: Room, { save, restore }: IGameMethod)
               }
             });
           }
-          // 不立即调用 room.end()，让玩家可以查看结果
-          // 等待下一局游戏开始时再重置
           return;
         }
         
