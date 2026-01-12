@@ -82,6 +82,8 @@ export default class ChineseCheckers extends GameRoom {
   displayPlayers: { id: string, name: string, color: ZIndex, target: ZIndex }[] = [];
   // 当前回合玩家 index (在 displayPlayers 中的 index)
   turnIndex: number = 0;
+  // 历史记录
+  history: { color: ZIndex, path: { q: number, r: number }[], time: number }[] = [];
   
   // 游戏配置
   static maxStepTime = 60 * 1000;
@@ -137,6 +139,8 @@ export default class ChineseCheckers extends GameRoom {
     });
 
     this.turnIndex = 0;
+    this.history = [];
+    this.beginTime = Date.now();
     this.startTurn();
     this.broadcastState();
   }
@@ -204,6 +208,12 @@ export default class ChineseCheckers extends GameRoom {
             end = path[path.length - 1];
             delete this.board[`${start.q},${start.r}`];
             this.board[`${end.q},${end.r}`] = message.sender.id;
+
+            this.history.push({
+                color: this.currentPlayer.color,
+                path,
+                time: Date.now() - this.beginTime
+            });
             
             this.save(); // 保存状态
             
@@ -359,6 +369,13 @@ export default class ChineseCheckers extends GameRoom {
       players: this.displayPlayers,
       turnIndex: this.turnIndex,
     };
+  }
+
+  getData() {
+    return {
+      players: this.displayPlayers,
+      history: this.history,
+    }
   }
   
   broadcastState() {
