@@ -142,22 +142,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onUnmounted } from 'vue';
 import Icon from '@/components/common/Icon.vue'
-
-// --- Types ---
-interface Hex {
-    q: number;
-    r: number;
-    s: number;
-    x: number;
-    y: number;
-    key: string;
-}
-
-interface Move {
-    color: number; // 0-5
-    path: { q: number, r: number }[];
-    time: number;
-}
+import { Hex, Move, getHex, getHexZoneIndex, formatTime, getZoneData, hexes } from './useChineseChecker';
 
 const props = defineProps<{
     history: Move[];
@@ -165,74 +150,8 @@ const props = defineProps<{
     beginTime?: number;
 }>();
 
-// --- Constants ---
-const HEX_SIZE = 10;
-const ZONES = [
-  { fill: 'fill-primary', text: 'text-primary', border: 'border-primary', bg: 'bg-primary', name: 'primary' },
-  { fill: 'fill-accent', text: 'text-accent', border: 'border-accent', bg: 'bg-accent', name: 'accent' },
-  { fill: 'fill-secondary', text: 'text-secondary', border: 'border-secondary', bg: 'bg-secondary', name: 'secondary' },
-  { fill: 'fill-info', text: 'text-info', border: 'border-info', bg: 'bg-info', name: 'info' },
-  { fill: 'fill-error', text: 'text-error', border: 'border-error', bg: 'bg-error', name: 'error' },
-  { fill: 'fill-warning', text: 'text-warning', border: 'border-warning', bg: 'bg-warning', name: 'warning' },
-];
-
-function getZoneData(idx: number) {
-    return ZONES[idx % ZONES.length];
-}
-
-function fillOpacity(zoneIdx: number) {
-    // Return CSS class for zone background
-    const z = getZoneData(zoneIdx);
-    // We want a very light background. fill-primary/20
-    // But Tailwind arbitrary values might be better or just using style.
-    // Let's rely on standard classes.
-    // However, tailwind classes like 'fill-primary/20' might not work directly if not safelisted.
-    // But ChineseCheckersRoom uses 'fill-base-content/20'.
-    // Let's use matching zone color but low opacity.
-    return z.fill + '/20';
-}
-
 function getPlayerName(color: number) {
     return props.players.find(p => p.color === color)?.name || 'Unknown';
-}
-
-function formatTime(ms?: number) {
-  if (ms === undefined || ms === null) return '00:00';
-  const totalSeconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-}
-
-// --- Hex Grid Logic (Copied from Room) ---
-const hexes: Hex[] = [];
-for (let q = -8; q <= 8; q++) {
-    for (let r = -8; r <= 8; r++) {
-        const s = -q - r;
-        if (Math.abs(s) > 8) continue;
-        const inInv = q <= 4 && r <= 4 && s <= 4;
-        const inUpr = q >= -4 && r >= -4 && s >= -4;
-        if (inInv || inUpr) {
-             const x = HEX_SIZE * Math.sqrt(3) * (q + r/2);
-             const y = HEX_SIZE * 3/2 * r;
-             hexes.push({ q, r, s, x, y, key: `${q},${r}` });
-        }
-    }
-}
-
-function getHexZoneIndex(q: number, r: number, s: number): number {
-    if (Math.abs(q) <= 4 && Math.abs(r) <= 4 && Math.abs(s) <= 4) return -1;
-    if (r > 4) return 0;
-    if ((-q-r) < -4) return 1;
-    if (q > 4) return 2;
-    if (r < -4) return 3;
-    if ((-q-r) > 4) return 4;
-    if (q < -4) return 5;
-    return -1;
-}
-
-function getHex(key: string) {
-    return hexes.find(h => h.key === key);
 }
 
 // --- Replay Logic ---

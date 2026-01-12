@@ -87,6 +87,13 @@
                 style="filter: drop-shadow(0 2px 2px rgb(0 0 0 / 0.4));"
              />
         </svg>
+
+        <!-- Victory Overlay -->
+        <div v-if="winnerText" class="absolute inset-0 z-50 flex items-center justify-center bg-base-300/30 backdrop-blur-[1px] rounded-full">
+             <div class="bg-base-100/90 text-primary shadow-xl px-8 py-4 rounded-xl border-2 border-primary/20 text-2xl font-black animate-bounce whitespace-nowrap">
+                 {{ winnerText }}
+             </div>
+        </div>
       </div>
 
        <div class="h-8 flex items-center justify-center gap-2">
@@ -103,56 +110,44 @@
             <p>3. 跳跃：隔一个棋子跳到前方空位，且可连续跳跃。</p>
         </div>
     </template>
+
+    <template #actions="{ isPlaying }">
+      <button v-if="isPlaying" class="btn btn-error w-full" @click="resign">认输</button>
+      <button v-if="isPlaying && players.length == 2" class="btn btn-warning w-full" @click="offerDraw">求和</button>
+    </template>
   </GameView>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, watch, nextTick } from 'vue';
+import { computed, ref, nextTick } from 'vue';
 import { RoomPlayer, Room } from 'tiaoom/client';
 import { GameCore } from '@/core/game';
+import { 
+    Hex, hexes, getHex, getZoneData, getHexZoneIndex 
+} from './useChineseChecker';
 
 const props = defineProps<{
   roomPlayer: RoomPlayer & { room: Room }
   game: GameCore
 }>();
 
-// --- Types ---
-interface Hex {
-    q: number;
-    r: number;
-    s: number;
-    x: number;
-    y: number;
-    key: string;
+function resign() {
+    if (!confirm('确定要认输吗？此操作无法撤销。')) return;
+    props.game.command(props.roomPlayer.room.id, { type: 'resign' });
 }
 
+function offerDraw() {
+    if (!confirm('确定要向对方求和吗？')) return;
+    props.game.command(props.roomPlayer.room.id, { type: 'request-draw' });
+}
+
+// --- Types ---
 interface PlayerInfo {
     id: string;
     name: string;
     color: number; // zone index 0-5
     target: number;
 }
-
-// --- Constants ---
-const HEX_SIZE = 10;
-// DaisyUI compatible colors (using CSS classes for dynamic binding via Safelist or just common utility logic)
-/*
-  We will use an object mapping for full control over fill, border, etc.
-  0: Top (Red)
-  1: Top Right (Black/Neutral) -> Let's use generic dark
-  2: Bottom Right (Blue)
-  3: Bottom (Green)
-  4: Bottom Left (Orange)
-  5: Top Left (Yellow)
-*/
-const ZONES = [
-  { fill: 'fill-primary', text: 'text-primary', border: 'border-primary', bg: 'bg-primary', name: 'primary' },
-  { fill: 'fill-accent', text: 'text-accent', border: 'border-accent', bg: 'bg-accent', name: 'accent' },
-  { fill: 'fill-secondary', text: 'text-secondary', border: 'border-secondary', bg: 'bg-secondary', name: 'secondary' },
-  { fill: 'fill-info', text: 'text-info', border: 'border-info', bg: 'bg-info', name: 'info' },
-  { fill: 'fill-error', text: 'text-error', border: 'border-error', bg: 'bg-error', name: 'error' },
-  { fill: 'fill-warning', text: 'text-warning', border: 'border-warning', bg: 'bg-warning', name: 'warning' },
-];
 
 // --- State ---
 const board = ref<Record<string, string>>({}); // key -> playerId
@@ -165,6 +160,7 @@ const lastMoveTo = ref<string | null>(null);
 const pendingPath = ref<Hex[]>([]);
 const isMoving = ref(false);
 const animatingPiece = ref<{ pid: string, x: number, y: number } | null>(null);
+const winnerText = ref<string | null>(null);
 
 const boardRotation = computed(() => {
     const me = players.value.find(p => p.id === props.roomPlayer.id);
@@ -174,57 +170,7 @@ const boardRotation = computed(() => {
     return me.color * 60;
 });
 
-function getHexZoneIndex(q: number, r: number, s: number): number {
-    // Determine which arm of the star this hex belongs to.
-    // Center hex (radius 4) belongs to no specific zone (return -1)
-    if (Math.abs(q) <= 4 && Math.abs(r) <= 4 && Math.abs(s) <= 4) return -1;
-
-    if (r > 4) return 0; // Backend: 0 (r > 4) (Bottom visual if y=r) -- Wait, let's just stick to backend index logic
-    if ((-q-r) < -4) return 1; // s < -4
-    if (q > 4) return 2;
-    if (r < -4) return 3;
-    if ((-q-r) > 4) return 4; // s > 4
-    if (q < -4) return 5;
-    
-    return -1;
-}
-
-// --- Board Generation ---
-const hexes: Hex[] = [];
-// Generate star board
-for (let q = -8; q <= 8; q++) {
-    for (let r = -8; r <= 8; r++) {
-        const s = -q - r;
-        if (Math.abs(s) > 8) continue;
-        
-        // Star = Union of two large triangles
-        // T1 (Inverted): q <= 4 && r <= 4 && s <= 4
-        // T2 (Upright): q >= -4 && r >= -4 && s >= -4
-        
-        const inInv = q <= 4 && r <= 4 && s <= 4;
-        const inUpr = q >= -4 && r >= -4 && s >= -4;
-        
-        if (inInv || inUpr) {
-             addHex(q, r, s);
-        }
-    }
-}
-
-function addHex(q: number, r: number, s: number) {
-    // Pixel conversion (Pointy top hexes? No, typically flat top for Chinese Checkers?)
-    // Let's use standard axial to pixel.
-    // x = size * (3/2 * q)
-    // y = size * (sqrt(3)/2 * q + sqrt(3) * r)
-    // BUT we want symmetry.
-    // Let's use:
-    // x = size * sqrt(3) * (q + r/2)
-    // y = size * 3/2 * r
-    const x = HEX_SIZE * Math.sqrt(3) * (q + r/2);
-    const y = HEX_SIZE * 3/2 * r;
-    hexes.push({ q, r, s, x, y, key: `${q},${r}` });
-}
-
-// Layout Polygon logic (approximate for background)
+// --- Layout Polygon logic (approximate for background)
 const boardPolygon = computed(() => {
     // Just a large hexagon or star shape points?
     // Simplified: No background polygon or simple circle.
@@ -235,14 +181,6 @@ const boardPolygon = computed(() => {
 const isMyTurn = computed(() => {
     return players.value[turnIndex.value]?.id === props.roomPlayer.id;
 });
-
-function getHex(key: string) {
-    return hexes.find(h => h.key === key);
-}
-
-function getZoneData(idx: number) {
-    return ZONES[idx % ZONES.length];
-}
 
 function getPlayerColorCode(pid: string) {
     const p = players.value.find(p => p.id === pid);
@@ -256,6 +194,7 @@ const pieceList = computed(() => {
         return { ...h, pid };
     }).filter(Boolean) as (Hex & { pid: string })[];
 });
+
 
 // --- Game Logic ---
 
@@ -494,10 +433,19 @@ async function animatePath(playerId: string, path: {q: number, r: number}[]) {
 // --- Events ---
 function onCommand(msg: any) {
     if (msg.type === 'state' || msg.type === 'status') {
+        // New game or reconnect logic: verify if board is empty or not?
+        // Actually state update implies we are sync with server.
+        // If server says game is playing, then no winner overlay.
+        // If server says game ended? 'state' command doesn't carry winner.
+        // But usually 'state' comes on init.
+        // Safest is to clear winnerText on state sync, assuming we're starting fresh or re-syncing.
+        winnerText.value = null;
+
         board.value = msg.data.board;
         players.value = msg.data.players;
         turnIndex.value = msg.data.turnIndex !== undefined ? msg.data.turnIndex : msg.data.turn;
     } else if (msg.type === 'turn') {
+        winnerText.value = null; // Ensure cleared on turn change
         turnIndex.value = msg.data.playerIndex;
     } else if (msg.type === 'moved') {
         const { playerId, from, to, path } = msg.data;
@@ -522,17 +470,23 @@ function onCommand(msg: any) {
                 lastMoveTo.value = toKey;
             }
         }
+    } else if (msg.type === 'request-draw') {
+        const who = msg.data.player?.name || '对方';
+        if (confirm(`${who} 请求和棋，是否同意？`)) {
+             props.game.command(props.roomPlayer.room.id, { type: 'draw' });
+        } else {
+             props.game.command(props.roomPlayer.room.id, { type: 'reject-draw' });
+        }
+    } else if (msg.type === 'reject-draw') {
+         // simple notification
+         console.log('对方拒绝了和棋请求');
+    } else if (msg.type === 'gameOver') {
+        const winners = msg.data.winners;
+        if (winners && winners.length > 0) {
+            winnerText.value = winners.join('、') + ' 获胜';
+        } else {
+            winnerText.value = '平局';
+        }
     }
 }
-
-const fillOpacity = (idx: number) => {
-  return [
-    'fill-primary/40',
-    'fill-accent/40',
-    'fill-secondary/40',
-    'fill-info/40',
-    'fill-error/40',
-    'fill-warning/40',
-  ][idx];
-};
 </script>
