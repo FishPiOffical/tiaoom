@@ -32,13 +32,13 @@
             <!-- Holes -->
             <g v-for="h in hexes" :key="h.key">
                 <circle :cx="h.x" :cy="h.y" r="4.8" 
-                   class="transition-colors duration-200 stroke-base-content/50 stroke-[0.5]"
+                   class="transition-colors duration-200 stroke-base-content/50 stroke-[0.5] "
                    :class="[
                       // Interactive state (selectable or reachable)
                       isInteractive(h) ? 'fill-base-content/40 cursor-pointer hover:fill-primary/50' : '',
                       
                       // Zone background (if empty and not interactive)
-                      !isInteractive(h) && !isReachable(h) && getHexZoneIndex(h.q, h.r, h.s) !== -1 ? fillOpacity(getHexZoneIndex(h.q, h.r, h.s)) : '',
+                      !isInteractive(h) && !isReachable(h) && getHexZoneIndex(h.q, h.r, h.s) !== -1 ? 'fill-base-content/20' : '',
 
                       // Default empty background
                       !isInteractive(h) && !isReachable(h) && getHexZoneIndex(h.q, h.r, h.s) === -1 ? 'fill-base-content/20' : '',

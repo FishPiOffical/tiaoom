@@ -1,9 +1,9 @@
 <template>
   <div class="flex flex-col lg:flex-row h-full gap-4 p-4">
     <!-- Left: Board -->
-    <div class="flex-1 flex flex-col items-center justify-center bg-base-200 rounded-box p-4 min-h-[400px]">
+    <div class="flex-1 flex flex-col items-center justify-center bg-base-200 rounded-box p-4">
        <!-- Players Info -->
-      <div class="w-full max-w-[600px] flex flex-wrap gap-4 justify-center mb-4">
+      <div class="w-full max-w-[600px] flex flex-wrap gap-4 justify-center pb-4">
         <div v-for="(p, i) in players" :key="p.id"
              class="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-bold border-2 transition-all shadow-sm"
              :class="[
@@ -30,11 +30,7 @@
             <!-- Holes -->
             <g v-for="h in hexes" :key="h.key">
                 <circle :cx="h.x" :cy="h.y" r="4.8" 
-                   class="transition-colors duration-200 stroke-base-content/50 stroke-[0.5]"
-                   :class="[
-                      // Zone background 
-                      getHexZoneIndex(h.q, h.r, h.s) !== -1 ? fillOpacity(getHexZoneIndex(h.q, h.r, h.s)) : 'fill-base-content/20'
-                   ]" />
+                   class="transition-colors duration-200 stroke-base-content/50 stroke-[0.5] fill-base-content/20" />
             </g>
             
             <!-- Pieces -->
@@ -54,29 +50,20 @@
                  <circle v-if="lastMoveTo === piece.key" :cx="piece.x" :cy="piece.y" r="4.5"
                     class="fill-base-content animate-ping opacity-30 pointer-events-none" />
             </g>
+
+            <!-- Animating Piece -->
+            <circle v-if="animatingPiece" :cx="animatingPiece.x" :cy="animatingPiece.y" r="4.8"
+                class="transition-none shadow-lg pointer-events-none z-10"
+                :class="[
+                    getZoneData(animatingPiece.color).fill,
+                    'stroke-2 stroke-base-100'
+                ]"
+                style="filter: drop-shadow(0 2px 2px rgb(0 0 0 / 0.4));"
+            />
         </svg>
       </div>
       
-       <!-- Playback Controls -->
-       <div class="mt-4 flex items-center gap-4">
-        <button class="btn btn-circle btn-sm" @click="jumpToStep(0)" :disabled="currentStep <= 0">
-           <Icon icon="mdi:skip-backward" />
-        </button>
-        <button class="btn btn-circle btn-sm" @click="jumpToStep(currentStep - 1)" :disabled="currentStep <= 0">
-            <Icon icon="mdi:step-backward" />
-        </button>
-        <button class="btn btn-circle btn-primary" @click="togglePlay">
-             <Icon :icon="isPlaying ? 'mdi:pause' : 'mdi:play'" />
-        </button>
-        <button class="btn btn-circle btn-sm" @click="jumpToStep(currentStep + 1)" :disabled="currentStep >= history.length">
-             <Icon icon="mdi:step-forward" />
-        </button>
-        <button class="btn btn-circle btn-sm" @click="jumpToStep(history.length)" :disabled="currentStep >= history.length">
-             <Icon icon="mdi:skip-forward" />
-        </button>
-        
-        <div class="ml-4 font-mono text-xl">{{ formatTime(currentDisplayTime) }}</div>
-      </div>
+       <!-- Playback Controls (Moved to Right Side) -->
     </div>
 
     <!-- Right: History -->
@@ -106,6 +93,47 @@
          <div v-if="history.length === 0" class="text-center p-8 opacity-50">
              暂无记录
          </div>
+      </div>
+
+         <!-- Controls -->
+      <div class="p-4 bg-base-200 border-t border-base-content/10 flex flex-col gap-2">
+        <!-- Progress Bar -->
+        <input 
+          type="range" 
+          min="0" 
+          :max="history.length" 
+          v-model.number="currentStep" 
+          class="range range-xs range-primary" 
+          @input="pause"
+        />
+        
+        <!-- Buttons -->
+        <div class="flex justify-center items-center gap-4">
+          <button class="btn btn-circle btn-sm" @click="jumpToStep(currentStep - 1)" :disabled="currentStep <= 0">
+            <Icon icon="mdi:skip-previous" />
+          </button>
+          
+          <button class="btn btn-circle btn-primary" @click="togglePlay">
+            <Icon :icon="isPlaying ? 'mdi:pause' : 'mdi:play'" class="text-xl" />
+          </button>
+          
+          <button class="btn btn-circle btn-sm" @click="jumpToStep(currentStep + 1)" :disabled="currentStep >= history.length">
+            <Icon icon="mdi:skip-next" />
+          </button>
+        </div>
+
+        <!-- Speed Control -->
+        <div class="flex justify-center gap-2 mt-2">
+          <button 
+            v-for="speed in [0.5, 1, 2, 4]" 
+            :key="speed"
+            class="btn btn-xs"
+            :class="playbackSpeed === speed ? 'btn-primary' : 'btn-ghost'"
+            @click="setSpeed(speed)"
+          >
+            x{{ speed }}
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -212,6 +240,11 @@ const currentStep = ref(0);
 const isPlaying = ref(false);
 const historyContainer = ref<HTMLElement | null>(null);
 
+const animatingPiece = ref<{ x: number, y: number, color: number } | null>(null);
+const hiddenPieceKey = ref<string | null>(null);
+let animationHandle: number | null = null;
+const ANMIATION_MS_PER_STEP = 300; 
+
 const gameState = computed(() => {
     // Reconstruct board at currentStep
     const board: Record<string, string> = {}; // key -> pid
@@ -266,6 +299,7 @@ const gameState = computed(() => {
 
 const pieceList = computed(() => {
     return Object.entries(gameState.value.board).map(([key, pid]) => {
+        if (key === hiddenPieceKey.value) return null;
         const h = getHex(key);
         if (!h) return null;
         return { ...h, pid };
@@ -289,12 +323,19 @@ const boardRotation = computed(() => {
 });
 
 // Playback Implementation
+const playbackSpeed = ref(1);
 let timer: any = null;
 
 function togglePlay() {
+    // Check if at end, restart
+    if (currentStep.value >= props.history.length) {
+        currentStep.value = 0;
+    }
+
     isPlaying.value = !isPlaying.value;
     if (isPlaying.value) {
-        pause();
+        // Clear any existing timer just in case
+        if (timer) clearTimeout(timer);
         playNext();
     } else {
         pause();
@@ -302,41 +343,161 @@ function togglePlay() {
 }
 
 function pause() {
+    isPlaying.value = false; // Ensure state sync for input range drag
     if (timer) {
         clearTimeout(timer);
         timer = null;
     }
+    if (animationHandle) {
+        cancelAnimationFrame(animationHandle);
+        animationHandle = null;
+    }
+    // Setup for manual mode: reset animation state
+    animatingPiece.value = null;
+    hiddenPieceKey.value = null;
 }
 
-function playNext() {
+function setSpeed(speed: number) {
+    playbackSpeed.value = speed;
+    // 如果正在播放，立即应用新速度（通过重启当前步骤的计时）
+    if (isPlaying.value) {
+        if (timer) clearTimeout(timer);
+        if (animationHandle) cancelAnimationFrame(animationHandle); // Restart current anim
+        // Note: restarting animation from start might be jarring but acceptable.
+        // A better restart would be complex.
+        animatingPiece.value = null; hiddenPieceKey.value = null; // Clean state
+        playNext();
+    }
+}
+
+async function playNext() {
+    // If at end, stop.
     if (currentStep.value >= props.history.length) {
         isPlaying.value = false;
         return;
     }
     
-    // Determine delay until next step
-    // Logic: use actual time difference or fixed speed? Doushouqi used fixed or computed?
-    // DoushouqiReplay used 1000ms base.
-    // If we want real time:
-    const now = props.history[currentStep.value].time;
-    const next = currentStep.value + 1 < props.history.length ? props.history[currentStep.value + 1].time : now + 1000;
-    let delay = next - now;
-    if (delay < 500) delay = 500;
-    if (delay > 2000) delay = 2000; // Cap at 2s
+    // Determine delay until next step based on recorded time
+    // If time is missing (old records), fallback to 1000ms
+    const now = (currentStep.value > 0 ? props.history[currentStep.value - 1].time : 0) || 0;
+    const next = props.history[currentStep.value].time || (now + 1000);
 
+    let delay = (next - now);
+    
+    if (isNaN(delay)) delay = 1000;
+    
+    // Safety clamp 
+    if (delay < 500) delay = 500;
+    if (delay > 3000) delay = 3000; 
+
+    // Apply speed factor
+    delay = delay / playbackSpeed.value;
+
+    // Wait for delay
+    await new Promise(resolve => {
+        timer = setTimeout(resolve, delay);
+    });
+
+    if (!isPlaying.value) return;
+
+    // Animate Move
+    const move = props.history[currentStep.value];
+    await runAnimation(move);
+
+    if (!isPlaying.value) {
+        // Paused during animation
+        currentStep.value++;
+        scrollToStep(currentStep.value);
+        animatingPiece.value = null;
+        hiddenPieceKey.value = null;
+        return;
+    }
+    
+    // Complete Step
     currentStep.value++;
     scrollToStep(currentStep.value);
-
-    timer = setTimeout(() => {
-        if (isPlaying.value) playNext();
-    }, delay);
+    
+    // Next
+    playNext();
 }
 
+function runAnimation(move: Move): Promise<void> {
+    return new Promise(resolve => {
+        const path = move.path;
+        if (!path || path.length < 2) { resolve(); return; }
+
+        // Start Position
+        const start = path[0];
+        const startKey = `${start.q},${start.r}`;
+        
+        // Hide board piece
+        hiddenPieceKey.value = startKey;
+        
+        // Init animating piece
+        const startHex = getHex(startKey);
+        if (!startHex) { resolve(); return; }
+        
+        animatingPiece.value = {
+            x: startHex.x, 
+            y: startHex.y,
+            color: move.color
+        };
+
+        const segments: {from: Hex, to: Hex}[] = [];
+        for(let i=0; i<path.length-1; i++) {
+            const p1 = getHex(`${path[i].q},${path[i].r}`);
+            const p2 = getHex(`${path[i+1].q},${path[i+1].r}`);
+            if(p1 && p2) segments.push({ from: p1, to: p2 });
+        }
+        
+        let startTime: number | null = null;
+        const segmentDuration = ANMIATION_MS_PER_STEP / playbackSpeed.value;
+        const totalDuration = segments.length * segmentDuration;
+        
+        const animate = (timestamp: number) => {
+            if (!isPlaying.value) {
+                resolve();
+                return;
+            }
+        
+            if (!startTime) startTime = timestamp;
+            const elapsed = timestamp - startTime;
+            
+            const currentSegmentIndex = Math.floor(elapsed / segmentDuration);
+            
+            if (currentSegmentIndex >= segments.length) {
+                // Done
+                animatingPiece.value = null;
+                hiddenPieceKey.value = null;
+                resolve();
+                return;
+            }
+            
+            const segment = segments[currentSegmentIndex];
+            const segmentProgress = (elapsed % segmentDuration) / segmentDuration;
+            
+            // Linear iterpolation
+            const x = segment.from.x + (segment.to.x - segment.from.x) * segmentProgress;
+            const y = segment.from.y + (segment.to.y - segment.from.y) * segmentProgress;
+            
+            if (animatingPiece.value) {
+                animatingPiece.value.x = x;
+                animatingPiece.value.y = y;
+            }
+            
+            animationHandle = requestAnimationFrame(animate);
+        };
+        
+        animationHandle = requestAnimationFrame(animate);
+    });
+}
+
+
 function jumpToStep(step: number) {
-    currentStep.value = step;
+    currentStep.value = Math.max(0, Math.min(step, props.history.length));
     isPlaying.value = false;
     pause();
-    scrollToStep(step);
+    scrollToStep(currentStep.value);
 }
 
 function scrollToStep(step: number) {
