@@ -20,7 +20,31 @@ type Cell = ChessPiece | null;
 
 export function useChessflip(game: GameCore, roomPlayer: RoomPlayer & { room: Room }) {
   const currentPlayer = ref<any>()
-  const board = ref<Cell[][]>(Array(4).fill(null).map(() => Array(8).fill(null)))
+  const BOARD_ROWS = 4
+  const BOARD_COLS = 8
+
+  function createDefaultBoard(): Cell[][] {
+    return Array.from({ length: BOARD_ROWS }, () => Array<Cell>(BOARD_COLS).fill(null))
+  }
+
+  // 归一化棋盘：避免后端未开始时返回空数组导致 v-for 不渲染任何行/列
+  function normalizeBoard(next: unknown): Cell[][] {
+    if (!Array.isArray(next) || next.length === 0) return createDefaultBoard()
+
+    const normalized: Cell[][] = []
+    for (let x = 0; x < BOARD_ROWS; x++) {
+      const row = (next as any)[x]
+      const normalizedRow: Cell[] = []
+      for (let y = 0; y < BOARD_COLS; y++) {
+        const cell = Array.isArray(row) ? row[y] : null
+        normalizedRow.push((cell ?? null) as Cell)
+      }
+      normalized.push(normalizedRow)
+    }
+    return normalized
+  }
+
+  const board = ref<Cell[][]>(createDefaultBoard())
   const achievements = ref<Record<string, any>>({})
   const myCamp = ref<Side | undefined>()
   const isFirstFlip = ref(true)
@@ -56,7 +80,7 @@ export function useChessflip(game: GameCore, roomPlayer: RoomPlayer & { room: Ro
     switch (cmd.type) {
       case 'status':
         currentPlayer.value = cmd.data.current
-        board.value = cmd.data.board || []
+        board.value = normalizeBoard(cmd.data.board)
         achievements.value = cmd.data.achievements || {}
         myCamp.value = cmd.data.camp
         isFirstFlip.value = cmd.data.isFirstFlip ?? true
@@ -64,7 +88,7 @@ export function useChessflip(game: GameCore, roomPlayer: RoomPlayer & { room: Ro
         break
 
       case 'board':
-        board.value = cmd.data.board || cmd.data
+        board.value = normalizeBoard(cmd.data?.board ?? cmd.data)
         break
 
       case 'turn':

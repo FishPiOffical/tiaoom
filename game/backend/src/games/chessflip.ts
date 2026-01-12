@@ -1,4 +1,4 @@
-import { PlayerRole, RoomPlayer, RoomStatus } from "tiaoom";
+﻿import { PlayerRole, RoomPlayer, RoomStatus } from "tiaoom";
 import { GameRoom, IGameCommand } from ".";
 import { sleep } from "@/utils";
 
@@ -197,6 +197,14 @@ class ChessflipGameRoom extends GameRoom {
 
   // 获取客户端可见的棋盘状态
   getBoardForClient(): (Omit<ChessPiece, 'type' | 'side' | 'level'> & { type?: PieceType; side?: Side; level?: number; name?: string } | null)[][] {
+    // 房间未开始时 this.board 可能为空数组：返回固定 4×8 的占位棋盘，避免客户端渲染为空棋盘
+    if (!this.board || this.board.length === 0) {
+      let id = 0;
+      return Array.from({ length: 4 }, () =>
+        Array.from({ length: 8 }, () => ({ id: id++, isOpen: false }))
+      );
+    }
+
     return this.board.map(row =>
       row.map(cell => {
         if (!cell) return null;
