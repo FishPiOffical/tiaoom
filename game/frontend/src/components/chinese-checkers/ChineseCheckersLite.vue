@@ -88,6 +88,13 @@
             <button @click="commitMove" class="btn btn-xs btn-primary">✔</button>
             <button @click="cancelMove" class="btn btn-xs btn-ghost">✘</button>
        </div>
+       
+        <!-- Lite Replay (Top Left) -->
+       <div class="absolute top-1 left-1 flex gap-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+           <button @click="replayLastMove" class="btn btn-[16px] min-h-0 h-4 w-4 p-0 btn-circle btn-ghost text-[10px]">
+               ↺
+           </button>
+       </div>
   </div>
 </template>
 
@@ -124,6 +131,8 @@ const {
     commitMove,
     cancelMove,
     onCommand,
+    replayLastMove,
+    playbackSpeed
 } = useChineseChecker(props.game, props.roomPlayer);
 
 useGameEvents(props.game, {

@@ -100,6 +100,24 @@
             <button v-if="isMyTurn && isMoving" @click="commitMove" class="btn btn-sm btn-primary">完成</button>
             <button v-if="isMyTurn && isMoving" @click="cancelMove" class="btn btn-sm btn-ghost">重置</button>
             <button v-if="isMyTurn && ((!isMoving && selected))" @click="resetSelection" class="btn btn-sm btn-ghost">取消选择</button>
+       
+            <!-- Replay Controls -->
+            <div class="tooltip tooltip-right" data-tip="重播最后一步">
+               <button @click="replayLastMove" class="btn btn-sm btn-circle btn-ghost" :disabled="!canReplay">
+                   <Icon icon="mdi:replay" />
+               </button>
+            </div>
+            <div class="dropdown dropdown-right hover:dropdown-open">
+             <div tabindex="0" role="button" class="btn btn-sm btn-circle btn-ghost text-sm font-mono">
+               {{ playbackSpeed }}x
+             </div>
+             <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-20 text-sm">
+               <li><a @click="playbackSpeed = 0.5">0.5x</a></li>
+               <li><a @click="playbackSpeed = 1.0">1.0x</a></li>
+               <li><a @click="playbackSpeed = 2.0">2.0x</a></li>
+               <li><a @click="playbackSpeed = 4.0">4.0x</a></li>
+             </ul>
+            </div>
        </div>
     </div>
 
@@ -112,9 +130,9 @@
     </template>
 
     <template #actions="{ isPlaying }">
-        <section class="flex">
-            <button v-if="isPlaying" class="btn btn-error w-full" @click="resign">认输</button>
-            <button v-if="isPlaying && players.length == 2" class="btn btn-warning w-full" @click="offerDraw">求和</button>
+        <section class="flex w-full gap-2">
+            <button v-if="isPlaying" class="btn btn-sm flex-1" @click="resign">认输</button>
+            <button v-if="isPlaying && players.length == 2" class="btn btn-sm flex-1" @click="offerDraw">求和</button>
         </section>
     </template>
   </GameView>
@@ -155,7 +173,10 @@ const {
     isReachable,
     onCommand,
     resign,
-    offerDraw
+    offerDraw,
+    playbackSpeed,
+    replayLastMove,
+    canReplay
 } = useChineseChecker(props.game, props.roomPlayer);
 
 const boardPolygon = "";

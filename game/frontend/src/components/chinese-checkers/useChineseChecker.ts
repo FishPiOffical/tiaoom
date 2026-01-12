@@ -95,6 +95,9 @@ export function useChineseChecker(game: GameCore, roomPlayer: RoomPlayer & { roo
     const isMoving = ref(false);
     const animatingPiece = ref<{ pid: string, x: number, y: number } | null>(null);
     const winnerText = ref<string | null>(null);
+    const playbackSpeed = ref(1); // 1x by default
+    const moveHistory = ref<{ playerId: string, path: {q:number,r:number}[], from: any, to: any }[]>([]);
+    const canReplay = computed(() => moveHistory.value.length > 0);
 
     const boardRotation = computed(() => {
         const me = players.value.find(p => p.id === roomPlayer.id);
@@ -215,6 +218,8 @@ export function useChineseChecker(game: GameCore, roomPlayer: RoomPlayer & { roo
         const startHex = getHex(startKey);
         if (!startHex) return;
 
+        // Temporarily remove from board
+        const originalOwner = board.value[startKey];
         delete board.value[startKey];
 
         animatingPiece.value = {
@@ -225,8 +230,10 @@ export function useChineseChecker(game: GameCore, roomPlayer: RoomPlayer & { roo
 
         await nextTick();
 
+        const stepTime = 300 / playbackSpeed.value;
+
         for (let i = 1; i < path.length; i++) {
-            await new Promise(resolve => setTimeout(resolve, 300));
+            await new Promise(resolve => setTimeout(resolve, stepTime));
             
             const nextHex = getHex(`${path[i].q},${path[i].r}`);
             if (nextHex) {
@@ -235,15 +242,104 @@ export function useChineseChecker(game: GameCore, roomPlayer: RoomPlayer & { roo
             }
         }
 
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise(resolve => setTimeout(resolve, stepTime));
 
         const end = path[path.length - 1];
         const endKey = `${end.q},${end.r}`;
-        board.value[endKey] = playerId;
+        
+        // Restore to end position (if it wasn't already set, but here we just ensure consistency)
+        // If replaying history without changing actual state, we might need to handle differently.
+        // But for live animation, we assume state is updated AFTER animation or partially during.
+        // In existing code, board update happens here.
+        
         animatingPiece.value = null;
+        if (!board.value[endKey]) { // Only set if not occupied (race condition check)
+             board.value[endKey] = playerId;
+        }
+        
+        // If this was a replay of a past move, we shouldn't modify current board state permanently 
+        // if the state differs... but simpler to just animate visually for "replay".
+        // HOWEVER, the logic in 'moved' event modifies board immediately for opponent move 
+        // -> wait, 'moved' calls animatePath. 
+        // We should refine this: animatePath handles the visual transition.
         
         lastMoveFrom.value = startKey;
         lastMoveTo.value = endKey;
+    }
+
+    async function replayLastMove() {
+        if (moveHistory.value.length === 0) {
+            console.log('No move history to replay');
+            return;
+        }
+        const lastMove = moveHistory.value[moveHistory.value.length - 1];
+        console.log('Replaying move:', lastMove);
+        
+        // Setup board for replay: restore piece to 'from' temporarily?
+        // Or simply animate a 'ghost' piece?
+        // Replaying on top of current state might be confusing if pieces moved.
+        // Better: Use a ghost piece for replay that doesn't affect actual board state.
+        
+        // Let's modify animatePath to support "ghost" mode or just handle the piece visually.
+        // For simplicity:
+        // 1. Identify start/end.
+        // 2. Hide piece at 'To' (it should be there now).
+        // 3. Show animating piece from Start -> End.
+        // 4. Restore piece at 'To'.
+        
+        const { playerId, path, to } = lastMove;
+        const toKey = `${to.q},${to.r}`;
+        const originalOwner = board.value[toKey];
+        
+        // Strict check: if piece is not at 'to' position, maybe it was moved again or captured?
+        if (originalOwner !== playerId) {
+            console.warn(`Cannot replay: Piece at ${toKey} is ${originalOwner}, expected ${playerId}`);
+            // Force replay anyway? It might look weird if piece starts from occupied spot or lands on occupied spot.
+            // But let's try to proceed if we just want to show the animation.
+            // However, we rely on HIDING the target piece. If target piece is someone else's, hiding it is confusing.
+            // If target piece is empty (undefined), then we can just run animation.
+            
+            if (originalOwner) {
+                 return; 
+            }
+        }
+        
+        if (originalOwner === playerId) {
+            delete board.value[toKey]; // Hide current piece
+        }
+            // Run animation
+            // Note: animatePath deletes 'start' from board, which might be wrong if 'start' is now empty.
+            // We need a more robust animate function.
+            // Let's create a specialized replay function.
+            
+            const startKey = `${path[0].q},${path[0].r}`;
+            const startHex = getHex(startKey);
+             if (!startHex) {
+                 if (originalOwner === playerId) board.value[toKey] = originalOwner;
+                 return;
+             }
+
+            animatingPiece.value = {
+                pid: playerId,
+                x: startHex.x,
+                y: startHex.y
+            };
+            
+            const stepTime = 300 / playbackSpeed.value;
+            
+             for (let i = 1; i < path.length; i++) {
+                await new Promise(resolve => setTimeout(resolve, stepTime));
+                const nextHex = getHex(`${path[i].q},${path[i].r}`);
+                if (nextHex) {
+                    animatingPiece.value.x = nextHex.x;
+                    animatingPiece.value.y = nextHex.y;
+                }
+            }
+             await new Promise(resolve => setTimeout(resolve, stepTime));
+             
+             animatingPiece.value = null;
+             if (originalOwner === playerId) board.value[toKey] = originalOwner; // Restore
+        // }
     }
 
     function handleClick(h: Hex) {
@@ -332,6 +428,14 @@ export function useChineseChecker(game: GameCore, roomPlayer: RoomPlayer & { roo
             const fromKey = `${from.q},${from.r}`;
             const toKey = `${to.q},${to.r}`;
 
+             // Record move
+            moveHistory.value.push({
+                playerId,
+                path: path || [from, to],
+                from,
+                to
+            });
+
             if (playerId === roomPlayer.id) {
                 delete board.value[fromKey];
                 board.value[toKey] = playerId;
@@ -390,6 +494,9 @@ export function useChineseChecker(game: GameCore, roomPlayer: RoomPlayer & { roo
         isReachable,
         onCommand,
         resign,
-        offerDraw
+        offerDraw,
+        playbackSpeed,
+        replayLastMove,
+        canReplay
     };
 }
