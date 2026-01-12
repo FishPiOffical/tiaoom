@@ -36,7 +36,7 @@ async function getGameDatas() {
   const Games = await gameLoaded;
   return Object.keys(Games).filter(g => (Games[g] as any).Model).map(g => {
     const Model = (Games[g] as any).Model;
-    const tableMetadata = metadata.tables. find(table => table.target === Model);
+    const tableMetadata = metadata.tables.find(table => table.target === Model);
     if (tableMetadata && !tableMetadata.name?.startsWith(g)) {
       tableMetadata.name = g + '_' + tableMetadata.name; // 修改表名
     }
@@ -46,7 +46,7 @@ async function getGameDatas() {
 
 export let AppDataSource = {} as DataSource;
 
-(async () => {
+const initDataSource = (async () => {
   AppDataSource = utils.config ? new DataSource({
     type: "mysql",
     logging: false,
@@ -57,7 +57,10 @@ export let AppDataSource = {} as DataSource;
     subscribers: [],
     charset: "utf8mb4_unicode_ci"
   }) : {} as DataSource;
-})()
+  return AppDataSource;
+})();
+
+export { initDataSource };
 
 export {
   User,

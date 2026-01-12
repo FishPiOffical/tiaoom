@@ -1,5 +1,5 @@
 <template>
-  <div v-if="visible" class="modal modal-open fixed inset-0 z-50 flex items-center justify-center">
+  <div v-if="visible" class="modal modal-open fixed inset-0 z-500 flex items-center justify-center">
     <div class="absolute inset-0 bg-black/50" @click="handleClose"></div>
     <div class="modal-box bg-base-100 text-base-content rounded shadow-lg max-w-lg w-full mx-4 z-10">
       <div class="flex items-center justify-between pb-2">
@@ -7,10 +7,18 @@
         <button class="btn btn-ghost btn-circle btn-sm" @click="handleClose">✕</button>
       </div>
       <div class="py-4">
-        <div v-if="isString" class="whitespace-pre-wrap">{{ message }}</div>
-        <div v-else>
+        <div v-if="isString && message" class="whitespace-pre-wrap mb-4">{{ message }}</div>
+        <div v-if="!isString">
           <slot />
         </div>
+        <input
+          v-if="showInput"
+          v-model="internalInputValue"
+          :type="inputType"
+          :placeholder="inputPlaceholder"
+          class="input input-bordered w-full"
+          @keyup.enter="handleConfirm"
+        />
       </div>
       <div class="pt-2 flex justify-end gap-3">
         <button v-if="showCancel" @click="handleCancel" class="btn">{{ cancelText }}</button>
@@ -21,7 +29,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 const props = withDefaults(defineProps<{
   visible: boolean,
@@ -29,7 +37,11 @@ const props = withDefaults(defineProps<{
   message: string | object,
   showCancel: boolean,
   confirmText: string,
-  cancelText: string
+  cancelText: string,
+  showInput?: boolean,
+  inputPlaceholder?: string,
+  inputValue?: string,
+  inputType?: string
 }>(),{
   visible: false,
   title: '提示' ,
@@ -37,14 +49,19 @@ const props = withDefaults(defineProps<{
   showCancel: true ,
   confirmText: '确定',
   cancelText: '取消',
+  showInput: false,
+  inputPlaceholder: '',
+  inputValue: '',
+  inputType: 'text'
 })
 
 const emit = defineEmits(['confirm', 'cancel', 'close'])
 
 const isString = computed(() => typeof props.message === 'string')
+const internalInputValue = ref(props.inputValue)
 
 function handleConfirm() {
-  emit('confirm')
+  emit('confirm', props.showInput ? internalInputValue.value : true)
 }
 
 function handleCancel() {

@@ -76,7 +76,7 @@
               <Icon icon="mdi:trophy-outline" />
             </router-link>
             <router-link 
-              v-if="gameStore.player?.isAdmin || gameManages.length > 0"
+              v-if="gameStore.player?.isAdmin || gameManages.filter(g => g.canManage).length > 0"
               to="/admin"
               class="icon-btn"
               title="房间管理"
@@ -140,7 +140,12 @@
                       【{{ gameStore.games[r.attrs.type].name }}】{{ r.name }}
                     </span>
                     <span class="text-xs text-base-content/60 whitespace-nowrap">
-                      ({{ r.players.filter(p => p.role === 'player').length }}/{{ r.size }})
+                      <template v-if="r.size === 0">
+                        ({{ r.players.filter(p => p.role === 'player').length }})
+                      </template>
+                      <template v-else>
+                        ({{ r.players.filter(p => p.role === 'player').length }}/{{ r.size }})
+                      </template>
                     </span>
                   </div>
                   <button
@@ -148,7 +153,7 @@
                     @click="joinRoom(r)"
                     class="px-2 py-1 btn-xs whitespace-nowrap btn"
                   >
-                    {{ r.players.filter(p => p.role === 'player').length < r.size ? '进入' : '围观' }}
+                    {{ r.size === 0 || r.players.filter(p => p.role === 'player').length < r.size ? '进入' : '围观' }}
                   </button>
                 </li>
               </ul>
@@ -248,7 +253,7 @@ const isDesktopSidebarCollapsed = ref(false)
 const activeTab = ref<'rooms' | 'players'>('rooms')
 
 function joinRoom(r: IRoomOptions) {
-  router.replace(`/r/${r.id}`)
+  router.push(`/r/${r.id}`)
   isSidebarOpen.value = false
 }
 

@@ -12,6 +12,9 @@ hero:
     - theme: alt
       text: API 参考
       link: /guide/api/server
+    - theme: alt
+      text: 竞技大厅开发指南
+      link: /game/
   image:
       src: /logo.svg
       alt: tiaoom

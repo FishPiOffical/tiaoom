@@ -1,10 +1,13 @@
 <script lang="ts" setup>
+import { md5 } from 'js-md5';
 import msg from "@/components/msg";
-import { getComponent } from "@/main";
+import { useGameEvents } from "@/hook/useGameEvents";
+import { getComponent } from "@/components";
 import { useGameStore } from "@/stores/game";
 import { openSmallWindow } from "@/utils/dom";
 import { computed, onMounted, watch, ref, nextTick, onUnmounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import msgbox from '@/components/msgbox';
 
 const gameStore = useGameStore();
 const route = useRoute();
@@ -12,7 +15,7 @@ const router = useRouter();
 
 const roomId = computed(() => (route.params.id as string));
 
-function init() {
+async function init() {
   if (roomId.value) {
     if (
       gameStore.roomPlayer &&
@@ -22,20 +25,24 @@ function init() {
         gameStore.game?.leaveRoom(gameStore.roomPlayer.room.id);
       } else {
         msg.warning("您正在游戏中，无法切换房间！");
-        router.replace("/");
+        router.replace('/');
         return;
       }
     }
     const room = gameStore.rooms.find((r) => r.id === roomId.value);
     if (!room) {
       msg.error("房间不存在或已被解散！");
-      router.replace("/");
+      router.replace('/');
       return;
     }
     let passwd: string | undefined;
-    if (room.attrs?.passwd) {
-      passwd = prompt("请输入房间密码：") || "";
-      if (!passwd) return;
+    if (room.attrs?.passwd && !room.players.some(p => p.id == gameStore.player?.id)) {
+      passwd = await msgbox.prompt("请输入房间密码：") || "";
+      if (!passwd) return router.back();
+      if (room.attrs.passwd !== md5(passwd)) {
+        msg.error("密码错误，无法加入房间。");
+        return history.state.back ? router.back() : router.replace('/');
+      }
     }
     gameStore.game?.joinRoom(room.id, { passwd });
   }
@@ -48,15 +55,36 @@ function load() {
   });
 }
 
+if (gameStore.game) {
+  useGameEvents(gameStore.game, {
+    'onRoomList': () => {
+      setTimeout(() => {
+        if (!route.params.id) return;
+        const room = gameStore.rooms.find((r) => r.id === roomId.value);
+        if (!room) {
+          msg.error("房间不存在或已被解散！");
+          history.state.back ? router.back() : router.replace('/');
+          return;
+        }
+      }, 100)
+    }
+  });
+}
+
 watch(
   () => route.params.id,
-  () => {
-    load();
-  }
+  (val, old) => {
+    if (val && val !== old && old) init();
+  },
+  { immediate: true }
 );
 
 onMounted(() => {
-  load();
+  if (gameStore.rooms.find((r) => r.id === roomId.value)) {
+    init();
+  } else {
+    load();
+  }
 });
 
 const isAlertExpanded = ref(false);
@@ -82,19 +110,17 @@ onMounted(() => {
   window.addEventListener('resize', checkAlertOverflow);
 });
 
+function loaded() {
+  gameStore.game!.init(gameStore.roomPlayer!.room.id, gameStore.player!.player)
+}
+
 onUnmounted(() => {
   window.removeEventListener('resize', checkAlertOverflow);
 });
 
-const hasLiteComponent = computed(() => {
-  try {
-    const type = gameStore.roomPlayer?.room.attrs?.type as string;
-    if (!type) return false
-    return !!getComponent(type.split('-').map(t => t.slice(0, 1).toUpperCase() + t.slice(1)).join('') + 'Lite')
-  } catch {
-    return false
-  }
-})
+const ComponentLite = computed(() => getComponent(gameStore.roomPlayer?.room.attrs?.type, 'Lite'))
+const ComponentRoom = computed(() => getComponent(gameStore.roomPlayer?.room.attrs?.type, 'Room'))
+const ComponentRoomControls = computed(() => getComponent(gameStore.roomPlayer?.room.attrs?.type, 'RoomControls'))
 </script>
 
 <template>
@@ -116,7 +142,7 @@ const hasLiteComponent = computed(() => {
               gameStore.roomPlayer.room.players.filter(
                 (p) => p.role === "player"
               ).length
-            }}/{{ gameStore.roomPlayer.room.size }})
+            }}<span v-if="gameStore.roomPlayer.room.size > 0">/{{ gameStore.roomPlayer.room.size }})</span>
           </span>
         </h3>
         <div
@@ -158,8 +184,14 @@ const hasLiteComponent = computed(() => {
           :game="gameStore.game"
           :room-player="gameStore.roomPlayer"
         >
+          <component 
+            v-if="gameStore.roomPlayer && ComponentRoomControls" 
+            :is="ComponentRoomControls" 
+            :game="gameStore.game" 
+            :room-player="gameStore.roomPlayer"
+          />
           <button
-            v-if="hasLiteComponent"
+            v-if="ComponentLite"
             class="btn btn-circle md:btn-lg btn-soft hidden md:flex tooltip tooltip-left"
             data-tip="弹出"
             @click="openSmallWindow('/#/lite')"
@@ -173,10 +205,11 @@ const hasLiteComponent = computed(() => {
     <!-- 动态游戏组件 -->
     <div class="flex-1 overflow-auto md:p-4">
       <component 
-        v-if="gameStore.roomPlayer.room.attrs?.type" 
-        :is="gameStore.roomPlayer.room.attrs.type + '-room'" 
+        v-if="gameStore.roomPlayer.room.attrs?.type && ComponentRoom" 
+        :is="ComponentRoom" 
         :game="gameStore.game" 
         :room-player="gameStore.roomPlayer"
+        @loaded="loaded"
       />
     </div>
   </section>

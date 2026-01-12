@@ -1,7 +1,8 @@
-import { PlayerRole, PlayerStatus, RoomPlayer, RoomStatus } from "tiaoom";
+import { RoomPlayer, RoomStatus } from "tiaoom";
 import { BaseModel, GameRoom, IGameCommand, IGameData } from ".";
-import { And, Column, Entity, EntityTarget, Like, PrimaryGeneratedColumn, Repository } from "typeorm";
+import { Column, Entity, Like } from "typeorm";
 import { Router } from "express";
+import { isConfigured } from "@/utils/config";
 
 const questions = [
   ['蝴蝶', '蜜蜂'],
@@ -375,7 +376,7 @@ class SpyGameRoom extends GameRoom implements IGameData<Model> {
 
     const mainWordIndex = Math.floor(Math.random() * 2);
     const spyWordIndex = mainWordIndex == 0 ? 1 : 0;
-    const questWord = await Model.getRepo<Model>(Model).createQueryBuilder()
+    const questWord = isConfigured() ? await Model.getRepo<Model>(Model).createQueryBuilder()
       .orderBy('RAND()')
       .getOne()
       .then((word) => {
@@ -386,7 +387,7 @@ class SpyGameRoom extends GameRoom implements IGameData<Model> {
           const defaultWords = questions[Math.floor(Math.random() * questions.length)];
           return defaultWords;
         }
-      });
+      }) : questions[Math.floor(Math.random() * questions.length)];
     this.words = Array(this.room.validPlayers.length).fill(questWord[mainWordIndex]);
     const spyIndex = Math.floor(Math.random() * this.room.validPlayers.length);
     this.words[spyIndex] = questWord[spyWordIndex];

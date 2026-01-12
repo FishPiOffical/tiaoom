@@ -102,7 +102,7 @@ export const maxSize = 2;
 export const description = `两个玩家轮流在19x19的棋盘上放置黑白棋子，率先将五个棋子连成一线（横、竖、斜均可）的一方获胜。
 黑棋需注意禁手规则。`;
 export const points = {
-  '我就玩玩': 1,
+  '我就玩玩': 0,
   '小博一下': 100,
   '大赢家': 1000,
   '梭哈！': 10000,
@@ -113,12 +113,55 @@ class GobangGameRoom extends GameRoom {
   lastLosePlayer?: RoomPlayer;
   board: number[][] = Array.from({ length: 19 }, () => Array(19).fill(0));
   history: { place: string, time: number }[] = [];
+  turnStartTime: number = 0;
+  turnRemainingTime: number = 60000;
+  playerTimeRemaining: Record<string, number> = {};
+  isSealed: boolean = false;
+  sealRequesterId: string | null = null;
+
+  startTurnTimer(duration?: number) {
+    // 0: 不计时, 1: 每步60s, 2: 每人15分钟
+    const countDownWay = this.room.attrs?.countDownWay ?? 1;
+    
+    if (countDownWay === 0) {
+      this.stopTimer('turn');
+      return;
+    }
+
+    if (this.isSealed) return;
+
+    if (duration === undefined) {
+      if (countDownWay === 2 && this.currentPlayer) {
+        duration = this.playerTimeRemaining[this.currentPlayer.id] ?? (15 * 60 * 1000);
+      } else {
+        // model 1 or default
+        duration = 60000;
+      }
+    }
+
+    this.turnRemainingTime = duration;
+    this.turnStartTime = Date.now();
+    this.startTimer(() => this.handleTurnTimeout(), duration, 'turn');
+  }
+
+  handleTurnTimeout() {
+    if (!this.currentPlayer) return;
+    this.say(`玩家 ${this.currentPlayer.name} 落子超时，判负。`);
+    this.lastLosePlayer = this.currentPlayer;
+    const winner = this.room.validPlayers.find((p) => p.id !== this.currentPlayer?.id);
+    this.saveAchievements(winner ? [winner] : null);
+    this.room.end();
+  }
 
   init() {
+    this.restoreTimer({
+      turn: () => this.handleTurnTimeout(),
+    });
     return super.init().on('player-offline', async (player) => {
       await sleep(4 * 60 * 1000); // 等待 4 分钟，判定为离线
       if (!this.isPlayerOnline(player)) return;
       if (this.room.status === RoomStatus.playing && player.role === PlayerRole.player) {
+        this.stopTimer('turn');
         this.say(`玩家 ${player.name} 已离线，游戏结束。`);
         this.lastLosePlayer = this.room.validPlayers.find((p) => p.id != player.id)!;
         this.saveAchievements([this.lastLosePlayer]);
@@ -132,8 +175,11 @@ class GobangGameRoom extends GameRoom {
     return {
       ...super.getStatus(sender),
       current: this.currentPlayer,
-      board: this.board,
+      board: this.isSealed ? [] : this.board,
       color: sender.attributes?.color,
+      playerTimeRemaining: this.playerTimeRemaining,
+      isSealed: this.isSealed,
+      sealRequesterId: this.sealRequesterId,
     }
   }
 
@@ -158,6 +204,10 @@ class GobangGameRoom extends GameRoom {
           this.sayTo(`游戏未开始，无法落子。`, sender);
           break;
         }
+        if (this.isSealed) {
+          this.sayTo(`游戏已封盘，无法落子。`, sender);
+          break;
+        }
         if (sender.id !== this.currentPlayer?.id) {
           this.sayTo(`轮到玩家 ${this.currentPlayer?.name} 落子。`, sender);
           break;
@@ -174,8 +224,15 @@ class GobangGameRoom extends GameRoom {
           this.sayTo(`玩家 ${sender.name} 触发禁手，撤回落子！`, sender);
           break;
         }
-
+        
+        this.stopTimer('turn');
         this.history.push({ place: `${String.fromCharCode(65 + y)}${19 - x}`, time: Date.now() - this.beginTime });
+
+        // 更新当前玩家剩余时间 (仅模式2有效)
+        const elapsed = Date.now() - this.turnStartTime;
+        if (this.room.attrs?.countDownWay === 2) {
+          this.playerTimeRemaining[sender.id] = Math.max(0, this.turnRemainingTime - elapsed);
+        }
 
         this.board[x][y] = color;
         this.command('board', this.board);
@@ -193,6 +250,7 @@ class GobangGameRoom extends GameRoom {
           this.currentPlayer = current;
           this.command('place-turn', { player: this.currentPlayer });
           this.save();
+          this.startTurnTimer();
         }
         break;
       }
@@ -202,7 +260,46 @@ class GobangGameRoom extends GameRoom {
         this.commandTo('request-draw', { player: sender }, otherPlayer);
         break;
       }
+      case 'request-seal': {
+        if (this.room.status !== RoomStatus.playing) return;
+        this.say(`玩家 ${sender.name} 请求封盘。`);
+        const otherPlayer = this.room.validPlayers.find((p) => p.id != sender.id)!;
+        this.commandTo('request-seal', { player: sender }, otherPlayer);
+        break;
+      }
+      case 'seal': {
+        if (message.data.agree) {
+          this.stopTimer('turn');
+          if (this.room.attrs?.countDownWay === 2 && this.currentPlayer) {
+            const elapsed = Date.now() - this.turnStartTime;
+            this.turnRemainingTime = Math.max(0, this.turnRemainingTime - elapsed);
+            this.playerTimeRemaining[this.currentPlayer.id] = this.turnRemainingTime;
+          } else {
+             const elapsed = Date.now() - this.turnStartTime;
+             this.turnRemainingTime = Math.max(0, this.turnRemainingTime - elapsed);
+          }
+          this.isSealed = true;
+          this.sealRequesterId = message.data.requesterId;
+          this.say(`双方同意封盘，游戏暂停，棋盘已隐藏。`);
+          this.command('seal', { sealRequesterId: this.sealRequesterId });
+        } else {
+          this.sayTo('对方拒绝了封盘请求。', this.room.validPlayers.find((p) => p.id == message.data.requesterId)!);
+        }
+        break;
+      }
+      case 'unseal': {
+        if (this.isSealed) {
+          this.isSealed = false;
+          this.sealRequesterId = null;
+          this.say(`封盘解除，游戏继续。`);
+          this.command('unseal', { remaining: Math.ceil(this.turnRemainingTime / 1000) });
+          this.command('board', this.board);
+          this.startTurnTimer(this.turnRemainingTime);
+        }
+        break;
+      }
       case 'request-lose': {
+        this.stopTimer('turn');
         this.say(`玩家 ${sender.name} 认输。`);
         this.lastLosePlayer = sender;
         this.saveAchievements([this.room.validPlayers.find((p) => p.id != sender.id)!]);
@@ -214,6 +311,7 @@ class GobangGameRoom extends GameRoom {
           this.say(`玩家 ${sender.name} 拒绝和棋，游戏继续。`);
           break;
         }
+        this.stopTimer('turn');
         this.say(`玩家 ${sender.name} 同意和棋，游戏结束。`);
         this.lastLosePlayer = this.room.validPlayers.find((p) => p.id != sender.id)!;
         this.saveAchievements(null);
@@ -233,6 +331,8 @@ class GobangGameRoom extends GameRoom {
     this.currentPlayer = this.lastLosePlayer || this.room.validPlayers[0];
     this.board = Array.from({ length: 19 }, () => Array(19).fill(0));
     this.messageHistory = [];
+    this.isSealed = false;
+    this.sealRequesterId = null;
     
     this.setPlayerAttributes(this.currentPlayer.id, { color: 1 }); // 黑子先行
     this.room.validPlayers.forEach((player) => {
@@ -245,8 +345,17 @@ class GobangGameRoom extends GameRoom {
     });
     this.command('achievements', this.achievements);
     this.say(`游戏开始。玩家 ${this.currentPlayer.name} 执黑先行。`);
+    
+    // 初始化时间 (模式2)
+    if (this.room.attrs?.countDownWay === 2) {
+      this.room.validPlayers.forEach(p => {
+        this.playerTimeRemaining[p.id] = 15 * 60 * 1000;
+      });
+    }
+
     this.command('place-turn', { player: this.currentPlayer });
     this.command('board', this.board);
+    this.startTurnTimer();
   }
 }
 

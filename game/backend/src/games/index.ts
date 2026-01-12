@@ -3,7 +3,7 @@ import { IPlayer, IRoomPlayer, PlayerRole, PlayerStatus, Room, RoomPlayer, RoomS
 import * as glob from 'glob';
 import * as path from "path";
 import { Model } from '@/model';
-import { getPlayerStat, omit, setPoints, updatePlayerStats } from '@/utils';
+import { getPlayerStat, isConfigured, omit, setPoints, updatePlayerStats } from '@/utils';
 import { AppDataSource, RecordRepo } from '@/entities';
 import { Router } from "express";
 const files = glob.sync(path.join(__dirname, '*.*').replace(/\\/g, '/')).filter(f => f.endsWith('.ts') || f.endsWith('.js')).concat(
@@ -31,6 +31,13 @@ export interface IGameInfo {
    * 游戏描述
    */
   description: string;
+
+  /**
+   * 开始游戏是否需要所有玩家准备
+   * - true: 需要所有玩家准备（默认）
+   * - false: 只要人数满足即可开始
+   */
+  requireAllReadyToStart?: boolean;
   /**
    * 房间积分奖励
    */
@@ -51,6 +58,10 @@ export interface IGameInfo {
      * 入口名称 
      **/
     name: string;
+    /**
+     * 入口图标
+     */
+    icon?: string;
     /** 
      * 页面路径 
      **/
@@ -195,9 +206,7 @@ export class GameRoom {
       if (sender.role != PlayerRole.player && message.type == 'say') {
         // 游玩时间观众发言仅广播给其他观众
         if (this.room.status == RoomStatus.playing) {
-          this.room.watchers.forEach((watcher) => {
-            watcher.emit('message', { content: `${message.data}`, sender });
-          });
+          this.onWatcherSay(message);
           return;
         }
       }
@@ -228,6 +237,8 @@ export class GameRoom {
       this.save();
     }).on('leave', () => {
       this.save();
+    }).on('close', () => {
+      this.stopTimer();
     });
   }
 
@@ -238,6 +249,16 @@ export class GameRoom {
    */
   isPlayerOnline(player: IPlayer): boolean {
     return !this.room.players.find((p) => p.id === player.id && p.status === PlayerStatus.offline);
+  }
+
+  /**
+   * 通过玩家ID获取玩家实例
+   * @param playerId 玩家ID
+   * @returns 玩家实例，未找到则返回 null
+   */
+  getPlayerById(playerId: string): RoomPlayer | null {
+    const player = this.room.players.find((p) => p.id === playerId);
+    return player || null;
   }
 
   /**
@@ -280,6 +301,10 @@ export class GameRoom {
     this.save();
   }
 
+  onPreStart(sender: IPlayer, room: Room) {
+
+  }
+
   /**
    * 游戏开始时调用，继承时重写
    */
@@ -309,8 +334,20 @@ export class GameRoom {
     }
   }
 
+  /**
+   * 在游戏中时，观众聊天指令处理，继承时可重写
+   * @param message 游戏指令
+   */
+  onWatcherSay(message: IGameCommand) {
+    const sender = message.sender as RoomPlayer;
+    this.room.watchers.forEach((watcher) => {
+      watcher.emit('message', { content: `${message.data}`, sender });
+    });
+  }
+
   /** 
    * 玩家聊天指令处理，继承时可重写
+   * @param message 游戏指令
    */
   onSay(message: IGameCommand) {
     const sender = message.sender as RoomPlayer;
@@ -517,6 +554,9 @@ export class BaseModel {
   updatedAt: number = Date.now();
 
   static getRepo<T extends BaseModel>(target: EntityTarget<T>): Repository<T> {
+    if (!isConfigured()) {
+      throw new Error("系统未配置数据库，无法使用该功能");
+    }
     return AppDataSource.getRepository<T>(target);
   }
 }

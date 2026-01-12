@@ -7,6 +7,7 @@ import Games, { GameRoom, IGame, IGameInfo } from "./games";
 import { Model } from "./model";
 import { UserRepo } from "./entities";
 import FishPi from "fishpi";
+import utils from "./utils";
 
 export class Controller extends Tiaoom {
   messages: { data: string, sender: Player, createdAt: number }[] = [];
@@ -35,7 +36,9 @@ export class Controller extends Tiaoom {
 
   get games() {
     return Object.keys(Games).reduce((obj, key) => {
-      obj[key] = { ...Games[key] } as IGameInfo;
+      const gameInfo = { ...Games[key] } as IGameInfo;
+      delete (gameInfo as any).default; // 移除 default 导出函数
+      obj[key] = gameInfo;
       return obj;
     }, {} as Record<string, IGameInfo>);
   }
@@ -63,7 +66,7 @@ export class Controller extends Tiaoom {
           });
         }
       }
-      else console.error("game not found:", room);
+      else this.send({ type: MessageTypes.GlobalError, data: `游戏类型 ${gameType} 不存在，无法开始游戏。`, sender: room });
       function updatePlayerList() {
         Model.updatePlayerList(room.id, room.players);
       }
@@ -116,7 +119,7 @@ export class Controller extends Tiaoom {
       }
     }).on("command", (command: any & { sender: Player }) => {
       if (command.type === 'say') {
-        this.messages.unshift({ data: command.data, sender: command.sender, createdAt: Date.now() });
+        this.messages.push({ data: command.data, sender: command.sender, createdAt: Date.now() });
         this.messages = this.messages.slice(0, 500); // keep last 500 messages
         this.emit('message', command.data, command.sender);
       } else if (command.type === 'boardcast') {
@@ -137,7 +140,7 @@ export class Controller extends Tiaoom {
     if (options.attrs?.passwd) {
       options.attrs.passwd = crypto.createHash('md5').update(options.attrs.passwd).digest('hex');
     }
-    if (options.attrs?.point && !isNaN(options.attrs.point)) {
+    if (options.attrs?.point && !isNaN(options.attrs.point) && utils.config?.secret.goldenKey) {
       const username = sender?.attributes?.username;
       if (!username) throw new Error("用户信息不完整，无法创建房间。");
       // 检查用户积分是否足够
@@ -166,20 +169,20 @@ export class Controller extends Tiaoom {
   async joinPlayer(sender: IPlayer, player: IRoomPlayerOptions & { params?: { passwd: string } }, isCreator: boolean = false) {
     const room = this.rooms.find(r => r.id === player.roomId);
     if (room) {
-      if (player.params?.passwd) {
-      const passwdHash = crypto.createHash('md5').update(player.params.passwd).digest('hex');
+      if (room.attrs?.passwd) {
+        const passwdHash = crypto.createHash('md5').update(player.params?.passwd || '').digest('hex');
         if (room.attrs?.passwd !== passwdHash) {
           throw new Error("密码错误，无法加入房间。");
         }
       }
     }
-    
-    return super.joinPlayer(sender, player, isCreator);
+
+    return await super.joinPlayer(sender, player, isCreator);
   }
 
   async startRoom(sender: IPlayer, room: IRoom) {
     const roomInstance = this.searchRoom(room);
-    if (roomInstance && roomInstance.attrs?.point && !isNaN(roomInstance.attrs?.point)) {
+    if (roomInstance && roomInstance.attrs?.point && !isNaN(roomInstance.attrs?.point) && utils.config?.secret.goldenKey) {
       for (const player of roomInstance.validPlayers) {
         const username = player.attributes?.username;
         if (!username) throw new Error("用户信息不完整，无法开始游戏。");
@@ -193,10 +196,22 @@ export class Controller extends Tiaoom {
         });
       }
     }
+    if (roomInstance) {
+      const gameType = roomInstance?.attrs?.type;
+      const defaultExport = Games[gameType].default;
+      if (defaultExport.prototype instanceof GameRoom) {
+        const GameClass = defaultExport as new (room: Room) => GameRoom;
+        const gameRoomInstance = new GameClass(roomInstance);
+        gameRoomInstance.onPreStart(sender, roomInstance);
+      }
+    }
     return super.startRoom(sender, room);
   }
 
   isAdmin(player: IPlayer): Promise<boolean> {
+    if (process.env.NODE_ENV === 'development' && player.name === 'Admin' || !utils.config) {
+      return Promise.resolve(true);
+    }
     return UserRepo().findOneBy({ id: player.id }).then(user => {
       return user?.isAdmin || false;
     });

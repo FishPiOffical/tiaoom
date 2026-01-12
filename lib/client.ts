@@ -30,7 +30,7 @@ export type TiaoomEvents = {
    * 全局消息事件
    * @param message 消息内容
    */
-  "global.message": (message: string, sender?: Player) => void;
+  "global.message": (data: { content: string, sender?: Player }) => void;
   /**
    * 玩家列表更新事件
    * @param players 玩家列表
@@ -198,6 +198,7 @@ export class Room {
   players: RoomPlayer[];
   size: number;
   minSize: number;
+  requireAllReadyToStart: boolean;
   status: RoomStatus;
   attrs: Record<string, any>;
   constructor(room: Room) {
@@ -206,6 +207,7 @@ export class Room {
     this.players = room.players.map(player => new RoomPlayer(player));
     this.size = room.size;
     this.minSize = room.minSize;
+    this.requireAllReadyToStart = room.requireAllReadyToStart ?? true;
     this.status = room.status;
     this.attrs = room.attrs;
   }
@@ -316,15 +318,12 @@ export class Tiaoom {
 
   /**
    * 创建房间
-   * @param {string} name 房间名称
-   * @param {number} size 房间人数上限
-   * @param {number} minSize 房间人数下限
-   * @param {object} attrs 房间属性
+    * @param {string} data 房间信息
    * @returns {Promise<void>} 创建完成的 Promise
    */
-  createRoom({ name, size, minSize, attrs }: Omit<IRoomOptions, 'id'>) {
+  createRoom(data: Omit<IRoomOptions, 'id'>) {
     return new Promise<void>((resolve) => {
-      this.send({ type: MessageTypes.RoomCreate, data: { name, size, minSize, attrs } });
+      this.send({ type: MessageTypes.RoomCreate, data });
       this.on("room.create", (room) => {
         resolve();
       });
@@ -465,7 +464,7 @@ export class Tiaoom {
    * @param {boolean} on 开启/关闭监听
    * @returns this
    */
-  onMessage(cb: (message: string, sender?: Player) => void, on=true) {
+  onMessage(cb: (data: { content: string, sender?: Player }) => void, on=true) {
     if (on) this.on("global.message", cb);
     else this.off("global.message", cb);
     return this;

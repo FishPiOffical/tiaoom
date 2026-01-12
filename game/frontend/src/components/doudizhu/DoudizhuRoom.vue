@@ -314,7 +314,12 @@ const {
   init,
 } = useDoudizhu(props.game, props.roomPlayer)
 
+const emit = defineEmits<{
+  (e: 'loaded'): void
+}>()
+
 onMounted(() => {
+  emit("loaded");
   init()
 })
 </script>

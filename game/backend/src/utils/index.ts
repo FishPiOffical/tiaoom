@@ -1,13 +1,9 @@
 import fs from 'fs';
-import path from "path";
 import { isObject } from './is';
 import { IConfig } from '#/index';
 import { Request } from 'express';
-import { Finger, FingerTo, FishPi } from 'fishpi';
-import utils from './index';
-import { LogRepo } from '@/entities';
-
-export * from './data';
+import { Finger, FingerTo } from 'fishpi';
+import { configPath } from './config';
 
 /**
  * 返回一个对象，剔除指定的键
@@ -33,16 +29,12 @@ export function pick(obj: any, keys: string[]) {
   );
 }
 
-let cfg: IConfig | null = null
-const configPath = path.join(__dirname, '..', 'config.json');
+export let config: IConfig | null = fs.existsSync(configPath) && JSON.parse(fs.readFileSync(configPath).toString()) || null;
 
-export default {
-  get config(): IConfig {
-    if (!cfg && fs.existsSync(configPath)) {
-      cfg = JSON.parse(fs.readFileSync(configPath).toString());
-    }
-    return JSON.parse(JSON.stringify(cfg));
-  }
+export default { config }
+
+export function isConfigured(): boolean {
+  return fs.existsSync(configPath);
 }
 
 export function clone<T>(value: T): T {
@@ -104,15 +96,23 @@ export function sleep(ms: number) {
 
 let pointFinger: Finger | null = null;
 export async function setPoints(value: number, username: string, reason: string) {
+  if (!config?.secret.goldenKey) return;
   if (!pointFinger) {
-    pointFinger = FingerTo(utils.config.secret.goldenKey);
+    pointFinger = FingerTo(config.secret.goldenKey);
   }
   pointFinger.editUserPoints(username, value, reason).catch((err) => {
     console.error('积分操作失败：', err.message, username, '积分', value, '原因', reason);
-    LogRepo().save(LogRepo().create({
-      type: 'PointError',
-      data: { username, value, reason },
-      error: { message: err.message },
-    })).catch(console.error);
+    log('PointError', { username, value, reason }, { message: err.message });
   });
 }
+
+export function log(type: string, data: any, error?: { message: string; name?: string; stack?: string }, senderId?: string) {
+  import('@/entities').then(({ LogRepo }) => LogRepo().save?.(LogRepo().create({
+    type,
+    data,
+    senderId,
+    error,
+  })).catch(console.error));
+}
+
+export * from './data';

@@ -17,6 +17,7 @@ export const useGameStore = defineStore('game', () => {
   const globalMessages = ref<{ data: string, sender?: Player, createdAt: number }[]>([])
   const globalBoardcastMessage = ref<string>('');
   const gameManages = ref<IManageData[]>([]);
+  const isConfigured = ref<boolean>(false);
 
   const roomPlayer = computed(() => {
     if (!player.value) return null
@@ -35,6 +36,7 @@ export const useGameStore = defineStore('game', () => {
 
   async function initConfig() {
     try {
+      isConfigured.value = await api.isConfigured();
       games.value = await api.getConfig();
     } catch (error) {
       console.error('Failed to load config:', error)
@@ -108,12 +110,12 @@ export const useGameStore = defineStore('game', () => {
       })
       .onRoomCreate((room) => {
         if (room.players.find(p => p.id === player.value?.id))
-          router.replace('/r/' + room.id)
+          router.push('/r/' + room.id)
       })
       .onPlayerReady(onPlayerReady)
       .onPlayerUnready(onPlayerReady)
-      .on('global.message', (message, sender) => {
-        globalMessages.value.unshift({ data: message, sender, createdAt: Date.now() })
+      .onMessage(({ content, sender }) => {
+        globalMessages.value.push({ data: content, sender, createdAt: Date.now() })
       }).on('global.command', (command) => {
         if (command.type === 'boardcast' && command.data) {
           globalBoardcastMessage.value = command.data;
@@ -166,6 +168,7 @@ export const useGameStore = defineStore('game', () => {
     roomPlayer,
     playerStatus,
     gameManages,
+    isConfigured,
     initConfig,
     checkSession,
     initGame,

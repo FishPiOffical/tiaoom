@@ -981,6 +981,13 @@ onUnmounted(() => {
     pendingSmallTimer.value = null
   }
 })
+
+const emit = defineEmits<{
+  (e: 'loaded'): void
+}>()
+onMounted(() => {
+  emit("loaded");
+})
 </script>
 
 <style scoped>

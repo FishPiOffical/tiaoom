@@ -1,6 +1,17 @@
 # 快速开始
 
-本指南将通过一个简单的示例，演示如何添加一个新的游戏。
+本指南将通过一个简单的示例，演示如何添加一个新的游戏。开始之前，请先 clone 本仓库：
+
+```bash
+git clone https://github.com/FishPiOffical/tiaoom.git
+```
+
+然后 cd 进入 `game` 目录，安装依赖：
+
+```bash
+cd tiaoom/game
+npm install
+```
 
 ## 1. 创建后端逻辑 {#backend-logic}
 
@@ -218,6 +229,8 @@ const { onCommand, handleClick, isPlaying, count, target } = useClick(props.game
 ```bash
 npm run dev:frontend
 npm run dev:backend # 或 VSCode 按下 F5 运行
+# 或
+npm run dev # 同时启动前后端
 ```
 
 访问前端页面，在`创建房间`选择 "抢数字"，创建房间即可看到效果。

@@ -10,6 +10,8 @@
 - 前端游戏组件文件：`<GameName>Room.vue`
 - 前端游戏小窗组件(可选)：`<GameName>Lite.vue`
 - 前端游戏回放组件(可选)：`<GameName>Replay.vue`
+- 右上角房间控制扩展按钮组件(可选)：`<GameName>RoomControls.vue`
+- 创建房间表单字段扩展组件(可选)：`<GameName>Attrs.vue`
 
 ## 后端开发 {#backend-development}
 
@@ -122,9 +124,9 @@ export default class MyGame extends GameRoom {
 
 ## 积分奖励与成就保存 {#achievements}
 
-`GameRoom` 提供了积分奖励功能，可在游戏结束时调用 `this.saveAchievements(winner)` 方法保存成就数据并执行积分奖励。
+`GameRoom` 提供了积分奖励功能，可在游戏结束时调用 `this.saveAchievements([winner])` 方法保存成就数据并执行积分奖励。
 
-- `winner`：获胜玩家对象，传入 `null` 则表示平局。
+- `winner`：获胜玩家对象数组，传入 `null` 则表示平局。
 
 保存后会在玩家个人页面显示胜负记录。
 
@@ -146,7 +148,7 @@ export const rewardDescription = '自定义积分奖励规则说明';
 export default class MyGame extends GameRoom {
   // ...
 
-  saveAchievements(winner: RoomPlayer | null = null): Promise<void> {
+  saveAchievements(winner: RoomPlayer[] | null = null): Promise<void> {
     // 自定义积分奖励逻辑
     // ...
   }
@@ -393,9 +395,9 @@ export function useGame(game: GameCore) {
         startLocalTimer();
         break;
       case 'status':
-        if (msg.data.tickTimeEnd['turn']) {
-          countdown.value = msg.data.tickTimeEnd['turn'] 
-            ? Math.max(0, Math.ceil((msg.data.tickTimeEnd['turn'] - Date.now()) / 1000)) 
+        if (msg.data.tickEndTime['turn']) {
+          countdown.value = msg.data.tickEndTime['turn'] 
+            ? Math.max(0, Math.ceil((msg.data.tickEndTime['turn'] - Date.now()) / 1000)) 
             : 0;
           startLocalTimer();
         }
@@ -428,6 +430,8 @@ export function useGame(game: GameCore) {
   处理玩家指令。建议调用 `super.onCommand(message)` 以处理通用指令（如聊天）。
 - `onSay(message: IGameCommand)`: 
   处理玩家聊天消息。
+- `onWatcherSay(message: IGameCommand)`: 
+  处理观众在游戏过程中的聊天消息，默认为玩家不可见的临时消息。
 - `getStatus(sender: IRoomPlayer)`: 
   获取当前游戏状态。用于玩家重连或获取最新状态。需调用 `super.getStatus(sender)` 并合并自定义状态。在玩家登录或进入房间时前端会通过 `status` 指令获取到此状态。
 - `getData()`: 
@@ -443,8 +447,8 @@ export function useGame(game: GameCore) {
 - `virtualCommand(type: string, data: any, receiver: RoomPlayer)`: 
   模拟玩家发出房间指令，用于模拟触发玩家行为。
 - `save()`: 
-  保存当前游戏状态。可以在游戏逻辑中调用此方法以持久化数据。
-- `saveAchievements(winner?: RoomPlayer | null, saveRecord: boolean = true)`: 
+  保存当前游戏状态。可以在游戏逻辑中调用此方法手动持久化数据。
+- `saveAchievements(winner?: RoomPlayer[] | null, saveRecord: boolean = true)`: 
   保存成就数据（胜/负/平），不传则表示平局。若有胜负且配置了积分奖励，将会执行积分奖励。若只需执行积分奖励，无需保存游戏记录，可将 `saveRecord` 设为 `false`。
 - `saveScore(score: number)`: 
   保存玩家分数，若保存分数，则个人页面将不会显示胜负数据，而只会显示历史最高得分。

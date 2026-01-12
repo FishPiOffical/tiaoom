@@ -29,8 +29,9 @@ export class GameCore extends Tiaoom {
     
     this.socket.onmessage = ({ data: msg }) => {
       const message: Message = JSON.parse(msg)
-      const { type, data, sender } = message
-      this.emit(type as keyof TiaoomEvents, data, sender)
+      const { type, data } = message
+      console.log('[Socket] 收到消息:', { type, dataKeys: data ? Object.keys(data) : [] });
+      this.emit(type as keyof TiaoomEvents, data)
     }
     
     this.socket.onerror = (err) => {

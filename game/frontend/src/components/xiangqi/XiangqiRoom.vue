@@ -199,7 +199,7 @@
 <script setup lang="ts">
 import { PlayerRole, type RoomPlayer, type Room } from 'tiaoom/client'
 import type { GameCore } from '@/core/game'
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import GameChat from '@/components/common/GameChat.vue'
 import { useXiangqi } from './useXiangqi'
 
@@ -273,6 +273,13 @@ function svgX(col: number) {
 function svgY(row: number) {
   return row <= 4 ? row * 45 : 225 + (row - 5) * 45
 }
+
+const emit = defineEmits<{
+  (e: 'loaded'): void
+}>()
+onMounted(() => {
+  emit("loaded");
+})
 </script>
 
 <style scoped>

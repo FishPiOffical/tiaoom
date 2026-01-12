@@ -50,5 +50,4 @@ game/
 
 - Node.js >= 20.x
 - npm >= 9.x
-- MySQL >= 7.0
 - 推荐使用 VSCode 进行开发

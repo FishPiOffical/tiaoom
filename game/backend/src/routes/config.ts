@@ -1,5 +1,4 @@
 import { IConfig } from "#/index";
-import utils from "@/utils";
 import { Router } from "express";
 import fs from "fs";
 import path from "path";
@@ -8,10 +7,6 @@ const randomStr = () => randomUp(Math.random().toString(36).slice(2));
 const randomUp = (s: string) => s.split('').map((s) => Math.floor(Math.random() * 10) % 2 ? s : s.toUpperCase()).join('');
 
 const router = Router();
-
-router.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "config.html"));
-});
 
 router.post("/", (req, res) => {
   const { 
@@ -27,7 +22,7 @@ router.post("/", (req, res) => {
       marketKey,
     },
     database: {
-      host, port, username, password, database, entityPrefix: prefix + (prefix.endsWith('_') ? '' : '_')
+      host, port, username, password, database, entityPrefix: prefix + (prefix.endsWith('_') || !prefix ? '' : '_')
     },
     persistence: {
       driver: persistence_driver || 'none',

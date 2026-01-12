@@ -1,6 +1,6 @@
 {
   "name": "tiaoom",
-  "version": "0.0.42",
+  "version": "0.0.48",
   "description": "",
   "main": "./src/index.cjs",
   "module": "./src/index.mjs",
@@ -23,15 +23,20 @@
     "README.md",
     "logo.png"
   ],
-  "keywords": ["game", "framework", "multiplayer"],
+  "keywords": [
+    "game",
+    "framework",
+    "multiplayer"
+  ],
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@types/node": "^24.10.1",
+    "cross-env": "^10.1.0",
     "ts-node": "^10.9.1",
     "tsconfig-paths": "^4.2.0",
-    "typescript": "^5.0.4",
-    "@types/node": "^24.10.1",
-    "tsdown": "^0.17.0-beta.5"
+    "tsdown": "^0.17.0-beta.5",
+    "typescript": "^5.0.4"
   },
   "unpkg": "./src/client.iife.js",
   "jsdelivr": "./src/client.iife.js",

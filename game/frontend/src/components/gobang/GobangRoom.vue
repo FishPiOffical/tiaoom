@@ -2,7 +2,20 @@
   <section class="flex flex-col md:flex-row gap-4 md:h-full">
     <section class="flex-1 md:h-full flex flex-col items-center justify-start md:justify-center overflow-auto p-4 select-none">
       <!-- 棋盘 -->
-      <div class="inline-block bg-base-300 border border-base-content/20 p-2 rounded shadow-2xl m-auto">
+      <div class="inline-block bg-base-300 border border-base-content/20 p-2 rounded shadow-2xl m-auto relative">
+        <div v-if="isSealed" class="absolute inset-0 z-50 bg-base-100/50 backdrop-blur-sm flex items-center justify-center rounded">
+          <div class="text-center">
+            <div class="text-2xl font-bold mb-2">已封盘</div>
+            <div class="text-sm opacity-60">请等待请求者解除封盘</div>
+            <button 
+              v-if="sealRequesterId === roomPlayer.id"
+              class="btn btn-primary mt-4" 
+              @click="unseal"
+            >
+              解除封盘
+            </button>
+          </div>
+        </div>
         <!-- 顶部留白 -->
         <div class="flex">
           <div class="w-[6vw] md:w-7 h-[6vw] md:h-7"></div>
@@ -40,7 +53,7 @@
             
             <!-- 棋子 -->
             <span 
-              v-if="cell > 0"
+              v-if="cell > 0 && !isSealed"
               class="w-[4.5vw] h-[4.5vw] md:w-6 md:h-6 rounded-full z-10 relative transition-all duration-200"
               :class="[
                 cell === 1 ? 'bg-black border border-white/20 shadow-lg' : 'bg-white border border-black/20 shadow-lg',
@@ -72,6 +85,9 @@
           />
         </div>
         <b class="text-base-content">{{ currentPlayer?.name }}</b>
+        <span class="text-xs bg-base-content/10 px-2 py-1 rounded" :class="{ 'text-error': timer < 10 }">
+          {{ timerStr }}
+        </span>
       </div>
     </section>
     
@@ -129,9 +145,20 @@
           >
             认输
           </button>
+          <button class="btn" 
+            @click="requestSeal"
+            :disabled="currentPlayer?.id !== roomPlayer.id"
+          >
+            请求封盘
+          </button>
         </div>
         
         <hr class="border-base-content/20" />
+
+        <div class="px-2 text-xs text-base-content/60 flex items-center gap-2">
+          <Icon icon="mdi:clock-outline" />
+          <span>计时规则：{{ countDownText }}</span>
+        </div>
         
       </section>
       
@@ -162,7 +189,7 @@ import GameChat from '@/components/common/GameChat.vue'
 import { useGobang } from './useGobang';
 import AchievementTable from '@/components/common/AchievementTable.vue';
 import Icon from '@/components/common/Icon.vue';
-import { ref } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 
 const props = defineProps<{
   roomPlayer: RoomPlayer & { room: Room }
@@ -171,12 +198,28 @@ const props = defineProps<{
 
 const activeTab = ref<'players' | 'achievements'>('players')
 
+const countDownText = computed(() => {
+  const way = props.roomPlayer.room.attrs?.countDownWay ?? 1
+  switch (way) {
+    case 0: return '不计时'
+    case 1: return '每步限时 60s'
+    case 2: return '每人总限时 15m'
+    default: return '每步限时 60s'
+  }
+})
+
 const {
   isPlaying,
   achievements,
+  requestSeal,
+  unseal,
+  timer,
+  timerStr,
+  isSealed,
+  sealRequesterId,
+  currentPlace,
   currentPlayer,
   board,
-  currentPlace,
   placePiece,
   requestDraw,
   requestLose,
@@ -191,4 +234,10 @@ function getPlayerStatus(p: any) {
   return '准备好了'
 }
 
+const emit = defineEmits<{
+  (e: 'loaded'): void
+}>()
+onMounted(() => {
+  emit("loaded");
+})
 </script>

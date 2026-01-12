@@ -26,6 +26,13 @@ export interface IRoomOptions {
    * 其他属性
    */
   attrs?: Record<string, any>,
+
+  /**
+   * 开始游戏是否需要所有玩家准备
+   * - true: 需要所有玩家准备（默认）
+   * - false: 只要人数满足即可开始
+   */
+  requireAllReadyToStart?: boolean,
 }
 
 /**
@@ -164,6 +171,7 @@ export class Room extends EventEmitter implements IRoom {
   size: number = 10;
   name: string = '';
   minSize: number = 2;
+  requireAllReadyToStart: boolean = true;
   attrs?: Record<string, any>;
   players: RoomPlayer[] = [];
 
@@ -190,8 +198,12 @@ export class Room extends EventEmitter implements IRoom {
    * 房间玩家是否已准备好
    */
   get isReady(): boolean {
-    return this.players.length >= this.minSize
-      && this.players.every((target) => target.isReady || target.role === PlayerRole.watcher); // is all player ready
+    const minPlayers = this.minSize > 0 ? this.minSize : 1;
+    const hasEnoughPlayers = this.validPlayers.length >= minPlayers;
+
+    if (!this.requireAllReadyToStart) return true;
+
+    return hasEnoughPlayers && this.players.every((target) => target.isReady || target.role === PlayerRole.watcher);
   }
 
   /**
@@ -199,7 +211,7 @@ export class Room extends EventEmitter implements IRoom {
    */
   get status(): RoomStatus {
     if (!this.isReady) return RoomStatus.waiting;
-    if (this.players.findIndex((target) => target.status === PlayerStatus.playing) != -1) return RoomStatus.playing;
+    if (this.validPlayers.every((target) => target.status === PlayerStatus.playing)) return RoomStatus.playing;
     return RoomStatus.ready;
   }
 
@@ -214,7 +226,8 @@ export class Room extends EventEmitter implements IRoom {
    * 房间是否已满
    */
   get isFull(): boolean {
-    return this.validPlayers.length == this.size;
+    if (this.size === 0) return false; // size为0表示不限制人数
+    return this.validPlayers.length >= this.size;
   }
 
   /**
@@ -229,8 +242,9 @@ export class Room extends EventEmitter implements IRoom {
     return {
       id: this.id,
       name: this.name,
-      size: this.size || 10,
+      size: this.size ?? 10,
       minSize: this.minSize,
+      requireAllReadyToStart: this.requireAllReadyToStart,
       status: this.status,
       players: this.players.map((player) => player.toJSON()),
       attrs: this.attrs,
@@ -252,8 +266,9 @@ export class Room extends EventEmitter implements IRoom {
 
     this.id = room.id || new Date().getTime().toString();
     this.name = room.name || '';
-    this.size = room.size || 10;
-    this.minSize = room.minSize || 2;
+    this.size = room.size ?? 10;
+    this.minSize = room.minSize ?? 2;
+    this.requireAllReadyToStart = room.requireAllReadyToStart ?? true;
     this.attrs = room.attrs;
     this.players = players;
     

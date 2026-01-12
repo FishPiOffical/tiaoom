@@ -98,7 +98,7 @@ import { PlayerRole, type RoomPlayer, type Room } from 'tiaoom/client'
 import type { GameCore } from '@/core/game'
 import GameChat from '@/components/common/GameChat.vue'
 import { usePackbattle } from './usePackbattle'
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 
 const props = defineProps<{ roomPlayer: RoomPlayer & { room: Room }, game: GameCore }>()
 
@@ -140,4 +140,11 @@ function getPlayerStatus(p: any) {
   if (gameStatus.value === 'playing') return '等待中'
   return '准备好了'
 }
+
+const emit = defineEmits<{
+  (e: 'loaded'): void
+}>()
+onMounted(() => {
+  emit("loaded");
+})
 </script>

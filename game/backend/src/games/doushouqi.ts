@@ -6,7 +6,7 @@ export const minSize = 2;
 export const maxSize = 2;
 export const description = '双方各执八子，按象、狮、虎、豹、狼、狗、猫、鼠的大小顺序互相克制。最终以占领对方兽穴或吃光对方棋子为胜。';
 export const points = {
-  '我就玩玩': 1,
+  '我就玩玩': 0,
   '小博一下': 100,
   '大赢家': 1000,
   '梭哈！': 10000,

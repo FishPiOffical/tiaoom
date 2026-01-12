@@ -10,7 +10,33 @@ export function useConnect4(game: GameCore, roomPlayer: RoomPlayer & { room: Roo
   const board = ref(Array(8).fill(0).map(() => Array(8).fill(-1)))
   const achievements = ref<Record<string, any>>({})
   const currentPlace = ref<{ x: number; y: number } | null>(null)
-  const hoverCol = ref<number>(-1)
+  const hoverCol = ref<number>(-1);
+  const timer = ref(0)
+  const isSealed = ref(false)
+  const sealRequesterId = ref<string | null>(null)
+  let timerInterval: any
+
+  const timerStr = computed(() => {
+    const m = Math.floor(timer.value / 60).toString().padStart(2, '0')
+    const s = (timer.value % 60).toString().padStart(2, '0')
+    return `${m}:${s}`
+  })
+
+  function startLocalTimer(seconds: number) {
+    timer.value = seconds
+    if (timerInterval) clearInterval(timerInterval)
+
+    if (isSealed.value) return 
+
+    timerInterval = setInterval(() => {
+      timer.value--
+      if (timer.value <= 0) clearInterval(timerInterval)
+    }, 1000)
+  }
+
+  function stopLocalTimer() {
+    if (timerInterval) clearInterval(timerInterval)
+  }
 
   const isMyTurn = computed(() => 
     gameStatus.value === 'playing' && 
@@ -22,10 +48,13 @@ export function useConnect4(game: GameCore, roomPlayer: RoomPlayer & { room: Roo
 
   function onRoomStart() {
     currentPlace.value = null
+    isSealed.value = false
+    sealRequesterId.value = null
   }
 
   function onRoomEnd() {
     currentPlayer.value = null
+    if (timerInterval) clearInterval(timerInterval)
   }
 
   function onCommand(cmd: any) {
@@ -36,9 +65,37 @@ export function useConnect4(game: GameCore, roomPlayer: RoomPlayer & { room: Roo
         currentPlayer.value = cmd.data.current
         board.value = cmd.data.board
         achievements.value = cmd.data.achievements || {}
+        isSealed.value = cmd.data.isSealed ?? false
+        sealRequesterId.value = cmd.data.sealRequesterId
+        if (cmd.data.tickEndTime?.turn && !isSealed.value) {
+          startLocalTimer(Math.max(0, Math.ceil((cmd.data.tickEndTime.turn - Date.now()) / 1000)))
+        }
+        break
+      case 'countdown':
+        if (cmd.data.name === 'turn' && !isSealed.value) {
+          startLocalTimer(cmd.data.seconds)
+        }
         break
       case 'board':
         board.value = cmd.data
+        break
+      case 'request-seal':
+        confirm(`玩家 ${cmd.data.player.name} 请求封盘。是否同意？`, '封盘请求', {
+          confirmText: '同意',
+          cancelText: '拒绝',
+        }).then((ok) => {
+          game?.command(roomPlayer.room.id, { type: 'seal', data: { agree: ok, requesterId: cmd.data.player.id } })
+        })
+        break
+      case 'seal':
+        isSealed.value = true
+        sealRequesterId.value = cmd.data.sealRequesterId
+        stopLocalTimer()
+        break
+      case 'unseal':
+        isSealed.value = false
+        sealRequesterId.value = null
+        startLocalTimer(cmd.data.remaining)
         break
       case 'request-draw':
         confirm(`玩家 ${cmd.data.player.name} 请求和棋。是否同意？`, '和棋', {
@@ -90,6 +147,16 @@ export function useConnect4(game: GameCore, roomPlayer: RoomPlayer & { room: Roo
     game?.command(roomPlayer.room.id, { type: 'request-draw' })
   }
 
+  function requestSeal() {
+    if (gameStatus.value !== 'playing') return
+    game?.command(roomPlayer.room.id, { type: 'request-seal' })
+  }
+
+  function unseal() {
+    if (!isSealed.value) return
+    game?.command(roomPlayer.room.id, { type: 'unseal' })
+  }
+
   function requestLose() {
     if (gameStatus.value !== 'playing') return
     game?.command(roomPlayer.room.id, { type: 'request-lose' })
@@ -110,5 +177,11 @@ export function useConnect4(game: GameCore, roomPlayer: RoomPlayer & { room: Roo
     placePiece,
     requestDraw,
     requestLose,
+    requestSeal,
+    unseal,
+    timer,
+    timerStr,
+    isSealed,
+    sealRequesterId,
   }
 }

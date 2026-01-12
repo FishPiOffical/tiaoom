@@ -1,13 +1,16 @@
 <template>
-  <div class="p-4 max-w-4xl mx-auto">
-    <h2 class="text-2xl font-bold mb-4">排行榜</h2>
+  <div class="p-4 w-full max-w-4xl mx-auto">
+    <div class="flex items-center gap-2 mb-4">
+      <Back />
+      <h2 class="text-2xl font-bold">排行榜</h2>
+    </div>
     
-    <div role="tablist" class="tabs tabs-boxed mb-4">
+    <div role="tablist" class="tabs tabs-boxed mb-4 overflow-auto flex-nowrap md:flex-wrap">
       <a 
         v-for="(game, key) in gameStore.games" 
         :key="key" 
         role="tab" 
-        class="tab" 
+        class="tab whitespace-nowrap" 
         :class="{ 'tab-active': activeTab === key }"
         @click="activeTab = key as string"
       >
@@ -55,7 +58,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, computed } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useGameStore } from '@/stores/game'
 import { api } from '@/api'
 

@@ -9,7 +9,7 @@ import cookieParser from 'cookie-parser';
 import createRoutes from "./routes/api";
 import utils from './utils'
 import configRouter from "./routes/config";
-import { AppDataSource, MongoDataSource, redisClient } from "./entities";
+import { AppDataSource, initDataSource } from "./entities";
 
 const FileStore = sessionStore(session);
 
@@ -45,14 +45,17 @@ export class Game {
     if (!utils.config) {
       this.app.use("/config", configRouter);
     } else {
+      // 等待 AppDataSource 初始化完成
+      await initDataSource;
+      
       // API 路由
       if (utils.config.persistence?.driver === 'mongodb') {
-        await MongoDataSource.initialize().catch(err => {
+        await import("./entities/mongo").then(({ MongoDataSource }) => MongoDataSource.initialize()).catch(err => {
           console.error('MongoDB initialization failed:', err);
           process.exit(1);
         });
-      } else if (utils.config.persistence?.driver === 'redis' && redisClient) {
-        await redisClient.connect().catch(err => {
+      } else if (utils.config.persistence?.driver === 'redis') {
+        await import("./entities/redis").then(({ redisClient }) => redisClient?.connect()).catch(err => {
           console.error('Redis connection failed:', err);
           process.exit(1);
         });
@@ -60,16 +63,15 @@ export class Game {
       await AppDataSource.initialize()
         .then(() => {
           console.log("Database connected");
-          this.app.use("/config", (_req, res) => {
+          this.app.use("/utils.config", (_req, res) => {
             res.redirect('/');
           });
-          this.app.use("/api", createRoutes(this, gameName));
-          this.controller = new Controller(server);
-          this.controller?.run();
         })
-        .catch((error) => console.log(error));
+          .catch((error) => console.log(error));
     }
-
+    this.app.use("/api", createRoutes(this, gameName));
+    this.controller = new Controller(server);
+    this.controller?.run();
     console.info(`Server running at http://${domain}:${serverPort}/`);
   }
 }

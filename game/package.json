@@ -9,6 +9,7 @@
     "embed"
   ],
   "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "npm run dev --workspace=backend",
     "dev:frontend": "npm run dev --workspace=frontend",
     "build": "npm run build:embed && npm run build:backend && npm run build:frontend",
@@ -20,6 +21,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.4.2",
+    "concurrently": "^9.2.1",
     "typescript": "^5.1.6"
   },
   "dependencies": {

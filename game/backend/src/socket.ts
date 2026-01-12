@@ -3,6 +3,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { EventEmitter } from "events";
 import { Room, Player, IMessage, IMessagePackages, IMessageEmitterEvents, IMessageData, MessageTypes } from "tiaoom";
 import { LogRepo } from "./entities";
+import { log } from "./utils";
 
 let wsServer: WebSocketServer;
 export class SocketManager extends EventEmitter<IMessageEmitterEvents> implements IMessage {
@@ -31,12 +32,7 @@ export class SocketManager extends EventEmitter<IMessageEmitterEvents> implement
                   type: MessageTypes.PlayerError,
                   data: { name: err.name, message: err.message }
                 }));
-                LogRepo().save(LogRepo().create({
-                  type: MessageTypes.PlayerError,
-                  data: message.data,
-                  senderId: message.sender?.id,
-                  error: { name: err.name, message: err.message, stack: err.stack },
-                })).catch(console.error);
+                log(MessageTypes.PlayerError, message.data, { name: err.name, message: err.message, stack: err.stack }, message.sender?.id);
                 return console.error(err);
               }
               else socket.send(JSON.stringify({ type: message.type, data }));
@@ -44,12 +40,7 @@ export class SocketManager extends EventEmitter<IMessageEmitterEvents> implement
           }
         } catch (err) {
           this.emit("error", err as Error);
-          LogRepo().save(LogRepo().create({
-            type: MessageTypes.PlayerError,
-            data: data,
-            senderId: undefined,
-            error: { name: (err as Error).name, message: (err as Error).message, stack: (err as Error).stack },
-          })).catch(console.error);
+          log(MessageTypes.PlayerError, data, { name: (err as Error).name, message: (err as Error).message, stack: (err as Error).stack }, undefined);
         }
       });
 
