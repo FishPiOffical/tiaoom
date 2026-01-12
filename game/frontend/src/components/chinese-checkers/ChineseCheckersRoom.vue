@@ -112,10 +112,11 @@
                {{ playbackSpeed }}x
              </div>
              <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-20 text-sm">
+               <li><a @click="playbackSpeed = 0.1">0.1x</a></li>
+               <li><a @click="playbackSpeed = 0.2">0.2x</a></li>
                <li><a @click="playbackSpeed = 0.5">0.5x</a></li>
                <li><a @click="playbackSpeed = 1.0">1.0x</a></li>
                <li><a @click="playbackSpeed = 2.0">2.0x</a></li>
-               <li><a @click="playbackSpeed = 4.0">4.0x</a></li>
              </ul>
             </div>
        </div>
