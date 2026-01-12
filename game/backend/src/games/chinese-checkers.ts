@@ -206,23 +206,23 @@ export default class ChineseCheckers extends GameRoom {
 
     // 一轮结束（即将回到第一个玩家），进行结算检查
     if (nextIndex === 0) {
-        // 检查所有完成了游戏的玩家
-        const winners = this.displayPlayers.filter(p => this.checkWin(p));
-        
-        if (winners.length > 0) {
-           if (winners.length === this.displayPlayers.length) {
-               this.say('平局！所有人都到达终点。');
-               this.room.end();
-           } else {
-               const names = winners.map(p => p.name).join('、');
-               this.say(`${names} 获胜！`);
-               const winningPlayers = this.room.validPlayers.filter(vp => winners.some(w => w.id === vp.id));
-               this.saveAchievements(winningPlayers);
-               this.command('gameOver', { winners: winners.map(p => p.name) });
-               this.room.end();
-           }
-           return;
+      // 检查所有完成了游戏的玩家
+      const winners = this.displayPlayers.filter(p => this.checkWin(p));
+      const winningPlayers = this.room.validPlayers.filter(vp => winners.some(w => w.id === vp.id));
+      
+      if (winners.length > 0) {
+        if (winners.length === this.displayPlayers.length) {
+          this.say('平局！所有人都到达终点。');
+          this.command('gameOver', { winners: [] });
+        } else {
+          const names = winners.map(p => p.name).join('、');
+          this.say(`${names} 获胜！`);
+          this.command('gameOver', { winners: winners.map(p => p.name) });
         }
+        this.saveAchievements(winningPlayers);
+        this.room.end();
+        return;
+      }
     }
 
     this.turnIndex = nextIndex;
