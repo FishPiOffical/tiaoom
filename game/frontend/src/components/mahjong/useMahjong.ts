@@ -21,6 +21,7 @@ export interface VisibleGameState {
   turnTimeLeft?: number
   hosted?: { [playerId: string]: boolean }
   dianpaoPlayer?: string | null
+  winningTile?: MahjongTile | null // 胡牌的那张牌
   players: {
     [playerId: string]: {
       tiles: MahjongTile[]
@@ -42,6 +43,7 @@ export function useMahjong(game: GameCore, roomPlayer: RoomPlayer & { room: Room
   const selectedTileId = ref<string | null>(null)
   const showNotification = ref(false)
   const notificationMessage = ref('')
+  const seatOrder = ref<string[]>([])
 
   // 计算属性 - 我的手牌
   const myHand = computed<MahjongTile[]>(() => {
@@ -208,8 +210,33 @@ export function useMahjong(game: GameCore, roomPlayer: RoomPlayer & { room: Room
     })
   }
 
+  // 踢人
+  const kickPlayer = (playerId: string) => {
+    game?.command(roomPlayer.room.id, {
+      type: 'mahjong:kick',
+      data: { playerId }
+    })
+  }
+
+  // 是否是房主
+  const isCreator = computed(() => roomPlayer.isCreator)
+
   // 获取点炮玩家
-  const dianpaoPlayer = computed(() => gameState.value?.dianpaoPlayer || null)
+  const dianpaoPlayer = computed(() => gameState.value?.dianpaoPlayer|| null)
+
+  // 获取胡牌的那张牌
+  const winningTile = computed(() => gameState.value?.winningTile?.display || null)
+
+  // 获取玩家座位位置（前4位是玩家）
+  const getPlayerSeatIndex = (playerId: string) => {
+    return seatOrder.value.indexOf(playerId)
+  }
+
+  // 是否是玩家位置（前4个座位）
+  const isPlayerSeat = (playerId: string) => {
+    const index = getPlayerSeatIndex(playerId)
+    return index >= 0 && index < 4
+  }
 
   // 显示通知
   const showError = (msg: string) => {
@@ -272,6 +299,10 @@ export function useMahjong(game: GameCore, roomPlayer: RoomPlayer & { room: Room
         achievements.value = command.data
         break
 
+      case 'seat_order':
+        seatOrder.value = command.data
+        break
+
       case 'status':
         if (command.data?.status) {
           if (command.data.status === 'ended') {
@@ -289,6 +320,10 @@ export function useMahjong(game: GameCore, roomPlayer: RoomPlayer & { room: Room
         gameState.value = null
         currentTimer.value = null
         clearSelection()
+        break
+
+      case 'mahjong:error':
+        showError(command.data.message)
         break
 
       case 'mahjong:invalid':
@@ -324,6 +359,7 @@ export function useMahjong(game: GameCore, roomPlayer: RoomPlayer & { room: Room
     selectedTileId,
     showNotification,
     notificationMessage,
+    seatOrder,
 
     // 计算属性
     myHand,
@@ -341,7 +377,9 @@ export function useMahjong(game: GameCore, roomPlayer: RoomPlayer & { room: Room
     dealerId,
     lastDiscard,
     lastDiscardPlayer,
+    isCreator,
     dianpaoPlayer,
+    winningTile,
 
     // 方法
     getPlayerName,
@@ -355,6 +393,9 @@ export function useMahjong(game: GameCore, roomPlayer: RoomPlayer & { room: Room
     discardSelectedTile,
     doAction,
     passAction,
+    kickPlayer,
+    getPlayerSeatIndex,
+    isPlayerSeat,
     showError,
     getMeldTypeName,
     init,

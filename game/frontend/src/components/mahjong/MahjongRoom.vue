@@ -23,7 +23,7 @@
                     <p class="mb-4 text-lg">
                         <template v-if="gameState.winner">
                             {{ getPlayerName(gameState.winner) }}
-                            {{ gameState.winType === 'zimo' ? '自摸' : '点炮' }} 胡牌
+                            {{ gameState.winType === 'zimo' ? '自摸' : '点炮' }} {{ winningTile }} 胡牌
                             <span v-if="dianpaoPlayer" class="text-red-500">
                                 （{{ getPlayerName(dianpaoPlayer) }} 放炮）
                             </span>
@@ -32,39 +32,40 @@
                             流局
                         </template>
                     </p>
-                    
+
                     <!-- 所有玩家手牌展示 -->
                     <div class="mt-6 space-y-4">
                         <h3 class="text-xl font-semibold mb-4">玩家手牌</h3>
-                        <div v-for="playerId in gameState.playerOrder" :key="playerId" 
-                            class="bg-base-200 rounded-lg p-3 text-left"
-                            :class="{
+                        <div v-for="playerId in gameState.playerOrder" :key="playerId"
+                            class="bg-base-200 rounded-lg p-3 text-left" :class="{
                                 'ring-2 ring-yellow-400': gameState.winner === playerId,
                                 'ring-2 ring-red-400': dianpaoPlayer === playerId
                             }">
                             <div class="flex items-center gap-2 mb-2">
                                 <span class="font-medium">{{ getPlayerName(playerId) }}</span>
-                                <span v-if="gameState.winner === playerId" class="badge badge-success badge-sm">胡牌</span>
+                                <span v-if="gameState.winner === playerId"
+                                    class="badge badge-success badge-sm">胡牌</span>
                                 <span v-if="dianpaoPlayer === playerId" class="badge badge-error badge-sm">放炮</span>
                                 <span v-if="isDealer(playerId)" class="badge badge-warning badge-xs">庄</span>
                             </div>
                             <!-- 手牌 -->
                             <div class="flex gap-1 flex-wrap">
-                                <MahjongTile v-for="tile in getPlayerData(playerId)?.tiles || []" 
-                                    :key="tile.id" :tile="tile" size="sm" />
+                                <MahjongTile v-for="tile in getPlayerData(playerId)?.tiles || []" :key="tile.id"
+                                    :tile="tile" size="sm" 
+                                    :highlight="winningTile" />
                             </div>
                             <!-- 副露 -->
                             <div v-if="getPlayerData(playerId)?.melds?.length" class="flex gap-2 mt-2 flex-wrap">
-                                <div v-for="(meld, idx) in getPlayerData(playerId)?.melds" :key="idx" 
+                                <div v-for="(meld, idx) in getPlayerData(playerId)?.melds" :key="idx"
                                     class="flex gap-0.5 bg-base-300 rounded p-1">
                                     <MahjongTile v-for="tile in meld.tiles" :key="tile.id" :tile="tile" size="xs"
                                         :hidden="meld.type === 'gang_an'" />
-                                    <span class="text-xs text-gray-500 ml-1 self-end">{{ getMeldTypeName(meld.type) }}</span>
+                                    <span class="text-xs text-gray-500 ml-1 self-end">{{ getMeldTypeName(meld.type)
+                                        }}</span>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    
                     <p class="mt-6 text-gray-600">等待玩家准备开始新游戏</p>
                 </div>
             </div>
@@ -88,7 +89,7 @@
                     <div class="absolute top-2 left-1/2 transform -translate-x-1/2 flex flex-col items-center">
                         <div v-if="otherPlayers[1]" class="text-center">
                             <div class="flex items-center gap-1 mb-1">
-                                <span class="text-sm font-medium">{{ getPlayerName(otherPlayers[1]) }}</span>
+                                <span class=" text-sm font-medium">{{ getPlayerName(otherPlayers[1]) }}</span>
                                 <span v-if="isDealer(otherPlayers[1])" class="badge badge-warning badge-xs">庄</span>
                                 <span v-if="isPlayerCurrentTurn(otherPlayers[1])"
                                     class="badge badge-primary badge-xs animate-pulse">出牌</span>
@@ -120,7 +121,8 @@
                     <div class="absolute left-2 top-1/2 transform -translate-y-1/2 flex flex-col items-center">
                         <div v-if="otherPlayers[2]" class="text-center">
                             <div class="flex items-center gap-1 mb-1">
-                                <span class="text-sm font-medium">{{ getPlayerName(otherPlayers[2]) }}</span>
+                                <span class="  text-sm font-medium">{{ getPlayerName(otherPlayers[2])
+                                    }}</span>
                                 <span v-if="isDealer(otherPlayers[2])" class="badge badge-warning badge-xs">庄</span>
                                 <span v-if="isPlayerCurrentTurn(otherPlayers[2])"
                                     class="badge badge-primary badge-xs animate-pulse">出牌</span>
@@ -151,7 +153,7 @@
                     <div class="absolute right-2 top-1/2 transform -translate-y-1/2 flex flex-col items-center">
                         <div v-if="otherPlayers[0]" class="text-center">
                             <div class="flex items-center gap-1 mb-1">
-                                <span class="text-sm font-medium">{{ getPlayerName(otherPlayers[0]) }}</span>
+                                <span class=" text-sm font-medium">{{ getPlayerName(otherPlayers[0]) }}</span>
                                 <span v-if="isDealer(otherPlayers[0])" class="badge badge-warning badge-xs">庄</span>
                                 <span v-if="isPlayerCurrentTurn(otherPlayers[0])"
                                     class="badge badge-primary badge-xs animate-pulse">出牌</span>
@@ -375,7 +377,9 @@ const {
     wallRemaining,
     lastDiscard,
     lastDiscardPlayer,
+    isCreator,
     dianpaoPlayer,
+    winningTile,
     getPlayerName,
     getPlayerStatus,
     isPlayerCurrentTurn,
@@ -395,16 +399,12 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* 麻将桌背景 */
-.bg-green-800 {
-    background: linear-gradient(135deg, #f1f5f2 0%, #f0f5f2 50%, #f2fcf6 100%);
-}
-
+/* 麻将背景 */
 .bg-pk-700 {
     background: linear-gradient(135deg, #f0d0e1 0%, #f7e8f0 50%, #f8d8ea 100%);
 }
 
 .border-pk-600 {
     background-color: #f8eaf2;
-    }
+}
 </style>
