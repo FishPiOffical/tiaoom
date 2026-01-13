@@ -431,9 +431,6 @@ const isWinningHand = (hand: PlayerHand, newTile?: MahjongTile): boolean => {
 
 class MahjongGameRoom extends GameRoom {
   gameState: MahjongGameState | null = null;
-  
-  // 座位顺序（前4位是玩家，后面是观战）
-  seatOrder: string[] = [];
 
   private readonly TURN_TIMEOUT = 30000;      // 30秒出牌倒计时
   private readonly ACTION_TIMEOUT = 15000;    // 15秒操作倒计时
@@ -443,34 +440,10 @@ class MahjongGameRoom extends GameRoom {
   private timerGeneration = 0;
 
   saveIgnoreProps = ['timerInterval', 'timerGeneration'];
-  publicCommands = ['say', 'status', 'game:state', 'achievements', 'mahjong:kick'];
+  publicCommands = ['say', 'status', 'game:state', 'achievements'];
 
   constructor(room: Room) {
     super(room);
-  }
-
-  /**
-   * 更新玩家角色（前4位是玩家，后面是观战）
-   */
-  private updatePlayerRoles() {
-    this.room.players.forEach(player => {
-      const seatIndex = this.seatOrder.indexOf(player.id);
-      if (seatIndex >= 0 && seatIndex < 4) {
-        // 前4位是玩家
-        if (player.role !== PlayerRole.player) {
-          player.role = PlayerRole.player;
-          player.isReady = false;
-          this.say(`${player.name} 成为玩家`);
-        }
-      } else {
-        // 后面的是观战
-        if (player.role !== PlayerRole.watcher) {
-          player.role = PlayerRole.watcher;
-          player.isReady = false;
-          this.say(`${player.name} 成为观战者`);
-        }
-      }
-    });
   }
 
   /**
@@ -489,17 +462,8 @@ class MahjongGameRoom extends GameRoom {
         const playerSocket = this.room.players.find(p => p.id === player.id);
         if (!playerSocket) return;
 
-        // 座位管理：如果玩家不在座位列表中，添加到末尾
-        if (!this.seatOrder.includes(player.id)) {
-          this.seatOrder.push(player.id);
-        }
-        
-        // 根据座位位置决定是玩家还是观战
-        this.updatePlayerRoles();
-
         playerSocket.emit('command', { type: 'achievements', data: this.achievements });
         playerSocket.emit('command', { type: 'message_history', data: this.messageHistory });
-        playerSocket.emit('command', { type: 'seat_order', data: this.seatOrder });
 
         if (this.gameState) {
           this.sendGameStateToPlayer(playerSocket);
@@ -509,15 +473,6 @@ class MahjongGameRoom extends GameRoom {
         }
       })
       .on('leave', async (player) => {
-        // 从座位列表中移除
-        const seatIndex = this.seatOrder.indexOf(player.id);
-        if (seatIndex >= 0) {
-          this.seatOrder.splice(seatIndex, 1);
-          // 如果移除的是前4位，后面的观战者顶替
-          this.updatePlayerRoles();
-          this.command('seat_order', this.seatOrder);
-        }
-        
         if (this.gameState && this.gameState.phase !== 'ended' && player.role === PlayerRole.player) {
           this.handlePlayerLeave(player);
         }
@@ -561,11 +516,6 @@ class MahjongGameRoom extends GameRoom {
 
       case 'achievements':
         this.commandTo('achievements', this.achievements, sender);
-        break;
-        
-      case 'mahjong:kick':
-        // 房主踢人
-        this.handleKickPlayer(sender.id, message.data?.playerId);
         break;
     }
   }
@@ -627,51 +577,6 @@ class MahjongGameRoom extends GameRoom {
     this.say(`${player?.name || playerId} 已重连，取消托管`);
     this.save();
     this.broadcastGameState();
-  }
-
-  /**
-   * 房主踢人
-   */
-  private handleKickPlayer(senderId: string, targetPlayerId: string) {
-    // 检查发送者是否是房主
-    const sender = this.room.players.find(p => p.id === senderId);
-    if (!sender?.isCreator) {
-      this.commandTo('mahjong:error', { message: '只有房主可以踢人' }, sender as RoomPlayer);
-      return;
-    }
-
-    // 不能踢自己
-    if (senderId === targetPlayerId) {
-      this.commandTo('mahjong:error', { message: '不能踢自己' }, sender as RoomPlayer);
-      return;
-    }
-
-    // 游戏进行中不能踢人
-    if (this.gameState && this.gameState.phase !== 'ended' && this.gameState.phase !== 'waiting') {
-      this.commandTo('mahjong:error', { message: '游戏进行中不能踢人' }, sender as RoomPlayer);
-      return;
-    }
-
-    const targetPlayer = this.room.players.find(p => p.id === targetPlayerId);
-    if (!targetPlayer) {
-      return;
-    }
-
-    // 从座位列表中移除
-    const seatIndex = this.seatOrder.indexOf(targetPlayerId);
-    if (seatIndex >= 0) {
-      this.seatOrder.splice(seatIndex, 1);
-    }
-
-    this.say(`${targetPlayer.name} 被房主踢出房间`);
-    
-    // 调用框架的踢人方法
-    this.room.kickPlayer(targetPlayerId);
-    
-    // 更新玩家角色
-    this.updatePlayerRoles();
-    this.command('seat_order', this.seatOrder);
-    this.save();
   }
 
   // ============ 游戏核心逻辑 ============

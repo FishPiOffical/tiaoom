@@ -83,12 +83,12 @@
                 </div>
 
                 <!-- 游戏桌面 -->
-                <div class="relative rounded-lg bg-green-800 flex-1 min-h-[400px] p-4 overflow-hidden">
+                <div class="relative rounded-lg  flex-1 min-h-[400px] p-4 overflow-hidden">
                     <!-- 对家（上方） -->
                     <div class="absolute top-2 left-1/2 transform -translate-x-1/2 flex flex-col items-center">
                         <div v-if="otherPlayers[1]" class="text-center">
                             <div class="flex items-center gap-1 mb-1">
-                                <span class="text-black text-sm font-medium">{{ getPlayerName(otherPlayers[1]) }}</span>
+                                <span class="text-sm font-medium">{{ getPlayerName(otherPlayers[1]) }}</span>
                                 <span v-if="isDealer(otherPlayers[1])" class="badge badge-warning badge-xs">庄</span>
                                 <span v-if="isPlayerCurrentTurn(otherPlayers[1])"
                                     class="badge badge-primary badge-xs animate-pulse">出牌</span>
@@ -120,7 +120,7 @@
                     <div class="absolute left-2 top-1/2 transform -translate-y-1/2 flex flex-col items-center">
                         <div v-if="otherPlayers[2]" class="text-center">
                             <div class="flex items-center gap-1 mb-1">
-                                <span class="text-black  text-sm font-medium">{{ getPlayerName(otherPlayers[2]) }}</span>
+                                <span class="text-sm font-medium">{{ getPlayerName(otherPlayers[2]) }}</span>
                                 <span v-if="isDealer(otherPlayers[2])" class="badge badge-warning badge-xs">庄</span>
                                 <span v-if="isPlayerCurrentTurn(otherPlayers[2])"
                                     class="badge badge-primary badge-xs animate-pulse">出牌</span>
@@ -151,7 +151,7 @@
                     <div class="absolute right-2 top-1/2 transform -translate-y-1/2 flex flex-col items-center">
                         <div v-if="otherPlayers[0]" class="text-center">
                             <div class="flex items-center gap-1 mb-1">
-                                <span class="text-black text-sm font-medium">{{ getPlayerName(otherPlayers[0]) }}</span>
+                                <span class="text-sm font-medium">{{ getPlayerName(otherPlayers[0]) }}</span>
                                 <span v-if="isDealer(otherPlayers[0])" class="badge badge-warning badge-xs">庄</span>
                                 <span v-if="isPlayerCurrentTurn(otherPlayers[0])"
                                     class="badge badge-primary badge-xs animate-pulse">出牌</span>
@@ -296,15 +296,8 @@
                                 <span>[{{ getPlayerStatus(p) }}]</span>
                                 <span v-if="gameState && isDealer(p.id)" class="badge badge-warning badge-xs">庄</span>
                             </span>
-                            <span v-else>[{{ isPlayerSeat(p.id) ? '玩家位' : '围观中' }}]</span>
+                            <span v-else>[围观中]</span>
                             <span>{{ p.name }}</span>
-                            <!-- 房主踢人按钮 -->
-                            <button v-if="isCreator && !p.isCreator && gameStatus !== 'playing' && gameStatus !== 'action'" 
-                                @click.stop="kickPlayer(p.id)" 
-                                class="btn btn-xs btn-error ml-2"
-                                title="踢出房间">
-                                踢
-                            </button>
                         </template>
                     </PlayerList>
                 </div>
@@ -382,7 +375,6 @@ const {
     wallRemaining,
     lastDiscard,
     lastDiscardPlayer,
-    isCreator,
     dianpaoPlayer,
     getPlayerName,
     getPlayerStatus,
@@ -393,8 +385,6 @@ const {
     discardSelectedTile,
     doAction,
     passAction,
-    kickPlayer,
-    isPlayerSeat,
     getMeldTypeName,
     init,
 } = useMahjong(props.game, props.roomPlayer)
