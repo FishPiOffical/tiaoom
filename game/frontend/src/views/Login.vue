@@ -26,13 +26,35 @@
               <img src="/fishpi.svg" class="w-[1.5em] group-hover:scale-110 transition-transform" />
               <span class="tracking-wide text-black">登 录</span>
             </button>
-            
+
             <button
               class="btn btn-lg btn-soft flex items-center justify-center gap-3 w-full py-3 transition-all group"
               @click="registerWithFishpi"
             >
               <span class="tracking-wide">注 册 账 号</span>
             </button>
+            
+            <!-- Third Party Login -->
+            <div v-if="gameStore.thirdParty.length > 0" class="divider text-xs text-base-content/30">第三方登录</div>
+            <div v-if="gameStore.thirdParty.length > 0" class="flex gap-2 w-full">
+              <button
+                v-if="gameStore.thirdParty.includes('github')"
+                class="btn flex-1 bg-[#24292e] text-white hover:bg-[#2f363d] gap-2 group btn-lg"
+                @click="thirdPartyLogin('github')"
+              >
+                <Icon icon="mdi:github" class="text-xl group-hover:scale-110 transition-transform" />
+                <span class="tracking-wide text-sm">GitHub</span>
+              </button>
+
+              <button
+                v-if="gameStore.thirdParty.includes('steam')"
+                class="btn flex-1 bg-[#171a21] text-white hover:bg-[#2a475e] gap-2 group btn-lg"
+                @click="thirdPartyLogin('steam')"
+              >
+                <Icon icon="mdi:steam" class="text-xl group-hover:scale-110 transition-transform" />
+                <span class="tracking-wide text-sm">Steam</span>
+              </button>
+            </div>
             
             <template v-if="isDevMode()">
               <div class="divider text-xs text-base-content/30">开发模式</div>
@@ -123,6 +145,11 @@ function loginWithFishpi() {
 }
 function registerWithFishpi() {
   window.location.href = '/api/register/fishpi'
+}
+
+const thirdParty = gameStore.thirdParty;
+function thirdPartyLogin(type: string) {
+  window.location.href = `/api/login/${type}`
 }
 
 api.checkLoginError()

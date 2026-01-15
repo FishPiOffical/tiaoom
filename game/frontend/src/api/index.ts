@@ -98,7 +98,7 @@ export const api = {
   isConfigured(): Promise<boolean> {
     return http.get('/is-configured')
   },
-  getConfig(): Promise<Record<string, GameConfig>> {
+  getConfig(): Promise<{ game: Record<string, GameConfig>, thirdParty: string[] }> {
     return http.get('/config')
   },
   getUserInfo(): Promise<User> {

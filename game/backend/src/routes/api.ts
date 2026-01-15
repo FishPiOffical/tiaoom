@@ -1,11 +1,14 @@
 import { Router, Request, Response } from "express";
 import { Controller } from "../controller";
 import { login as fishpiLogin, register as fishpiRegister, updateUserInfo } from "../login/fishpi";
+import { login as steamLogin } from "../login/steam";
+import { login as githubLogin } from "../login/github";
 import { Record, RecordRepo, User, UserRepo, AppDataSource, PlayerStats, ManageRepo } from "@/entities";
 import { getPlayerStats, isConfigured } from "@/utils";
 import { FindOptionsWhere, Like } from "typeorm";
 import GameRouter from "./game";
 import Games, { GameRoom } from "@/games";
+import { getThirdPartyType } from "@/login";
 
 export interface GameContext {
   controller?: Controller;
@@ -31,7 +34,10 @@ const createRoutes = (game: GameContext, gameName: string) => {
     res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
     res.json({
       code: 0,
-      data: game.controller?.games
+      data: {
+        game: game.controller?.games,
+        thirdParty: getThirdPartyType(),
+      }
     });
   });
 
@@ -136,6 +142,8 @@ const createRoutes = (game: GameContext, gameName: string) => {
   });
   router.get("/login/fishpi", fishpiLogin);
   router.get("/register/fishpi", fishpiRegister);
+  router.get("/login/steam", steamLogin);
+  router.get("/login/github", githubLogin);
 
   router.post("/logout", (req: Request, res: Response) => {
     req.session.destroy((err) => {

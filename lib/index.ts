@@ -332,7 +332,7 @@ export class Tiaoom extends EventEmitter {
     return playerInstance;
   }
 
-  async joinPlayer(sender: IPlayer, player: IRoomPlayerOptions, isCreator: boolean = false) {
+  async joinPlayer(sender: IPlayer, player: IRoomPlayerOptions, isCreator: boolean = false, role: PlayerRole = PlayerRole.player) {
     let playerInstance = this.searchPlayer(sender);
     if (!playerInstance) {
       playerInstance = await this.loginPlayer(sender);
@@ -347,7 +347,6 @@ export class Tiaoom extends EventEmitter {
       throw new Error('room not found.');
     }
 
-    let role = PlayerRole.player;
     if (this.rooms.some(r => r.id != room.id && r.players.some(p => p.id === playerInstance!.id && p.role === PlayerRole.player))) {
       throw new Error('you are already playing in another room.');
     }
