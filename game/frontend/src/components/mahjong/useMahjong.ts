@@ -32,6 +32,15 @@ export interface VisibleGameState {
   }
   drawTile?: MahjongTile
   availableActions?: AvailableAction[]
+  // 新增：多赢家信息
+  winners?: {
+    playerId: string;
+    playerName: string;
+    winType: 'zimo' | 'dianpao';
+    winningTile: MahjongTile | null;
+  }[];
+  // 新增：结束原因
+  endReason?: 'multi_win' | 'single_win' | 'liuju';
 }
 
 export function useMahjong(game: GameCore, roomPlayer: RoomPlayer & { room: Room }) {
@@ -109,8 +118,19 @@ export function useMahjong(game: GameCore, roomPlayer: RoomPlayer & { room: Room
 
   // 是否是赢家
   const isWinner = computed(() => {
-    if (!gameState.value?.winner || !roomPlayer.id) return false
-    return gameState.value.winner === roomPlayer.id
+    if (!gameState.value) return false
+    
+    // 一炮多响情况下检查当前玩家是否在赢家列表中
+    if (isMultiWin.value) {
+      return multiWinners.value.some(winner => winner.playerId === roomPlayer.id)
+    }
+    
+    // 单赢家情况
+    if (gameState.value.winner) {
+      return gameState.value.winner === roomPlayer.id
+    }
+    
+    return false
   })
 
   // 牌墙剩余
@@ -131,7 +151,7 @@ export function useMahjong(game: GameCore, roomPlayer: RoomPlayer & { room: Room
   // 工具方法
   const getPlayerName = (playerId: string) => {
     const player = roomPlayer.room.players.find((p: any) => p.id === playerId)
-    return player?.name || '未知玩家'
+    return player?.name || '已离开玩家'
   }
 
   const getPlayerStatus = (p: any) => {
@@ -210,33 +230,41 @@ export function useMahjong(game: GameCore, roomPlayer: RoomPlayer & { room: Room
     })
   }
 
-  // 踢人
-  const kickPlayer = (playerId: string) => {
-    game?.command(roomPlayer.room.id, {
-      type: 'mahjong:kick',
-      data: { playerId }
-    })
-  }
-
-  // 是否是房主
-  const isCreator = computed(() => roomPlayer.isCreator)
-
   // 获取点炮玩家
   const dianpaoPlayer = computed(() => gameState.value?.dianpaoPlayer|| null)
 
   // 获取胡牌的那张牌
-  const winningTile = computed(() => gameState.value?.winningTile?.display || null)
+  const winningTile = computed(() => gameState.value?.winningTile || null)
 
-  // 获取玩家座位位置（前4位是玩家）
-  const getPlayerSeatIndex = (playerId: string) => {
-    return seatOrder.value.indexOf(playerId)
-  }
+  // 获取多赢家信息
+  const multiWinners = computed(() => gameState.value?.winners || [])
 
-  // 是否是玩家位置（前4个座位）
-  const isPlayerSeat = (playerId: string) => {
-    const index = getPlayerSeatIndex(playerId)
-    return index >= 0 && index < 4
-  }
+  // 获取结束原因
+  const endReason = computed(() => gameState.value?.endReason || null)
+
+  // 判断是否为一炮多响
+  const isMultiWin = computed(() => {
+    if (gameState.value?.phase !== 'ended') return false
+    return endReason.value === 'multi_win' && multiWinners.value.length > 1
+  })
+
+  // 判断是否为单赢家
+  const isSingleWin = computed(() => {
+    if (gameState.value?.phase !== 'ended') return false
+    return (endReason.value === 'single_win' || gameState.value?.winner) && !isMultiWin.value
+  })
+
+  // 判断是否为流局
+  const isLiuju = computed(() => {
+    if (gameState.value?.phase !== 'ended') return false
+    return endReason.value === 'liuju' || (!gameState.value?.winner && multiWinners.value.length === 0)
+  })
+
+  // 判断当前玩家是否为赢家（在一炮多响情况下）
+  const isWinnerInMulti = computed(() => {
+    if (!isMultiWin.value) return false
+    return multiWinners.value.some(winner => winner.playerId === roomPlayer.id)
+  })
 
   // 显示通知
   const showError = (msg: string) => {
@@ -377,9 +405,15 @@ export function useMahjong(game: GameCore, roomPlayer: RoomPlayer & { room: Room
     dealerId,
     lastDiscard,
     lastDiscardPlayer,
-    isCreator,
     dianpaoPlayer,
     winningTile,
+    // 新增：多赢家相关属性
+    multiWinners,
+    isMultiWin,
+    isSingleWin,
+    isLiuju,
+    isWinnerInMulti,
+    endReason,
 
     // 方法
     getPlayerName,
@@ -393,9 +427,6 @@ export function useMahjong(game: GameCore, roomPlayer: RoomPlayer & { room: Room
     discardSelectedTile,
     doAction,
     passAction,
-    kickPlayer,
-    getPlayerSeatIndex,
-    isPlayerSeat,
     showError,
     getMeldTypeName,
     init,
