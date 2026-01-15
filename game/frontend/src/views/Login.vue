@@ -147,7 +147,6 @@ function registerWithFishpi() {
   window.location.href = '/api/register/fishpi'
 }
 
-const thirdParty = gameStore.thirdParty;
 function thirdPartyLogin(type: string) {
   window.location.href = `/api/login/${type}`
 }

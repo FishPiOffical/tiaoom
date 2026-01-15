@@ -181,7 +181,7 @@ export class Controller extends Tiaoom {
       }
     }
 
-    return await super.joinPlayer(sender, player, isCreator);
+    return await super.joinPlayer(sender, player, isCreator, role);
   }
 
   async startRoom(sender: IPlayer, room: IRoom) {
