@@ -3,7 +3,7 @@ import { Controller } from "../controller";
 import { login as fishpiLogin, register as fishpiRegister, updateUserInfo } from "../login/fishpi";
 import { Record, RecordRepo, User, UserRepo, AppDataSource, PlayerStats, ManageRepo } from "@/entities";
 import { getPlayerStats, isConfigured } from "@/utils";
-import { Like } from "typeorm";
+import { FindOptionsWhere, Like } from "typeorm";
 import GameRouter from "./game";
 import Games, { GameRoom } from "@/games";
 
@@ -85,13 +85,15 @@ const createRoutes = (game: GameContext, gameName: string) => {
   });
 
   router.get("/user/:username/record", async (req: Request, res: Response) => {
-    const { p, count } = req.query;
+    const { p, count, type } = req.query;
     const page = parseInt(p as string) || 1;
     const pageSize = parseInt(count as string) || 10;
+    const filter: FindOptionsWhere<Record> = {};
+    if (type) filter.type = type as string;
     const records = await RecordRepo().findAndCount({
       skip: (page - 1) * pageSize,
       take: pageSize,
-      where: { players: Like(`%"${req.params.username}"%`) },
+      where: { players: Like(`%"${req.params.username}"%`), ...filter },
       order: { createdAt: "DESC" },
     });
     res.json({ code: 0, data: { records: records[0], total: records[1] } });
