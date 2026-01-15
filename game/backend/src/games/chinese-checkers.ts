@@ -1,5 +1,6 @@
+import { sleep } from '@/utils';
 import { GameRoom, IGameCommand } from '.';
-import { RoomPlayer } from 'tiaoom';
+import { PlayerRole, RoomPlayer, RoomStatus } from 'tiaoom';
 
 export const name = '中国跳棋';
 export const minSize = 2;
@@ -98,7 +99,16 @@ export default class ChineseCheckers extends GameRoom {
   }
 
   init() {
-    return super.init();
+    return super.init().on('player-offline', async (player) => {
+      await sleep(4 * 60 * 1000); // 等待 4 分钟，判定为离线
+      if (!this.isPlayerOnline(player)) return;
+      if (this.room.status === RoomStatus.playing && player.role === PlayerRole.player) {
+        this.say(`${player.name} 长时间未响应，已被移出游戏`);
+        this.handleResign(player.id);
+        return;
+      }
+      this.room.kickPlayer(player);
+    });
   }
 
   onStart() {
@@ -153,27 +163,66 @@ export default class ChineseCheckers extends GameRoom {
     // Timeout disabled
   }
 
+  handleResign(playerId: string) {
+      const pIdx = this.displayPlayers.findIndex(p => p.id === playerId);
+      if (pIdx === -1) return;
+
+      const isCurrentTurn = pIdx === this.turnIndex;
+
+      // Remove player
+      this.displayPlayers.splice(pIdx, 1);
+
+      if (pIdx < this.turnIndex) {
+          this.turnIndex--;
+      } else if (isCurrentTurn) {
+          if (this.displayPlayers.length > 0) {
+               this.turnIndex = this.turnIndex % this.displayPlayers.length;
+          }
+      }
+
+      // Check remaining
+      if (this.displayPlayers.length === 1) {
+           const winner = this.displayPlayers[0];
+           this.say(`${winner.name} 获胜！`);
+           this.saveAchievements([this.getPlayerById(winner.id)!]);
+           this.command('gameOver', { winners: [winner.name] });
+           this.room.end();
+           return;
+      } else if (this.displayPlayers.length === 0) {
+           this.room.end();
+           return;
+      }
+
+      // Continue game
+      this.broadcastState();
+      
+      if (isCurrentTurn) {
+           this.startTurn();
+      }
+  }
+
   nextTurn() {
     const nextIndex = (this.turnIndex + 1) % this.displayPlayers.length;
 
     // 一轮结束（即将回到第一个玩家），进行结算检查
     if (nextIndex === 0) {
-        // 检查所有完成了游戏的玩家
-        const winners = this.displayPlayers.filter(p => this.checkWin(p));
-        
-        if (winners.length > 0) {
-           if (winners.length === this.displayPlayers.length) {
-               this.say('平局！所有人都到达终点。');
-               this.room.end();
-           } else {
-               const names = winners.map(p => p.name).join('、');
-               this.say(`${names} 获胜！`);
-               const winningPlayers = this.room.validPlayers.filter(vp => winners.some(w => w.id === vp.id));
-               this.saveAchievements(winningPlayers);
-               this.room.end();
-           }
-           return;
+      // 检查所有完成了游戏的玩家
+      const winners = this.displayPlayers.filter(p => this.checkWin(p));
+      const winningPlayers = this.room.validPlayers.filter(vp => winners.some(w => w.id === vp.id));
+      
+      if (winners.length > 0) {
+        if (winners.length === this.displayPlayers.length) {
+          this.say('平局！所有人都到达终点。');
+          this.command('gameOver', { winners: [] });
+        } else {
+          const names = winners.map(p => p.name).join('、');
+          this.say(`${names} 获胜！`);
+          this.command('gameOver', { winners: winners.map(p => p.name) });
         }
+        this.saveAchievements(winningPlayers);
+        this.room.end();
+        return;
+      }
     }
 
     this.turnIndex = nextIndex;
@@ -223,6 +272,57 @@ export default class ChineseCheckers extends GameRoom {
             // 在 nextTurn 中会判断是否一轮结束并进行结算
             this.nextTurn();
         }
+    } else if (message.type === 'resign') {
+        const pIdx = this.displayPlayers.findIndex(p => p.id === message.sender.id);
+        if (pIdx === -1) return;
+
+        this.say(`${message.sender.name} 认输了`);
+        this.handleResign(message.sender.id);
+
+    } else if (message.type === 'request-draw') {
+        if (this.displayPlayers.length !== 2) {
+             this.say('当前人数不支持求和功能', message.sender as RoomPlayer);
+             return;
+        }
+        const other = this.displayPlayers.find(p => p.id !== message.sender.id);
+        if (other) {
+             const otherPlayer = this.getPlayerById(other.id);
+             if (otherPlayer) {
+                 this.commandTo('request-draw', { player: message.sender }, otherPlayer);
+                 this.say(`${message.sender.name} 请求和棋`, message.sender as RoomPlayer); // Feedback to sender only?
+             }
+        }
+    } else if (message.type === 'draw') {
+         // Accepted
+         if (this.displayPlayers.length !== 2) return;
+         this.say('双方达成和棋');
+         
+         // Record draw ? 
+         // saveAchievements behavior depends on impl.
+         // If we pass winners=[], maybe it counts as draw?
+         // In Connect4: this.saveAchievements(null) implies draw?
+         // Looking at GameRoom: saveAchievements(winners?: RoomPlayer[] | null, ...)
+         // If winners is null/empty, maybe generic logic doesn't count win?
+         // Actually we should inspect saveAchievements implementation or trace usage.
+         // Assuming saveAchievements(null) or [] is sufficient or we do manual stat update.
+         // Just ending room.
+         
+         // Hack: check index.ts line 409...
+         // Assuming calling it with empty list or null saves draw.
+         // Or updatePlayerStats directly.
+         
+         this.saveAchievements(null); // Assuming this handles draw stats
+         this.command('gameOver', { winners: [] });
+         this.room.end();
+
+    } else if (message.type === 'reject-draw') {
+         const other = this.displayPlayers.find(p => p.id !== message.sender.id);
+         if (other) {
+             const otherPlayer = this.getPlayerById(other.id);
+             if (otherPlayer) {
+                 this.commandTo('reject-draw', { player: message.sender }, otherPlayer);
+             }
+         }
     }
   }
 

@@ -37,13 +37,14 @@ const ComponentReplay = computed(() => getComponent(type.value, 'Replay'))
       <h1 class="text-lg font-bold">游戏回放</h1>
       <div class="w-16"></div> <!-- Spacer for centering -->
     </header>
-    <component
-      v-if="type && ComponentReplay"
-      :is="ComponentReplay" 
-      v-bind="replayData"
-      :beginTime="beginTime"
-      :roomName="roomName"
-    />
+    <section v-if="type && ComponentReplay" class="flex-1 h-full overflow-auto p-0 flex-basis-auto">
+      <component
+        :is="ComponentReplay" 
+        v-bind="replayData"
+        :beginTime="beginTime"
+        :roomName="roomName"
+      />
+    </section>
     <section v-else-if="type" class="flex flex-col items-center justify-center h-full p-4">
       <Icon icon="mdi:history" class="text-6xl text-base-content/30 mb-4" />
       <span class="text-base-content/50 text-lg">此游戏不支持回放</span>

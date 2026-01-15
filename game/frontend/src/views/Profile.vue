@@ -37,13 +37,24 @@
     });
   }
 
+  const type = ref<string>('');
   function loadRecords() {
     if (!user.value) return;
-    api.getUserRecords(user.value.username, page.value, pageSize).then(res => {
+    api.getUserRecords({
+      username: user.value.username, 
+      page: page.value, 
+      count: pageSize,
+      type: type.value
+    }).then(res => {
       records.value = res.records;
       total.value = res.total;
     });
   }
+
+  watch(type, () => {
+    page.value = 1;
+    loadRecords();
+  });
 
   function prevPage() {
     if (page.value > 1) {
@@ -167,19 +178,29 @@
       <!-- Game History Section -->
       <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="card-title text-lg">
+          <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-2">
+            <h3 class="card-title text-lg whitespace-nowrap">
               <Icon icon="mdi:history" class="text-secondary" />
               游玩记录
             </h3>
-            <div class="join">
-                <button class="join-item btn btn-sm" :disabled="page <= 1" @click="prevPage">
-                  <Icon icon="flowbite:caret-left-solid" />
-                </button>
-                <button class="join-item btn btn-sm">Page {{ page }}</button>
-                <button class="join-item btn btn-sm" :disabled="page >= totalPages" @click="nextPage">
-                  <Icon icon="flowbite:caret-right-solid" />
-                </button>
+            
+            <div class="flex items-center gap-2">
+                <select class="select select-bordered select-sm max-w-xs" v-model="type">
+                    <option value="">全部游戏</option>
+                    <option v-for="(game, key) in gameStore.games" :key="key" :value="key">
+                        {{ game.name }}
+                    </option>
+                </select>
+
+                <div class="join">
+                    <button class="join-item btn btn-sm" :disabled="page <= 1" @click="prevPage">
+                      <Icon icon="flowbite:caret-left-solid" />
+                    </button>
+                    <button class="join-item btn btn-sm whitespace-nowrap">Page {{ page }}</button>
+                    <button class="join-item btn btn-sm" :disabled="page >= totalPages" @click="nextPage">
+                      <Icon icon="flowbite:caret-right-solid" />
+                    </button>
+                </div>
             </div>
           </div>
           
