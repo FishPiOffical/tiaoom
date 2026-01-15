@@ -10,16 +10,16 @@
         :room-player="gameStore.roomPlayer"
       >
         <component 
-          v-if="gameStore.roomPlayer" 
-          :is="gameStore.roomPlayer.room.attrs.type + '-room-controls'" 
+          v-if="gameStore.roomPlayer && ComponentLiteControls" 
+          :is="ComponentLiteControls" 
           :game="gameStore.game" 
           :room-player="gameStore.roomPlayer"
         />
       </RoomControlsLite>
       <!-- 房间内容 -->
       <component 
-        v-if="gameStore.roomPlayer" 
-        :is="gameStore.roomPlayer.room.attrs.type + '-lite'" 
+        v-if="gameStore.roomPlayer && ComponentLite" 
+        :is="ComponentLite" 
         :game="gameStore.game" 
         :room-player="gameStore.roomPlayer"
       />
@@ -28,11 +28,15 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, computed } from 'vue'
 import { useGameStore } from '@/stores/game'
+import { getComponent } from '@/components'
 const gameStore = useGameStore()
 
 onMounted(() => {
   gameStore.initGame()
 })
+const ComponentLite = computed(() => getComponent(gameStore.roomPlayer?.room.attrs?.type, 'Lite'))
+const ComponentLiteControls = computed(() => getComponent(gameStore.roomPlayer?.room.attrs?.type, 'RoomControlsLite'))
+
 </script>

@@ -179,6 +179,13 @@ hotkeys('esc', () => {
   if (props.roomPlayer.role == PlayerRole.watcher) return;
   showControl.value = !showControl.value;
 });
+
+const emit = defineEmits<{
+  (e: 'loaded'): void
+}>()
+onMounted(() => {
+  emit("loaded");
+})
 </script>
 
 <style scoped>

@@ -123,8 +123,12 @@ const {
   transferOwner
 } = useSpy(props.game, props.roomPlayer)
 
+const emit = defineEmits<{
+  (e: 'loaded'): void
+}>()
 const containerRef = ref<HTMLElement>();
 onMounted(() => {
+  emit("loaded");
   const rect = containerRef.value?.parentElement?.getBoundingClientRect();
   if (!rect) return;
   if (rect.height < window.innerHeight) {

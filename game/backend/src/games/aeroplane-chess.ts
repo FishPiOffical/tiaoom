@@ -40,6 +40,7 @@ export interface AeroplaneGameState {
   consecutiveSixes: number;
   players: Record<string, AeroplanePlayerState>;
   winnerPlayerId?: string;
+  moveable?: Record<string, (0 | 1 | 2 | 3)[]>;
 }
 
 export const name = '飞行棋';
@@ -180,7 +181,6 @@ export default class AeroplaneChessRoom extends GameRoom {
     return {
       ...super.getStatus(sender),
       state: this.state,
-      history: this.history,
     };
   }
 
@@ -279,6 +279,7 @@ export default class AeroplaneChessRoom extends GameRoom {
       timestamp: Date.now(),
     });
     this.state.phase = 'waiting-move';
+    this.state.moveable = { [sender.id]: movable };
     this.room.emit('command', { type: 'aeroplane:roll', data: { playerId: sender.id, roll, movable } });
     this.broadcastState();
   }
@@ -447,13 +448,11 @@ export default class AeroplaneChessRoom extends GameRoom {
         // 三个六返大陆
         this.state.consecutiveSixes = 0;
         const player = this.state.players[this.state.turnPlayerId];
-        for (const piece of player.pieces) {
-          if (this.takeOffPieceIndex.includes(piece.index)) {
-            piece.area = 'hangar';
-            piece.pos = player.color + 'h' + piece.index;
-            piece.posIndex = -1;
-          }
-        }
+        player.pieces.forEach(piece => {
+          piece.area = 'hangar';
+          piece.pos = player.color + 'h' + piece.index;
+          piece.posIndex = -1;
+        })
         this.say(`${this.getPlayerName(player.playerId)} 连续掷出三个六，所有起飞的飞机被迫返航！`);
         this.state.turnPlayerId = nextTurnPlayerId(this.currentOrder(), this.state.turnPlayerId);
       }

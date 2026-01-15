@@ -68,7 +68,7 @@
 </template>
 
 <script setup lang="ts">
-import type { UnoCard } from '../../../../backend/src/games/uno'
+import type { UnoCard } from '$/backend/src/games/uno'
 
 interface Props {
   card: UnoCard | null

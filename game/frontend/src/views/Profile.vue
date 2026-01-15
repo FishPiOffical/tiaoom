@@ -4,7 +4,7 @@
   import { useRoute } from 'vue-router';
   import Icon from '@/components/common/Icon.vue';
   import { useGameStore } from '@/stores/game';
-  import { getComponent } from '@/main';
+  import { getComponent } from '@/components';
 
   const user = ref<User>();
   const route = useRoute();
@@ -78,12 +78,7 @@
   }
 
   const hasReplayComponent = (type: string) => {
-    try {
-      if (!type) return false
-      return !!getComponent(type.split('-').map(t => t.slice(0, 1).toUpperCase() + t.slice(1)).join('') + 'Replay')
-    } catch {
-      return false
-    }
+    return !!getComponent(type, 'Replay')
   }
 </script>
 

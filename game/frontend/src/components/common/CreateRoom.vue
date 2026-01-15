@@ -127,15 +127,16 @@
               </select>
             </div>
 
-            <component 
-              :is="room.attrs.type + '-attrs'" 
+            <component
+              v-if="ComponentRoomAttrs"
+              :is="ComponentRoomAttrs" 
               :game="gameStore.game" 
               v-model:attrs="room.attrs"
             />
           </div>
 
           <!-- 警告提示 -->
-          <div role="alert" class="alert alert-warning alert-soft shadow-inner text-sm mt-4 border border-warning/20" v-if="room.attrs.point || room.attrs.rate">
+          <div role="alert" class="alert alert-warning alert-soft shadow-inner text-sm mt-4 border border-warning/20" v-if="room.attrs.point">
             <Icon icon="ic:round-warning" class="text-2xl shrink-0" />
             <div class="flex flex-col gap-1">
               <span v-if="room.attrs.point" class="font-medium">注意：每局游戏将扣除 {{ room.attrs.point }} 积分</span>
@@ -209,7 +210,7 @@
             <Icon icon="carbon:close" class="w-6 h-6" />
           </button>
         </div>
-        <component :is="extendPage" />
+        <component v-if="components[extendPage]" :is="components[extendPage]" />
       </div>
     </div>
   </div>
@@ -219,6 +220,7 @@
 import { ref, computed } from 'vue'
 import { useGameStore } from '@/stores/game'
 import msg from '@/components/msg'
+import { getComponent, components } from '@/components'
 
 const gameStore = useGameStore()
 
@@ -231,6 +233,8 @@ const room = ref({
   requireAllReadyToStart: true,
   attrs: { type: 'othello', passwd: '', rate: '', point: '' } as Record<string, any>,
 })
+const ComponentRoomAttrs = computed(() => getComponent(room.value.attrs.type, 'Attrs'))
+
 
 const currentGame = computed(() => {
   return gameStore.games[room.value.attrs.type]

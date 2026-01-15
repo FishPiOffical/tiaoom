@@ -130,7 +130,7 @@ import type { GameCore } from '@/core/game'
 import type { RoomPlayer, Room } from 'tiaoom/client';
 import GameChat from '@/components/common/GameChat.vue'
 import { useSpy } from './useSpy';
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 
 type SpyRoomPlayer = RoomPlayer & { isDead?: boolean }
 
@@ -171,4 +171,11 @@ function getPlayerStatus(p: any) {
 }
 
 const isPlaying = computed(() => props.roomPlayer.room.status == 'playing')
+
+const emit = defineEmits<{
+  (e: 'loaded'): void
+}>()
+onMounted(() => {
+  emit("loaded");
+})
 </script>

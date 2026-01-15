@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { api } from '@/api';
-import { getComponent } from '@/main';
+import { getComponent } from '@/components';
 import { computed, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 
@@ -24,15 +24,8 @@ onMounted(() => {
   load();
 });
 
-const hasReplayComponent = computed(() => {
-  try {
-    const typeValue = type.value
-    if (!typeValue) return false
-    return !!getComponent(typeValue.split('-').map(t => t.slice(0, 1).toUpperCase() + t.slice(1)).join('') + 'Replay')
-  } catch {
-    return false
-  }
-})
+const ComponentReplay = computed(() => getComponent(type.value, 'Replay'))
+
 </script>
 
 <template>
@@ -44,13 +37,14 @@ const hasReplayComponent = computed(() => {
       <h1 class="text-lg font-bold">游戏回放</h1>
       <div class="w-16"></div> <!-- Spacer for centering -->
     </header>
-    <component
-      v-if="type && hasReplayComponent"
-      :is="type + '-replay'" 
-      v-bind="replayData"
-      :beginTime="beginTime"
-      :roomName="roomName"
-    />
+    <section v-if="type && ComponentReplay" class="flex-1 h-full overflow-auto p-0 flex-basis-auto">
+      <component
+        :is="ComponentReplay" 
+        v-bind="replayData"
+        :beginTime="beginTime"
+        :roomName="roomName"
+      />
+    </section>
     <section v-else-if="type" class="flex flex-col items-center justify-center h-full p-4">
       <Icon icon="mdi:history" class="text-6xl text-base-content/30 mb-4" />
       <span class="text-base-content/50 text-lg">此游戏不支持回放</span>

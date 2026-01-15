@@ -1,10 +1,10 @@
 <template>
-  <section class="flex flex-col md:flex-row gap-4 h-full">
+  <section class="flex flex-col md:flex-row gap-4 md:h-full h-[200%]">
     <!-- 左侧：游戏区域 -->
     <slot></slot>
 
     <!-- 右侧：侧边栏 -->
-    <aside v-if="!lite" class="w-full md:w-96 md:flex-none flex-1 max-h-1/2 md:max-h-none border-t md:border-t-0 md:border-l border-border pt-4 md:pt-0 md:pl-4 space-y-4 md:h-full flex flex-col">
+    <aside v-if="!lite" class="w-full md:w-96 md:flex-none flex-1 max-h-1/2 md:max-h-none border-t md:border-t-0 md:border-l border-base-content/20 pt-4 md:pt-0 md:pl-4 space-y-4 md:h-full flex flex-col">
       <section class="inline-flex flex-col gap-2 max-h-1/2">
         <div role="tablist" class="tabs tabs-lift">
           <a 
@@ -79,7 +79,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { RoomPlayer, Room } from "tiaoom/client";
 import { GameCore } from "@/core/game";
 import { useGameEvents } from "@/hook/useGameEvents";
@@ -141,6 +141,7 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
   (e: "command", msg: { type: string; data: any }): void;
+  (e: "loaded"): void;
 }>();
 
 useGameEvents(props.game, {
@@ -174,4 +175,8 @@ function getPlayerStatus(p: RoomPlayer): string {
 }
 
 const activeTab = ref<string>(props.activeTab || 'players')
+
+onMounted(() => {
+  emit("loaded");
+});
 </script>

@@ -316,25 +316,17 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
     this.room.on('join', (player) => {
       // 如果游戏正在进行，新加入的玩家状态为"等待中"
       if (this.room.status === RoomStatus.playing) {
-        // join 事件里传来的 player 可能还是 watcher（默认行为），这里对猜盐做特判：允许直接转为 player 参与
         const roomPlayer = this.room.players.find(p => p.id === player.id);
         if (roomPlayer) {
-          if (roomPlayer.role === PlayerRole.watcher) {
-            roomPlayer.role = PlayerRole.player;
-            roomPlayer.isReady = false;
-            roomPlayer.status = PlayerStatus.playing;
-            roomPlayer.emit('status', PlayerStatus.playing);
-            this.room.emit('update', this.room);
-          }
-
           // 初始化为等待中（也能参与猜题，首次猜测会自动进入流程）
           this.initPlayerState(roomPlayer, 'waiting');
-          this.say(`玩家 ${roomPlayer.name} 加入游戏，状态为等待中。`);
+          const roleText = roomPlayer.role === PlayerRole.watcher ? '观众' : '玩家';
+          this.say(`${roleText} ${roomPlayer.name} 加入游戏，状态为等待中。`);
           this.broadcastPlayersUpdate();
           
-          // 向新加入的玩家发送当前游戏状态（包括文章数据）
+          // 向新加入的玩家发送当前游戏状态（包括文章数据和消息历史）
           setTimeout(() => {
-            this.commandTo('status', this.getStatusData(roomPlayer), roomPlayer);
+            this.commandTo('status', this.getStatusData(roomPlayer, true), roomPlayer);
           }, 100);
           
           this.save();
@@ -453,8 +445,8 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
       this.say(`玩家 ${state.player.name} 完成了猜测！`);
       this.commandTo('statusChanged', { status: 'completed' }, state.player);
       
-      // 玩家完成时，重新发送完整状态（包括带from字段的文章）
-      this.commandTo('status', this.getStatusData(state.player), state.player);
+      // 玩家完成时，重新发送完整状态（包括带from字段的文章，但不包含消息历史）
+      this.commandTo('status', this.getStatusData(state.player, false), state.player);
       
       // 如果是猜题中的玩家完成，保存成就
       if (state.status === 'completed') {
@@ -499,7 +491,10 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
 
   // 检查游戏是否结束
   checkGameEnd() {
-    const allPlayers = Array.from(this.playerStates.values());
+    // 统计 player 角色的玩家状态
+    const allPlayers = Array.from(this.playerStates.values()).filter(
+      state => state.player.role === PlayerRole.player
+    );
     const guessingPlayers = allPlayers.filter(state => state.status === 'guessing');
     const completedPlayers = allPlayers.filter(state => state.status === 'completed');
     const activePlayers = allPlayers.filter(state => state.status !== 'waiting'); // 排除等待中的玩家
@@ -570,19 +565,22 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
     const data = typeof message.data === 'string' ? message.data : message.data?.message;
     const channel = typeof message.data === 'object' ? message.data?.channel : 'public';
     
-    // 如果是通关频道，只发送给已完成的玩家
+    // 如果是通关频道，只发送给已完成的玩家和观众
     if (channel === 'completed') {
       const state = this.playerStates.get(sender.id);
-      if (state?.status !== 'completed') {
+      
+      // 检查发送权限：player 需要完成才能发送，watcher 可以直接发送
+      if (sender.role === PlayerRole.player && state?.status !== 'completed') {
         return this.sayTo(`你还未完成，无法在通关频道发言。`, sender);
       }
       
-      // 保存消息到历史记录，并标记为通关频道
-      const completedPlayers = Array.from(this.playerStates.values())
-        .filter(s => s.status === 'completed')
-        .map(s => s.player);
+      // 获取所有已完成的玩家
+      const completedPlayerIds = new Set(
+        Array.from(this.playerStates.values())
+          .filter(s => s.status === 'completed')
+          .map(s => s.player.id)
+      );
       
-      // 使用普通say保存到历史，但在消息内容中添加频道标记
       const messageWithChannel = {
         content: data,
         sender,
@@ -596,9 +594,16 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
         this.messageHistory.shift();
       }
       
-      // 只发送给已完成的玩家
-      completedPlayers.forEach(player => {
-        player.emit('message', messageWithChannel);
+      // 发送给已完成的玩家（从 room.players 中查找）
+      this.room.players.forEach(player => {
+        if (completedPlayerIds.has(player.id)) {
+          player.emit('message', messageWithChannel);
+        }
+      });
+      
+      // 发送给所有观众
+      this.room.watchers.forEach(watcher => {
+        watcher.emit('message', messageWithChannel);
       });
     } else {
       // 公开频道，发送给所有人，并标记频道
@@ -615,9 +620,76 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
         this.messageHistory.shift();
       }
       
-      // 广播给所有人
+      // 广播给所有人（包括玩家和观众）
       this.room.players.forEach(player => {
         player.emit('message', messageWithChannel);
+      });
+      this.room.watchers.forEach(watcher => {
+        watcher.emit('message', messageWithChannel);
+      });
+    }
+  }
+
+  // 重写观众聊天方法，让观众的消息也发送给玩家，实现聊天互通
+  onWatcherSay(message: IGameCommand) {
+    const sender = message.sender as RoomPlayer;
+    const data = typeof message.data === 'string' ? message.data : message.data?.message;
+    const channel = typeof message.data === 'object' ? message.data?.channel : 'public';
+    
+    // 如果是通关频道
+    if (channel === 'completed') {
+      // 获取所有已完成的玩家
+      const completedPlayerIds = new Set(
+        Array.from(this.playerStates.values())
+          .filter(s => s.status === 'completed')
+          .map(s => s.player.id)
+      );
+      
+      const messageWithChannel = {
+        content: data,
+        sender,
+        channel: 'completed',
+        createdAt: Date.now(),
+      };
+      
+      // 保存到消息历史
+      this.messageHistory.push(messageWithChannel);
+      if (this.messageHistory.length > 100) {
+        this.messageHistory.shift();
+      }
+      
+      // 发送给已完成的玩家
+      this.room.players.forEach(player => {
+        if (completedPlayerIds.has(player.id)) {
+          player.emit('message', messageWithChannel);
+        }
+      });
+      
+      // 发送给所有观众
+      this.room.watchers.forEach(watcher => {
+        watcher.emit('message', messageWithChannel);
+      });
+    } else {
+      // 公开频道
+      const messageWithChannel = {
+        content: data,
+        sender,
+        channel: 'public',
+        createdAt: Date.now(),
+      };
+      
+      // 保存到消息历史
+      this.messageHistory.push(messageWithChannel);
+      if (this.messageHistory.length > 100) {
+        this.messageHistory.shift();
+      }
+      
+      // 广播给所有人（包括玩家和观众）
+      this.room.players.forEach(player => {
+        player.emit('message', messageWithChannel);
+      });
+      this.room.watchers.forEach(watcher => {
+        watcher.emit('message', messageWithChannel);
       });
     }
   }
@@ -842,11 +914,11 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
     // 广播玩家列表
     this.broadcastPlayersUpdate();
 
-    // 主动向所有玩家发送初始状态（包括文章）
+    // 主动向所有玩家发送初始状态（包括文章和消息历史）
     this.room.validPlayers.forEach(player => {
       const state = this.playerStates.get(player.id);
       if (state) {
-        this.commandTo('status', this.getStatusData(player), player);
+        this.commandTo('status', this.getStatusData(player, true), player);
       }
     });
 
@@ -854,7 +926,8 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
   }
 
   // 获取状态数据（提取为独立方法以便复用）
-  getStatusData(sender: RoomPlayer) {
+  // includeMessageHistory: 是否包含消息历史（只在首次加入时需要）
+  getStatusData(sender: RoomPlayer, includeMessageHistory: boolean = false) {
     const state = this.playerStates.get(sender.id);
     
     // 生成显示用的文章内容
@@ -926,6 +999,8 @@ class GuessGameRoom extends GameRoom implements IGameData<Model> {
             isPlaying: false,
           })),
       restrictAlphanumeric: this.restrictAlphanumeric,
+      // 只在需要时包含消息历史
+      ...(includeMessageHistory ? { messageHistory: this.messageHistory } : {}),
     };
     
     return result;

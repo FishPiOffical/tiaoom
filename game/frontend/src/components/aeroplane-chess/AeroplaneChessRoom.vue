@@ -28,27 +28,29 @@
       <span :class="getTextColor(player.attributes?.aeroplaneColor, false)">✈</span>
     </template>
     <template #actions>
-      <div class="flex items-center gap-2" v-if="canRoll || state?.lastRoll">
-        <button class="btn btn-primary" :disabled="!canRoll" @click="roll">掷骰</button>
-        <div class="text-sm" v-if="state?.lastRoll">
-          <Icon :icon="getDiceIcon(state.lastRoll)" class="text-2xl" />
+      <section class="w-full sticky bottom-0 bg-base-100/80 p-4 md:p-0 flex flex-col gap-4">
+        <div class="flex items-center gap-2" v-if="canRoll || state?.lastRoll">
+          <button class="btn btn-primary" :disabled="!canRoll" @click="roll">掷骰</button>
+          <div class="text-sm" v-if="state?.lastRoll">
+            <Icon :icon="getDiceIcon(state.lastRoll)" class="text-2xl" />
+          </div>
         </div>
-      </div>
-      <div v-if="canMove" class="space-y-2">
-        <div class="font-bold text-sm">请选择要移动的飞机</div>
-        <div class="grid grid-cols-2 gap-2">
-          <button
-            v-for="p in myPieces"
-            :key="p.index"
-            class="btn btn-sm"
-            :class="movable.includes(p.index) ? 'btn-accent' : ''"
-            :disabled="!movable.includes(p.index)"
-            @click="move(p.index)"
-          >
-            {{ pieceText(p) }}
-          </button>
+        <div v-if="canMove" class="space-y-2">
+          <div class="font-bold text-sm">请选择要移动的飞机</div>
+          <div class="grid grid-cols-2 gap-2">
+            <button
+              v-for="p in myPieces"
+              :key="p.index"
+              class="btn btn-sm"
+              :class="movable.includes(p.index) ? 'btn-accent' : ''"
+              :disabled="!movable.includes(p.index)"
+              @click="move(p.index)"
+            >
+              {{ pieceText(p) }}
+            </button>
+          </div>
         </div>
-      </div>
+      </section>
     </template>
     <template #rules>
       <ul class="space-y-2 text-sm">

@@ -208,7 +208,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useTetris } from './useTetris'
 import { getColorValue } from './utils'
 import type { RoomPlayer, Room } from 'tiaoom/client'
@@ -244,6 +244,13 @@ function handleBoardClick() {
     pause()
   }
 }
+
+const emit = defineEmits<{
+  (e: 'loaded'): void
+}>()
+onMounted(() => {
+  emit("loaded");
+})
 </script>
 
 <style scoped>

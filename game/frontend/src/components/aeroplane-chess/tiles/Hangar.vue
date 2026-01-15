@@ -7,9 +7,9 @@
           v-for="n in 4"
           :key="n"
           class="bg-base-100/80 border-2 border-base-200 rounded-full w-2/3 h-2/3 mx-auto my-auto flex items-center justify-center text-base md:text-2xl"
-          :class="pieces?.some(p => p.index === n - 1) ? getTextColor(color) + ' ' + getBgColor(color) : getTextColor(color, false)"
+          :class="pieces?.some(p => p.index === n - 1) ? getTextColor(color) + ' ' + getBgColor(color, pieces?.find(p => p.index === n - 1)?.area === 'finish') : getTextColor(color, false)"
         >
-          <div class="indicator" v-if="pieces?.some(p => p.index === n - 1)">
+          <div class="indicator" v-if="pieces?.some(p => p.index === n - 1)" :data-area="pieces?.find(p => p.index === n - 1)?.area">
             <span 
               class="indicator-item badge badge-xs border border-base-100 z-9 scale-80" 
               :class="getBadgeColor(color)" 
