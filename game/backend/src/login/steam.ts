@@ -3,7 +3,7 @@ import { saveUser } from './index';
 import utils from "../utils";
 
 export async function login(req: Request, res: Response) {
-  const domain = new URL(req.headers.referer || `${req.protocol}://${req.headers.host}`).origin;
+  const domain = new URL(req.headers.referer || `${req.protocol}://${req.headers.host}`).host;
   if (req.query['openid.mode'] === 'id_res') {
     const userId = await verify(req);
     if (userId) {
