@@ -39,7 +39,7 @@
             <div v-if="gameStore.thirdParty.length > 0" class="flex gap-2 w-full">
               <button
                 v-if="gameStore.thirdParty.includes('github')"
-                class="btn flex-1 bg-[#24292e] text-white hover:bg-[#2f363d] gap-2 group btn-lg"
+                class="btn flex-1 gap-2 group btn-lg dark:bg-[#24292e] dark:text-white dark:hover:bg-[#2f363d] bg-white text-[#24292e] hover:bg-gray-200"
                 @click="thirdPartyLogin('github')"
               >
                 <Icon icon="mdi:github" class="text-xl group-hover:scale-110 transition-transform" />
@@ -48,7 +48,7 @@
 
               <button
                 v-if="gameStore.thirdParty.includes('steam')"
-                class="btn flex-1 bg-[#171a21] text-white hover:bg-[#2a475e] gap-2 group btn-lg"
+                class="btn flex-1 gap-2 group btn-lg bg-[#171a21] text-white hover:bg-[#2a475e] dark:bg-[#2a475e] dark:text-white dark:hover:bg-[#1b2838]"
                 @click="thirdPartyLogin('steam')"
               >
                 <Icon icon="mdi:steam" class="text-xl group-hover:scale-110 transition-transform" />

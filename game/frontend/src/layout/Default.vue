@@ -177,6 +177,8 @@
                     <span v-else>{{ p.name[0] }}</span>
                   </div>
                   <span>{{ p.name }}</span>
+                  <Icon icon="mdi:github" v-if="p.attributes.from == 'github'" />
+                  <Icon icon="mdi:steam" v-if="p.attributes.from == 'steam'" />
                 </li>
               </ul>
             </div>

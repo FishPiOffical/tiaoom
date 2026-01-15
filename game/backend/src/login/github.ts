@@ -4,14 +4,14 @@ import { saveUser } from './index';
 const clientId = utils.config?.login.githubClientId || '';
 
 export async function login(req: Request, res: Response) {
-  const domain = new URL(req.headers.referer || `${req.protocol}://${req.headers.host}`).origin;
+  const domain = new URL(req.headers.referer || `${req.protocol}://${req.headers.host}`).host;
   if (!clientId) return res.end('GitHub OAuth 未配置，请联系管理员');
   if (req.query['code']) {
     const accessToken = await verify(req);
     if (accessToken) {
       const userInfo = await getUserInfo(accessToken);
       req.session.player = await saveUser({
-        name: userInfo.login,
+        name: 'github-' + userInfo.login,
         nickname: userInfo.name || userInfo.login,
         id: userInfo.id,
         from: 'github',
@@ -28,11 +28,12 @@ export async function login(req: Request, res: Response) {
 }
 
 function verify(req: Request) {
+  const domain = new URL(req.headers.referer || `${req.protocol}://${req.headers.host}`).host;
   const verifyReq = {
     client_id: utils.config?.login.githubClientId,
     client_secret: utils.config?.login.githubClientSecret,
     code: req.query['code'],
-    redirect_uri: `https://${req.host}/login/github`,
+    redirect_uri: `https://${domain}/api/login/github`,
   }
   return fetch('https://github.com/login/oauth/access_token', {
     method: 'POST',

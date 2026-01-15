@@ -9,7 +9,7 @@ export async function login(req: Request, res: Response) {
     if (userId) {
       const [ userInfo ] = await getUserInfo(userId);
       req.session.player = await saveUser({ 
-        name: userInfo.profileurl.trim().split('/').slice(0, -1).pop() || userId, 
+        name: 'steam-' + userInfo.profileurl.trim().split('/').slice(0, -1).pop() || userId, 
         nickname: userInfo.personaname, 
         id: userId,
         from: 'steam',
