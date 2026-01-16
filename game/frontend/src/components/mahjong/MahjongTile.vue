@@ -180,6 +180,7 @@ const handleClick = () => {
     emit('click', props.tile)
   }
 }
+
 </script>
 
 <style scoped>

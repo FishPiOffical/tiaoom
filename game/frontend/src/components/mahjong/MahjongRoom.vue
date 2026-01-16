@@ -408,10 +408,7 @@ const {
     // 新增：多赢家相关属性
     multiWinners,
     isMultiWin,
-    isSingleWin,
-    isLiuju,
     isWinnerInMulti,
-    endReason,
     getPlayerName,
     getPlayerStatus,
     isPlayerCurrentTurn,

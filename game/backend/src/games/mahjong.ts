@@ -1548,6 +1548,7 @@ class MahjongGameRoom extends GameRoom {
 
   // ============ 计时器系统 ============
 
+  // 清除倒计时
   private clearTurnTimer() {
     this.stopTimer('turn');
     if (this.timerInterval) {
@@ -1556,6 +1557,7 @@ class MahjongGameRoom extends GameRoom {
     }
   }
 
+  // 启动倒计时
   private startTurnTimer(timeoutMs: number, onTimeout: () => void) {
     this.clearTurnTimer();
     this.timerGeneration++;
