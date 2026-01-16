@@ -104,6 +104,26 @@
               </div>
           </div>
 
+          <div class="col-span-full text-lg font-semibold border-b border-base-300 pb-2 mt-4">第三方登录设置（可选）</div>
+          <div class="form-control w-full">
+              <label class="label" for="githubClientId">
+                <span class="label-text">GitHub Client ID</span>
+              </label>
+              <input type="text" id="githubClientId" v-model="form.githubClientId" class="input input-bordered w-full">
+          </div>
+          <div class="form-control w-full">
+              <label class="label" for="githubClientSecret">
+                <span class="label-text">GitHub Client Secret</span>
+              </label>
+              <input type="text" id="githubClientSecret" v-model="form.githubClientSecret" class="input input-bordered w-full">
+          </div>
+          <div class="form-control w-full">
+              <label class="label" for="steamApiKey">
+                <span class="label-text">Steam API Key</span>
+              </label>
+              <input type="text" id="steamApiKey" v-model="form.steamApiKey" class="input input-bordered w-full">
+          </div>
+
           <div class="col-span-full text-lg font-semibold border-b border-base-300 pb-2 mt-4">摸鱼派密钥设置（可选）</div>
           <div class="form-control w-full">
               <label class="label" for="goldenKey">
@@ -157,6 +177,9 @@ const form = reactive({
   persistence_password: '',
   persistence_database: '',
   persistence_prefix: '',
+  githubClientId: '',
+  githubClientSecret: '',
+  steamApiKey: '',
   goldenKey: '',
   marketKey: ''
 })
