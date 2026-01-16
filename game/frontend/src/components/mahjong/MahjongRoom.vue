@@ -18,17 +18,37 @@
                 class="flex flex-col items-center justify-center flex-1 p-4 overflow-auto">
                 <div class="text-center w-full max-w-4xl">
                     <h2 class="mb-4 text-3xl font-bold">
-                        {{ isWinner ? '🎉 恭喜你赢了！' : '游戏结束' }}
+                        <template v-if="isMultiWin">
+                            {{ isWinnerInMulti ? '🎉 恭喜你胡牌！' : '游戏结束' }}
+                        </template>
+                        <template v-else>
+                            {{ isWinner ? '🎉 恭喜你赢了！' : '游戏结束' }}
+                        </template>
                     </h2>
                     <p class="mb-4 text-lg">
-                        <template v-if="gameState.winner">
+                        <template v-if="isMultiWin && multiWinners.length > 0">
+                            <!-- 一炮多响 -->
+                            <span class="text-yellow-500 font-bold">一炮多响！</span><br/>
+                            <span v-for="(winner, index) in multiWinners" :key="winner.playerId">
+                                {{ getPlayerName(winner.playerId) }}
+                                <template v-if="winner.winType === 'zimo'">自摸{{ winner.winningTile?.display }}胡牌</template>
+                                <template v-else>胡{{ winner.winningTile?.display }}</template>
+                                <template v-if="index < multiWinners.length - 1">、</template>
+                            </span>
+                            <span v-if="dianpaoPlayer" class="text-red-500">
+                                （{{ getPlayerName(dianpaoPlayer) }} 放炮）
+                            </span>
+                        </template>
+                        <template v-else-if="gameState.winner">
+                            <!-- 单一赢家 -->
                             {{ getPlayerName(gameState.winner) }}
-                            {{ gameState.winType === 'zimo' ? '自摸' : '点炮' }} {{ winningTile }} 胡牌
+                            {{ gameState.winType === 'zimo' ? '自摸' : '点炮' }} {{ winningTile?.display }} 胡牌
                             <span v-if="dianpaoPlayer" class="text-red-500">
                                 （{{ getPlayerName(dianpaoPlayer) }} 放炮）
                             </span>
                         </template>
                         <template v-else>
+                            <!-- 流局 -->
                             流局
                         </template>
                     </p>
@@ -38,11 +58,13 @@
                         <h3 class="text-xl font-semibold mb-4">玩家手牌</h3>
                         <div v-for="playerId in gameState.playerOrder" :key="playerId"
                             class="bg-base-200 rounded-lg p-3 text-left" :class="{
+                                'ring-2 ring-yellow-400': gameState.winner === playerId || (isMultiWin && isPlayerWinner(playerId)),
                                 'ring-2 ring-yellow-400': gameState.winner === playerId,
                                 'ring-2 ring-red-400': dianpaoPlayer === playerId
                             }">
                             <div class="flex items-center gap-2 mb-2">
                                 <span class="font-medium">{{ getPlayerName(playerId) }}</span>
+                                <span v-if="gameState.winner === playerId || (isMultiWin && isPlayerWinner(playerId))"
                                 <span v-if="gameState.winner === playerId"
                                     class="badge badge-success badge-sm">胡牌</span>
                                 <span v-if="dianpaoPlayer === playerId" class="badge badge-error badge-sm">放炮</span>
@@ -50,6 +72,15 @@
                             </div>
                             <!-- 手牌 -->
                             <div class="flex gap-1 flex-wrap">
+                                <!-- 显示原始手牌 -->
+                                <MahjongTile v-for="tile in getPlayerData(playerId)?.tiles || []" :key="tile.id"
+                                    :tile="tile" size="sm" 
+                                    :highlight="winningTile && tile.id === winningTile.id" />
+                                <!-- 如果当前玩家是获胜玩家且胡牌存在，则额外显示胡牌 -->
+                                <template v-if="(gameState.winner === playerId || (isMultiWin && isPlayerWinner(playerId)) ) && winningTile">
+                                  <MahjongTile v-if="!getPlayerData(playerId)?.tiles.some(t => t.id === winningTile!.id)"
+                                      :tile="winningTile!" size="sm" :highlight="true" />
+                                </template>
                                 <MahjongTile v-for="tile in getPlayerData(playerId)?.tiles || []" :key="tile.id"
                                     :tile="tile" size="sm" 
                                     :highlight="winningTile" />
@@ -377,9 +408,15 @@ const {
     wallRemaining,
     lastDiscard,
     lastDiscardPlayer,
-    isCreator,
     dianpaoPlayer,
     winningTile,
+    // 新增：多赢家相关属性
+    multiWinners,
+    isMultiWin,
+    isSingleWin,
+    isLiuju,
+    isWinnerInMulti,
+    endReason,
     getPlayerName,
     getPlayerStatus,
     isPlayerCurrentTurn,
@@ -396,6 +433,12 @@ const {
 onMounted(() => {
     init()
 })
+
+// 检查指定玩家是否为赢家（在一炮多响情况下）
+const isPlayerWinner = (playerId: string) => {
+  if (!isMultiWin.value || !multiWinners.value) return false
+  return multiWinners.value.some((winner: any) => winner.playerId === playerId)
+}
 </script>
 
 <style scoped>

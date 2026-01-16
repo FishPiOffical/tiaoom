@@ -65,6 +65,14 @@ export interface PlayerHand {
 // 操作类型
 export type ActionType = 'chi' | 'peng' | 'gang' | 'hu' | 'pass';
 
+// 单个赢家信息
+export interface WinnerInfo {
+  playerId: string;
+  playerName: string;
+  winType: 'zimo' | 'dianpao';
+  winningTile: MahjongTile | null;
+}
+
 // 可用操作
 export interface AvailableAction {
   type: ActionType;
@@ -95,6 +103,7 @@ export interface MahjongGameState {
   currentAction?: { playerId: string; action: ActionType; tiles?: MahjongTile[] };
   winner: string | null;         // 胜者
   winType: 'zimo' | 'dianpao' | null;  // 胡牌类型
+  winners?: WinnerInfo[];        // 多赢家信息（一炮多响）
   turnStartTime?: number;        // 回合开始时间
   turnTimeLeft?: number;         // 回合剩余时间
   drawTile?: MahjongTile | null; // 当前玩家摸的牌
@@ -452,30 +461,6 @@ class MahjongGameRoom extends GameRoom {
   }
 
   /**
-   * 更新玩家角色（前4位是玩家，后面是观战）
-   */
-  private updatePlayerRoles() {
-    this.room.players.forEach(player => {
-      const seatIndex = this.seatOrder.indexOf(player.id);
-      if (seatIndex >= 0 && seatIndex < 4) {
-        // 前4位是玩家
-        if (player.role !== PlayerRole.player) {
-          player.role = PlayerRole.player;
-          player.isReady = false;
-          this.say(`${player.name} 成为玩家`);
-        }
-      } else {
-        // 后面的是观战
-        if (player.role !== PlayerRole.watcher) {
-          player.role = PlayerRole.watcher;
-          player.isReady = false;
-          this.say(`${player.name} 成为观战者`);
-        }
-      }
-    });
-  }
-
-  /**
    * 初始化游戏房间
    */
   init() {
@@ -491,17 +476,8 @@ class MahjongGameRoom extends GameRoom {
         const playerSocket = this.room.players.find(p => p.id === player.id);
         if (!playerSocket) return;
 
-        // 座位管理：如果玩家不在座位列表中，添加到末尾
-        if (!this.seatOrder.includes(player.id)) {
-          this.seatOrder.push(player.id);
-        }
-
-        // 根据座位位置决定是玩家还是观战
-        this.updatePlayerRoles();
-
         playerSocket.emit('command', { type: 'achievements', data: this.achievements });
         playerSocket.emit('command', { type: 'message_history', data: this.messageHistory });
-        playerSocket.emit('command', { type: 'seat_order', data: this.seatOrder });
 
         if (this.gameState) {
           this.sendGameStateToPlayer(playerSocket);
@@ -511,15 +487,6 @@ class MahjongGameRoom extends GameRoom {
         }
       })
       .on('leave', async (player) => {
-        // 从座位列表中移除
-        const seatIndex = this.seatOrder.indexOf(player.id);
-        if (seatIndex >= 0) {
-          this.seatOrder.splice(seatIndex, 1);
-          // 如果移除的是前4位，后面的观战者顶替
-          this.updatePlayerRoles();
-          this.command('seat_order', this.seatOrder);
-        }
-
         if (this.gameState && this.gameState.phase !== 'ended' && player.role === PlayerRole.player) {
           this.handlePlayerLeave(player);
         }
@@ -564,11 +531,6 @@ class MahjongGameRoom extends GameRoom {
       case 'achievements':
         this.commandTo('achievements', this.achievements, sender);
         break;
-
-      case 'mahjong:kick':
-        // 房主踢人
-        this.handleKickPlayer(sender.id, message.data?.playerId);
-        break;
     }
   }
 
@@ -577,13 +539,36 @@ class MahjongGameRoom extends GameRoom {
    */
   getStatus(sender: any): any {
     const baseStatus = super.getStatus(sender);
-    const roomStatus = this.gameState
-      ? (this.gameState.phase === 'ended' ? 'ended' : 'playing')
-      : 'waiting';
+    let roomStatus = 'waiting';
+    let endReason = null;
+
+    if (this.gameState) {
+      if (this.gameState.phase === 'ended') {
+        roomStatus = 'ended';
+        
+        // 区分结束原因
+        if (this.gameState.winners && this.gameState.winners.length > 1) {
+          // 一炮多响
+          endReason = 'multi_win';
+        } else if (this.gameState.winners && this.gameState.winners.length === 1) {
+          // 单一赢家（普通胡牌）
+          endReason = 'single_win';
+        } else if (this.gameState.winner) {
+          // 单一赢家（普通胡牌）
+          endReason = 'single_win';
+        } else {
+          // 流局
+          endReason = 'liuju';
+        }
+      } else {
+        roomStatus = 'playing';
+      }
+    }
 
     return {
       ...baseStatus,
       status: roomStatus,
+      endReason, // 添加结束原因标识
     };
   }
 
@@ -631,51 +616,6 @@ class MahjongGameRoom extends GameRoom {
     this.broadcastGameState();
   }
 
-  /**
-   * 房主踢人
-   */
-  private handleKickPlayer(senderId: string, targetPlayerId: string) {
-    // 检查发送者是否是房主
-    const sender = this.room.players.find(p => p.id === senderId);
-    if (!sender?.isCreator) {
-      this.commandTo('mahjong:error', { message: '只有房主可以踢人' }, sender as RoomPlayer);
-      return;
-    }
-
-    // 不能踢自己
-    if (senderId === targetPlayerId) {
-      this.commandTo('mahjong:error', { message: '不能踢自己' }, sender as RoomPlayer);
-      return;
-    }
-
-    // 游戏进行中不能踢人
-    if (this.gameState && this.gameState.phase !== 'ended' && this.gameState.phase !== 'waiting') {
-      this.commandTo('mahjong:error', { message: '游戏进行中不能踢人' }, sender as RoomPlayer);
-      return;
-    }
-
-    const targetPlayer = this.room.players.find(p => p.id === targetPlayerId);
-    if (!targetPlayer) {
-      return;
-    }
-
-    // 从座位列表中移除
-    const seatIndex = this.seatOrder.indexOf(targetPlayerId);
-    if (seatIndex >= 0) {
-      this.seatOrder.splice(seatIndex, 1);
-    }
-
-    this.say(`${targetPlayer.name} 被房主踢出房间`);
-
-    // 调用框架的踢人方法
-    this.room.kickPlayer(targetPlayerId);
-
-    // 更新玩家角色
-    this.updatePlayerRoles();
-    this.command('seat_order', this.seatOrder);
-    this.save();
-  }
-
   // ============ 游戏核心逻辑 ============
 
   /**
@@ -692,15 +632,6 @@ class MahjongGameRoom extends GameRoom {
       this.say('麻将需要4名玩家！');
       return;
     }
-
-    // 将未参与游戏的玩家设为围观者
-    this.room.players.forEach(player => {
-      if (player.role === PlayerRole.player && !playerIds.includes(player.id)) {
-        player.role = PlayerRole.watcher;
-        player.isReady = false;
-        this.say(`${player.name} 成为围观者`);
-      }
-    });
 
     // 创建并洗牌
     const deck = shuffleTiles(createMahjongDeck());
@@ -784,11 +715,26 @@ class MahjongGameRoom extends GameRoom {
       turnTimeLeft: this.gameState.turnTimeLeft,
       hosted: this.gameState.hosted,
       dianpaoPlayer: this.gameState.dianpaoPlayer,
+      winningTile: this.gameState.winningTile,
       players: {} as any,
     };
 
-    // 游戏结束时显示所有玩家的手牌
+    // 游戏结束时显示额外信息
     const isGameEnded = this.gameState.phase === 'ended';
+    if (isGameEnded) {
+      // 添加赢家信息
+      visibleState.winners = this.gameState.winners;
+      // 添加结束原因
+      if (this.gameState.winners && this.gameState.winners.length > 1) {
+        visibleState.endReason = 'multi_win'; // 一炮多响
+      } else if (this.gameState.winners && this.gameState.winners.length === 1) {
+        visibleState.endReason = 'single_win'; // 单一赢家
+      } else if (this.gameState.winner) {
+        visibleState.endReason = 'single_win'; // 单一赢家
+      } else {
+        visibleState.endReason = 'liuju'; // 流局
+      }
+    }
 
     // 每个玩家的状态
     this.gameState.playerOrder.forEach(playerId => {
@@ -949,10 +895,11 @@ class MahjongGameRoom extends GameRoom {
     this.gameState.pendingActions = {};
     this.gameState.actionPriority = [];
 
-    // 按优先级检查：胡 > 杠 > 碰 > 吃
-    this.gameState.playerOrder.forEach((playerId, index) => {
-      if (playerId === discardPlayerId) return;
-
+    // 按顺时针方向检查其他玩家（从出牌者的下家开始）
+    for (let i = 1; i < 4; i++) {
+      const currentIndex = (discardPlayerIndex + i) % 4;
+      const playerId = this.gameState.playerOrder[currentIndex];
+      
       const hand = this.gameState!.players[playerId];
       const actions: AvailableAction[] = [];
 
@@ -972,8 +919,7 @@ class MahjongGameRoom extends GameRoom {
       }
 
       // 检查吃（只有下家可以吃）
-      const nextPlayerIndex = (discardPlayerIndex + 1) % 4;
-      if (index === nextPlayerIndex) {
+      if (i === 1) { // 只有下家可以吃
         const chiOptions = checkCanChi(hand.tiles, tile);
         chiOptions.forEach(tiles => {
           actions.push({ type: 'chi', tiles, targetTile: tile });
@@ -985,7 +931,7 @@ class MahjongGameRoom extends GameRoom {
         this.gameState!.actionPriority.push(playerId);
         hasActions = true;
       }
-    });
+    }
 
     this.broadcastGameState();
 
@@ -1029,15 +975,31 @@ class MahjongGameRoom extends GameRoom {
     const actionPriority: Record<ActionType, number> = { hu: 4, gang: 3, peng: 2, chi: 1, pass: 0 };
     const currentPriority = actionPriority[action];
 
+    // 记录当前玩家的优先级索引（用于确定顺时针优先级）
+    const currentPlayerPriorityIndex = this.gameState.actionPriority.indexOf(playerId);
+    
     let shouldExecute = true;
     for (const otherId of this.gameState.actionPriority) {
       if (otherId === playerId) continue;
+      
       const otherActions = this.gameState.pendingActions[otherId];
       if (otherActions) {
+        // 检查是否有更高优先级的操作
         const higherPriorityAction = otherActions.find(a => actionPriority[a.type] > currentPriority);
         if (higherPriorityAction) {
           shouldExecute = false;
           break;
+        }
+        
+        // 如果是相同优先级（如多个胡牌），则按顺时针方向决定优先级
+        if (actionPriority[action] === actionPriority[otherActions[0].type]) {
+          const otherPlayerPriorityIndex = this.gameState.actionPriority.indexOf(otherId);
+          // 如果当前玩家在优先级队列中的位置更靠前，则执行当前操作
+          if (currentPlayerPriorityIndex > otherPlayerPriorityIndex) {
+            // 这里我们仍然会等待，因为我们要确保按顺时针顺序执行
+            shouldExecute = false;
+            break;
+          }
         }
       }
     }
@@ -1048,6 +1010,11 @@ class MahjongGameRoom extends GameRoom {
 
     if (shouldExecute) {
       this.executeAction(playerId, action, tiles, validAction.targetTile);
+      
+      // 如果是胡牌操作且是点炮，检查是否有多人同时胡牌（一炮多响）
+      if (action === 'hu' && this.gameState.lastDiscardPlayer && this.gameState.lastDiscardPlayer !== playerId) {
+        this.checkMultiWinners(playerId);
+      }
     } else {
       this.save();
       this.broadcastGameState();
@@ -1084,6 +1051,57 @@ class MahjongGameRoom extends GameRoom {
   }
 
   /**
+   * 检查是否存在多个赢家（一炮多响）
+   */
+  private checkMultiWinners(firstWinnerId: string) {
+    if (!this.gameState) return;
+
+    // 检查还有哪些玩家可以胡这张牌
+    const remainingHuPlayers: string[] = [];
+    const targetTile = this.gameState.lastDiscard;
+    
+    for (const playerId in this.gameState.pendingActions) {
+      const actions = this.gameState.pendingActions[playerId];
+      const huAction = actions.find(action => action.type === 'hu');
+      
+      if (huAction && playerId !== firstWinnerId && targetTile) {
+        const hand = this.gameState.players[playerId];
+        if (isWinningHand(hand, targetTile)) {
+          remainingHuPlayers.push(playerId);
+        }
+      }
+    }
+
+    // 如果存在多个赢家，执行一炮多响
+    if (remainingHuPlayers.length > 0) {
+      const discardPlayer = this.room.players.find(p => p.id === this.gameState!.lastDiscardPlayer);
+      this.say(`一炮多响！${remainingHuPlayers.map(id => this.room.players.find(p => p.id === id)?.name).join('、')} 也胡牌！`);
+
+      // 处理每个赢家
+      for (const winnerId of remainingHuPlayers) {
+        const winnerPlayer = this.room.players.find(p => p.id === winnerId);
+        
+        // 添加赢家到数组
+        if (!this.gameState.winners) {
+          this.gameState.winners = [];
+        }
+        this.gameState.winners.push({
+          playerId: winnerId,
+          playerName: winnerPlayer?.name || '',
+          winType: 'dianpao',
+          winningTile: this.gameState.lastDiscard
+        });
+      }
+
+      // 一炮多响的结束处理
+      this.endMultiWinGame();
+    } else {
+      // 没有一炮多响，正常结束游戏
+      this.endGame();
+    }
+  }
+
+  /**
    * 执行操作
    */
   private executeAction(playerId: string, action: ActionType, tiles?: MahjongTile[], targetTile?: MahjongTile | null) {
@@ -1095,27 +1113,42 @@ class MahjongGameRoom extends GameRoom {
     switch (action) {
       case 'hu': {
         // 胡牌
+        const isDianpao = this.gameState.lastDiscardPlayer && this.gameState.lastDiscardPlayer !== playerId;
+        const huTile = isDianpao ? this.gameState.lastDiscard : this.gameState.drawTile;
+        
+        // 设置基础赢家信息
         this.gameState.winner = playerId;
+        this.gameState.winType = isDianpao ? 'dianpao' : 'zimo';
+        this.gameState.winningTile = huTile || null;
+        
+        // 如果是第一次胡牌，初始化赢家数组
+        if (!this.gameState.winners) {
+          this.gameState.winners = [];
+        }
+        
+        // 添加当前赢家
+        this.gameState.winners.push({
+          playerId,
+          playerName: player?.name || '',
+          winType: isDianpao ? 'dianpao' : 'zimo',
+          winningTile: huTile || null
+        });
 
-        // 保存胡牌的那张牌
-        if (this.gameState.drawTile) {
-          // 自摸胡
-          this.gameState.winningTile = this.gameState.drawTile;
-        } else {
+        if (isDianpao) {
           // 点炮胡
-          this.gameState.winningTile = this.gameState.lastDiscard;
-        }
-
-        if (this.gameState.lastDiscardPlayer && this.gameState.lastDiscardPlayer !== playerId) {
-          this.gameState.winType = 'dianpao';
           const loser = this.room.players.find(p => p.id === this.gameState!.lastDiscardPlayer);
-          this.say(`${player?.name} 胡牌！${loser?.name} 点炮 ${this.gameState.winningTile?.display || ''}`);
+          this.say(`${player?.name} 胡牌！${loser?.name} 点炮 ${this.gameState.lastDiscard?.display || ''}`);
+          // 记录点炮玩家
+          this.gameState.dianpaoPlayer = this.gameState.lastDiscardPlayer;
+          // 点炮情况下，不会立即结束游戏，而是让 checkMultiWinners 检查一炮多响
+          return;
         } else {
-          this.gameState.winType = 'zimo';
-          this.say(`${player?.name} 自摸 ${this.gameState.winningTile?.display || ''} 胡牌！`);
+          // 自摸胡
+          this.say(`${player?.name} 自摸 ${this.gameState.drawTile?.display || ''} 胡牌！`);
+          // 自摸则直接结束游戏
+          this.endGame();
+          return;
         }
-        this.endGame();
-        return;
       }
 
       case 'gang': {
@@ -1127,6 +1160,13 @@ class MahjongGameRoom extends GameRoom {
           // 明杠
           gangType = 'gang_ming';
           const sameTiles = hand.tiles.filter(t => t.suit === targetTile.suit && t.value === targetTile.value);
+          
+          // 验证手牌中确实有足够的3张相同的牌
+          if (sameTiles.length < 3) {
+            this.say(`明杠失败：手牌中没有足够的 ${targetTile.display}`);
+            return;
+          }
+          
           gangTiles = [...sameTiles.slice(0, 3), targetTile];
           // 从手牌移除
           sameTiles.slice(0, 3).forEach(t => {
@@ -1200,6 +1240,12 @@ class MahjongGameRoom extends GameRoom {
         // 碰牌
         if (!targetTile) return;
         const sameTiles = hand.tiles.filter(t => t.suit === targetTile.suit && t.value === targetTile.value).slice(0, 2);
+
+        // 验证手牌中确实有足够的2张相同的牌
+        if (sameTiles.length < 2) {
+          this.say(`碰牌失败：手牌中没有足够的 ${targetTile.display}`);
+          return;
+        }
 
         hand.melds.push({
           type: 'peng',
@@ -1362,8 +1408,8 @@ class MahjongGameRoom extends GameRoom {
         player.status = PlayerStatus.online;
       }
     });
-    this.room.end();
     this.save();
+    this.room.end();
     this.broadcastGameState();
   }
 
@@ -1411,7 +1457,7 @@ class MahjongGameRoom extends GameRoom {
    * 结束游戏
    */
   private endGame() {
-    if (!this.gameState || !this.gameState.winner) return;
+    if (!this.gameState) return;
 
     // 保存所有玩家的最终手牌
     this.gameState.finalHands = {};
@@ -1429,9 +1475,63 @@ class MahjongGameRoom extends GameRoom {
     }
 
     this.gameState.phase = 'ended';
-    const winner = this.room.validPlayers.find(p => p.id === this.gameState!.winner) as RoomPlayer;
+    
+    // 处理赢家（单个赢家情况）
+    let winners: RoomPlayer[] | null = null;
+    if (this.gameState.winner) {
+      const winner = this.room.validPlayers.find(p => p.id === this.gameState!.winner) as RoomPlayer;
+      winners = winner ? [winner] : null;
+    } else if (this.gameState.winners && this.gameState.winners.length > 0) {
+      // 多赢家情况
+      winners = this.gameState.winners.map(winnerInfo => 
+        this.room.validPlayers.find(p => p.id === winnerInfo.playerId) as RoomPlayer
+      ).filter(Boolean) as RoomPlayer[];
+    }
 
-    this.saveAchievements(winner ? [winner] : null);
+    this.saveAchievements(winners || null);
+    this.clearTurnTimer();
+
+    // 重置所有玩家的准备状态
+    this.room.players.forEach(player => {
+      if (player.role === PlayerRole.player) {
+        player.isReady = false;
+        player.status = PlayerStatus.online;
+      }
+    });
+    this.room.end();
+    this.save();
+    this.broadcastGameState();
+  }
+
+  /**
+   * 处理一炮多响的游戏结束
+   */
+  private endMultiWinGame() {
+    if (!this.gameState || !this.gameState.winners || this.gameState.winners.length === 0) return;
+
+    // 保存所有玩家的最终手牌
+    this.gameState.finalHands = {};
+    this.gameState.playerOrder.forEach(playerId => {
+      this.gameState!.finalHands![playerId] = {
+        tiles: [...this.gameState!.players[playerId].tiles],
+        melds: [...this.gameState!.players[playerId].melds],
+        discards: [...this.gameState!.players[playerId].discards],
+      };
+    });
+
+    // 如果是点炮，记录点炮玩家
+    if (this.gameState.lastDiscardPlayer) {
+      this.gameState.dianpaoPlayer = this.gameState.lastDiscardPlayer;
+    }
+
+    this.gameState.phase = 'ended';
+
+    // 获取所有赢家对象
+    const winners = this.gameState.winners.map(winnerInfo => 
+      this.room.validPlayers.find(p => p.id === winnerInfo.playerId) as RoomPlayer
+    ).filter(Boolean) as RoomPlayer[];
+
+    this.saveAchievements(winners.length > 0 ? winners : null);
     this.clearTurnTimer();
 
     // 重置所有玩家的准备状态
