@@ -624,8 +624,10 @@ class MahjongGameRoom extends GameRoom {
   private startGame() {
     this.clearTurnTimer();
 
-    const readyPlayers = this.room.validPlayers.filter(p => p.isReady);
-    const gamePlayers = readyPlayers.slice(0, 4);
+    // 使用 validPlayers 而不是筛选 readyPlayers，因为房间 isReady 检查已经确保所有玩家都准备好了
+    // 这样可以避免围观玩家坐上座位后因 isReady 状态不一致而没有牌的问题
+    const validPlayers = this.room.validPlayers;
+    const gamePlayers = validPlayers.slice(0, 4);
     const playerIds = gamePlayers.map(p => p.id);
 
     if (playerIds.length !== 4) {
