@@ -59,13 +59,11 @@
                         <div v-for="playerId in gameState.playerOrder" :key="playerId"
                             class="bg-base-200 rounded-lg p-3 text-left" :class="{
                                 'ring-2 ring-yellow-400': gameState.winner === playerId || (isMultiWin && isPlayerWinner(playerId)),
-                                'ring-2 ring-yellow-400': gameState.winner === playerId,
                                 'ring-2 ring-red-400': dianpaoPlayer === playerId
                             }">
                             <div class="flex items-center gap-2 mb-2">
                                 <span class="font-medium">{{ getPlayerName(playerId) }}</span>
                                 <span v-if="gameState.winner === playerId || (isMultiWin && isPlayerWinner(playerId))"
-                                <span v-if="gameState.winner === playerId"
                                     class="badge badge-success badge-sm">胡牌</span>
                                 <span v-if="dianpaoPlayer === playerId" class="badge badge-error badge-sm">放炮</span>
                                 <span v-if="isDealer(playerId)" class="badge badge-warning badge-xs">庄</span>
@@ -81,9 +79,6 @@
                                   <MahjongTile v-if="!getPlayerData(playerId)?.tiles.some(t => t.id === winningTile!.id)"
                                       :tile="winningTile!" size="sm" :highlight="true" />
                                 </template>
-                                <MahjongTile v-for="tile in getPlayerData(playerId)?.tiles || []" :key="tile.id"
-                                    :tile="tile" size="sm" 
-                                    :highlight="winningTile" />
                             </div>
                             <!-- 副露 -->
                             <div v-if="getPlayerData(playerId)?.melds?.length" class="flex gap-2 mt-2 flex-wrap">
