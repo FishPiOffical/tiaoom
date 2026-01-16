@@ -50,6 +50,7 @@
       <button class="btn btn-circle md:btn-lg btn-soft tooltip tooltip-left" 
         v-if="!isRoomFull && !isPlaying" 
         @click="game?.joinRoom(roomPlayer.room.id)"
+        :disabled="roomPlayer.room.attrs.point > 0 && gameStore.player?.from !== 'fishpi'"
         data-tip="加入游戏"
       >
         <Icon icon="mdi:google-gamepad" />
@@ -64,6 +65,7 @@
 <script setup lang="ts">
 import { GameCore } from '@/core/game';
 import { RoomPlayer, Room, PlayerRole, RoomStatus } from 'tiaoom/client';
+import { useGameStore } from '@/stores/game';
 import { computed, ref } from 'vue';
 import RoomManagementDrawer from './RoomManagementDrawer.vue';
 
@@ -72,6 +74,7 @@ const props = defineProps<{
   game: GameCore,  
 }>()
 
+const gameStore = useGameStore();
 const manageVisible = ref(false)
 const isPlaying = computed(() => props.roomPlayer.room.status === RoomStatus.playing)
 const isAllReady = computed(() => {

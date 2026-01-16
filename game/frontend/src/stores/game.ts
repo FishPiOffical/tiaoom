@@ -14,6 +14,7 @@ export const useGameStore = defineStore('game', () => {
   const players = ref<Player[]>([])
   const rooms = ref<Room[]>([])
   const games = ref<Record<string, GameConfig>>({})
+  const thirdParty = ref<string[]>([])
   const globalMessages = ref<{ data: string, sender?: Player, createdAt: number }[]>([])
   const globalBoardcastMessage = ref<string>('');
   const gameManages = ref<IManageData[]>([]);
@@ -37,7 +38,9 @@ export const useGameStore = defineStore('game', () => {
   async function initConfig() {
     try {
       isConfigured.value = await api.isConfigured();
-      games.value = await api.getConfig();
+      const { game: gameData, thirdParty: thirdPartyList } = await api.getConfig();
+      games.value = gameData;
+      thirdParty.value = thirdPartyList;
     } catch (error) {
       console.error('Failed to load config:', error)
     }
@@ -169,6 +172,7 @@ export const useGameStore = defineStore('game', () => {
     playerStatus,
     gameManages,
     isConfigured,
+    thirdParty,
     initConfig,
     checkSession,
     initGame,

@@ -63,6 +63,7 @@ export class User implements IUser {
         avatar: this.avatar || '',
         username: this.username,
         id: this.id,
+        from: this.from || ''
       }
     });
   }
@@ -97,7 +98,7 @@ export const api = {
   isConfigured(): Promise<boolean> {
     return http.get('/is-configured')
   },
-  getConfig(): Promise<Record<string, GameConfig>> {
+  getConfig(): Promise<{ game: Record<string, GameConfig>, thirdParty: string[] }> {
     return http.get('/config')
   },
   getUserInfo(): Promise<User> {
@@ -109,9 +110,9 @@ export const api = {
   getUser(username: string): Promise<User> {
     return http.get(`/user/${username}`).then((data: any) => new User(data))
   },
-  getUserRecords(username: string, page: number = 1, count: number = 10): Promise<{ records: any[], total: number }> {
+  getUserRecords({username, page = 1, count = 10, type}: {username: string, page?: number, count?: number, type?: string}): Promise<{ records: any[], total: number }> {
     return http.get(`/user/${username}/record`, {
-      params: { p: page, count }
+      params: { p: page, count, type }
     });
   },
   getLeaderboard(type: string): Promise<any[]> {

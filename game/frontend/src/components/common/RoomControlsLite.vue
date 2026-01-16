@@ -44,7 +44,7 @@
           <Icon icon="mdi:logout" />
         </button>
         <button class="btn btn-circle tooltip" 
-          v-if="!isRoomFull && !isPlaying" 
+          v-if="!isRoomFull && !isPlaying && !(roomPlayer.room.attrs.point > 0 && gameStore.player?.from !== 'fishpi')" 
           @click="game?.joinRoom(roomPlayer.room.id)"
           data-tip="加入游戏"
         >
@@ -63,6 +63,7 @@
 <script setup lang="ts">
 import { GameCore } from '@/core/game';
 import { RoomPlayer, Room, PlayerRole, RoomStatus } from 'tiaoom/client';
+import { useGameStore } from '@/stores/game';
 import { computed, ref } from 'vue';
 import hotkeys from 'hotkeys-js';
 
@@ -70,6 +71,8 @@ const props = defineProps<{
   roomPlayer: RoomPlayer & { room: Room },
   game: GameCore,  
 }>()
+
+const gameStore = useGameStore();
 
 const isPlaying = computed(() => props.roomPlayer.room.status === RoomStatus.playing)
 const isAllReady = computed(() => {

@@ -1,11 +1,14 @@
 import { Router, Request, Response } from "express";
 import { Controller } from "../controller";
 import { login as fishpiLogin, register as fishpiRegister, updateUserInfo } from "../login/fishpi";
+import { login as steamLogin } from "../login/steam";
+import { login as githubLogin } from "../login/github";
 import { Record, RecordRepo, User, UserRepo, AppDataSource, PlayerStats, ManageRepo } from "@/entities";
 import { getPlayerStats, isConfigured } from "@/utils";
-import { Like } from "typeorm";
+import { FindOptionsWhere, Like } from "typeorm";
 import GameRouter from "./game";
 import Games, { GameRoom } from "@/games";
+import { getThirdPartyType } from "@/login";
 
 export interface GameContext {
   controller?: Controller;
@@ -31,7 +34,10 @@ const createRoutes = (game: GameContext, gameName: string) => {
     res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
     res.json({
       code: 0,
-      data: game.controller?.games
+      data: {
+        game: game.controller?.games,
+        thirdParty: getThirdPartyType(),
+      }
     });
   });
 
@@ -85,13 +91,15 @@ const createRoutes = (game: GameContext, gameName: string) => {
   });
 
   router.get("/user/:username/record", async (req: Request, res: Response) => {
-    const { p, count } = req.query;
+    const { p, count, type } = req.query;
     const page = parseInt(p as string) || 1;
     const pageSize = parseInt(count as string) || 10;
+    const filter: FindOptionsWhere<Record> = {};
+    if (type) filter.type = type as string;
     const records = await RecordRepo().findAndCount({
       skip: (page - 1) * pageSize,
       take: pageSize,
-      where: { players: Like(`%"${req.params.username}"%`) },
+      where: { players: Like(`%"${req.params.username}"%`), ...filter },
       order: { createdAt: "DESC" },
     });
     res.json({ code: 0, data: { records: records[0], total: records[1] } });
@@ -134,6 +142,8 @@ const createRoutes = (game: GameContext, gameName: string) => {
   });
   router.get("/login/fishpi", fishpiLogin);
   router.get("/register/fishpi", fishpiRegister);
+  router.get("/login/steam", steamLogin);
+  router.get("/login/github", githubLogin);
 
   router.post("/logout", (req: Request, res: Response) => {
     req.session.destroy((err) => {

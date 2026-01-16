@@ -152,8 +152,9 @@
                     v-if="!gameStore.roomPlayer || gameStore.roomPlayer.role === 'watcher' && gameStore.roomPlayer.room.id !== r.id"
                     @click="joinRoom(r)"
                     class="px-2 py-1 btn-xs whitespace-nowrap btn"
+                    :disabled="gameStore.player?.from !== 'fishpi' && r.attrs.point > 0 && !(r.size === 0 || r.players.filter(p => p.role === 'player').length < r.size)"
                   >
-                    {{ r.size === 0 || r.players.filter(p => p.role === 'player').length < r.size ? '进入' : '围观' }}
+                    {{ (gameStore.player?.from !== 'fishpi' && r.attrs.point > 0) ? '围观' : (r.size === 0 || r.players.filter(p => p.role === 'player').length < r.size ? '进入' : '围观') }}
                   </button>
                 </li>
               </ul>
@@ -176,6 +177,8 @@
                     <span v-else>{{ p.name[0] }}</span>
                   </div>
                   <span>{{ p.name }}</span>
+                  <Icon icon="mdi:github" v-if="p.attributes.from == 'github'" />
+                  <Icon icon="mdi:steam" v-if="p.attributes.from == 'steam'" />
                 </li>
               </ul>
             </div>
