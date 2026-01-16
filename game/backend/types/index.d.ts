@@ -34,4 +34,9 @@ interface IConfig {
     database?: string;
     prefix?: string;
   };
+  login: {
+    githubClientId?: string;
+    githubClientSecret?: string;
+    steamApiKey?: string;
+  }
 }

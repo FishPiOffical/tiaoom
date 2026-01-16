@@ -1,12 +1,13 @@
 import { User, UserRepo } from "@/entities";
+import utils from "@/utils";
 import { isConfigured } from "@/utils/config";
 
-export async function saveUser(userInfo: { id: string, name: string, nickname?: string, avatar?: string, ip?: string }, isAdmin = false) {
+export async function saveUser(userInfo: { id: string, name: string, nickname?: string, avatar?: string, ip?: string, from?: string }, isAdmin = false) {
   const user = new User(userInfo.id, userInfo.name, userInfo.nickname || userInfo.name);
   user.id = userInfo.id;
   user.avatar = userInfo.avatar || '';
   user.lastLogin = Date.now();
-  user.from = 'fishpi';
+  user.from = userInfo.from || 'fishpi';
   user.ip = userInfo.ip || '';
   user.isAdmin = isAdmin;
   if (!isConfigured()) return user;
@@ -17,4 +18,16 @@ export async function saveUser(userInfo: { id: string, name: string, nickname?: 
     await UserRepo().save(UserRepo().create(user));
   }
   return user;
+}
+
+export function getThirdPartyType() {
+  const types: string[] = [];
+  const config = utils.config;
+  if (config?.login?.githubClientId && config?.login?.githubClientSecret) {
+    types.push('github');
+  }
+  if (config?.login?.steamApiKey) {
+    types.push('steam');
+  }
+  return types;
 }

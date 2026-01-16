@@ -151,7 +151,7 @@ const ComponentRoomControls = computed(() => getComponent(gameStore.roomPlayer?.
           :class="{ 'pr-8': showExpandBtn }"
           v-if="room && (room.attrs.point || room.attrs.rate)"
         >
-          <div class="text-xs w-full" :class="{ 'line-clamp-1': !isAlertExpanded }" ref="alertContentRef">
+          <div v-if="gameStore.player?.from == 'fishpi'" class="text-xs w-full" :class="{ 'line-clamp-1': !isAlertExpanded }" ref="alertContentRef">
             ⚠️
             <span v-if="room.attrs.point"
               >注意：当前房间每局游戏需扣除 {{ room.attrs.point }} 积分。</span
@@ -169,6 +169,7 @@ const ComponentRoomControls = computed(() => getComponent(gameStore.roomPlayer?.
               {{ gameStore.games[room.attrs.type]?.rewardDescription }}
             </span>
           </div>
+          <span v-else>⚠️ 你不是摸鱼派账号，无法游玩积分局！</span>
           <button 
             v-show="showExpandBtn"
             class="btn btn-xs btn-ghost btn-circle absolute right-1 top-0"
