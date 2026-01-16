@@ -154,6 +154,7 @@ export function useMahjong(game: GameCore, roomPlayer: RoomPlayer & { room: Room
     return player?.name || '已离开玩家'
   }
 
+  // 获取玩家状态
   const getPlayerStatus = (p: any) => {
     if (!p.isReady) return '未准备'
     if (gameStatus.value === 'waiting' || gameStatus.value === 'ended') return '已准备'
@@ -165,16 +166,19 @@ export function useMahjong(game: GameCore, roomPlayer: RoomPlayer & { room: Room
     return '等待中'
   }
 
+  // 是否是当前玩家
   const isPlayerCurrentTurn = (playerId: string) => {
     if (!gameState.value) return false
     const currentPlayerId = gameState.value.playerOrder[gameState.value.currentPlayerIndex]
     return currentPlayerId === playerId
   }
-
+  
+  // 是否是庄家
   const isDealer = (playerId: string) => {
     return dealerId.value === playerId
   }
 
+  // 获取玩家数据
   const getPlayerData = (playerId: string) => {
     if (!gameState.value) return null
     return gameState.value.players[playerId] || null
@@ -301,6 +305,7 @@ export function useMahjong(game: GameCore, roomPlayer: RoomPlayer & { room: Room
     clearSelection()
   }
 
+  // 命令处理
   const onCommand = (command: any) => {
     switch (command.type) {
       case 'game:state':

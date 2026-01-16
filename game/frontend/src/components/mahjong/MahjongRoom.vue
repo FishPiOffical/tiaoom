@@ -26,8 +26,8 @@
                         </template>
                     </h2>
                     <p class="mb-4 text-lg">
+                         <!-- 一炮多响 -->
                         <template v-if="isMultiWin && multiWinners.length > 0">
-                            <!-- 一炮多响 -->
                             <span class="text-yellow-500 font-bold">一炮多响！</span><br/>
                             <span v-for="(winner, index) in multiWinners" :key="winner.playerId">
                                 {{ getPlayerName(winner.playerId) }}
@@ -39,16 +39,16 @@
                                 （{{ getPlayerName(dianpaoPlayer) }} 放炮）
                             </span>
                         </template>
+                        <!-- 单一赢家 -->
                         <template v-else-if="gameState.winner">
-                            <!-- 单一赢家 -->
                             {{ getPlayerName(gameState.winner) }}
                             {{ gameState.winType === 'zimo' ? '自摸' : '点炮' }} {{ winningTile?.display }} 胡牌
                             <span v-if="dianpaoPlayer" class="text-red-500">
                                 （{{ getPlayerName(dianpaoPlayer) }} 放炮）
                             </span>
                         </template>
+                        <!-- 流局 -->
                         <template v-else>
-                            <!-- 流局 -->
                             流局
                         </template>
                     </p>
@@ -381,6 +381,7 @@ const props = defineProps<{
 
 const activeTab = ref<'players' | 'achievements'>('players')
 
+// 使用麻将逻辑
 const {
     gameState,
     currentTimer,

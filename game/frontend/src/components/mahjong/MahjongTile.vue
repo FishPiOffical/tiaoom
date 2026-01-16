@@ -70,6 +70,7 @@ interface Props {
   size?: 'xs' | 'sm' | 'md' | 'lg'
 }
 
+// 默认属性
 const props = withDefaults(defineProps<Props>(), {
   selected: false,
   selectable: false,
@@ -77,6 +78,7 @@ const props = withDefaults(defineProps<Props>(), {
   size: 'md'
 })
 
+// 默认事件
 const emit = defineEmits<{
   (e: 'click', tile: MahjongTile): void
 }>()
@@ -97,6 +99,7 @@ const sizeClasses = computed(() => {
   }
 })
 
+// 文字大小类
 const textSizeClass = computed(() => {
   switch (props.size) {
     case 'xs':
@@ -112,6 +115,7 @@ const textSizeClass = computed(() => {
   }
 })
 
+// 小文字大小类
 const smallTextClass = computed(() => {
   switch (props.size) {
     case 'xs':
@@ -175,6 +179,7 @@ const getSuitDisplay = (suit: TileSuit): string => {
   }
 }
 
+// 点击处理
 const handleClick = () => {
   if (props.selectable && !props.hidden) {
     emit('click', props.tile)

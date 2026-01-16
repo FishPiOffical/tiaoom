@@ -649,6 +649,7 @@ class MahjongGameRoom extends GameRoom {
     // 随机选择庄家
     const dealerIndex = Math.floor(Math.random() * 4);
 
+    // 初始化游戏状态
     this.gameState = {
       phase: 'playing',
       wall: deck,
@@ -1557,7 +1558,7 @@ class MahjongGameRoom extends GameRoom {
     }
   }
 
-  // 启动倒计时
+  // 启动倒计时 
   private startTurnTimer(timeoutMs: number, onTimeout: () => void) {
     this.clearTurnTimer();
     this.timerGeneration++;
