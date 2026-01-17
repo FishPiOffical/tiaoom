@@ -172,7 +172,7 @@ export class Controller extends Tiaoom {
   async joinPlayer(sender: IPlayer, player: IRoomPlayerOptions & { params?: { passwd: string } }, isCreator: boolean = false, role: PlayerRole = PlayerRole.player) {
     const room = this.rooms.find(r => r.id === player.roomId);
     if (room) {
-      const playerInstance = this.players.find(p => p.id === player.id);
+      const playerInstance = this.players.find(p => p.id === sender.id);
       if (room.attrs?.point && !isNaN(room.attrs.point) && room.attrs.point > 0 && playerInstance?.attributes.from !== 'fishpi' && role === PlayerRole.player) {
          role = PlayerRole.watcher;
       }
