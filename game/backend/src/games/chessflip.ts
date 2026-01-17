@@ -6,8 +6,9 @@ import { sleep } from "@/utils";
   象棋翻棋（暗棋）
   - 4x8 半棋盘，32枚棋子随机暗置
   - 首翻确定阵营（红/黑）
-  - 按等级吃子：士>相>车>马>炮>帅/将>兵
+  - 按等级吃子：帅/将>士>相>车>马>炮>兵
   - 特殊规则：兵克帅/将，炮隔子吃（明/暗均可）
+  - 走子规则：除车可直线走多格（路径无子）外，其余棋子仅横/竖走1格
   - 吃光对方所有棋子获胜
 */
 
@@ -26,14 +27,14 @@ interface ChessPiece {
 type Cell = ChessPiece | null;
 
 // 棋子等级映射（用于吃子判断）
-// 士(7) > 相(6) > 车(5) > 马(4) > 炮(3) > 帅/将(2) > 兵(1)
+// 帅/将(7) > 士(6) > 相(5) > 车(4) > 马(3) > 炮(2) > 兵(1)
 const PIECE_LEVELS: Record<PieceType, number> = {
-  'A': 7, // 士
-  'B': 6, // 相/象
-  'R': 5, // 车
-  'N': 4, // 马
-  'C': 3, // 炮
-  'K': 2, // 帅/将
+  'K': 7, // 帅/将
+  'A': 6, // 士/仕
+  'B': 5, // 相/象
+  'R': 4, // 车
+  'N': 3, // 马
+  'C': 2, // 炮/砲
   'P': 1, // 兵/卒
 };
 
@@ -46,7 +47,7 @@ const PIECE_NAMES: Record<Side, Record<PieceType, string>> = {
 export const name = '象棋翻棋';
 export const minSize = 2;
 export const maxSize = 2;
-export const description = `象棋翻棋（暗棋）：32枚棋子随机暗置于4×8棋盘，首翻确定阵营。按等级吃子，兵克帅/将，炮需隔子吃。吃光对方所有棋子获胜。`;
+export const description = `象棋翻棋（暗棋）：32枚棋子随机暗置于4×8棋盘，首翻确定阵营。按等级吃子（帅/将最大），兵克帅/将，炮需隔子吃；车可直线走多格（路径无子）。吃光对方所有棋子获胜。`;
 export const points = {
   '我就玩玩': 1,
   '小博一下': 100,
@@ -66,7 +67,7 @@ class ChessflipGameRoom extends GameRoom {
   // 无吃子/翻棋回合计数（用于和局判定）
   noActionCount: number = 0;
   // 历史记录
-  history: { action: string; from?: string; to?: string; piece?: string; time: number }[] = [];
+  history: { action: string; from?: string; to?: string; piece?: string; result?: 'win' | 'trade'; time: number }[] = [];
   // 初始棋盘布局（用于复盘）
   initialBoard: (ChessPiece | null)[][] = [];
 
@@ -236,10 +237,8 @@ class ChessflipGameRoom extends GameRoom {
       return this.canCannonCapture(from, to);
     }
 
-    // 兵/卒只能吃帅/将
-    if (attacker.type === 'P') {
-      return defender.type === 'K';
-    }
+    // 兵/卒特殊规则：可吃帅/将（不受等级限制）
+    if (attacker.type === 'P' && defender.type === 'K') return true;
 
     // 帅/将不能吃兵/卒
     if (attacker.type === 'K' && defender.type === 'P') {
@@ -278,8 +277,32 @@ class ChessflipGameRoom extends GameRoom {
     return count === 1;
   }
 
-  // 判断移动是否合法
-  isValidMove(from: { x: number; y: number }, to: { x: number; y: number }): boolean {
+  // 车的直线走子判定（移动/吃子通用）：同一行或同一列，且路径上无任何棋子阻挡
+  isValidRookMove(from: { x: number; y: number }, to: { x: number; y: number }): boolean {
+    const { x: fx, y: fy } = from;
+    const { x: tx, y: ty } = to;
+
+    // 车必须走直线
+    if (fx !== tx && fy !== ty) return false;
+
+    // 检查路径是否被阻挡（目标点不计入“中间”）
+    if (fx === tx) {
+      const [minY, maxY] = fy < ty ? [fy, ty] : [ty, fy];
+      for (let y = minY + 1; y < maxY; y++) {
+        if (this.board[fx][y]) return false;
+      }
+    } else {
+      const [minX, maxX] = fx < tx ? [fx, tx] : [tx, fx];
+      for (let x = minX + 1; x < maxX; x++) {
+        if (this.board[x][fy]) return false;
+      }
+    }
+
+    return true;
+  }
+
+  // 判断移动/吃子路径是否合法（不包含“能否吃子”的等级/阵营规则）
+  isValidMove(from: { x: number; y: number }, to: { x: number; y: number }, piece: ChessPiece): boolean {
     const { x: fx, y: fy } = from;
     const { x: tx, y: ty } = to;
 
@@ -289,7 +312,12 @@ class ChessflipGameRoom extends GameRoom {
     // 边界检查
     if (tx < 0 || tx >= 4 || ty < 0 || ty >= 8) return false;
 
-    // 只能横/竖走1格
+    // 车可直线走多格（路径无子）
+    if (piece.type === 'R') {
+      return this.isValidRookMove(from, to);
+    }
+
+    // 其他棋子：只能横/竖走1格（包括炮的普通移动）
     const dx = Math.abs(tx - fx);
     const dy = Math.abs(ty - fy);
     if (!((dx === 1 && dy === 0) || (dx === 0 && dy === 1))) return false;
@@ -486,11 +514,22 @@ class ChessflipGameRoom extends GameRoom {
 
         // 目标位置判断
         if (toCell) {
+          // 已翻开的己方棋子不能作为目标（不可叠子/不可吃己方）
+          if (toCell.isOpen && toCell.side === fromCell.side) {
+            this.sayTo(`不能吃己方棋子。`, sender);
+            break;
+          }
           // 目标有棋子 - 尝试吃子
           if (!toCell.isOpen) {
             // 暗棋只有炮可以吃
             if (fromCell.type !== 'C') {
               this.sayTo(`只有炮可以吃未翻开的棋子。`, sender);
+              break;
+            }
+            // 未翻开的棋子如果是己方棋子，不能吃（服务端直接判定，避免误吃己方）
+            if (toCell.side === fromCell.side) {
+              // 目标为暗子时避免直接暴露阵营信息
+              this.sayTo(`该位置无法吃子。`, sender);
               break;
             }
             // 炮隔子吃暗棋
@@ -502,11 +541,18 @@ class ChessflipGameRoom extends GameRoom {
             toCell.isOpen = true;
           } else {
             // 明棋吃子
+            // 非炮吃子需要满足对应走法（防作弊：不能跨格“飞吃”）
+            if (fromCell.type !== 'C' && !this.isValidMove(from, to, fromCell)) {
+              if (fromCell.type === 'R') {
+                this.sayTo(`走棋无效，车只能直线移动且路径不能有子。`, sender);
+              } else {
+                this.sayTo(`走棋无效，只能横/竖走1格。`, sender);
+              }
+              break;
+            }
             if (!this.canCapture(fromCell, toCell, from, to)) {
               if (fromCell.type === 'C') {
                 this.sayTo(`炮需隔1子才能吃。`, sender);
-              } else if (fromCell.type === 'P' && toCell.type !== 'K') {
-                this.sayTo(`兵/卒只能吃帅/将。`, sender);
               } else if (fromCell.type === 'K' && toCell.type === 'P') {
                 this.sayTo(`帅/将不能吃兵/卒。`, sender);
               } else {
@@ -516,24 +562,47 @@ class ChessflipGameRoom extends GameRoom {
             }
           }
 
-          // 执行吃子
-          this.say(`${sender.name} 的 ${this.getPieceName(fromCell)} 吃掉了 ${this.getPieceName(toCell)}。`);
-          this.board[tx][ty] = fromCell;
-          this.board[fx][fy] = null;
-          this.noActionCount = 0; // 重置无动作计数
+          // 执行吃子（同级互拼：仅在“主动吃子”时触发）
+          const attackerName = this.getPieceName(fromCell);
+          const defenderName = this.getPieceName(toCell);
+          const isTrade = fromCell.level === toCell.level;
 
-          this.history.push({
-            action: 'capture',
-            from: `${fx},${fy}`,
-            to: `${tx},${ty}`,
-            piece: `${this.getPieceName(fromCell)}吃${this.getPieceName(toCell)}`,
-            time: Date.now(),
-          });
+          if (isTrade) {
+            this.say(`${sender.name} 的 ${attackerName} 与 ${defenderName} 同归于尽。`);
+            this.board[fx][fy] = null;
+            this.board[tx][ty] = null;
+            this.history.push({
+              action: 'capture',
+              result: 'trade',
+              from: `${fx},${fy}`,
+              to: `${tx},${ty}`,
+              piece: `${attackerName}拼${defenderName}`,
+              time: Date.now(),
+            });
+          } else {
+            this.say(`${sender.name} 的 ${attackerName} 吃掉了 ${defenderName}。`);
+            this.board[tx][ty] = fromCell;
+            this.board[fx][fy] = null;
+            this.history.push({
+              action: 'capture',
+              result: 'win',
+              from: `${fx},${fy}`,
+              to: `${tx},${ty}`,
+              piece: `${attackerName}吃${defenderName}`,
+              time: Date.now(),
+            });
+          }
+
+          this.noActionCount = 0; // 重置无动作计数
         } else {
           // 目标无棋子 - 普通移动
-          // 炮的普通移动也是走1格
-          if (!this.isValidMove(from, to)) {
-            this.sayTo(`走棋无效，只能横/竖走1格。`, sender);
+          // 炮的普通移动仍走1格；车可直线走多格（路径无子）
+          if (!this.isValidMove(from, to, fromCell)) {
+            if (fromCell.type === 'R') {
+              this.sayTo(`走棋无效，车只能直线移动且路径不能有子。`, sender);
+            } else {
+              this.sayTo(`走棋无效，只能横/竖走1格。`, sender);
+            }
             break;
           }
 

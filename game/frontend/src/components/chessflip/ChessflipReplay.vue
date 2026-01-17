@@ -3,7 +3,7 @@ import { ref, computed, onUnmounted, watch } from 'vue'
 import Icon from '@/components/common/Icon.vue'
 
 const props = defineProps<{
-  history: { action: string; from?: string; to?: string; piece?: string; time: number }[]
+  history: { action: string; from?: string; to?: string; piece?: string; result?: 'win' | 'trade'; time: number }[]
   initialBoard: ({ id: number; type: string; side: string; level: number; name: string } | null)[][]
   players: { username: string; name: string; camp: string }[]
   beginTime: number
@@ -73,6 +73,12 @@ const currentBoard = computed(() => {
           const target = board[to.x][to.y]
           if (target && !target.isOpen) {
             target.isOpen = true
+          }
+          // 同级互拼：双方同归于尽（棋子都消失，不发生“移动占位”）
+          if (move.result === 'trade') {
+            board[from.x][from.y] = null
+            board[to.x][to.y] = null
+            continue
           }
         }
         board[to.x][to.y] = piece
