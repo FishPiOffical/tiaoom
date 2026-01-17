@@ -11,7 +11,8 @@ const router = Router();
 router.post("/", (req, res) => {
   const { 
     webport, goldenKey, host, port, username, password, database, prefix, marketKey,
-    persistence_driver, persistence_host, persistence_port, persistence_username, persistence_password, persistence_database, persistence_prefix
+    persistence_driver, persistence_host, persistence_port, persistence_username, persistence_password, persistence_database, persistence_prefix,
+    githubClientId, githubClientSecret, steamApiKey
   } = req.body;
   
   const config: IConfig = {
@@ -32,6 +33,11 @@ router.post("/", (req, res) => {
       password: persistence_password,
       database: persistence_database,
       prefix: persistence_prefix
+    },
+    login: {
+      githubClientId,
+      githubClientSecret,
+      steamApiKey
     }
   }
 

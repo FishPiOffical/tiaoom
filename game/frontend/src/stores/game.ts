@@ -14,10 +14,12 @@ export const useGameStore = defineStore('game', () => {
   const players = ref<Player[]>([])
   const rooms = ref<Room[]>([])
   const games = ref<Record<string, GameConfig>>({})
+  const thirdParty = ref<string[]>([])
   const globalMessages = ref<{ data: string, sender?: Player, createdAt: number }[]>([])
   const globalBoardcastMessage = ref<string>('');
   const gameManages = ref<IManageData[]>([]);
   const isConfigured = ref<boolean>(false);
+  const showLoginModal = ref(false);
 
   const roomPlayer = computed(() => {
     if (!player.value) return null
@@ -37,7 +39,9 @@ export const useGameStore = defineStore('game', () => {
   async function initConfig() {
     try {
       isConfigured.value = await api.isConfigured();
-      games.value = await api.getConfig();
+      const { game: gameData, thirdParty: thirdPartyList } = await api.getConfig();
+      games.value = gameData;
+      thirdParty.value = thirdPartyList;
     } catch (error) {
       console.error('Failed to load config:', error)
     }
@@ -45,9 +49,23 @@ export const useGameStore = defineStore('game', () => {
 
   async function checkSession() {
     try {
-      player.value = await api.getUserInfo()
+      // If we already have a regular user, return true
+      if (player.value && !player.value.isVisitor) {
+        initGame(); // Ensure game is initialized
+        return true;
+      }
+      
+      const user = await api.getUserInfo()
+      if (user) {
+        player.value = user
+        initGame() // Use initGame instead of connect
+      }
       return true
     } catch (error) {
+      if (!player.value) {
+        // Visitor Mode
+        await loginVisitor()
+      }
       return false
     }
   }
@@ -137,9 +155,40 @@ export const useGameStore = defineStore('game', () => {
   async function login(name: string) {
     try {
       player.value = await api.login(name)
+      if (game.value) {
+        // Re-login with new player info
+        game.value.login(player.value.player)
+      } else {
+        initGame()
+      }
       return true
     } catch (error) {
       throw error
+    }
+  }
+
+  async function loginVisitor() {
+    const user = await api.loginVisitor();
+    player.value = user;
+    if (game.value) {
+      game.value.login(user.player)
+    } else {
+      initGame()
+    }
+    return true;
+  }
+
+  function updateVisitorName(name: string) {
+    if (player.value && player.value.isVisitor) {
+      const newName = name.replace(/\s*\(游客\)$/, '');
+      api.updateVisitorName(newName).then(() => {
+        msg.success('昵称更新成功');
+        setTimeout(() => {
+          location.reload();
+        }, 1000);
+      }).catch((err) => {
+        msg.error(err.message || '昵称更新失败');
+      });
     }
   }
 
@@ -169,11 +218,14 @@ export const useGameStore = defineStore('game', () => {
     playerStatus,
     gameManages,
     isConfigured,
+    thirdParty,
     initConfig,
     checkSession,
     initGame,
     login,
     logout,
+    updateVisitorName,
+    showLoginModal
   }
 })
 

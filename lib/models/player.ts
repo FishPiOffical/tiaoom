@@ -26,6 +26,10 @@ export interface IPlayerOptions {
    * 是否超级管理员
    */
   isAdmin?: boolean;
+  /**
+   * 是否游客
+   */
+  isVisitor?: boolean;
 }
 
 /**
@@ -93,6 +97,7 @@ export class Player extends EventEmitter implements IPlayer {
   attributes?: any;
   sender?: (type: string, ...message: any) => void;
   isAdmin: boolean = false;
+  isVisitor: boolean = false;
 
   private _status: PlayerStatus = PlayerStatus.online;
   status: PlayerStatus = PlayerStatus.online;
@@ -112,6 +117,8 @@ export class Player extends EventEmitter implements IPlayer {
     this.name = player.name || "";
     this.attributes = player.attributes || {};
     this.sender = player.sender;
+    this.isAdmin = player.isAdmin || false;
+    this.isVisitor = player.isVisitor || false;
 
     this._status = status;
     if (player instanceof Player) this._status = player.status;
@@ -134,6 +141,7 @@ export class Player extends EventEmitter implements IPlayer {
       attributes: this.attributes,
       status: this.status,
       isAdmin: this.isAdmin,
+      isVisitor: this.isVisitor,
     };
   }
 

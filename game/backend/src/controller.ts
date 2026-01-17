@@ -26,9 +26,12 @@ export class Controller extends Tiaoom {
             return player;
           }); 
           this.missSenderPlayers.push(...room.players.filter(p => !this.missSenderPlayers.some(mp => mp.id === p.id)));
+          setTimeout(() => {
+            const offlinePlayers = room.players.filter(p => !this.players.find(pl => pl.id === p.id));
+            offlinePlayers.forEach(p => room.kickPlayer(p.id));
+          }, 6000);
           return room;
         }),
-        players: players.filter((p, index, self) => index === self.findIndex(tp => tp.id === p.id)).map(p => new Player(p, p.status)),
       });
       this.rooms.forEach(room => this.emit("room", room));
     });
@@ -166,9 +169,13 @@ export class Controller extends Tiaoom {
     return playerInstance;
   }
 
-  async joinPlayer(sender: IPlayer, player: IRoomPlayerOptions & { params?: { passwd: string } }, isCreator: boolean = false) {
+  async joinPlayer(sender: IPlayer, player: IRoomPlayerOptions & { params?: { passwd: string } }, isCreator: boolean = false, role: PlayerRole = PlayerRole.player) {
     const room = this.rooms.find(r => r.id === player.roomId);
     if (room) {
+      const playerInstance = this.players.find(p => p.id === sender.id);
+      if (room.attrs?.point && !isNaN(room.attrs.point) && room.attrs.point > 0 && playerInstance?.attributes.from !== 'fishpi' && role === PlayerRole.player) {
+         role = PlayerRole.watcher;
+      }
       if (room.attrs?.passwd) {
         const passwdHash = crypto.createHash('md5').update(player.params?.passwd || '').digest('hex');
         if (room.attrs?.passwd !== passwdHash) {
@@ -177,7 +184,7 @@ export class Controller extends Tiaoom {
       }
     }
 
-    return await super.joinPlayer(sender, player, isCreator);
+    return await super.joinPlayer(sender, player, isCreator, role);
   }
 
   async startRoom(sender: IPlayer, room: IRoom) {

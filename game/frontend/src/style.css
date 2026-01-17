@@ -57,3 +57,5 @@ body {
 #app {
   height: 100vh;
 }
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="night"], [data-theme="cmyk"], [data-theme="corporate"], [data-theme="synthwave"], [data-theme="cyberpunk"], [data-theme="valentine"], [data-theme="halloween"], [data-theme="garden"], [data-theme="forest"], [data-theme="aqua"], [data-theme="lofi"], [data-theme="pastel"], [data-theme="fantasy"], [data-theme="wireframe"], [data-theme="black"], [data-theme="luxury"], [data-theme="dracula"]));

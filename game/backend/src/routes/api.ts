@@ -1,11 +1,14 @@
 import { Router, Request, Response } from "express";
 import { Controller } from "../controller";
 import { login as fishpiLogin, register as fishpiRegister, updateUserInfo } from "../login/fishpi";
+import { login as steamLogin } from "../login/steam";
+import { login as githubLogin } from "../login/github";
 import { Record, RecordRepo, User, UserRepo, AppDataSource, PlayerStats, ManageRepo } from "@/entities";
 import { getPlayerStats, isConfigured } from "@/utils";
 import { FindOptionsWhere, Like } from "typeorm";
 import GameRouter from "./game";
 import Games, { GameRoom } from "@/games";
+import { getThirdPartyType } from "@/login";
 
 export interface GameContext {
   controller?: Controller;
@@ -31,7 +34,10 @@ const createRoutes = (game: GameContext, gameName: string) => {
     res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
     res.json({
       code: 0,
-      data: game.controller?.games
+      data: {
+        game: game.controller?.games,
+        thirdParty: getThirdPartyType(),
+      }
     });
   });
 
@@ -126,6 +132,29 @@ const createRoutes = (game: GameContext, gameName: string) => {
     res.json({ code: 0, data: req.session.player });
   });
 
+  router.post("/visitor/updateName", async (req: Request, res: Response) => {
+    if (!req.session.player?.isVisitor) {
+      return res.json({ code: 1, message: "仅游客可使用此功能" });
+    }
+    const newName = req.body.name;
+    if (game.controller?.players.some((player) => player.name == newName)) {
+      return res.json({ code: 1, message: "昵称已被使用" });
+    }
+    req.session.player.nickname = newName + ' (游客)';
+    res.json({ code: 0, data: req.session.player });
+  });
+
+  router.post("/login/visitor", (req: Request, res: Response) => {
+    if (!req.session.player) {
+      const id = new Date().getTime().toString();
+      const name = "游客" + id.slice(-4);
+      req.session.player = new User(id, name, name);
+      req.session.player.isVisitor = true;
+      req.session.save();
+    }
+    res.json({ code: 0, data: req.session.player });
+  });
+
   router.get("/login/error", (req: Request, res: Response) => {
     if (req.session.error) {
       const error = req.session.error;
@@ -136,6 +165,8 @@ const createRoutes = (game: GameContext, gameName: string) => {
   });
   router.get("/login/fishpi", fishpiLogin);
   router.get("/register/fishpi", fishpiRegister);
+  router.get("/login/steam", steamLogin);
+  router.get("/login/github", githubLogin);
 
   router.post("/logout", (req: Request, res: Response) => {
     req.session.destroy((err) => {

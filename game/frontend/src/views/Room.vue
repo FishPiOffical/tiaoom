@@ -121,6 +121,10 @@ onUnmounted(() => {
 const ComponentLite = computed(() => getComponent(gameStore.roomPlayer?.room.attrs?.type, 'Lite'))
 const ComponentRoom = computed(() => getComponent(gameStore.roomPlayer?.room.attrs?.type, 'Room'))
 const ComponentRoomControls = computed(() => getComponent(gameStore.roomPlayer?.room.attrs?.type, 'RoomControls'))
+
+function openLobbyChat() {
+  window.dispatchEvent(new Event('open-lobby-chat'))
+}
 </script>
 
 <template>
@@ -151,7 +155,7 @@ const ComponentRoomControls = computed(() => getComponent(gameStore.roomPlayer?.
           :class="{ 'pr-8': showExpandBtn }"
           v-if="room && (room.attrs.point || room.attrs.rate)"
         >
-          <div class="text-xs w-full" :class="{ 'line-clamp-1': !isAlertExpanded }" ref="alertContentRef">
+          <div v-if="gameStore.player?.from == 'fishpi'" class="text-xs w-full" :class="{ 'line-clamp-1': !isAlertExpanded }" ref="alertContentRef">
             ⚠️
             <span v-if="room.attrs.point"
               >注意：当前房间每局游戏需扣除 {{ room.attrs.point }} 积分。</span
@@ -169,6 +173,7 @@ const ComponentRoomControls = computed(() => getComponent(gameStore.roomPlayer?.
               {{ gameStore.games[room.attrs.type]?.rewardDescription }}
             </span>
           </div>
+          <span v-else>⚠️ 你不是摸鱼派账号，无法游玩积分局！</span>
           <button 
             v-show="showExpandBtn"
             class="btn btn-xs btn-ghost btn-circle absolute right-1 top-0"
@@ -190,14 +195,22 @@ const ComponentRoomControls = computed(() => getComponent(gameStore.roomPlayer?.
             :game="gameStore.game" 
             :room-player="gameStore.roomPlayer"
           />
-          <button
-            v-if="ComponentLite"
-            class="btn btn-circle md:btn-lg btn-soft hidden md:flex tooltip tooltip-left"
-            data-tip="弹出"
-            @click="openSmallWindow('/#/lite')"
-          >
-            <Icon icon="majesticons:open-line" />
-          </button>
+                <button
+                  v-if="ComponentLite"
+                  class="btn btn-circle md:btn-lg btn-soft hidden md:flex tooltip tooltip-left"
+                  data-tip="弹出"
+                  @click="openSmallWindow('/#/lite')"
+                >
+                  <Icon icon="majesticons:open-line" />
+                </button>
+                <button
+                  class="btn btn-circle md:btn-lg btn-soft tooltip tooltip-left"
+                  data-tip="公共频道"
+                  @click="openLobbyChat"
+                >
+                  <Icon icon="carbon:chat" />
+                </button>
+          
         </RoomControls>
       </section>
     </header>
