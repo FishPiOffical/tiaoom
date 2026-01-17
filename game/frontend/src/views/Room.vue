@@ -37,7 +37,7 @@ async function init() {
     }
     let passwd: string | undefined;
     if (room.attrs?.passwd && !room.players.some(p => p.id == gameStore.player?.id)) {
-      passwd = await msgbox.prompt("请输入房间密码：") || "";
+      passwd = await msgbox.prompt("请输入房间密码：").catch(() => "") || "";
       if (!passwd) return router.back();
       if (room.attrs.passwd !== md5(passwd)) {
         msg.error("密码错误，无法加入房间。");
