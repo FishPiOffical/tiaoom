@@ -70,15 +70,8 @@ const router = createRouter({
 
 router.beforeEach(async (to, _from, next) => {
   const gameStore = useGameStore()
+  await gameStore.checkSession()
 
-  if (to.meta.requiresAuth) {
-    const hasSession = await gameStore.checkSession()
-    if (!hasSession) {
-      localStorage.setItem('redirect-after-login', to.fullPath)
-      next('/login')
-      return
-    }
-  }
 
   if (to.meta.requiresAdmin) {
     // Ensure session is checked if we navigated directly here

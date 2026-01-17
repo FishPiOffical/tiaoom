@@ -25,6 +25,8 @@ export class User {
 
   @Column({ comment: "最后登录 IP 地址", default: '' })
   ip: string = '';
+  
+  isVisitor?: boolean;
 
   constructor(id = '', username: string = '', nickname: string = '') {
     this.id = id;

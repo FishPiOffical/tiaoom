@@ -48,7 +48,7 @@
         <Icon icon="mdi:logout" />
       </button>
       <button class="btn btn-circle md:btn-lg btn-soft tooltip tooltip-left" 
-        v-if="!isRoomFull && !isPlaying" 
+        v-if="!isRoomFull && !isPlaying && !gameStore.player?.isVisitor" 
         @click="game?.joinRoom(roomPlayer.room.id)"
         :disabled="roomPlayer.room.attrs.point > 0 && gameStore.player?.from !== 'fishpi'"
         data-tip="加入游戏"

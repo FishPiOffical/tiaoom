@@ -19,6 +19,7 @@ export const useGameStore = defineStore('game', () => {
   const globalBoardcastMessage = ref<string>('');
   const gameManages = ref<IManageData[]>([]);
   const isConfigured = ref<boolean>(false);
+  const showLoginModal = ref(false);
 
   const roomPlayer = computed(() => {
     if (!player.value) return null
@@ -48,9 +49,23 @@ export const useGameStore = defineStore('game', () => {
 
   async function checkSession() {
     try {
-      player.value = await api.getUserInfo()
+      // If we already have a regular user, return true
+      if (player.value && !player.value.isVisitor) {
+        initGame(); // Ensure game is initialized
+        return true;
+      }
+      
+      const user = await api.getUserInfo()
+      if (user) {
+        player.value = user
+        initGame() // Use initGame instead of connect
+      }
       return true
     } catch (error) {
+      if (!player.value) {
+        // Visitor Mode
+        await loginVisitor()
+      }
       return false
     }
   }
@@ -140,9 +155,40 @@ export const useGameStore = defineStore('game', () => {
   async function login(name: string) {
     try {
       player.value = await api.login(name)
+      if (game.value) {
+        // Re-login with new player info
+        game.value.login(player.value.player)
+      } else {
+        initGame()
+      }
       return true
     } catch (error) {
       throw error
+    }
+  }
+
+  async function loginVisitor() {
+    const user = await api.loginVisitor();
+    player.value = user;
+    if (game.value) {
+      game.value.login(user.player)
+    } else {
+      initGame()
+    }
+    return true;
+  }
+
+  function updateVisitorName(name: string) {
+    if (player.value && player.value.isVisitor) {
+      const newName = name.replace(/\s*\(游客\)$/, '');
+      api.updateVisitorName(newName).then(() => {
+        msg.success('昵称更新成功');
+        setTimeout(() => {
+          location.reload();
+        }, 1000);
+      }).catch((err) => {
+        msg.error(err.message || '昵称更新失败');
+      });
     }
   }
 
@@ -178,6 +224,8 @@ export const useGameStore = defineStore('game', () => {
     initGame,
     login,
     logout,
+    updateVisitorName,
+    showLoginModal
   }
 })
 

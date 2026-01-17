@@ -132,6 +132,29 @@ const createRoutes = (game: GameContext, gameName: string) => {
     res.json({ code: 0, data: req.session.player });
   });
 
+  router.post("/visitor/updateName", async (req: Request, res: Response) => {
+    if (!req.session.player?.isVisitor) {
+      return res.json({ code: 1, message: "仅游客可使用此功能" });
+    }
+    const newName = req.body.name;
+    if (game.controller?.players.some((player) => player.name == newName)) {
+      return res.json({ code: 1, message: "昵称已被使用" });
+    }
+    req.session.player.nickname = newName + ' (游客)';
+    res.json({ code: 0, data: req.session.player });
+  });
+
+  router.post("/login/visitor", (req: Request, res: Response) => {
+    if (!req.session.player) {
+      const id = new Date().getTime().toString();
+      const name = "游客" + id.slice(-4);
+      req.session.player = new User(id, name, name);
+      req.session.player.isVisitor = true;
+      req.session.save();
+    }
+    res.json({ code: 0, data: req.session.player });
+  });
+
   router.get("/login/error", (req: Request, res: Response) => {
     if (req.session.error) {
       const error = req.session.error;

@@ -52,38 +52,61 @@
           <button @click="isDesktopSidebarCollapsed = true" class="icon-btn-hidden hidden md:flex">
             <Icon icon="ep:fold" />
           </button>
-          <section class="inline-flex items-center gap-2 cursor-pointer" @click="router.push('/')">
-            <span 
-              v-if="gameStore.player?.avatar"
-              class="w-[1.2em] h-[1.2em] rounded-full bg-base-200 border border-base-content/20 inline-flex items-center justify-center text-xl font-bold relative"
+          <section class="inline-flex items-center gap-2">
+            <div 
+              class="flex items-center gap-2 cursor-pointer transition-opacity hover:opacity-80" 
+              @click="router.push('/')"
             >
-              <img 
+              <span 
                 v-if="gameStore.player?.avatar"
-                :src="gameStore.player?.avatar" 
-                alt="avatar" 
-                class="w-full h-full object-cover rounded-full"
-              />
-            </span>
-            <span class="font-medium">{{ gameStore.player?.nickname }}</span>
+                class="w-[1.2em] h-[1.2em] rounded-full bg-base-200 border border-base-content/20 inline-flex items-center justify-center text-xl font-bold relative"
+              >
+                <img 
+                  v-if="gameStore.player?.avatar"
+                  :src="gameStore.player?.avatar" 
+                  alt="avatar" 
+                  class="w-full h-full object-cover rounded-full"
+                />
+              </span>
+              <span class="font-medium truncate max-w-[8em]">{{ gameStore.player?.nickname }}</span>
+            </div>
           </section>
           <ThemeController />
           <div class="flex items-center gap-2">
             <router-link 
               to="/leaderboard"
-              class="icon-btn"
-              title="排行榜"
+              class="icon-btn tooltip tooltip-bottom"
+              data-tip="排行榜"
             >
               <Icon icon="mdi:trophy-outline" />
             </router-link>
             <router-link 
               v-if="gameStore.player?.isAdmin || gameManages.filter(g => g.canManage).length > 0"
               to="/admin"
-              class="icon-btn"
-              title="房间管理"
+              class="icon-btn tooltip tooltip-bottom"
+              data-tip="房间管理"
             >
               <Icon icon="mingcute:settings-3-line" />
             </router-link>
+            
+            <template v-if="gameStore.player?.isVisitor">
+              <button
+                 class="icon-btn tooltip tooltip-bottom"
+                 data-tip="设置名字"
+                 @click="showEditName = true; newVisitorName = gameStore.player?.nickname?.replace(' (游客)', '') || ''"
+              >
+                <Icon icon="mingcute:edit-line" />
+              </button>
+              <button
+                 class="icon-btn tooltip tooltip-bottom"
+                 @click="gameStore.showLoginModal = true"
+                 data-tip="登录"
+              >
+                <Icon icon="clarity:login-line" />
+              </button>
+            </template>
             <button
+              v-else
               @click="handleLogout"
               :disabled="gameStore.playerStatus === 'playing'"
               :title="gameStore.playerStatus === 'playing' ? '游戏中不可退出账号' : ''"
@@ -137,7 +160,7 @@
                     <Icon icon="solar:lock-linear" v-if="r.attrs.passwd" />
                     <Icon v-if="r.attrs?.point" icon="ph:coins-duotone" class="text-yellow-400 tooltip tooltip-right" :data-tip="`单局积分: ${r.attrs.point}`" />
                     <span class="truncate text-sm" :class="{'font-bold text-base-content': r.players.some(p => p.id === gameStore.player?.id)}">
-                      【{{ gameStore.games[r.attrs.type].name }}】{{ r.name }}
+                      【{{ gameStore.games[r.attrs.type]?.name }}】{{ r.name }}
                     </span>
                     <span class="text-xs text-base-content/60 whitespace-nowrap">
                       <template v-if="r.size === 0">
@@ -154,7 +177,7 @@
                     class="px-2 py-1 btn-xs whitespace-nowrap btn"
                     :disabled="gameStore.player?.from !== 'fishpi' && r.attrs.point > 0 && !(r.size === 0 || r.players.filter(p => p.role === 'player').length < r.size)"
                   >
-                    {{ (gameStore.player?.from !== 'fishpi' && r.attrs.point > 0) ? '围观' : (r.size === 0 || r.players.filter(p => p.role === 'player').length < r.size ? '进入' : '围观') }}
+                    {{ (gameStore.player?.from !== 'fishpi' && r.attrs.point > 0 || gameStore.player?.isVisitor) ? '围观' : (r.size === 0 || r.players.filter(p => p.role === 'player').length < r.size ? '进入' : '围观') }}
                   </button>
                 </li>
               </ul>
@@ -204,7 +227,7 @@
       </div>
 
       <!-- 主内容区 -->
-      <router-view v-if="isReady" />
+      <router-view />
     </section>
 
     <!-- Broadcast Modal -->
@@ -219,6 +242,28 @@
         </div>
       </div>
       <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+      </form>
+    </dialog>
+    <LoginModal v-model="gameStore.showLoginModal" />
+    
+    <!-- Edit Name Modal -->
+    <dialog class="modal" :class="{ 'modal-open': showEditName }">
+      <div class="modal-box">
+        <h3 class="font-bold text-lg mb-4">修改游客名称</h3>
+        <input 
+          v-model="newVisitorName" 
+          type="text" 
+          placeholder="请输入新的名字" 
+          class="input input-bordered w-full"
+          @keyup.enter="saveVisitorName"
+        />
+        <div class="modal-action">
+          <button class="btn" @click="showEditName = false">取消</button>
+          <button class="btn btn-primary" @click="saveVisitorName">确定</button>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop" @click="showEditName = false">
         <button>close</button>
       </form>
     </dialog>
@@ -272,11 +317,18 @@ const roomList = computed(() => {
   return gameStore.rooms.filter(r => r.attrs.type === gameType.value);
 });
 
-const isReady = ref(false);
+const showEditName = ref(false);
+const newVisitorName = ref('');
+
+function saveVisitorName() {
+  if (newVisitorName.value.trim()) {
+    gameStore.updateVisitorName(newVisitorName.value.trim());
+    showEditName.value = false;
+  }
+}
+
 onMounted(() => {
-  gameStore.initGame().onReady(() => {
-    isReady.value = true;
-  });
+  gameStore.initGame();
 })
 
 const gameManages = computed(() => gameStore.gameManages);

@@ -177,10 +177,11 @@
              
              <button 
                type="submit" 
-               :disabled="!!gameStore.roomPlayer || !room.name" 
+               :disabled="!!gameStore.roomPlayer || !room.name || gameStore.player?.isVisitor" 
                class="btn btn-primary px-8 shadow-lg hover:shadow-primary/30 min-w-[120px]"
              >
-               <span v-if="!gameStore.roomPlayer">创建</span>
+               <span v-if="!gameStore.roomPlayer && !gameStore.player?.isVisitor">创建</span>
+               <span v-else-if="gameStore.player?.isVisitor">登录后创建</span>
                <span v-else>游戏中</span>
              </button>
           </div>

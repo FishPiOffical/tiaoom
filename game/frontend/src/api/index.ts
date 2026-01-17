@@ -33,6 +33,7 @@ export interface IUser {
   avatar?: string;
   from?: string;
   isAdmin?: boolean;
+  isVisitor?: boolean;
   state?: GameStats[];
 }
 
@@ -43,6 +44,7 @@ export class User implements IUser {
   avatar: string;
   from: string;
   isAdmin: boolean;
+  isVisitor: boolean;
   state: GameStats[];
 
   constructor(user: Partial<IUser>) {
@@ -52,6 +54,7 @@ export class User implements IUser {
     this.avatar = user.avatar || '';
     this.from = user.from || '';
     this.isAdmin = user.isAdmin || false;
+    this.isVisitor = user.isVisitor || false;
     this.state = user.state || [];
   }
 
@@ -59,6 +62,8 @@ export class User implements IUser {
     return new Player({
       id: this.id,
       name: this.nickname,
+      isAdmin: this.isAdmin,
+      isVisitor: this.isVisitor,
       attributes: {
         avatar: this.avatar || '',
         username: this.username,
@@ -121,8 +126,14 @@ export const api = {
   getMessages(): Promise<{ messages: { data: string, sender: Player, createdAt: number }[] }> {
     return http.get('/message')
   },
+  updateVisitorName(newName: string): Promise<User> {
+    return http.post('/visitor/updateName', { name: newName }).then((data: any) => new User(data))
+  },
   login(name: string): Promise<User> {
     return http.post('/login', { name }).then((data: any) => new User(data))
+  },
+  loginVisitor(): Promise<User> {
+    return http.post('/login/visitor').then((data: any) => new User(data))
   },
   checkLoginError() {
     return http.get('/login/error').catch((err) => {

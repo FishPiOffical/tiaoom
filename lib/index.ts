@@ -338,6 +338,10 @@ export class Tiaoom extends EventEmitter {
       playerInstance = await this.loginPlayer(sender);
     }
 
+    if (playerInstance.isVisitor) {
+      role = PlayerRole.watcher;
+    }
+
     if (!player.roomId) {
       throw new Error('missing room id.');
     }

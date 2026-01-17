@@ -6,7 +6,16 @@
       <!-- 左侧：创建房间 (主要区域) -->
       <!-- 移动端保持纵向滚动，PC端作为左侧面板 -->
       <section class="flex-1 overflow-y-auto p-2 lg:p-6 scrollbar-thin scrollbar-thumb-base-300 scrollbar-track-base-100">
-        <div class="max-w-4xl mx-auto w-full pb-4">
+        <div class="max-w-4xl mx-auto w-full pb-4 space-y-2">
+           <div v-if="gameStore.player?.isVisitor" class="flex flex-col items-center justify-center p-12 bg-base-200 rounded-xl space-y-4 shadow-inner">
+             <Icon icon="game-icons:locked-chest" class="text-6xl text-base-content/20" />
+             <h3 class="text-xl font-bold">登录后开启游戏之旅</h3>
+             <p class="text-base-content/60">游客身份仅限围观与聊天</p>
+             <button class="btn btn-primary btn-wide" @click="gameStore.showLoginModal = true">
+                <Icon icon="akar-icons:game-controller" class="text-xl" />
+                立即登录
+             </button>
+           </div>
            <CreateRoom />
         </div>
       </section>
@@ -71,8 +80,9 @@
              <input 
               v-model="msg" 
               type="text"
+              :readonly="gameStore.player?.isVisitor"
               @keydown.enter="sendMessage" 
-              placeholder="发送消息..." 
+              :placeholder="gameStore.player?.isVisitor ? `登录后发送消息` : `发送消息...`" 
               class="input input-sm lg:input-md input-bordered w-full pr-10 focus:ring-2 focus:ring-primary/20 transition-all bg-base-200/30 focus:bg-base-100 rounded-full pl-4"
             />
             <button 

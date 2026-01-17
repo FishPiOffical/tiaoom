@@ -26,9 +26,12 @@ export class Controller extends Tiaoom {
             return player;
           }); 
           this.missSenderPlayers.push(...room.players.filter(p => !this.missSenderPlayers.some(mp => mp.id === p.id)));
+          setTimeout(() => {
+            const offlinePlayers = room.players.filter(p => !this.players.find(pl => pl.id === p.id));
+            offlinePlayers.forEach(p => room.kickPlayer(p.id));
+          }, 6000);
           return room;
         }),
-        players: players.filter((p, index, self) => index === self.findIndex(tp => tp.id === p.id)).map(p => new Player(p, p.status)),
       });
       this.rooms.forEach(room => this.emit("room", room));
     });
