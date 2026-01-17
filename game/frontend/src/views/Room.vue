@@ -121,6 +121,10 @@ onUnmounted(() => {
 const ComponentLite = computed(() => getComponent(gameStore.roomPlayer?.room.attrs?.type, 'Lite'))
 const ComponentRoom = computed(() => getComponent(gameStore.roomPlayer?.room.attrs?.type, 'Room'))
 const ComponentRoomControls = computed(() => getComponent(gameStore.roomPlayer?.room.attrs?.type, 'RoomControls'))
+
+function openLobbyChat() {
+  window.dispatchEvent(new Event('open-lobby-chat'))
+}
 </script>
 
 <template>
@@ -191,14 +195,22 @@ const ComponentRoomControls = computed(() => getComponent(gameStore.roomPlayer?.
             :game="gameStore.game" 
             :room-player="gameStore.roomPlayer"
           />
-          <button
-            v-if="ComponentLite"
-            class="btn btn-circle md:btn-lg btn-soft hidden md:flex tooltip tooltip-left"
-            data-tip="弹出"
-            @click="openSmallWindow('/#/lite')"
-          >
-            <Icon icon="majesticons:open-line" />
-          </button>
+                <button
+                  v-if="ComponentLite"
+                  class="btn btn-circle md:btn-lg btn-soft hidden md:flex tooltip tooltip-left"
+                  data-tip="弹出"
+                  @click="openSmallWindow('/#/lite')"
+                >
+                  <Icon icon="majesticons:open-line" />
+                </button>
+                <button
+                  class="btn btn-circle md:btn-lg btn-soft tooltip tooltip-left"
+                  data-tip="公共频道"
+                  @click="openLobbyChat"
+                >
+                  <Icon icon="carbon:chat" />
+                </button>
+          
         </RoomControls>
       </section>
     </header>

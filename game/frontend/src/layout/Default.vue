@@ -18,13 +18,22 @@
         </div>
         <span class="font-medium truncate cursor-pointer" @click="router.push('/')">{{ gameStore.player?.nickname }}</span>
       </div>
-      <button 
-        @click="handleLogout"
-        :disabled="gameStore.playerStatus === 'playing'"
-        class="icon-btn-hidden hidden md:inline-flex"
-      >
-        <Icon icon="mingcute:exit-line" />
-      </button>
+      <div class="flex items-center gap-2">
+        <div class="indicator">
+          <span v-if="unreadMessages.length" class="indicator-item status status-error"></span>
+          <button @click="handleMenuClick" class="icon-btn" title="聊天">
+            <Icon icon="carbon:chat" />
+          </button>
+        </div>
+        
+        <button 
+          @click="handleLogout"
+          :disabled="gameStore.playerStatus === 'playing'"
+          class="icon-btn-hidden hidden md:inline-flex"
+        >
+          <Icon icon="mingcute:exit-line" />
+        </button>
+      </div>
     </header>
 
     <section class="flex flex-row flex-1 h-full overflow-hidden relative">
@@ -102,7 +111,7 @@
                  @click="gameStore.showLoginModal = true"
                  data-tip="登录"
               >
-                <Icon icon="clarity:login-line" />
+                <Icon icon="akar-icons:game-controller" />
               </button>
             </template>
             <button
@@ -230,6 +239,14 @@
       <router-view />
     </section>
 
+    <!-- Mobile LobbyChat (overlay + panel). visibility controlled by isLobbyChatOpen -->
+    <div v-show="isLobbyChatOpen" class="fixed inset-0 z-50">
+      <div class="absolute inset-0 bg-black/50" @click="isLobbyChatOpen = false"></div>
+      <div class="absolute inset-y-0 right-0 w-80">
+        <LobbyChat @close="isLobbyChatOpen = false" />
+      </div>
+    </div>
+
     <!-- Broadcast Modal -->
     <dialog ref="broadcastModal" class="modal">
       <div class="modal-box">
@@ -271,7 +288,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGameStore } from '@/stores/game'
 import { IRoomOptions } from 'tiaoom/client'
@@ -329,9 +346,52 @@ function saveVisitorName() {
 
 onMounted(() => {
   gameStore.initGame();
+
+  // 全局自定义事件：允许任意界面触发唤出/切换/关闭聊天侧栏
+  const openHandler = () => {
+    handleMenuClick()
+  }
+  const toggleHandler = () => {
+    isLobbyChatOpen.value = !isLobbyChatOpen.value
+    if (isLobbyChatOpen.value) {
+      readedTime.value = Date.now();
+      localStorage.setItem('lobbyChatReadedTime', readedTime.value.toString());
+    }
+  }
+  const closeHandler = () => { isLobbyChatOpen.value = false }
+
+  window.addEventListener('open-lobby-chat', openHandler)
+  window.addEventListener('toggle-lobby-chat', toggleHandler)
+  window.addEventListener('close-lobby-chat', closeHandler)
+
+  onBeforeUnmount(() => {
+    window.removeEventListener('open-lobby-chat', openHandler)
+    window.removeEventListener('toggle-lobby-chat', toggleHandler)
+    window.removeEventListener('close-lobby-chat', closeHandler)
+  })
 })
 
 const gameManages = computed(() => gameStore.gameManages);
+
+const globalMessages = computed(() => gameStore.globalMessages)
+const readedTime = ref(localStorage.getItem('lobbyChatReadedTime') ? parseInt(localStorage.getItem('lobbyChatReadedTime')!) : 0);
+const isLobbyChatOpen = ref(false);
+const unreadMessages = computed(() => {
+  return globalMessages.value.filter(m => new Date(m.createdAt).getTime() > readedTime.value);
+});
+watch(globalMessages, () => {
+  if (isLobbyChatOpen.value) {
+    readedTime.value = Date.now();
+    localStorage.setItem('lobbyChatReadedTime', readedTime.value.toString());
+  }
+});
+
+function handleMenuClick() {
+  isLobbyChatOpen.value = true;
+  readedTime.value = Date.now();
+  localStorage.setItem('lobbyChatReadedTime', readedTime.value.toString());
+}
+
 </script>
 
 <style scoped>
