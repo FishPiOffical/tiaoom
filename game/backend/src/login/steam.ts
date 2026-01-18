@@ -34,7 +34,7 @@ function verify(req: Request) {
   for (const key of signeds) {
     openVerify.append(`openid.${key}`, req.query[`openid.${key}`] as string);
   }
-  return fetch('https://steamcommunity.com/openid/login', {
+  return fetch(`${utils.config?.login.steamMirror || 'https://steamcommunity.com'}/openid/login`, {
     method: 'POST',
     body: openVerify
   }).then(res => res.text()).then(text => {
