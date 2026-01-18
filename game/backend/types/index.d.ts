@@ -38,5 +38,6 @@ interface IConfig {
     githubClientId?: string;
     githubClientSecret?: string;
     steamApiKey?: string;
+    steamMirror?: string;
   }
 }

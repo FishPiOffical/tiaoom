@@ -123,6 +123,12 @@
               </label>
               <input type="text" id="steamApiKey" v-model="form.steamApiKey" class="input input-bordered w-full">
           </div>
+          <div class="form-control w-full">
+              <label class="label" for="steamMirror">
+                <span class="label-text">Steam API 镜像</span>
+              </label>
+              <input type="text" id="steamMirror" v-model="form.steamMirror" class="input input-bordered w-full">
+          </div>
 
           <div class="col-span-full text-lg font-semibold border-b border-base-300 pb-2 mt-4">摸鱼派密钥设置（可选）</div>
           <div class="form-control w-full">
@@ -180,6 +186,7 @@ const form = reactive({
   githubClientId: '',
   githubClientSecret: '',
   steamApiKey: '',
+  steamMirror: '',
   goldenKey: '',
   marketKey: ''
 })

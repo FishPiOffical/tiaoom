@@ -47,7 +47,7 @@ function verify(req: Request) {
 }
 
 function getUserInfo(steamid: string) {
-  return fetch(`https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?key=${utils.config?.login.steamApiKey}&steamids=${steamid}`)
+  return fetch(`${utils.config?.login.steamMirror || 'https://api.steampowered.com'}/ISteamUser/GetPlayerSummaries/v2/?key=${utils.config?.login.steamApiKey}&steamids=${steamid}`)
     .then(res => res.json())
     .then(data => {
       return data.response.players;
