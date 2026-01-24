@@ -22,7 +22,7 @@
 
       <!-- Game Board -->
       <div class="relative w-full max-w-[600px] aspect-square select-none p-4">
-        <svg viewBox="-140 -140 280 280" class="w-full h-full drop-shadow-2xl filter transition-transform duration-700 ease-in-out" 
+        <svg viewBox="-140 -140 280 280" class="w-full h-full drop-shadow-2xl filter transition-transform duration-700 ease-in-out relative z-0" 
              :style="{ transform: `rotate(${boardRotation}deg)` }">
             <!-- Board Base -->
             <polygon :points="boardPolygon" class="fill-base-300 stroke-base-content/10 stroke-1" />
@@ -96,7 +96,7 @@
         </div>
       </div>
 
-       <div class="h-8 flex items-center justify-center gap-2">
+       <div class="h-8 flex items-center justify-center gap-2 relative z-100">
             <button v-if="isMyTurn && isMoving" @click="commitMove" class="btn btn-sm btn-primary">完成</button>
             <button v-if="isMyTurn && isMoving" @click="cancelMove" class="btn btn-sm btn-ghost">重置</button>
             <button v-if="isMyTurn && ((!isMoving && selected))" @click="resetSelection" class="btn btn-sm btn-ghost">取消选择</button>
