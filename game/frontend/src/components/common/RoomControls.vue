@@ -1,5 +1,5 @@
 <template>
-  <div class="md:flex flex-row items-center gap-2 pl-2 md:text-[20px] text-[10px] grid grid-cols-2 md:w-auto w-[7em]">
+  <div class="md:flex flex-row items-center gap-2 pl-2 md:text-[20px] text-[10px] grid grid-cols-3 md:w-auto w-[7em]">
     <!-- Waiting: Player Actions -->
     <template v-if="!isPlaying && roomPlayer.role === PlayerRole.player">
       <button class="btn btn-circle md:btn-lg btn-soft tooltip tooltip-left" 
