@@ -264,7 +264,7 @@ export default class DotsRoom extends GameRoom {
       boxes: this.boxes,
       currentPlayer: this.currentPlayer,
       scores: this.scores,
-      players: [this.player1.id, this.player2.id]
+      players: [this.player1?.id, this.player2?.id]
     };
   }
 
