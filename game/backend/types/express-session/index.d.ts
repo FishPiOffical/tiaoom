@@ -5,5 +5,6 @@ declare module 'express-session' {
   interface SessionData {
     error: string;
     player: User;
+    isBinding?: boolean;
   }
 }

@@ -8,6 +8,7 @@ import { Record } from "./Record";
 import { PlayerStats } from "./PlayerStats";
 import utils from '@/utils'
 import { Manage } from './Manage';
+import { UserBind } from './UserBind';
 
 @EventSubscriber()
 export class EntitySubscriber implements EntitySubscriberInterface {
@@ -64,6 +65,7 @@ export { initDataSource };
 
 export {
   User,
+  UserBind,
   Room,
   Manage,
   RoomSQL,
@@ -77,6 +79,7 @@ export * from './mongo';
 export * from './redis';
   
 export const UserRepo = () => utils.config ? AppDataSource.getRepository(User) : {} as Repository<User>;
+export const UserBindRepo = () => utils.config ? AppDataSource.getRepository(UserBind) : {} as Repository<UserBind>;
 export const LogRepo = () => utils.config ? AppDataSource.getRepository(Log) : {} as Repository<Log>;
 export const RecordRepo = () => utils.config ? AppDataSource.getRepository(Record) : {} as Repository<Record>;
 export const ManageRepo = () => utils.config ? AppDataSource.getRepository(Manage) : {} as Repository<Manage>;
