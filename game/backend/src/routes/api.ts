@@ -3,6 +3,7 @@ import { Controller } from "../controller";
 import { login as fishpiLogin, register as fishpiRegister, updateUserInfo } from "../login/fishpi";
 import { login as steamLogin } from "../login/steam";
 import { login as githubLogin } from "../login/github";
+import { login as wechatLogin } from "../login/wechat";
 import { Record, RecordRepo, User, UserRepo, AppDataSource, PlayerStats, ManageRepo } from "@/entities";
 import { getPlayerStats, isConfigured } from "@/utils";
 import { FindOptionsWhere, Like } from "typeorm";
@@ -167,6 +168,7 @@ const createRoutes = (game: GameContext, gameName: string) => {
   router.get("/register/fishpi", fishpiRegister);
   router.get("/login/steam", steamLogin);
   router.get("/login/github", githubLogin);
+  router.get("/login/wechat", wechatLogin);
 
   router.post("/logout", (req: Request, res: Response) => {
     req.session.destroy((err) => {

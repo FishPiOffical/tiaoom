@@ -29,5 +29,8 @@ export function getThirdPartyType() {
   if (config?.login?.steamApiKey) {
     types.push('steam');
   }
+  if (config?.login?.wechatAppId && config?.login?.wechatAppSecret) {
+    types.push('wechat');
+  }
   return types;
 }

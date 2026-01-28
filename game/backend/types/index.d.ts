@@ -39,5 +39,7 @@ interface IConfig {
     githubClientSecret?: string;
     steamApiKey?: string;
     steamMirror?: string;
+    wechatAppId?: string;
+    wechatAppSecret?: string;
   }
 }

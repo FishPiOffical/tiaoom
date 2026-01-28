@@ -12,7 +12,7 @@ router.post("/", (req, res) => {
   const { 
     webport, goldenKey, host, port, username, password, database, prefix, marketKey,
     persistence_driver, persistence_host, persistence_port, persistence_username, persistence_password, persistence_database, persistence_prefix,
-    githubClientId, githubClientSecret, steamApiKey, steamMirror
+    githubClientId, githubClientSecret, steamApiKey, steamMirror, wechatAppId, wechatAppSecret
   } = req.body;
   
   const config: IConfig = {
@@ -39,6 +39,8 @@ router.post("/", (req, res) => {
       githubClientSecret,
       steamApiKey,
       steamMirror,
+      wechatAppId,
+      wechatAppSecret,
     }
   }
 
