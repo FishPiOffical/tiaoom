@@ -5,7 +5,7 @@ import { login as steamLogin } from "../login/steam";
 import { bind as steamBind } from "../login/steam";
 import { login as githubLogin, bind as githubBind } from "../login/github";
 import { login as wechatLogin, bind as wechatBind } from "../login/wechat";
-import { Record, RecordRepo, User, UserRepo, AppDataSource, PlayerStats, ManageRepo } from "@/entities";
+import { Record, RecordRepo, User, UserRepo, AppDataSource, PlayerStats, ManageRepo, UserBindRepo } from "@/entities";
 import { getPlayerStats, isConfigured } from "@/utils";
 import { FindOptionsWhere, Like } from "typeorm";
 import GameRouter from "./game";
@@ -62,7 +62,8 @@ const createRoutes = (game: GameContext, gameName: string) => {
     const user = await UserRepo().findOneBy({ username: req.params.username });
     if (user) {
       const state = await getPlayerStats(user.username);
-      res.json({ code: 0, data: { ...user, state } });
+      const binds = await UserBindRepo().findBy({ id: user.id });
+      res.json({ code: 0, data: { ...user, state, binds } });
     } else {
       res.json({ code: 1, message: "用户不存在" });
     }

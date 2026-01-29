@@ -86,7 +86,7 @@ export async function bind(req: Request, res: Response) {
       }
     }
     req.session.isBinding = false;
-    return res.redirect("/u/" + (req.session.player ? req.session.player.username : ''));
+    return res.redirect("/#/u/" + (req.session.player ? req.session.player.username : ''));
   }
   req.session.isBinding = true;
   res.redirect(`https://open.weixin.qq.com/connect/oauth2/authorize?appid=${appId}&redirect_uri=https%3A%2F%2F${domain}%2Fapi%2Fbind%2Fwechat&response_type=code&scope=snsapi_login&state=STATE#wechat_redirect`);

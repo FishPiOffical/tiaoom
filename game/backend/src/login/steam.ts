@@ -89,7 +89,7 @@ export async function bind(req: Request, res: Response) {
       }
     }
     req.session.isBinding = false;
-    return res.redirect("/u/" + (req.session.player ? req.session.player.username : ''));
+    return res.redirect("/#/u/" + (req.session.player ? req.session.player.username : ''));
   }
   req.session.isBinding = true;
   res.redirect(`https://steamcommunity.com/openid/login?openid.ns=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0&openid.mode=checkid_setup&openid.return_to=https%3A%2F%2F${domain}%2Fapi%2Fbind%2Fsteam&openid.realm=https%3A%2F%2F${domain}&openid.claimed_id=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.identity=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select`);
