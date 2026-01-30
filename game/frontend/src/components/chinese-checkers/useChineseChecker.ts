@@ -1,6 +1,7 @@
 import { computed, ref, nextTick } from 'vue';
 import { RoomPlayer, Room } from 'tiaoom/client';
 import { GameCore } from '@/core/game';
+import { confirm } from '@/components/msgbox';
 
 export interface Hex {
     q: number;
@@ -453,11 +454,16 @@ export function useChineseChecker(game: GameCore, roomPlayer: RoomPlayer & { roo
             }
         } else if (msg.type === 'request-draw') {
             const who = msg.data.player?.name || '对方';
-            if (confirm(`${who} 请求和棋，是否同意？`)) {
-                 game.command(roomPlayer.room.id, { type: 'draw' });
-            } else {
-                 game.command(roomPlayer.room.id, { type: 'reject-draw' });
-            }
+            confirm(`${who} 请求和棋，是否同意？`, '和棋', {
+                confirmText: '同意',
+                cancelText: '拒绝',
+            }).then((ok) => { 
+                if (ok) {
+                    game.command(roomPlayer.room.id, { type: 'draw' });
+                } else {
+                    game.command(roomPlayer.room.id, { type: 'reject-draw' });
+                }
+            });
         } else if (msg.type === 'reject-draw') {
              console.log('对方拒绝了和棋请求');
         } else if (msg.type === 'gameOver') {

@@ -1,6 +1,6 @@
 import { PlayerRole, PlayerStatus, RoomPlayer, RoomStatus } from "tiaoom";
 import { GameRoom, IGameCommand } from ".";
-import { sleep } from "@/utils";
+import { shortTime, sleep } from "@/utils";
 
 /*
   Xiangqi (Chinese Chess)
@@ -184,6 +184,15 @@ class XiangqiGameRoom extends GameRoom {
       }
       case 'request-draw': {
         if (this.room.status !== RoomStatus.playing) break;
+        const senderPlayer = this.getPlayerById(sender.id);
+        if (senderPlayer?.attributes?.lastRequestedDraw) {
+          const elapsed = Date.now() - senderPlayer.attributes.lastRequestedDraw;
+          if (elapsed < 5 * 60 * 1000) {
+            this.sayTo(`你刚刚发送过和棋请求，请等待 ${shortTime(Math.ceil((5 * 60 * 1000 - elapsed)))} 后再请求和棋。`, sender);
+            break;
+          }
+        }
+        this.setPlayerAttributes(sender.id, { lastRequestedDraw: Date.now() });
         this.say(`${sender.name} 请求和棋。`)
         const other = this.room.validPlayers.find(p => p.id !== sender.id)!
         this.commandTo('request-draw', { player: sender }, other)

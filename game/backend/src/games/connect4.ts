@@ -1,6 +1,6 @@
 import { PlayerRole, PlayerStatus, RoomPlayer, RoomStatus } from "tiaoom";
 import { GameRoom, IGameCommand } from ".";
-import { sleep } from "@/utils";
+import { shortTime, sleep } from "@/utils";
 
 /**
  * 四子棋落子与胜负检查
@@ -254,7 +254,17 @@ class Connect4GameRoom extends GameRoom {
         break;
       }
       case 'request-draw': {
+        const senderPlayer = this.getPlayerById(sender.id);
+        if (senderPlayer?.attributes?.lastRequestedDraw) {
+          const elapsed = Date.now() - senderPlayer.attributes.lastRequestedDraw;
+          if (elapsed < 5 * 60 * 1000) {
+            this.sayTo(`你刚刚发送过和棋请求，请等待 ${shortTime(Math.ceil((5 * 60 * 1000 - elapsed)))} 后再请求和棋。`, sender);
+            break;
+          }
+        }
+        this.setPlayerAttributes(sender.id, { lastRequestedDraw: Date.now() });
         this.say(`玩家 ${sender.name} 请求和棋。`);
+        
         const otherPlayer = this.room.validPlayers.find((p) => p.id != sender.id)!;
         this.commandTo('request-draw', { player: sender }, otherPlayer);
         break;
