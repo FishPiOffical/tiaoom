@@ -103,6 +103,13 @@ router.beforeEach(async (to, _from, next) => {
     return
   }
 
+  if (to.query.apiKey) {
+    // Remove apiKey from URL
+    const { apiKey:_, ...newQuery} = to.query
+    next({ ...to, query: newQuery, replace: true })
+    return
+  } 
+
   next()
 })
 
