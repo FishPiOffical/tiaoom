@@ -238,6 +238,7 @@ function registerGameButton() {
     ${rootSelector} img {
       width: 46px;
       height: 46px;
+      pointer-events: none;
     }
     ${rootSelector}>span {
       display: inline-flex;
@@ -277,6 +278,7 @@ function registerGameButton() {
     const target = event.target as HTMLElement;
     if (target.closest(rootSelector)) {
       event.preventDefault();
+      event.stopPropagation();
       let gameRoomUrl = (target.closest(rootSelector) as HTMLAnchorElement).href;
       gameRoomUrl = await addApiKey(gameRoomUrl);
       appendGameViewIframe(gameRoomUrl);
@@ -343,8 +345,8 @@ function appendGameViewIframe(roomUrl: string) {
     closeButton.addEventListener('click', () => {
       document.body.removeChild(container);
       localStorage.setItem('game-view-iframe-rect', JSON.stringify({
-        top: container.offsetTop,
-        left: container.offsetLeft,
+        top: Number(container.style.top.replace('px', '')),
+        left: Number(container.style.left.replace('px', '')),
         width: container.offsetWidth,
         height: container.offsetHeight
       }));
@@ -361,6 +363,7 @@ function appendGameViewIframe(roomUrl: string) {
     dragHandle.style.borderTopRightRadius = '8px';
     dragHandle.style.zIndex = '1002';
     dragHandle.style.textAlign = 'right';
+    dragHandle.style.userSelect = 'none';
     dragHandle.appendChild(closeButton);
     container.appendChild(dragHandle);
 
@@ -404,8 +407,8 @@ function appendGameViewIframe(roomUrl: string) {
         isDragging = false;
         container.style.cursor = 'default';
         localStorage.setItem('game-view-iframe-rect', JSON.stringify({
-          top: container.offsetTop,
-          left: container.offsetLeft,
+          top: Number(container.style.top.replace('px', '')),
+          left: Number(container.style.left.replace('px', '')),
           width: container.offsetWidth,
           height: container.offsetHeight
         }));
@@ -421,7 +424,3 @@ function appendGameViewIframe(roomUrl: string) {
 document.addEventListener('DOMContentLoaded', () => {
   registerGameButton();
 });
-debugger;
-// @ts-ignore
-window.registerGameButton = registerGameButton;
-registerGameButton();
