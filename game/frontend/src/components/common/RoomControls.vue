@@ -66,7 +66,7 @@
     </template>
     <button 
       v-if="!gameStore.player?.isVisitor" 
-      class="btn btn-soft btn-circle md:btn-lg btn-info tooltip tooltip-left" 
+      class="btn btn-soft btn-circle md:btn-lg btn-secondary tooltip tooltip-left" 
       @click="shareRoom"
       data-tip="分享房间"
     >
@@ -115,13 +115,16 @@ const isRoomFull = computed(() => {
 const ComponentLite = computed(() => getComponent(gameStore.roomPlayer?.room.attrs?.type, 'Lite'))
 
 const roomShareCode = computed(() => `<a target="_blank" href="${location.origin}/#/${ComponentLite.value ? 'l': 'r'}/${gameStore.roomPlayer?.room.id}">
-  <img src="${location.origin}/logo.png" alt="Tiaoom" />
-  <span>
-  <abbr>${gameStore.games[gameStore.roomPlayer?.room.attrs?.type]?.name || '未知'}</abbr>
-  <span>加入游戏</span>
+  <span>  
+    <img src="${location.origin}/logo.png" alt="Tiaoom" />
+    <span>
+    <abbr>${gameStore.games[gameStore.roomPlayer?.room.attrs?.type]?.name || '未知'}</abbr>
+    <span>加入游戏</span>
+    </span>
   </span>
+  <span>#${gameStore.roomPlayer?.room.name}</span>
 </a>
-<span>#${gameStore.roomPlayer?.room.name}</span>`)
+`)
 
 async function shareRoom() {
   try {

@@ -221,38 +221,36 @@ function registerGameButton() {
   const style = document.createElement('style');
   const rootSelector = `a[href*="${scriptSrc.hostname}/#/"]`
   style.innerHTML = `
-    ${rootSelector} {
-      border-radius: 30px;
-      display: flex;
-      flex-direction: row;
+    ${rootSelector}, ${rootSelector}>span>span {
+      display: inline-flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      padding: 8px 12px 0;
-      color: white;
+      gap: 2px;
+      padding: 0 8px;
+      color: inherit;
       text-decoration: none;
     }
     ${rootSelector}:hover {
       transform: scale(1.1);
     }
     ${rootSelector} img {
-      width: 46px;
-      height: 46px;
+      width: 50px;
       pointer-events: none;
     }
     ${rootSelector}>span {
       display: inline-flex;
-      flex-direction: column;
+      flex-direction: row;
       align-items: center;
       justify-content: center;
       font-size: 12px;
       line-height: 1.2;
       text-align: center;
     }
-    ${rootSelector}>span abbr {
+    ${rootSelector}>span>span abbr {
       text-decoration: none;
     }
-    ${rootSelector}>span span {
+    ${rootSelector}>span>span span {
       margin-top: 2px;
       padding: 3px 8px;
       cursor: pointer;
@@ -260,7 +258,7 @@ function registerGameButton() {
       border-radius: 12px;
       font-weight: bold;
     }
-    ${rootSelector} + span {
+    ${rootSelector}>span + span {
       margin-left: 8px;
       font-size: 12px;
       vertical-align: middle;
