@@ -332,7 +332,7 @@ function appendGameViewIframe(roomUrl: string) {
     closeButton.style.color = 'white';
     closeButton.style.fontSize = '24px';
     closeButton.style.cursor = 'pointer';
-    closeButton.style.zIndex = '1002';
+    closeButton.style.zIndex = '1005';
     closeButton.addEventListener('click', () => {
       document.body.removeChild(container);
       localStorage.setItem('game-view-iframe-rect', JSON.stringify({
@@ -369,7 +369,7 @@ function appendGameViewIframe(roomUrl: string) {
     openButton.style.color = 'white';
     openButton.style.fontSize = '18px';
     openButton.style.cursor = 'pointer';
-    openButton.style.zIndex = '1002';
+    openButton.style.zIndex = '1003';
     openButton.title = '在新窗口打开游戏';
     openButton.addEventListener('click', () => {
       window.open(roomUrl, '_blank');

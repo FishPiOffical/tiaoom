@@ -32,6 +32,14 @@
         >
           <Icon icon="mdi:play" />
         </button>
+        <button 
+          class="btn btn-circle btn-primary tooltip" 
+          v-if="gameStore.player?.isVisitor" 
+          @click="gameStore.showLoginModal = true"
+          data-tip="登录"
+        >
+          <Icon icon="mdi:login" />
+        </button>
       </div>
 
       <!-- Watcher Actions -->
@@ -50,7 +58,8 @@
         >
           <Icon icon="mdi:google-gamepad" />
         </button>
-      </div>      
+      </div>
+      
       <!-- Extra Slot -->
       <slot></slot>
     </div>

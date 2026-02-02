@@ -1,5 +1,5 @@
 <template>
-  <div class="md:flex flex-row items-center gap-2 pl-2 md:text-[20px] text-[10px] grid grid-cols-3 md:w-auto w-[7em]">
+  <div class="md:flex flex-row items-center gap-5 pl-2 md:text-[20px] text-[10px] grid grid-cols-3 md:w-auto w-[10em]">
     <!-- Waiting: Player Actions -->
     <template v-if="!isPlaying && roomPlayer.role === PlayerRole.player">
       <button class="btn btn-circle md:btn-lg btn-soft tooltip tooltip-left" 
@@ -35,6 +35,14 @@
         data-tip="开始游戏"
       >
         <Icon icon="mdi:play" />
+      </button>
+      <button 
+        class="btn btn-circle btn-primary tooltip tooltip-left" 
+        v-if="gameStore.player?.isVisitor" 
+        @click="gameStore.showLoginModal = true"
+        data-tip="登录"
+      >
+        <Icon icon="mdi:login" />
       </button>
     </template>
 
