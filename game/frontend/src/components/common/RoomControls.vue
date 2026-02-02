@@ -114,7 +114,7 @@ const isRoomFull = computed(() => {
 
 const ComponentLite = computed(() => getComponent(gameStore.roomPlayer?.room.attrs?.type, 'Lite'))
 
-const roomShareCode = computed(() => `<a target="_blank" href="${location.origin}/#/${ComponentLite ? 'l': 'r'}/1770017036869">
+const roomShareCode = computed(() => `<a target="_blank" href="${location.origin}/#/${ComponentLite.value ? 'l': 'r'}/${gameStore.roomPlayer?.room.id}">
   <img src="${location.origin}/logo.png" alt="Tiaoom" />
   <span>
   <abbr>${gameStore.games[gameStore.roomPlayer?.room.attrs?.type]?.name || '未知'}</abbr>
