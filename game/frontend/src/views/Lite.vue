@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col h-screen bg-base-100 text-base-content">
     <!-- 主内容区 -->
-    <main class="flex-1 bg-base-100 w-full">
+    <main class="flex-1 bg-base-100 w-full flex items-center justify-center overflow-auto">
       <!-- 创建房间 -->
       <CreateRoom v-if="!gameStore.roomPlayer && !roomId" />
       <main

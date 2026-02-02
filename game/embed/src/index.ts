@@ -334,9 +334,6 @@ function appendGameViewIframe(roomUrl: string) {
     // 关闭按钮
     const closeButton = document.createElement('button');
     closeButton.innerText = '×';
-    closeButton.style.position = 'absolute';
-    closeButton.style.top = '8px';
-    closeButton.style.right = '8px';
     closeButton.style.background = 'transparent';
     closeButton.style.border = 'none';
     closeButton.style.color = 'white';
@@ -352,28 +349,24 @@ function appendGameViewIframe(roomUrl: string) {
         height: container.offsetHeight
       }));
     });
-    container.appendChild(closeButton);
 
     // 拖拽控制标签
     const dragHandle = document.createElement('div');
-    dragHandle.style.position = 'absolute';
-    dragHandle.style.top = '0';
-    dragHandle.style.left = '0';
+    dragHandle.style.position = 'relative';
     dragHandle.style.width = '100%';
     dragHandle.style.height = '30px';
     dragHandle.style.cursor = 'grab';
-    dragHandle.style.backgroundColor = 'rgba(0, 0, 0, 0.3)';
+    dragHandle.style.backgroundColor = 'rgba(0, 0, 0, 0.1)';
     dragHandle.style.borderTopLeftRadius = '8px';
     dragHandle.style.borderTopRightRadius = '8px';
     dragHandle.style.zIndex = '1002';
+    dragHandle.style.textAlign = 'right';
+    dragHandle.appendChild(closeButton);
     container.appendChild(dragHandle);
 
     // 打开新窗口按钮
     const openButton = document.createElement('button'); 
     openButton.innerText = '↗';
-    openButton.style.position = 'absolute';
-    openButton.style.top = '8px';
-    openButton.style.right = '40px';
     openButton.style.background = 'transparent';
     openButton.style.border = 'none';
     openButton.style.color = 'white';
@@ -384,7 +377,7 @@ function appendGameViewIframe(roomUrl: string) {
     openButton.addEventListener('click', () => {
       window.open(roomUrl, '_blank');
     });
-    container.appendChild(openButton);
+    dragHandle.appendChild(openButton);
 
     // 允许拖动窗口
     let isDragging = false;
