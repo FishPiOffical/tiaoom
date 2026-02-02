@@ -47,7 +47,7 @@ export const useGameStore = defineStore('game', () => {
     }
   }
 
-  async function checkSession() {
+  async function checkSession({ apiKey }: { apiKey?: string } = {}): Promise<boolean> {
     try {
       // If we already have a regular user, return true
       if (player.value && !player.value.isVisitor) {
@@ -55,7 +55,7 @@ export const useGameStore = defineStore('game', () => {
         return true;
       }
       
-      const user = await api.getUserInfo()
+      const user = await api.getUserInfo({ apiKey })
       if (user) {
         player.value = user
         initGame() // Use initGame instead of connect

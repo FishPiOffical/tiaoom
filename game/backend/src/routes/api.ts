@@ -10,7 +10,8 @@ import { getPlayerStats, isConfigured } from "@/utils";
 import { FindOptionsWhere, Like } from "typeorm";
 import GameRouter from "./game";
 import Games, { GameRoom } from "@/games";
-import { getThirdPartyType } from "@/login";
+import { getThirdPartyType, saveUser } from "@/login";
+import FishPi from "fishpi";
 
 export interface GameContext {
   controller?: Controller;
@@ -44,6 +45,21 @@ const createRoutes = (game: GameContext, gameName: string) => {
   });
 
   router.get("/info", async (req: Request, res: Response) => {
+    if (req.query.apiKey) {
+      const fishpi = new FishPi(req.query.apiKey as string);
+      const userInfo = await fishpi.account.info();
+      const user = await saveUser(
+        { 
+          name: userInfo.userName, 
+          nickname: userInfo.userNickname || userInfo.userName,
+          id: userInfo.oId, 
+          avatar: userInfo.avatar, 
+          ip: req.header('x-forwarded-for') || req.header('x-real-ip') || req.socket.remoteAddress || req.ip || ''
+        },
+        userInfo.role == '管理员' ? true : false
+      );
+      req.session.player = user
+    }
     if (!req.session.player) {
       return res.json({ code: 403, message: "未登录" });
     }

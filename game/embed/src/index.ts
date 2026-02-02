@@ -273,16 +273,28 @@ function registerGameButton() {
   `;
   document.head.appendChild(style);
 
-  document.body.addEventListener('click', (event) => {
+  document.body.addEventListener('click', async (event) => {
     const target = event.target as HTMLElement;
     if (target.closest(rootSelector)) {
       event.preventDefault();
-      const gameRoomUrl = (target.closest(rootSelector) as HTMLAnchorElement).href;
+      let gameRoomUrl = (target.closest(rootSelector) as HTMLAnchorElement).href;
+      gameRoomUrl = await addApiKey(gameRoomUrl);
       appendGameViewIframe(gameRoomUrl);
     }
   });
 }
 
+async function addApiKey(url: string) {
+  if (location.hostname === 'fishpi.cn') {
+    const { apiKey } = await fetch('https://fishpi.cn/getApiKeyInWeb').then((r) => r.json())
+    if (apiKey) {
+      const urlObj = new URL(url);
+      urlObj.searchParams.set('apiKey', apiKey);
+      return urlObj.toString();
+    }
+  }
+  return url;
+}
 interface IRect {
   top: number;
   left: number;
@@ -418,3 +430,7 @@ function appendGameViewIframe(roomUrl: string) {
 document.addEventListener('DOMContentLoaded', () => {
   registerGameButton();
 });
+debugger;
+// @ts-ignore
+window.registerGameButton = registerGameButton;
+registerGameButton();

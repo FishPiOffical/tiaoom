@@ -106,8 +106,8 @@ export const api = {
   getConfig(): Promise<{ game: Record<string, GameConfig>, thirdParty: string[] }> {
     return http.get('/config')
   },
-  getUserInfo(): Promise<User> {
-    return http.get('/info').then((data: any) => new User(data.player))
+  getUserInfo(params: { apiKey?: string } = {}): Promise<User> {
+    return http.get('/info', { params }).then((data: any) => new User(data.player))
   },
   getRecord(id: number): Promise<any> {
     return http.get(`/record/${id}`);
