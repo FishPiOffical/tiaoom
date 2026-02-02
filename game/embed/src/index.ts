@@ -288,9 +288,7 @@ async function addApiKey(url: string) {
   if (location.hostname === 'fishpi.cn') {
     const { apiKey } = await fetch('https://fishpi.cn/getApiKeyInWeb').then((r) => r.json())
     if (apiKey) {
-      const urlObj = new URL(url);
-      urlObj.searchParams.set('apiKey', apiKey);
-      return urlObj.toString();
+      url += (url.includes('?') ? '&' : '?') + `apiKey=${apiKey}`;
     }
   }
   return url;

@@ -76,13 +76,13 @@ const router = createRouter({
 
 router.beforeEach(async (to, _from, next) => {
   const gameStore = useGameStore()
-  await gameStore.checkSession()
+  await gameStore.checkSession(to.query)
 
 
   if (to.meta.requiresAdmin) {
     // Ensure session is checked if we navigated directly here
     if (!gameStore.player) {
-      const hasSession = await gameStore.checkSession()
+      const hasSession = await gameStore.checkSession(to.query)
       if (!hasSession) {
         localStorage.setItem('redirect-after-login', to.fullPath)
         next('/login')
