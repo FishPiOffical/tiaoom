@@ -1,5 +1,5 @@
 <template>
-  <div class="md:flex flex-row items-center gap-5 pl-2 md:text-[20px] text-[10px] grid grid-cols-3 md:w-auto w-[10em]">
+  <div class="md:flex flex-row items-center gap-5 pl-2 md:text-[20px] text-[10px] grid grid-cols-4 md:w-auto w-[12em]">
     <!-- Waiting: Player Actions -->
     <template v-if="!isPlaying && roomPlayer.role === PlayerRole.player">
       <button class="btn btn-circle md:btn-lg btn-soft tooltip tooltip-left" 
@@ -64,6 +64,15 @@
         <Icon icon="mdi:google-gamepad" />
       </button>
     </template>
+    <button 
+      v-if="!gameStore.player?.isVisitor" 
+      class="btn btn-soft btn-circle md:btn-lg btn-info tooltip tooltip-left" 
+      @click="shareRoom"
+      data-tip="分享房间"
+    >
+      <Icon icon="mdi:share-variant" />
+    </button>
+
     <!-- Extra Slot -->
     <slot />
   </div>
@@ -76,7 +85,8 @@ import { RoomPlayer, Room, PlayerRole, RoomStatus } from 'tiaoom/client';
 import { useGameStore } from '@/stores/game';
 import { computed, ref } from 'vue';
 import RoomManagementDrawer from './RoomManagementDrawer.vue';
-
+import { getComponent } from '..';
+import msg from '@/components/msg';
 const props = defineProps<{
   roomPlayer: RoomPlayer & { room: Room },
   game: GameCore,  
@@ -101,6 +111,33 @@ const isRoomFull = computed(() => {
   if (props.roomPlayer.room.size === 0) return false // size为0表示不限制人数
   return props.roomPlayer.room.players.filter((p: any) => p.role === 'player').length >= props.roomPlayer.room.size
 })
+
+const ComponentLite = computed(() => getComponent(gameStore.roomPlayer?.room.attrs?.type, 'Lite'))
+
+const roomShareCode = computed(() => `<a target="_blank" href="${location.origin}/#/${ComponentLite ? 'l': 'r'}/1770017036869">
+  <img src="${location.origin}/logo.png" alt="Tiaoom" />
+  <span>
+  <abbr>${gameStore.games[gameStore.roomPlayer?.room.attrs?.type]?.name || '未知'}</abbr>
+  <span>加入游戏</span>
+  </span>
+</a>
+<span>#${gameStore.roomPlayer?.room.name}</span>`)
+
+async function shareRoom() {
+  try {
+    await navigator.clipboard.writeText(roomShareCode.value)
+    msg.success('已经复制房间邀请代码！快到鱼排聊天室粘贴发送吧！')
+  } catch (err) {
+    // Fallback for older browsers
+    const textArea = document.createElement('textarea')
+    textArea.value = roomShareCode.value
+    document.body.appendChild(textArea)
+    textArea.select()
+    document.execCommand('copy')
+    document.body.removeChild(textArea)
+    msg.success('已经复制房间邀请代码！快到鱼排聊天室粘贴发送吧！')
+  }
+}
 </script>
 <style lang="less" scoped>
   .btn {
