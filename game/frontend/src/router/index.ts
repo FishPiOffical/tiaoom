@@ -52,6 +52,12 @@ const router = createRouter({
           meta: { requiresAuth: true }
         },
         {
+          path: 'l/:id',
+          name: 'lite-room',
+          component: () => import('@/views/Lite.vue'),
+          meta: { requiresAuth: true }
+        },
+        {
           path: 'p/:id',
           name: 'replay',
           component: () => import('@/views/Replay.vue'),

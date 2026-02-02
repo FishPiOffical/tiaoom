@@ -31,8 +31,8 @@ class GameCore extends Tiaoom {
     
     this.socket.onmessage = ({ data: msg }) => {
       const message: any = JSON.parse(msg)
-      const { type, data, sender } = message
-      this.emit(type as keyof TiaoomEvents, data, sender)
+      const { type, data } = message
+      this.emit(type as keyof TiaoomEvents, data)
     }
     
     this.socket.onerror = (err) => {
@@ -167,7 +167,7 @@ class GameEmbed {
         domOrRender({ 
           game: this.config[room?.attrs.type || '']?.name,
           room, player, logo: scriptSrc.origin + '/logo.png', visitRoom: (roomId) => {
-            window.open(`${scriptSrc.origin}/r/${roomId}`, '_blank');
+            window.open(`${scriptSrc.origin}/#/r/${roomId}`, '_blank');
           } 
         });
         return;
@@ -215,3 +215,206 @@ class GameEmbed {
 }
 
 export default GameEmbed;
+
+function registerGameButton() {
+  // 在 windows 注入游戏按钮样式
+  const style = document.createElement('style');
+  const rootSelector = `a[href*="${scriptSrc.hostname}/#/l"]`
+  style.innerHTML = `
+    ${rootSelector} {
+      border-radius: 30px;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 8px 12px 0;
+      color: white;
+      text-decoration: none;
+    }
+    ${rootSelector}:hover {
+      transform: scale(1.1);
+    }
+    ${rootSelector} img {
+      width: 46px;
+      height: 46px;
+    }
+    ${rootSelector}>span {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      line-height: 1.2;
+      text-align: center;
+    }
+    ${rootSelector}>span abbr {
+      text-decoration: none;
+    }
+    ${rootSelector}>span span {
+      margin-top: 2px;
+      padding: 3px 8px;
+      cursor: pointer;
+      background: #4CAF50;
+      border-radius: 12px;
+      font-weight: bold;
+    }
+    ${rootSelector} + span {
+      margin-left: 8px;
+      font-size: 12px;
+      vertical-align: middle;
+      color: #ddd5;
+      font-style: italic;
+      display: flex;
+      text-align: center;
+      align-items: center;
+      justify-content: center;
+    }
+  `;
+  document.head.appendChild(style);
+
+  document.body.addEventListener('click', (event) => {
+    const target = event.target as HTMLElement;
+    if (target.closest(rootSelector)) {
+      event.preventDefault();
+      const gameRoomUrl = (target.closest(rootSelector) as HTMLAnchorElement).href;
+      appendGameViewIframe(gameRoomUrl);
+    }
+  });
+}
+
+interface IRect {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+}
+
+// 创建一个浮动的可调整窗口大小的 iframe 来加载游戏房间， 默认大小为 800x600
+function appendGameViewIframe(roomUrl: string) {
+  let iframe = document.getElementById('game-view-iframe') as HTMLIFrameElement | null;
+  let rect: IRect | null = JSON.parse(localStorage.getItem('game-view-iframe-rect') || 'null');
+
+  if (!iframe) {
+    iframe = document.createElement('iframe');
+    iframe.id = 'game-view-iframe';
+    iframe.style.width = '100%';
+    iframe.style.height = '100%';
+    iframe.style.border = 'none';
+    iframe.style.borderRadius = '8px';
+    iframe.src = roomUrl;
+
+    const container = document.createElement('div');
+    container.id = 'game-view-container';
+    container.style.position = 'fixed';
+    container.style.top =  (rect?.top ?? (window.innerHeight - 620) / 2) + 'px';
+    container.style.left = (rect?.left ?? (window.innerWidth - 820) / 2) + 'px';
+    container.style.width = (rect?.width || 800) + 'px';
+    container.style.height = (rect?.height || 600) + 'px';
+    container.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+    container.style.zIndex = '1001';
+    container.style.display = 'flex';
+    container.style.alignItems = 'center';
+    container.style.justifyContent = 'center';
+    container.style.resize = 'both';
+    container.style.overflow = 'hidden';
+    container.style.borderRadius = '8px';
+    container.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
+
+    // 关闭按钮
+    const closeButton = document.createElement('button');
+    closeButton.innerText = '×';
+    closeButton.style.position = 'absolute';
+    closeButton.style.top = '8px';
+    closeButton.style.right = '8px';
+    closeButton.style.background = 'transparent';
+    closeButton.style.border = 'none';
+    closeButton.style.color = 'white';
+    closeButton.style.fontSize = '24px';
+    closeButton.style.cursor = 'pointer';
+    closeButton.style.zIndex = '1002';
+    closeButton.addEventListener('click', () => {
+      document.body.removeChild(container);
+      localStorage.setItem('game-view-iframe-rect', JSON.stringify({
+        top: container.offsetTop,
+        left: container.offsetLeft,
+        width: container.offsetWidth,
+        height: container.offsetHeight
+      }));
+    });
+    container.appendChild(closeButton);
+
+    // 拖拽控制标签
+    const dragHandle = document.createElement('div');
+    dragHandle.style.position = 'absolute';
+    dragHandle.style.top = '0';
+    dragHandle.style.left = '0';
+    dragHandle.style.width = '100%';
+    dragHandle.style.height = '30px';
+    dragHandle.style.cursor = 'grab';
+    dragHandle.style.backgroundColor = 'rgba(0, 0, 0, 0.3)';
+    dragHandle.style.borderTopLeftRadius = '8px';
+    dragHandle.style.borderTopRightRadius = '8px';
+    dragHandle.style.zIndex = '1002';
+    container.appendChild(dragHandle);
+
+    // 打开新窗口按钮
+    const openButton = document.createElement('button'); 
+    openButton.innerText = '↗';
+    openButton.style.position = 'absolute';
+    openButton.style.top = '8px';
+    openButton.style.right = '40px';
+    openButton.style.background = 'transparent';
+    openButton.style.border = 'none';
+    openButton.style.color = 'white';
+    openButton.style.fontSize = '18px';
+    openButton.style.cursor = 'pointer';
+    openButton.style.zIndex = '1002';
+    openButton.title = '在新窗口打开游戏';
+    openButton.addEventListener('click', () => {
+      window.open(roomUrl, '_blank');
+    });
+    container.appendChild(openButton);
+
+    // 允许拖动窗口
+    let isDragging = false;
+    let dragOffsetX = 0;
+    let dragOffsetY = 0;
+
+    dragHandle.addEventListener('mousedown', (e) => {
+      if (e.target === closeButton) return; // 不允许拖动关闭按钮
+      isDragging = true;
+      dragOffsetX = e.clientX - container.offsetLeft;
+      dragOffsetY = e.clientY - container.offsetTop;
+      container.style.cursor = 'grabbing';
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (isDragging) {
+        container.style.left = (e.clientX - dragOffsetX) + 'px';
+        container.style.top = (e.clientY - dragOffsetY) + 'px';
+      }
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (isDragging) {
+        isDragging = false;
+        container.style.cursor = 'default';
+        localStorage.setItem('game-view-iframe-rect', JSON.stringify({
+          top: container.offsetTop,
+          left: container.offsetLeft,
+          width: container.offsetWidth,
+          height: container.offsetHeight
+        }));
+      }
+    });
+
+    container.appendChild(iframe);
+    document.body.appendChild(container);
+  }
+  iframe.src = roomUrl;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  registerGameButton();
+});

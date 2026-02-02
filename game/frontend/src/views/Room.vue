@@ -1,91 +1,10 @@
 <script lang="ts" setup>
-import { md5 } from 'js-md5';
-import msg from "@/components/msg";
-import { useGameEvents } from "@/hook/useGameEvents";
 import { getComponent } from "@/components";
-import { useGameStore } from "@/stores/game";
 import { openSmallWindow } from "@/utils/dom";
 import { computed, onMounted, watch, ref, nextTick, onUnmounted } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import msgbox from '@/components/msgbox';
+import { useRoom } from '@/hook/useRoom';
 
-const gameStore = useGameStore();
-const route = useRoute();
-const router = useRouter();
-
-const roomId = computed(() => (route.params.id as string));
-
-async function init() {
-  if (roomId.value) {
-    if (
-      gameStore.roomPlayer &&
-      gameStore.roomPlayer.room.id !== roomId.value
-    ) {
-      if (gameStore.roomPlayer.role !== "player") {
-        gameStore.game?.leaveRoom(gameStore.roomPlayer.room.id);
-      } else {
-        msg.warning("您正在游戏中，无法切换房间！");
-        router.replace('/');
-        return;
-      }
-    }
-    const room = gameStore.rooms.find((r) => r.id === roomId.value);
-    if (!room) {
-      msg.error("房间不存在或已被解散！");
-      router.replace('/');
-      return;
-    }
-    let passwd: string | undefined;
-    if (room.attrs?.passwd && !room.players.some(p => p.id == gameStore.player?.id)) {
-      passwd = await msgbox.prompt("请输入房间密码：").catch(() => "") || "";
-      if (!passwd) return router.back();
-      if (room.attrs.passwd !== md5(passwd)) {
-        msg.error("密码错误，无法加入房间。");
-        return history.state.back ? router.back() : router.replace('/');
-      }
-    }
-    gameStore.game?.joinRoom(room.id, { passwd });
-  }
-}
-const room = computed(() => gameStore.roomPlayer?.room)
-
-function load() {
-  gameStore.game?.getRoomOneTime(roomId.value).then(() => {
-    init();
-  });
-}
-
-if (gameStore.game) {
-  useGameEvents(gameStore.game, {
-    'onRoomList': () => {
-      setTimeout(() => {
-        if (!route.params.id) return;
-        const room = gameStore.rooms.find((r) => r.id === roomId.value);
-        if (!room) {
-          msg.error("房间不存在或已被解散！");
-          history.state.back ? router.back() : router.replace('/');
-          return;
-        }
-      }, 100)
-    }
-  });
-}
-
-watch(
-  () => route.params.id,
-  (val, old) => {
-    if (val && val !== old && old) init();
-  },
-  { immediate: true }
-);
-
-onMounted(() => {
-  if (gameStore.rooms.find((r) => r.id === roomId.value)) {
-    init();
-  } else {
-    load();
-  }
-});
+const { room, gameStore } = useRoom();
 
 const isAlertExpanded = ref(false);
 const showExpandBtn = ref(false);

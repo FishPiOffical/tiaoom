@@ -3,7 +3,13 @@
     <!-- 主内容区 -->
     <main class="flex-1 bg-base-100 w-full">
       <!-- 创建房间 -->
-      <CreateRoom v-if="!gameStore.roomPlayer" />
+      <CreateRoom v-if="!gameStore.roomPlayer && !roomId" />
+      <main
+        v-if="!gameStore.roomPlayer && roomId"
+        class="flex-1 overflow-auto bg-base-100 w-full flex items-center justify-center"
+      >
+        <span>正在加载房间...</span>
+      </main>
       <RoomControlsLite
         v-if="gameStore.game && gameStore.roomPlayer"
         :game="gameStore.game" 
@@ -29,9 +35,10 @@
 
 <script setup lang="ts">
 import { onMounted, computed } from 'vue'
-import { useGameStore } from '@/stores/game'
 import { getComponent } from '@/components'
-const gameStore = useGameStore()
+import { useRoom } from '@/hook/useRoom'
+
+const { gameStore, roomId } = useRoom();
 
 onMounted(() => {
   gameStore.initGame()
