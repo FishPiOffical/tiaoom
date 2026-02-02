@@ -35,8 +35,7 @@ export class Game {
       saveUninitialized: false,
       resave: false,
       cookie: {
-        maxAge: 60 * 60 * 24 * 1000 * 365,  // 有效期，单位是毫秒
-        sameSite: 'none',
+        maxAge: 60 * 60 * 24 * 1000 * 365  // 有效期，单位是毫秒
       },
     }));
 
