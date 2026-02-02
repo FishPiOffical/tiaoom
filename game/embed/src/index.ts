@@ -307,10 +307,10 @@ function appendGameViewIframe(roomUrl: string) {
     const container = document.createElement('div');
     container.id = 'game-view-container';
     container.style.position = 'fixed';
-    container.style.top =  (rect?.top ?? (window.innerHeight - 620) / 2) + 'px';
-    container.style.left = (rect?.left ?? (window.innerWidth - 820) / 2) + 'px';
-    container.style.width = (rect?.width || 800) + 'px';
-    container.style.height = (rect?.height || 600) + 'px';
+    container.style.top =  (rect?.top ?? (window.innerHeight - 320) / 2) + 'px';
+    container.style.left = (rect?.left ?? (window.innerWidth - 420) / 2) + 'px';
+    container.style.width = (rect?.width || 300) + 'px';
+    container.style.height = (rect?.height || 400) + 'px';
     container.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
     container.style.zIndex = '1001';
     container.style.display = 'flex';
