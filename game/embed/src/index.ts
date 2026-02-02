@@ -326,6 +326,7 @@ function appendGameViewIframe(roomUrl: string) {
     container.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
     container.style.zIndex = '1001';
     container.style.display = 'flex';
+    container.style.flexDirection = 'column';
     container.style.alignItems = 'center';
     container.style.justifyContent = 'center';
     container.style.resize = 'both';
