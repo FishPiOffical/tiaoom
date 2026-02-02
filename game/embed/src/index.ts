@@ -363,7 +363,6 @@ function appendGameViewIframe(roomUrl: string) {
     dragHandle.style.zIndex = '1002';
     dragHandle.style.textAlign = 'right';
     dragHandle.style.userSelect = 'none';
-    dragHandle.appendChild(closeButton);
     container.appendChild(dragHandle);
 
     // 打开新窗口按钮
@@ -377,9 +376,10 @@ function appendGameViewIframe(roomUrl: string) {
     openButton.style.zIndex = '1003';
     openButton.title = '在新窗口打开游戏';
     openButton.addEventListener('click', () => {
-      window.open(roomUrl, '_blank');
+      window.open(roomUrl.replace(/\/l\//, '/r/'), '_blank');
     });
     dragHandle.appendChild(openButton);
+    dragHandle.appendChild(closeButton);
 
     // 允许拖动窗口
     let isDragging = false;
