@@ -219,7 +219,7 @@ export default GameEmbed;
 function registerGameButton() {
   // 在 windows 注入游戏按钮样式
   const style = document.createElement('style');
-  const rootSelector = `a[href*="${scriptSrc.hostname}/#/l"]`
+  const rootSelector = `a[href*="${scriptSrc.hostname}/#/"]`
   style.innerHTML = `
     ${rootSelector} {
       border-radius: 30px;
