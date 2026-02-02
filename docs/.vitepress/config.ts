@@ -35,6 +35,7 @@ export default defineConfig({
             { text: '游戏数据', link: '/game/data' },
             { text: '调试部署', link: '/game/deploy' },
             { text: '游戏嵌入', link: '/game/embed' },
+            { text: 'AI 助手', link: '/game/skills' },
           ]
         },
         {
