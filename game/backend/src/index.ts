@@ -7,6 +7,7 @@ import sessionStore from 'session-file-store';
 import { Controller } from "./controller";
 import cookieParser from 'cookie-parser';
 import createRoutes from "./routes/api";
+import EmbedRouter from "./routes/embed";
 import utils from './utils'
 import configRouter from "./routes/config";
 import { AppDataSource, initDataSource } from "./entities";
@@ -70,6 +71,7 @@ export class Game {
           .catch((error) => console.log(error));
     }
     this.app.use("/api", createRoutes(this, gameName));
+    this.app.use("/embed", EmbedRouter);
     this.controller = new Controller(server);
     this.controller?.run();
     console.info(`Server running at http://${domain}:${serverPort}/`);
