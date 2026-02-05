@@ -104,7 +104,7 @@ router.get('/state/:username/:game.svg', async (req: Request, res: Response) => 
           --bg-color: ${bgColor};
           --text-gray: ${textGray};
         }
-        .no-data { background-color: var(--bg-color); border-radius: 8px; padding: 16px; width: 368px; height: 168px; font-family: system-ui, -apple-system, sans-serif; box-sizing: border-box; display: flex; align-items: center; justify-content: center; }
+        .no-data { background-color: var(--bg-color); border-radius: 8px; padding: 16px; width: 260px; height: 168px; font-family: system-ui, -apple-system, sans-serif; box-sizing: border-box; display: flex; align-items: center; justify-content: center; }
         .no-data-text { text-align: center; color: var(--text-gray); }
       </style>
       <div class="no-data">
@@ -112,8 +112,8 @@ router.get('/state/:username/:game.svg', async (req: Request, res: Response) => 
       </div>
     `;
     }
-    const svg = `<svg width="360" height="168" xmlns="http://www.w3.org/2000/svg">
-  <foreignObject x="0" y="0" width="360" height="168">
+    const svg = `<svg width="260" height="168" xmlns="http://www.w3.org/2000/svg">
+  <foreignObject x="0" y="0" width="260" height="168">
     <html xmlns="http://www.w3.org/1999/xhtml">${htmlContent}</html>
   </foreignObject>
 </svg>`;
@@ -121,14 +121,14 @@ router.get('/state/:username/:game.svg', async (req: Request, res: Response) => 
     res.send(svg);
   } catch (error) {
     console.error(error);
-    const errorSvg = `<svg width="360" height="168" xmlns="http://www.w3.org/2000/svg">
-  <foreignObject x="0" y="0" width="360" height="168">
+    const errorSvg = `<svg width="260" height="168" xmlns="http://www.w3.org/2000/svg">
+  <foreignObject x="0" y="0" width="260" height="168">
     <html xmlns="http://www.w3.org/1999/xhtml">
       <style>
         :root {
           --error-color: ${errorColor};
         }
-        .error { color: var(--error-color); text-align: center; padding: 20px; width: 360px; height: 168px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; }
+        .error { color: var(--error-color); text-align: center; padding: 20px; width: 260px; height: 168px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; }
       </style>
       <div class="error">服务器错误</div>
     </html>
