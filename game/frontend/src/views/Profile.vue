@@ -1,10 +1,12 @@
 <script lang="ts" setup>
-  import { api, User } from '@/api';
+  import { api, GameStats, User } from '@/api';
   import { ref, watch, computed } from 'vue';
   import { useRoute } from 'vue-router';
   import Icon from '@/components/common/Icon.vue';
   import { useGameStore } from '@/stores/game';
   import { getComponent } from '@/components';
+import { copySvgUrlAsImage, getStateSvgUrl } from '@/utils';
+import msg from '@/components/msg';
 
   const user = ref<User>();
   const route = useRoute();
@@ -91,6 +93,14 @@
   const hasReplayComponent = (type: string) => {
     return !!getComponent(type, 'Replay')
   }
+
+  async function onShare(stat: GameStats) {
+    if (await copySvgUrlAsImage(getStateSvgUrl(user.value!.username, stat.type), `${user.value!.nickname} 的 ${gameStore.games[stat.type]?.name || stat.type} 战绩`)) {
+      msg.success('战绩已复制，快去分享吧！');
+    } else {
+      msg.error('复制失败！');
+    }
+  }
 </script>
 
 <template> 
@@ -166,7 +176,12 @@
                         <div class="text-3xl font-black text-info">{{ stat.score }}</div>
                       </div>
                     </template>
-                    <div class="text-right text-xs mt-1 opacity-60">游玩次数：{{ stat.total }}</div>
+                    <div class="flex items-center justify-between text-xs mt-1 opacity-60">
+                      <button class="btn btn-ghost btn-xs tooltip" :data-tip="`复制${gameStore.games[stat.type]?.name || stat.type}战绩`" @click="onShare(stat)">
+                        <Icon icon="tabler:copy" />
+                      </button>
+                      <span>游玩次数：{{ stat.total }}</span>
+                    </div>
                 </div>
             </div>
             <div v-else class="flex items-center justify-center h-32 bg-base-200 rounded-lg border-2 border-dashed border-base-300">

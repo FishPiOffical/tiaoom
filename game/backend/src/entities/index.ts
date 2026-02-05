@@ -31,7 +31,6 @@ export class EntitySubscriber implements EntitySubscriberInterface {
   }
 }
 
-
 async function getGameDatas() {
   const metadata = getMetadataArgsStorage();
   const Games = await gameLoaded;
@@ -53,7 +52,7 @@ const initDataSource = (async () => {
     logging: false,
     ...utils.config.database,
     synchronize: true,
-    entities: [User, Log, Record, PlayerStats, Manage, ...await getGameDatas(), ...(utils.config.persistence?.driver == 'mysql' ? [RoomSQL] : [])],
+    entities: [User, UserBind, Log, Record, PlayerStats, Manage, ...await getGameDatas(), ...(utils.config.persistence?.driver == 'mysql' ? [RoomSQL] : [])],
     migrations: [],
     subscribers: [],
     charset: "utf8mb4_unicode_ci"

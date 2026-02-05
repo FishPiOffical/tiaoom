@@ -124,3 +124,69 @@ export async function sha256(message: string): Promise<string> {
   const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   return hashHex;
 }
+
+// 获取 Diasiyui 当前主题的颜色，包含 primary，secondary，accent，success，warning，error, info 等
+export function getThemeColor() {
+  const styles = getComputedStyle(document.documentElement);
+  const colorMap: Record<string, string> = {};
+  [
+    "primary",
+    "primary-content",
+    "secondary",
+    "secondary-content",
+    "accent",
+    "accent-content",
+    "neutral",
+    "neutral-content",
+    "base-100",
+    "base-200",
+    "base-300",
+    "base-content",
+    "info",
+    "info-content",
+    "success",
+    "success-content",
+    "warning",
+    "warning-content",
+    "error",
+    "error-content"
+].forEach(color => {
+    colorMap[color] = styles.getPropertyValue(`--color-${color}`).trim();
+  });
+  return colorMap;
+}
+
+export function getStateSvgUrl(username: string, game: string) {
+  let url = `${location.origin}/embed/state/${encodeURIComponent(username)}/${encodeURIComponent(game)}.svg?`;
+  const theme = getThemeColor();
+  url += 'content=' + encodeURI(theme['base-content']) + '&';
+  url += 'bg=' + encodeURI(theme['base-300']) + '&';
+  url += 'win=' + encodeURI(theme['success']) + '&';
+  url += 'draw=' + encodeURI(theme['warning']) + '&';
+  url += 'loss=' + encodeURI(theme['error']) + '&';
+  url += 'score=' + encodeURI(theme['info']);
+  return url;
+}
+
+export async function copySvgUrlAsImage(svgUrl: string, name = '') {
+  try {
+    // 方案1: 同时复制图片数据和 HTML（推荐）
+    const response = await fetch(svgUrl);
+    const blob = await response.blob();
+    
+    // 创建包含图片引用的 HTML
+    const html = `<img src="${svgUrl}" alt="${name}" />`;
+    
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        'text/html': new Blob([html], { type: 'text/html' }),
+        'image/svg+xml': blob,
+        'text/plain': new Blob([svgUrl], { type: 'text/plain' })
+      })
+    ]);
+    
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
