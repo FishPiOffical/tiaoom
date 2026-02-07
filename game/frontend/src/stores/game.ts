@@ -88,7 +88,7 @@ export const useGameStore = defineStore('game', () => {
   function initGame(): GameCore{
     if (game.value) return game.value as GameCore;
 
-    game.value = new GameCore('/ws')
+    game.value = new GameCore(location.origin.replace(/^http/, 'ws') + '/ws')
     
     return game.value.run()
       .on('global.error', (err) => {
