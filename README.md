@@ -50,6 +50,7 @@ class YourGameClient extends Tiaoom {
 - game/frontend/src/components/yourgame/YourGameRoom.vue - 游戏前端组件；
 
 完成后重启服务即可在前端选择运行游戏。
+~~iwpz:跳佬已经被我绑架了，需要VM50才可以继续更新~~
 
 目前已内置：
 
