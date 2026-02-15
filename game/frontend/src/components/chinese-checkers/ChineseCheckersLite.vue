@@ -84,7 +84,7 @@
       </div>
       
        <!-- Actions for Lite Move Confirmation -->
-       <div class="h-8 flex items-center justify-center gap-2 mt-2 sticky bottom-0 bg-base-100/80" v-if="isMyTurn && isMoving">
+       <div class="h-8 flex items-center justify-center gap-2 mt-2 sticky z-10 bottom-0 bg-base-100/80" v-if="isMyTurn && isMoving">
           <button @click="commitMove" class="btn btn-xs btn-primary">✔</button>
           <button @click="cancelMove" class="btn btn-xs btn-ghost">✘</button>
           <button @click="replayLastMove" class="btn btn-[16px] min-h-0 h-4 w-4 p-0 btn-circle btn-ghost text-[10px]">

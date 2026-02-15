@@ -428,7 +428,7 @@ function getPlayerName(color: number) {
         </div>
       
         <!-- Controls -->
-        <div class="my-2 flex flex-col gap-2 sticky bottom-0 bg-base-100">
+        <div class="my-2 flex flex-col gap-2 sticky z-100 bottom-0 bg-base-100">
           <div class="flex justify-between items-center gap-2">
             <button class="btn btn-sm" @click="currentStep = Math.max(0, currentStep - 1)" :disabled="currentStep === 0">
               <Icon icon="mdi:chevron-left" />

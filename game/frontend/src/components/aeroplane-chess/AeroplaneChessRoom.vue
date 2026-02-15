@@ -28,7 +28,7 @@
       <span :class="getTextColor(player.attributes?.aeroplaneColor, false)">✈</span>
     </template>
     <template #actions>
-      <section class="w-full sticky bottom-0 bg-base-100/80 p-4 md:p-0 flex flex-col gap-4">
+      <section class="w-full sticky bottom-0 z-100 bg-base-100/90 p-4 md:p-0 flex flex-col gap-4">
         <div class="flex items-center gap-2" v-if="canRoll || state?.lastRoll">
           <button class="btn btn-primary" :disabled="!canRoll" @click="roll">掷骰</button>
           <div class="text-sm" v-if="state?.lastRoll">
