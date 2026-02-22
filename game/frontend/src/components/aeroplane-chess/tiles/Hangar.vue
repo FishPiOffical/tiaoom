@@ -44,9 +44,9 @@ const rotateMap: Record<Dir, string> = {
 };
 const finishRotateMap: Record<Dir, string> = {
   br: '180deg',
-  bl: '90deg',
+  bl: '270deg',
   tl: '0deg',
-  tr: '270deg',
+  tr: '90deg',
 };
 
 const pieces = computed(() => {

@@ -54,6 +54,7 @@ export function useAeroplaneChess(game: GameCore, roomPlayer: RoomPlayer & { roo
         break;
       case 'status':
         if (msg.data?.state) state.value = msg.data.state;
+        movable.value = state.value?.moveable?.[roomPlayer.id] || [];
         break;
       case 'aeroplane:roll':
         lastRoll.value = msg.data?.roll ?? null;
