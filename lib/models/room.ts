@@ -174,6 +174,7 @@ export class Room extends EventEmitter implements IRoom {
   requireAllReadyToStart: boolean = true;
   attrs?: Record<string, any>;
   players: RoomPlayer[] = [];
+  _isPlaying: boolean = false;
 
   /**
    * 有效玩家列表(非观众)
@@ -211,7 +212,8 @@ export class Room extends EventEmitter implements IRoom {
    */
   get status(): RoomStatus {
     if (!this.isReady) return RoomStatus.waiting;
-    if (this.validPlayers.every((target) => target.status === PlayerStatus.playing)) return RoomStatus.playing;
+    const onlinePlayers = this.validPlayers.filter(p => p.status != PlayerStatus.offline);
+    if (onlinePlayers.every((target) => target.status === PlayerStatus.playing) || this._isPlaying) return RoomStatus.playing;
     return RoomStatus.ready;
   }
 
@@ -398,6 +400,7 @@ export class Room extends EventEmitter implements IRoom {
       player.emit('status', PlayerStatus.playing);
     });
     this.emit("update", this);
+    this._isPlaying = true;
     return this.emit("start", this);
   }
 
@@ -411,6 +414,7 @@ export class Room extends EventEmitter implements IRoom {
       player.emit('status', PlayerStatus.unready);
     });
     this.emit("update", this);
+    this._isPlaying = false;
     return this.emit("end", this);
   }
 
