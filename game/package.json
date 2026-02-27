@@ -17,7 +17,7 @@
     "build:frontend": "npm run build --workspace=frontend",
     "build:embed": "npm run build --workspace=embed",
     "install:all": "npm install",
-    "postinstall": "cd .. && npm install &&npm run build"
+    "postinstall": "cd .. && npm install && npm run build"
   },
   "devDependencies": {
     "@types/node": "^20.4.2",
