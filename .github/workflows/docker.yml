@@ -15,7 +15,6 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install and build
-        if: env.USE_EXISTING_DOCKERFILE == 'true'
         run: |
           cd game
           npm ci
