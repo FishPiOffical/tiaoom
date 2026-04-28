@@ -25,23 +25,6 @@ Tiaoom 是一个开放的多人在线游戏平台，支持开发和发布各种�
 1. **后端**：`backend/src/games/MyGame.ts` - 游戏逻辑
 2. **前端**：`frontend/src/components/games/MyGameRoom.vue` - 游戏界面
 
-**准备开发环境（3 步）**
-
-```bash
-# 1. 克隆仓库
-git clone https://github.com/FishPiOffical/tiaoom.git
-cd tiaoom/game
-
-# 2. 安装依赖
-npm install
-
-# 3. 启动开发服务
-npm run dev
-```
-
-✅ 打开 http://localhost:5173 开始开发
-
----
 
 ## 架构概览
 
@@ -51,7 +34,7 @@ npm run dev
 ┌─────────────────────────────────────────────┐
 │      Tiaoom 竞技大厅平台                    │
 ├───────────────────────┬─────────────────────┤
-│   🖥️ 后端服务器        │   🌐 前端应用       │
+│   🖥️ 后端服务器       │   🌐 前端应用       │
 │  (Node.js)             │  (Vue 3)            │
 ├───────────────────────┼─────────────────────┤
 │ • GameRoom 逻辑       │ • 游戏组件          │
@@ -254,13 +237,11 @@ tiaoom/game/
 │   ├── src/games/
 │   │   └── MyGame.ts              # 你的游戏逻辑
 │   └── ...
-├── frontend/
-│   └── src/components/games/
-│       ├── MyGameRoom.vue         # 游戏主组件
-│       ├── MyGameLite.vue         # 小窗组件（可选）
-│       └── MyGameReplay.vue       # 回放组件（可选）
-└── skills/                         # 本 Skill 所在目录
-    └── SKILL.md
+└── frontend/
+    └── src/components/games/
+        ├── MyGameRoom.vue         # 游戏主组件
+        ├── MyGameLite.vue         # 小窗组件（可选）
+        └── MyGameReplay.vue       # 回放组件（可选）
 ```
 
 ---
