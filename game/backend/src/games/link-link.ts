@@ -179,8 +179,8 @@ function hasSolvablePair(board: number[][]): boolean {
 // ─── 游戏元数据 ──────────────────────────────────────────────────────────────
 export const name = '连连看';
 export const minSize = 2;
-export const maxSize = 2;
-export const description = `两位玩家各自拥有独立的 6×8 棋盘，初始布局相同。
+export const maxSize = 4;
+export const description = `2~4 位玩家各自拥有独立的 6×8 棋盘，初始布局相同。
 选择两张图案相同且路径最多拐弯两次（含绕棋盘边界）的牌进行消除。
 当棋盘无解时自动重排剩余牌面。最先清空棋盘的玩家获胜！`;
 export const points = {

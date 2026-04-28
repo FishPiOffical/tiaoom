@@ -49,17 +49,21 @@
       </template>
 
       <template v-else>
-        <!-- 观众视角：双方棋盘 -->
-        <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">
+        <!-- 观众视角：所有玩家棋盘 -->
+        <div class="grid gap-4 items-start" :class="{
+          'grid-cols-1': players.length === 1,
+          'grid-cols-1 md:grid-cols-2': players.length === 2,
+          'grid-cols-1 md:grid-cols-2 lg:grid-cols-3': players.length === 3,
+          'grid-cols-2 md:grid-cols-2 lg:grid-cols-4': players.length >= 4,
+        }">
           <div
-            v-for="p in players.filter(x => x.id !== roomPlayer.id)"
+            v-for="p in players"
             :key="p.id"
             class="flex flex-col items-center gap-2"
           >
-            <div class="flex flex-wrap items-center gap-2 text-sm font-semibold">
-              <span class="badge badge-info">玩家</span>
-              <span>{{ p.name }}</span>
-              <span class="text-base-content/50">剩余 {{ p.leftTiles }} · 消除 {{ p.pairsDone }} 对</span>
+            <div class="flex flex-wrap items-center gap-2 text-xs md:text-sm font-semibold">
+              <span class="badge badge-info badge-sm">{{ p.name }}</span>
+              <span class="text-base-content/50 text-xs">剩余 {{ p.leftTiles }} · 消 {{ p.pairsDone }}</span>
               <span v-if="p.shuffleCount > 0" class="text-warning text-xs">↺{{ p.shuffleCount }}</span>
             </div>
             <LinkLinkCanvas

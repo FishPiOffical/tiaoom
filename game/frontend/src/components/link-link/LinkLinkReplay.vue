@@ -4,20 +4,25 @@
     <section class="flex-1 md:h-full flex flex-col items-center justify-start md:justify-center overflow-auto p-4 relative">
       <h2 class="text-xl font-bold mb-4 md:absolute md:top-4">连连看 · 对战回放</h2>
       
-      <div v-if="history.length > 1" class="flex flex-col gap-6 justify-center items-start mt-8 md:mt-0">
+      <div v-if="history.length > 1" class="grid gap-4 items-start w-full mt-8 md:mt-0" :class="{
+        'grid-cols-1': (playerOrder?.length ?? 0) === 1,
+        'grid-cols-1 md:grid-cols-2': (playerOrder?.length ?? 0) === 2,
+        'grid-cols-1 md:grid-cols-2 lg:grid-cols-3': (playerOrder?.length ?? 0) === 3,
+        'grid-cols-2 md:grid-cols-2 lg:grid-cols-4': (playerOrder?.length ?? 0) >= 4,
+      }">
         <div v-for="playerId in playerOrder" :key="playerId" class="flex flex-col items-center gap-2">
-          <div class="text-base font-semibold">
+          <div class="text-sm md:text-base font-semibold">
             {{ playerName(playerId) }}
-            <span class="ml-2 text-sm opacity-60 font-normal">
+            <span class="ml-2 text-xs md:text-sm opacity-60 font-normal">
               剩余 {{ boardLeft(playerId) }} · 消除 {{ currentEntry?.pairsDone[playerId] ?? 0 }} 对
             </span>
           </div>
-          <div class="bg-base-200 rounded-xl border border-base-300 p-2 shadow-lg">
+          <div class="bg-base-200 rounded-xl border border-base-300 p-1.5 md:p-2 shadow-lg">
             <div v-for="(row, r) in currentBoards[playerId] ?? []" :key="r" class="flex">
               <div
                 v-for="(val, c) in row"
                 :key="c"
-                class="w-6 h-6 m-0.5 rounded-md flex items-center justify-center text-lg leading-none transition-all duration-150"
+                class="w-6 h-6 md:w-8 md:h-8 m-0.5 rounded-md flex items-center justify-center text-base md:text-lg leading-none transition-all duration-150"
                 :class="[
                   val === 0 ? 'opacity-20 bg-base-300' : 'bg-base-100 border border-base-300 shadow-sm',
                   isHighlighted(playerId, r, c) ? 'ring-2 ring-primary scale-110 z-10' : '',
