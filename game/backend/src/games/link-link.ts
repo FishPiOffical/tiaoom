@@ -32,27 +32,30 @@ interface GameMove {
   time: number;       // 相对游戏开始的毫秒数
 }
 
-// ─── 辅助：生成并打乱初始棋盘 ────────────────────────────────────────────────
+// ─── 辅助：生成并打乱初始棋盘（保证至少有一对可消除）────────────────────────
 function buildInitialBoard(): number[][] {
-  const tiles: number[] = [];
-  for (let i = 1; i <= TILE_TYPES; i++) {
-    tiles.push(i, i); // 每种牌 2 张
-  }
-  // Fisher-Yates 打乱
-  for (let i = tiles.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [tiles[i], tiles[j]] = [tiles[j], tiles[i]];
-  }
-  const board: number[][] = [];
-  for (let r = 0; r < ROWS; r++) {
-    board.push(tiles.slice(r * COLS, r * COLS + COLS));
-  }
+  let board: number[][];
+  do {
+    const tiles: number[] = [];
+    for (let i = 1; i <= TILE_TYPES; i++) {
+      tiles.push(i, i); // 每种牌 2 张
+    }
+    // Fisher-Yates 打乱
+    for (let i = tiles.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [tiles[i], tiles[j]] = [tiles[j], tiles[i]];
+    }
+    board = [];
+    for (let r = 0; r < ROWS; r++) {
+      board.push(tiles.slice(r * COLS, r * COLS + COLS));
+    }
+  } while (!hasSolvablePair(board));
   return board;
 }
 
-// ─── 辅助：仅重排剩余非空牌（保持空位位置不变）────────────────────────────
+// ─── 辅助：仅重排剩余非空牌（保持空位位置不变，保证重排后至少有一对可消除）──
 function reshuffleBoard(board: number[][]): number[][] {
-  // 收集所有非空牌值
+  // 收集所有非空牌值及坐标
   const remaining: number[] = [];
   const positions: Pos[] = [];
   for (let r = 0; r < ROWS; r++) {
@@ -63,16 +66,20 @@ function reshuffleBoard(board: number[][]): number[][] {
       }
     }
   }
-  // Fisher-Yates 打乱牌值
-  for (let i = remaining.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [remaining[i], remaining[j]] = [remaining[j], remaining[i]];
-  }
-  // 拷贝棋盘后填入新顺序
-  const newBoard = board.map(row => row.slice());
-  positions.forEach((pos, idx) => {
-    newBoard[pos.r][pos.c] = remaining[idx];
-  });
+  let newBoard: number[][];
+  do {
+    // Fisher-Yates 打乱牌值
+    const shuffled = remaining.slice();
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    // 拷贝棋盘后填入新顺序
+    newBoard = board.map(row => row.slice());
+    positions.forEach((pos, idx) => {
+      newBoard[pos.r][pos.c] = shuffled[idx];
+    });
+  } while (!hasSolvablePair(newBoard));
   return newBoard;
 }
 
