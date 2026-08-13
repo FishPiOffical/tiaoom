@@ -400,7 +400,7 @@ export default class LinkLinkRoom extends GameRoom {
         players: this.buildPublicStatus().players,
       } });
       this.say(`${sender.name} 率先清空棋盘，获胜！`);
-      this.saveAchievements([sender]);
+      this.saveAchievements(this.room.players.length > 1 ? [sender] : []);
       this.room.end();
       return;
     }
