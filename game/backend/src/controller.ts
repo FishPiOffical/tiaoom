@@ -144,6 +144,15 @@ export class Controller extends Tiaoom {
       options.attrs.passwd = crypto.createHash('md5').update(options.attrs.passwd).digest('hex');
     }
     if (options.attrs?.point && !isNaN(options.attrs.point) && utils.config?.secret.goldenKey) {
+      if (this.games[options.attrs?.type]) {
+        const gameOptions = this.games[options.attrs?.type];
+        if (gameOptions.points && !Object.values(gameOptions.points).includes(options.attrs.point)) {
+          throw new Error(`房间积分必须是以下值之一：${Object.values(gameOptions.points).join(', ')}`);
+        }
+        if (gameOptions.rates && !Object.values(gameOptions.rates).includes(options.attrs.rate || 1)) {
+          throw new Error(`房间倍率必须是以下值之一：${Object.values(gameOptions.rates).join(', ')}`);
+        }
+      }
       const username = sender?.attributes?.username;
       if (!username) throw new Error("用户信息不完整，无法创建房间。");
       // 检查用户积分是否足够
