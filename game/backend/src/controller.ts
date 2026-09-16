@@ -18,13 +18,13 @@ export class Controller extends Tiaoom {
     super({ socket: new SocketManager(server) });
     Model.getRooms().then(rooms => {
       const players = rooms.map(r => r.players).flat();
-      this.loadFrom({ 
+      this.loadFrom({
         rooms: rooms.map(roomData => {
           const room = new Room(roomData.toRoom());
           room.players = roomData.players.map(p => {
             const player = new RoomPlayer(p, p.role);
             return player;
-          }); 
+          });
           this.missSenderPlayers.push(...room.players.filter(p => !this.missSenderPlayers.some(mp => mp.id === p.id)));
           setTimeout(() => {
             const offlinePlayers = room.players.filter(p => !this.players.find(pl => pl.id === p.id));
@@ -128,9 +128,9 @@ export class Controller extends Tiaoom {
       } else if (command.type === 'boardcast') {
         if (!command.sender?.isAdmin) return;
         this.boardcastMessage = command.data;
-        this.messageInstance?.send({ 
-          type: MessageTypes.GlobalCommand, 
-          data: command, 
+        this.messageInstance?.send({
+          type: MessageTypes.GlobalCommand,
+          data: command,
           senderIds: this.players.map(p => p.id)
         });
       }
@@ -146,11 +146,11 @@ export class Controller extends Tiaoom {
     if (options.attrs?.point && !isNaN(options.attrs.point) && utils.config?.secret.goldenKey) {
       if (this.games[options.attrs?.type]) {
         const gameOptions = this.games[options.attrs?.type];
-        if (gameOptions.points && !Object.values(gameOptions.points).includes(options.attrs.point)) {
-          throw new Error(`房间积分必须是以下值之一：${Object.values(gameOptions.points).join(', ')}`);
+        if (!Object.values(gameOptions.points || {}).includes(options.attrs.point)) {
+          throw new Error(`房间积分必须是以下值之一：${Object.values(gameOptions.points || {}).join(', ') || '0'}`);
         }
-        if (gameOptions.rates && !Object.values(gameOptions.rates).includes(options.attrs.rate || 1)) {
-          throw new Error(`房间倍率必须是以下值之一：${Object.values(gameOptions.rates).join(', ')}`);
+        if (!Object.values(gameOptions.rates || {}).includes(options.attrs.rate || 1)) {
+          throw new Error(`房间倍率必须是以下值之一：${Object.values(gameOptions.rates || {}).join(', ') || '1'}`);
         }
       }
       const username = sender?.attributes?.username;
@@ -169,9 +169,9 @@ export class Controller extends Tiaoom {
 
   async loginPlayer(player: IPlayerOptions, cb?: (data: { player: Player; }) => void): Promise<Player> {
     const playerInstance = await super.loginPlayer(player, cb);
-    if (this.boardcastMessage) 
-      this.messageInstance?.send({ 
-        type: MessageTypes.GlobalCommand, 
+    if (this.boardcastMessage)
+      this.messageInstance?.send({
+        type: MessageTypes.GlobalCommand,
         data: { type: 'boardcast', data: this.boardcastMessage },
         senderIds: [playerInstance.id]
       });
@@ -183,7 +183,7 @@ export class Controller extends Tiaoom {
     if (room) {
       const playerInstance = this.players.find(p => p.id === sender.id);
       if (room.attrs?.point && !isNaN(room.attrs.point) && room.attrs.point > 0 && playerInstance?.attributes.from !== 'fishpi' && role === PlayerRole.player) {
-         role = PlayerRole.watcher;
+        role = PlayerRole.watcher;
       }
       if (room.attrs?.passwd) {
         const passwdHash = crypto.createHash('md5').update(player.params?.passwd || '').digest('hex');
