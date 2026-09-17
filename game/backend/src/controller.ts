@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import http from "http";
-import { IPlayer, IPlayerOptions, IRoom, IRoomOptions, IRoomPlayer, IRoomPlayerOptions, MessageTypes, Player, PlayerRole, PlayerStatus, RoomPlayer, } from "tiaoom";
+import { IMessage, IPlayer, IPlayerOptions, IRoom, IRoomOptions, IRoomPlayer, IRoomPlayerOptions, MessageTypes, Player, PlayerRole, PlayerStatus, RoomPlayer, } from "tiaoom";
 import { Room, Tiaoom } from "tiaoom";
 import { SocketManager } from "./socket";
 import Games, { GameRoom, IGame, IGameInfo } from "./games";
@@ -15,7 +15,7 @@ export class Controller extends Tiaoom {
   boardcastMessage: string = '';
 
   constructor(server: http.Server) {
-    super({ socket: new SocketManager(server) });
+    super({ socket: (new SocketManager(server)) as IMessage });
     Model.getRooms().then(rooms => {
       const players = rooms.map(r => r.players).flat();
       this.loadFrom({
@@ -198,6 +198,17 @@ export class Controller extends Tiaoom {
 
   async startRoom(sender: IPlayer, room: IRoom) {
     const roomInstance = this.searchRoom(room);
+
+    const gameOptions = this.games[roomInstance?.attrs?.type || ''];
+    if (gameOptions && roomInstance) {
+      if (!Object.values(gameOptions.points || {}).includes(roomInstance.attrs?.point)) {
+        throw new Error(`房间积分必须是以下值之一：${Object.values(gameOptions.points || {}).join(', ') || '0'}`);
+      }
+      if (!Object.values(gameOptions.rates || {}).includes(roomInstance.attrs?.rate || 1)) {
+        throw new Error(`房间倍率必须是以下值之一：${Object.values(gameOptions.rates || {}).join(', ') || '1'}`);
+      }
+    }
+
     if (roomInstance && roomInstance.attrs?.point && !isNaN(roomInstance.attrs?.point) && utils.config?.secret.goldenKey) {
       for (const player of roomInstance.validPlayers) {
         const username = player.attributes?.username;
