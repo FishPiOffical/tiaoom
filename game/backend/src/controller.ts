@@ -207,6 +207,9 @@ export class Controller extends Tiaoom {
       if (!Object.values(gameOptions.rates || {}).includes(roomInstance.attrs?.rate || 1)) {
         throw new Error(`房间倍率必须是以下值之一：${Object.values(gameOptions.rates || {}).join(', ') || '1'}`);
       }
+      if (roomInstance.validPlayers.length < (gameOptions.minSize || 2)) {
+        throw new Error(`房间人数不足，至少需要 ${gameOptions.minSize || 2} 名玩家。`);
+      }
     }
 
     if (roomInstance && roomInstance.attrs?.point && !isNaN(roomInstance.attrs?.point) && utils.config?.secret.goldenKey) {
