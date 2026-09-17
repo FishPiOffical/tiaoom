@@ -146,11 +146,11 @@ export class Controller extends Tiaoom {
     if (options.attrs?.point && !isNaN(options.attrs.point) && utils.config?.secret.goldenKey) {
       if (this.games[options.attrs?.type]) {
         const gameOptions = this.games[options.attrs?.type];
-        if (!Object.values(gameOptions.points || {}).includes(options.attrs.point)) {
-          throw new Error(`房间积分必须是以下值之一：${Object.values(gameOptions.points || {}).join(', ') || '0'}`);
+        if (!Object.values(gameOptions.points || { point: 0 }).includes(options.attrs.point)) {
+          throw new Error(`房间积分必须是以下值之一：${Object.values(gameOptions.points || { point: 0 }).join(', ') || '0'}`);
         }
-        if (!Object.values(gameOptions.rates || {}).includes(options.attrs.rate || 1)) {
-          throw new Error(`房间倍率必须是以下值之一：${Object.values(gameOptions.rates || {}).join(', ') || '1'}`);
+        if (!Object.values(gameOptions.rates || { rate: 1 }).includes(options.attrs.rate || 1)) {
+          throw new Error(`房间倍率必须是以下值之一：${Object.values(gameOptions.rates || { rate: 1 }).join(', ') || '1'}`);
         }
       }
       const username = sender?.attributes?.username;
@@ -201,11 +201,11 @@ export class Controller extends Tiaoom {
 
     const gameOptions = this.games[roomInstance?.attrs?.type || ''];
     if (gameOptions && roomInstance) {
-      if (!Object.values(gameOptions.points || {}).includes(roomInstance.attrs?.point)) {
-        throw new Error(`房间积分必须是以下值之一：${Object.values(gameOptions.points || {}).join(', ') || '0'}`);
+      if (!Object.values(gameOptions.points || { point: 0 }).includes(roomInstance.attrs?.point)) {
+        throw new Error(`房间积分必须是以下值之一：${Object.values(gameOptions.points || { point: 0 }).join(', ') || '0'}`);
       }
-      if (!Object.values(gameOptions.rates || {}).includes(roomInstance.attrs?.rate || 1)) {
-        throw new Error(`房间倍率必须是以下值之一：${Object.values(gameOptions.rates || {}).join(', ') || '1'}`);
+      if (!Object.values(gameOptions.rates || { rate: 1 }).includes(roomInstance.attrs?.rate || 1)) {
+        throw new Error(`房间倍率必须是以下值之一：${Object.values(gameOptions.rates || { rate: 1 }).join(', ') || '1'}`);
       }
       if (roomInstance.validPlayers.length < (gameOptions.minSize || 2)) {
         throw new Error(`房间人数不足，至少需要 ${gameOptions.minSize || 2} 名玩家。`);
